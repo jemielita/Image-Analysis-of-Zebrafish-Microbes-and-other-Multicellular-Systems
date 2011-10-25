@@ -3,15 +3,13 @@
 % GUI will be most applicable to measuring spatial and temporal variation
 % in gut bacterial populations.
 
-%Created by: Matthew Jemielita, July 19, 2011
-
 
 %LineDist(im)
-
-%Input: im: a test image that will be used to find the region that we will
-%create boxes in to find the average pixel intensity.
-
-%Usage:
+%
+%INPUT: im: (optional input) a test image that will be used to find the 
+%region that we will create boxes in to find the average pixel intensity.
+%
+%USAGE:
 %-Click the 'Draw Line' button. The user will then be able to draw a line on
 %the figure. Once the line is placed another line will be created on the
 %image axis, close to the first line placed. The green line can be moved
@@ -26,12 +24,13 @@
 %-
 %-Enter in the number of boxes that one wants to find averages for.
 %-Press the 'Create Ave. Regions' button. The
+%
+% Created by: Matthew Jemielita, July 19, 2011
 
 
 
-function LineDist
+function [LabelMatrix] = LineDist(varargin)
 
-%We'll soon change this to a user input for the image
 
 fGUI = figure('Name','Time Evolution along a line', 'Menubar','none', ...
     'Visible','off','Position',[100,100,1400,800]);
@@ -61,9 +60,13 @@ hCreateHist   = uicontrol('Parent', hManipulate,'Style','pushbutton',...
     'Position',[0.1, 1-3*0.16,0.4,0.15],...
     'Callback',{@createHist});
 
+hSaveHist = uicontrol('Parent', hManipulate, 'Style', 'pushbutton',...
+    'String', 'Save Ave. Regions', 'Units', 'normalized',...
+    'Position',[0.1, 1-5*0.16,0.4,0.15],...
+    'Callback', {@saveHist});
 hCalcHist = uicontrol('Parent', hManipulate,'Style','pushbutton',...
     'String','Calc. Region Props. ','Units', 'normalized',...
-    'Position',[0.1, 1-5*0.16,0.4,0.15],...
+    'Position',[0.1, 1-7*0.16,0.4,0.15],...
     'Callback',{@calcProp});
 %Set the number of boxes to use in the averaging
 hSetNumBoxesText = uicontrol('Parent', hManipulate,...
@@ -101,12 +104,29 @@ LabelMatrix = zeros(1,1); %Label matrix that we'll fill with regions
 %that we're going to calculate properties for.
 set(fGUI, 'Visible', 'on')
 
-%Callback functions
+%See if the user has provided an image, if so display it.
+if(nargin==1)
+    im = varargin{1};
+    im = mat2gray(im);
+    
+    %Display the image of interest, the intensity scale is hardcoded
+    %into the code
+    hIm = imshow(im, [], 'Parent', axeshandle);
+    
+    LabelMatrix = zeros(size(im));
+    
+elseif(nargin>1)
+    disp('Too many input parameters! The user only has to provide an image.');
+    
+end
+
+
+%%Callback functions
 
 %Load in an image
 
     function loadImage(source,eventdata)
-        %User selects the image to use 
+        %User selects the image to use
         [filename, pathname, filterindex] = uigetfile('.tif', 'Select an Image' );
         
         imInput = strcat(pathname, filesep, filename);
@@ -118,34 +138,34 @@ set(fGUI, 'Visible', 'on')
         
         LabelMatrix = zeros(size(im));
     end
-    
-    function drawLine(source,eventdata)
-     hLine1 = imline();
-     setColor(hLine1, [0 1 0]);
 
-     idLine1a = addNewPositionCallback(hLine1,@setSlope); 
-     idLine1b = addNewPositionCallback(hLine1, @setLine2);
-     %Create another line parallel to this line and offset a little bit.
-     %We'll use this two lines together to define a region to do our
-     %calculations over.
-     
-     initPos = getPosition(hLine1);
-     
-     xpos(1) = initPos(1,1);
-     xpos(2) = initPos(2,1);
-     ypos(1) = initPos(1,2);
-     ypos(2) = initPos(2,2);
-     
-     
-  
-     xpos2 = xpos + cos(theta) * 80;
-     ypos2 = ypos -sin(theta)*80;
-     
-     hLine2 = imline( axeshandle, xpos2 , ypos2);
-     %Set Constrained position function. Only the second line will be
-     %constrained to be parallel to the first line.
-     setPositionConstraintFcn(hLine2,@confineLine2)
-  
+    function drawLine(source,eventdata)
+        hLine1 = imline();
+        setColor(hLine1, [0 1 0]);
+        
+        idLine1a = addNewPositionCallback(hLine1,@setSlope);
+        idLine1b = addNewPositionCallback(hLine1, @setLine2);
+        %Create another line parallel to this line and offset a little bit.
+        %We'll use this two lines together to define a region to do our
+        %calculations over.
+        
+        initPos = getPosition(hLine1);
+        
+        xpos(1) = initPos(1,1);
+        xpos(2) = initPos(2,1);
+        ypos(1) = initPos(1,2);
+        ypos(2) = initPos(2,2);
+        
+        
+        
+        xpos2 = xpos + cos(theta) * 80;
+        ypos2 = ypos -sin(theta)*80;
+        
+        hLine2 = imline( axeshandle, xpos2 , ypos2);
+        %Set Constrained position function. Only the second line will be
+        %constrained to be parallel to the first line.
+        setPositionConstraintFcn(hLine2,@confineLine2)
+        
     end
 
 %set the slope and arctan of the slope of the main line
@@ -225,6 +245,10 @@ set(fGUI, 'Visible', 'on')
        %irrelevant.
        
       
+       %Create a mask that will contain the accumulated masks at all steps
+       %of the algorithm.
+       regionMask = zeros(size(im));
+       
         for i=1: numBoxes
 
         xPosLast(1)  = xPosFirst(1) + step*cos(theta);
@@ -243,22 +267,31 @@ set(fGUI, 'Visible', 'on')
         hPoly = impoly(axeshandle, region(i).position);
         BW = createMask(hPoly);
     
+        %Update the label matrix.
         LabelMatrix(BW==1) = i;
         
-        imshow(BW, 'Parent', axeshandle);
+        %Finding the edges of this mask.
+        %Note: The edges of the region seem somewhat choppy because of the
+        %edge filter used. To make a solid boundary we'd have to rewrite
+        %this a bit.
         
-        pause(0.5);
+        BWEdge = edge(BW, 'canny');
+        
+        regionMask(BWEdge) = 1;
+        
+        %Overlay this mask with the original image
+        imRegion = imoverlay(im, logical(regionMask), [1 0 0]);
+        
+        imshow(imRegion, 'Parent', axeshandle);
+        drawnow;
         
         xPosFirst = xPosLast;
         yPosFirst = yPosLast;
            
        end
        
-       
        disp('Regions created!');
     end
-
-
 
 %Calculate the average in the region of interest
     function calcProp(source,eventdata)
@@ -299,7 +332,7 @@ set(fGUI, 'Visible', 'on')
         %Get a location to save the data to
         
         [fileName, pathName, filterIndex] =...
-            uiputfile('*.mat' ,'Choose/ create a file to write data to')
+            uiputfile('*.mat' ,'Choose/ create a file to write data to');
         
         saveFile  = strcat(pathName, fileName);
         
