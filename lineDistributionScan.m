@@ -1,0 +1,57 @@
+%This script calculates the line distribution for a given subset of scans
+%taken for an experiment. This can be used as the first step towards
+%calculating a correlation function for the data.
+
+
+%We should really exploit our saved experimental variables to make this
+%code much cleaner.
+
+%% Listing the scans to be taken
+
+%Give the master directory for all the scans
+param.directoryName = '/Volumes/big/guts/FileDump10-1-2011(NF-kappaB)';
+
+%Give the range of scans to be analyzed. If the variable scans is set to
+%'all' then all the scans in this folder will be analyzed. If not scans
+%should be an array listing the scans to analyze. 
+%   e.g. scans = 1:10, will analyze all scans from 1 to 10.
+%        scans = [1 6 8] will analyze scans 1, 6, and 8.
+param.scans = 'all';
+
+%Call for regions will be the same as for scans
+param.regions = 'all';
+
+%Call for color needs to be somewhat different, to deal with our file save
+%methods...will get once we can get back on the main computer.
+
+param.color = 'all';
+
+
+%For the parameters above construct a structure that will contain all the
+%results of this calculation.
+
+%As a test we'll do this for just the data contained in our test scan, and
+%soon we'll adapt it to a mor general file structure.
+
+data = initializeLineDistStruct(param);
+
+
+
+%% Calculating the MIP for each image stack in data
+
+data = projectionStack(data,param, 'mip');
+
+
+
+
+
+%% Cropping the images
+%This should maybe go before we calculate projections, to save memory.
+
+
+
+%% Calculating the line distributions for all of the scans
+
+
+
+%% Calculating correlation functions for this data
