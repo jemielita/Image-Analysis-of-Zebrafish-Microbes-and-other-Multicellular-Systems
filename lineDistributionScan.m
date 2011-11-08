@@ -16,7 +16,8 @@ param.directoryName = '/Volumes/big/guts/FileDump10-1-2011(NF-kappaB)';
 %should be an array listing the scans to analyze. 
 %   e.g. scans = 1:10, will analyze all scans from 1 to 10.
 %        scans = [1 6 8] will analyze scans 1, 6, and 8.
-param.scans = 'all';
+%        scans = 'all' will analze all the scans in this directory
+param.scans = [1:2];
 
 %Call for regions will be the same as for scans
 param.regions = 'all';
@@ -26,7 +27,10 @@ param.regions = 'all';
 
 param.color = 'all';
 
-
+%Give the range of images in each of the scans to use for calculating the
+%projections.
+param.minImage = 20; 
+param.maxImage = 23;
 %For the parameters above construct a structure that will contain all the
 %results of this calculation.
 
@@ -43,10 +47,9 @@ data = projectionStack(data,param, 'mip');
 
 
 
-
-
 %% Cropping the images
 %This should maybe go before we calculate projections, to save memory.
+[data,param] = cropStack(data,param);
 
 
 
@@ -55,3 +58,8 @@ data = projectionStack(data,param, 'mip');
 
 
 %% Calculating correlation functions for this data
+
+
+
+
+

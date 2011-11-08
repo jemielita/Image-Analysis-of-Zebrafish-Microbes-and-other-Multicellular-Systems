@@ -76,6 +76,7 @@ for i=1:length(data.scan)
                     data.scan(i).region(j).directory, filesep,...
                 colors(k).name, filesep);
                 data.scan(i).region(j).color(k).directory = colorDirName;
+
             end
             
         else

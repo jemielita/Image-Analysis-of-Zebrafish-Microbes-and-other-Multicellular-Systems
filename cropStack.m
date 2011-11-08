@@ -1,49 +1,56 @@
-%DESCRIPTION: Crops a set of scans.
-%USAGE:
+%Crops the images stored into data to the region selected by the user.
+%Currently the program selects the first image in the scan, but future
+%versions should make this more dynamic, and allow the user to double check
+%the cropping before proceeding.
 %
-%cropStack(directory, cropExtent, rect, saveLocation, checkCrop)
-%
-%   directory: the directory where all the images to be cropped are
-%   located.
-%   cropExtent: Depth of cropping to be done.
-%           '': Only one image will be cropped, with the filename given by
-%           directory if the directory string end in '.tif', otherwise the
-%           user will be prompted.
-%           'scan': all images in a given scan will be cropped to the same
-%           size.
-%           'region': all images in the same region will be cropped.
-%           'color': all images in the same color channel will be cropped.
-%           'all': all images in the directory will be cropped to the same
-%           size.
-%   rect: Rectangle giving the extent of the region to be cropped. If
-%   rect is set to 0, the user will be prompted to select a region.
-%   
-%   saveLocation: Directory where all the cropped images will be saved. The
-%   directory structure used above will be replicated in the save location.
-%
-%   checkCrop: if 'yes' the user will be presented with images from the
-%   scans with the cropped region highlighted to check the cropping. If the
-%   user changes the rectangle the crop program will crop to that new size.
-%
-%cropStack(): same as above, but all parameters will be taken from the user
+%USAGE: [data,param] = cropStack(data,param)
+%       -The user is is shown the first region in the stack and is prompted
+%       to highlight the region to crop the images to.
+%       -data-now contains cropped images instead of the original larger
+%       images.
+%       -param contains param.cropRegion, which gives the rectangle used to
+%       crop the images
+%       [data, param] = cropStack(data,param,rect).
+%       -crops all the images in data to the size given by rect.
+%CREATED: Matthew Jemielita, Nov 8, 2011
+function [data,param] = cropStack(varargin)
 
-
-function [] = cropStack(varargin)
-
-if(nargin==5)
-    directory = varargin{1};
-    cropExtent = varargin{2};
+if(nargin ==3)
+    data = varargin{1};
+    param = varargin{2};
     rect = varargin{3};
-    saveLocation = varargin{4};
-    checkCrop = varargin{5};
     
-elseif(nargin==0)
+elseif(nargin==2)
+    data = varargin{1};
+    param = varargin{2};
+    im = data.scan(1).region(1).color(1).im;
+    figure; imshow(im,[]);
+    title 'Please select a cropping region'
     
-    
+    [imc, rect] = imcrop();
+    param.cropRegion = rect;
 else
-   %Quit the script gently. 
+    disp('This function must be passed two or three arguments! See help menu for usage.')
+    return
 end
 
-%Check to see if the directo
+
+for nScan=1:length(data.scan)
+    %Going through each scan
+    for nRegion=1:length(data.scan(nScan).region)
+        %Going through each region in this scan
+        for nColor=1:length(data.scan(nScan).region(nRegion).color)
+            %and each color
+
+            %Cropping each of these images
+            im = data.scan(nScan).region(nRegion).color(nColor).im;
+            
+            imc = imcrop(im, rect);
+            data.scan(nScan).region(nRegion).color(nColor).im = imc;
+            
+        end
+    end
+end
+
 
 end

@@ -26,13 +26,14 @@ for nScan=1:length(data.scan)
 
                 case 'mip'
                     
-                    for i=0:numIm-1
+                    for i=param.minImage:param.maxImage
                         imName = strcat (imDir, 'pco', num2str(i), '.tif');
                         im = imread(imName);
                         
                         index = find(im>data.scan(nScan).region(nRegion).color(nColor).im);
                         data.scan(nScan).region(nRegion).color(nColor).im(index)= im(index);
                         
+                        disp(imName);
                     end
                     
                 otherwise
