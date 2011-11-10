@@ -6,6 +6,9 @@
 %We should really exploit our saved experimental variables to make this
 %code much cleaner.
 
+%%Camera and experimental parameters
+param.micronPerPixel = 0.125; %For the 40X objective.
+
 %% Listing the scans to be taken
 
 %Give the master directory for all the scans
@@ -37,7 +40,7 @@ param.maxImage = 23;
 %As a test we'll do this for just the data contained in our test scan, and
 %soon we'll adapt it to a mor general file structure.
 
-data = initializeLineDistStruct(param);
+[data,param] = initializeLineDistStruct(param);
 
 
 
@@ -46,15 +49,34 @@ data = initializeLineDistStruct(param);
 data = projectionStack(data,param, 'mip');
 
 
-
 %% Cropping the images
 %This should maybe go before we calculate projections, to save memory.
 [data,param] = cropStack(data,param);
 
 
-
 %% Calculating the line distributions for all of the scans
+[data,param] = lineDistAll(data,param);
 
+%% Creating and saving graphics from this data
+
+%This is a temporary directory location;
+
+tempFile = '/Users/matthewjemielita/Documents/MATLAB';
+%Location that the results of the data will be saved to 
+param.dataSaveDirectory = [tempFile, filesep, 'lineDist'];
+mkdir(param.dataSaveDirectory);
+cd(param.dataSaveDirectory);
+%Save all the parameters used in making these distributions
+save('param.mat', 'param');
+%And all of the data
+save('data.mat', 'data');
+
+%Now creating several figures that illustrate the data.
+
+[data,param] = saveLineDist(data,param);
+
+
+%Create figures that show the distribution for each of these data sets.
 
 
 %% Calculating correlation functions for this data

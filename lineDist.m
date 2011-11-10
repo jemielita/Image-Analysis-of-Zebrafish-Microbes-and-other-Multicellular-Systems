@@ -66,11 +66,12 @@ while(~isempty(findobj('Tag', 'LineDistGUI')))
     
 end
 
-if(nargin==2)
+if(nargin>0)
     outputIm  = varargin{1};
 else
     outputIm = im;
 end
+
 %Calculate the region properties for the selected image
 lineProp = regionprops(LabelMatrix_LineDist, outputIm, 'MeanIntensity', 'Centroid');
 

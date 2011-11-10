@@ -24,11 +24,13 @@ elseif(nargin==2)
     data = varargin{1};
     param = varargin{2};
     im = data.scan(1).region(1).color(1).im;
-    figure; imshow(im,[]);
+    hCrop = figure; imshow(im,[]);
     title 'Please select a cropping region'
     
     [imc, rect] = imcrop();
     param.cropRegion = rect;
+    
+    close(hCrop);
 else
     disp('This function must be passed two or three arguments! See help menu for usage.')
     return

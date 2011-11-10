@@ -3,7 +3,7 @@
 %
 %NOTE: still needs to be tested more carefully for 
 
-function data = initializeLineDistStruct(param)
+function [data,param] = initializeLineDistStruct(param)
 
 %Get the directory that we're working out of.
 
@@ -12,6 +12,7 @@ data.directory = dirName;
 
 %Then construct an array that contains all the scans that we're interested
 %in analyzing.
+numImages = 0;
 
 scanNumber = param.scans;
 
@@ -77,6 +78,7 @@ for i=1:length(data.scan)
                 colors(k).name, filesep);
                 data.scan(i).region(j).color(k).directory = colorDirName;
 
+                numImages = numImages+1;
             end
             
         else
@@ -87,6 +89,6 @@ for i=1:length(data.scan)
 
 end
 
-
+param.numIm = numImages;
 
 end
