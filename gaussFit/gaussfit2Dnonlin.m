@@ -55,8 +55,11 @@
 % March 20, 2011
 % July 28, 2011; minor change to default initial parameter values
 % Last modified July 28, 2011
+%
+% Modified by mlj to return the residual of the fit.
 
-function [A, x0, y0, sigma, offset] = gaussfit2Dnonlin(z, tolz, params0, LB, UB, lsqoptions)
+function [A, x0, y0, sigma, offset, resNorm, residual, jacobian]...
+= gaussfit2Dnonlin(z, tolz, params0, LB, UB, lsqoptions)
 
 [ny,nx] = size(z);
 [px,py] = meshgrid(1:nx,1:ny);
@@ -88,7 +91,9 @@ lsqoptions.TolX = 1e-5';  % default is 1e-6
 lsqoptions.Display = 'off'; % 'off' or 'final'; 'iter' for display at each iteration
 
 %Return paramters and the residual.
-[params, resNorm, residual] = lsqnonlin(@(P) objfun(P,px,py,z),params0,LB,UB,lsqoptions);
+
+[params, resNorm, residual, exitFlag, output, lambda, jacobian]...
+    = lsqnonlin(@(P) objfun(P,px,py,z),params0,LB,UB,lsqoptions);
 A = params(5);
 x0 = params(2);
 y0 = params(3);
