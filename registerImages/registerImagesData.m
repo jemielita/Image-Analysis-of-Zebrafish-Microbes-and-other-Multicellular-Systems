@@ -1,5 +1,8 @@
-%For a given directory structure return the parameters that would allow a
-%mosaic of the different regions to be created.
+%For a given directory structure return the parameters that correspond to
+%regions that are overlapping between different regions.
+%SUMMARY: [data, param] = registerImagesData(data,param)
+%
+%Returns param.registerIm which is an array of size
 
 function [data, param] = registerImagesData(data,param)
 
@@ -69,5 +72,7 @@ for regNum =1:totalNumRegions-1
     registerIm(regNum,2,:,:) = rectBot;
 end
 
+%Returned the overlaped regions.
 param.registerIm = registerIm;
+
 end
