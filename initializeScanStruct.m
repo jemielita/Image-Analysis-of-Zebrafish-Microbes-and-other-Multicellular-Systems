@@ -1,9 +1,9 @@
 %For an input giving the range of scans, regions, and colors to analyze,
 %construct a structure that can store all the data we'll collect.
 %
-%NOTE: still needs to be tested more carefully for 
-
-function [data,param] = initializeLineDistStruct(param)
+%NOTE: still needs to be tested more carefully for different ranges of
+%colors, besides 'all'.
+function [data,param] = initializeScanStruct(param)
 
 %Get the directory that we're working out of.
 
