@@ -5,12 +5,17 @@
 
 
 function [data,param]= registerImagesScan(data,param)
+nScan =1;
+colorType = '488nm';
+
+for i=1:80
+    zNum = i;
 im = registerSingleImage(nScan, colorType, zNum, data, param);
-
-
-
+imshow(im,[]);
+f(i) = getframe;
+end
 %However we get the number of cells from our data
-param.boundPoly = cell(numScans, 1);
+param.boundPoly = cell(nScans, 1);
 
 figure; imshow(im,[]);
 

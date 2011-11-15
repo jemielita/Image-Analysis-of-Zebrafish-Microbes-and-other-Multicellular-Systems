@@ -70,13 +70,13 @@ registerIm = zeros(totalNumRegions-1, 2, 4);
 for regNum =1:totalNumRegions-1
        rectTop = [regLoc(regNum,5)-pixOverlap(regNum,2)  regLoc(regNum,4)-pixOverlap(regNum,1)...
            pixOverlap(regNum,2) pixOverlap(regNum,1)];
-       rectBottom =[0 0  pixOverlap(regNum,2) pixOverlap(regNum,1)];
-
+       rectBottom =[1 1  pixOverlap(regNum,2) pixOverlap(regNum,1)]; %Changed from 0 to 1
        registerIm(regNum,1,:) = rectTop;
        registerIm(regNum,2,:) = rectBottom;
 end
 
 %Returned the overlaped regions.
+registerIm = floor(registerIm);
 param.registerImXY = registerIm;
 
 end

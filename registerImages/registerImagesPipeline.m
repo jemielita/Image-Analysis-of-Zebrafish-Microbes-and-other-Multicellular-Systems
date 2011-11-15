@@ -7,7 +7,7 @@
 %code much cleaner.
 
 %%Camera and experimental parameters
-param.micronPerPixel = 0.125; %For the 40X objective.
+param.micronPerPixel = 0.1625; %For the 40X objective.
 
 %% Listing the scans to be taken
 
