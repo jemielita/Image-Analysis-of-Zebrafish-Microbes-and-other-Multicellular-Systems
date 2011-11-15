@@ -55,9 +55,10 @@ overlapReg = -1*ones(length(posArray),totalNumRegions);
 
 for regNum=1:totalNumRegions
     arr = imArray{regNum};
-    for zIndex =1:length(arr)            
+    for zIndex =1:length(arr)-1            
         overlapReg(find(posArray==arr(zIndex)),regNum) = zIndex-1;
         %-1 to deal w/ images syntax (starts at pco0.tif, because Rick was a CS major);
+        %Also only go up to length(arr)-1 for the same reason.
     end
 end
 

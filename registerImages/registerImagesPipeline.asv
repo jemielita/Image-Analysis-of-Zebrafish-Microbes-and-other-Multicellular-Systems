@@ -27,7 +27,7 @@ param.regions = 'all';
 %Call for color needs to be somewhat different, to deal with our file save
 %methods...will get once we can get back on the main computer.
 
-param.color = [{'488nm'}; {'568nm'}];
+param.color = [{'488nm'}; {'568nm'];
 
 %For the parameters above construct a structure that will contain all the
 %results of this calculation.
