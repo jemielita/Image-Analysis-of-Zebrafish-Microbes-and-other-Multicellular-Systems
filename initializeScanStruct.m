@@ -39,7 +39,7 @@ end
 for i=1:length(data.scan)
     
     if(strcmp(param.regions, 'all'))
-        checkRegions = strcat(dirName, filesep,data.scan(i).directory,...
+        checkRegions = strcat(dirName, filesep,'scans',filesep,data.scan(i).directory,...
             filesep,'region_*');
         numRegions = length(dir(checkRegions));
         
