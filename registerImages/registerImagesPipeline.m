@@ -56,7 +56,7 @@ param.expData = param.expData.parameters;%Only pull out the parameters, not the 
 %% Going through the images, and overlapping the images as needed.
 param.registerRegion = 'all';
 
-[data,param] = registerImages(dpata,param);
+[data,param] = registerImages(data,param);
 
 
 %% Calculating the line distributions for all of the scans
