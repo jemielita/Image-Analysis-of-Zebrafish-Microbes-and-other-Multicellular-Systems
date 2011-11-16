@@ -12,7 +12,7 @@ param.micronPerPixel = 0.1625; %For the 40X objective.
 %% Listing the scans to be taken
 
 %Give the master directory for all the scans
-param.directoryName = 'F:\Nov_9_Aeromonas\Flask_A_wtGFP_DeltaPgmDTomato\Fish_2';
+param.directoryName = 'F:\Nov_9_Aeromonas\Flask_A_wtGFP_DeltaPgmDTomato\Fish_3';
 %Give the range of scans to be analyzed. If the variable scans is set to
 %'all' then all the scans in this folder will be analyzed. If not scans
 %should be an array listing the scans to analyze. 
@@ -51,7 +51,6 @@ param.expData = param.expData.parameters;%Only pull out the parameters, not the 
 
 %% Going through the images, and overlapping the images as needed.
 param.registerRegion = 'all';
-
 
 [imAll,data,param] = registerImagesScan(data,param);
 %% Outlining the extent of the gut by hand
