@@ -12,7 +12,7 @@ param.micronPerPixel = 0.1625; %For the 40X objective.
 %% Listing the scans to be taken
 
 %Give the master directory for all the scans
-param.directoryName = 'F:\Nov_9_Aeromonas\Flask_A_wtGFP_DeltaPgmDTomato\Fish_1';
+param.directoryName = 'F:\Nov_9_Aeromonas\Flask_A_wtGFP_DeltaPgmDTomato\Fish_2';
 %Give the range of scans to be analyzed. If the variable scans is set to
 %'all' then all the scans in this folder will be analyzed. If not scans
 %should be an array listing the scans to analyze. 
@@ -52,19 +52,21 @@ param.expData = param.expData.parameters;%Only pull out the parameters, not the 
 %% Going through the images, and overlapping the images as needed.
 param.registerRegion = 'all';
 
-[data,param] = registerImagesScan(data,param);
 
+[imAll,data,param] = registerImagesScan(data,param);
+%% Outlining the extent of the gut by hand
+global polyPosition; %Poor form, but global variables are the easiest way to pass info to and from gui's
 
-%% Calculating the line distributions for all of the scans
-[data,param] = lineDistAll(data,param);
+gutOutline(imAll, param,data);
 
-%% Creating and saving graphics from this data
+ 
+%% Saving the result to param
+param.polyPosition = polyPosition;
 
-%This is a temporary directory location;
+%% Saving the parameters created.
 
-tempFile = '/Users/matthewjemielita/Documents/MATLAB';
 %Location that the results of the data will be saved to 
-param.dataSaveDirectory = [tempFile, filesep, 'lineDist'];
+param.dataSaveDirectory = [param.directoryName, filesep, 'gutOutline'];
 mkdir(param.dataSaveDirectory);
 cd(param.dataSaveDirectory);
 %Save all the parameters used in making these distributions
@@ -72,9 +74,6 @@ save('param.mat', 'param');
 %And all of the data
 save('data.mat', 'data');
 
-%Now creating several figures that illustrate the data.
-
-[data,param] = saveLineDist(data,param);
 
 
 %Create figures that show the distribution for each of these data sets.
