@@ -62,6 +62,6 @@ for regNum=1:totalNumRegions
     end
 end
 
-param.registerImZ = overlapReg;
+param.regionExtent.Z = overlapReg;
 
 end

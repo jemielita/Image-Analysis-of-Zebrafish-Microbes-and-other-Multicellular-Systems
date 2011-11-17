@@ -6,13 +6,19 @@
 %We should really exploit our saved experimental variables to make this
 %code much cleaner.
 
-%%Camera and experimental parameters
+%% Initialize parameters and code path
+
+addpath(genpath('~/Documents/code/'))
+
 param.micronPerPixel = 0.1625; %For the 40X objective.
+param.imSize = [2160 2560];
 
 %% Listing the scans to be taken
 
 %Give the master directory for all the scans
-param.directoryName = 'F:\Nov_9_Aeromonas\Flask_A_wtGFP_DeltaPgmDTomato\Fish_3';
+%param.directoryName = 'F:\Nov_9_Aeromonas\Flask_A_wtGFP_DeltaPgmDTomato\Fish_3';
+param.directoryName = '/Volumes/big/guts/Data/Nov_9_Aeromonas/Flask_A_wtGFP_DeltaPgmDTomato/Fish_1';
+
 %Give the range of scans to be analyzed. If the variable scans is set to
 %'all' then all the scans in this folder will be analyzed. If not scans
 %should be an array listing the scans to analyze. 

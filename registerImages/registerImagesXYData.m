@@ -13,6 +13,7 @@
 %FIX UP THIS SUMMARY!!
 function [data, param] = registerImagesXYData(data,param)
 
+
 %%Get the range of pixel data for each region.
 %Note: we should make it possible to use the cropped region to do this
 %calculation, to keep the code as general as possible.
@@ -23,9 +24,7 @@ totalNumRegions = length(totalNumRegions);
 
 %Create a structure that will contain the x, y, and z location of each
 %region
-%Note: currently image size hard coded into code-this should be changed, to
-%make it possible to overlap cropped images.
-regLoc = zeros(totalNumRegions, 5);
+regLoc = zeros(totalNumRegions, 6);
 
 for regNum=1:totalNumRegions
     regionIndex = find([param.expData.Scan.region]==regNum,1); 
@@ -34,49 +33,30 @@ for regNum=1:totalNumRegions
     %Read out the locations in 1/10ths of microns
     regLoc(regNum,1) = param.expData.Scan(regionIndex).xBegin;
     regLoc(regNum,2) = param.expData.Scan(regionIndex).yBegin;
-    regLoc(regNum,3) = param.expData.Scan(regionIndex).zBegin;
     
     %Convert micron range to pixels;
     %Note: .xBegin, .yBegin are measured in 1/10th of microns (format used
     %by ASI)
     regLoc(regNum,:) = (1.0/param.micronPerPixel)*0.1*regLoc(regNum,:);
-
 end
 
+%Rescale the pixel range so that the minimum x and y pixel location are
+%both 1.
+regLoc(:,1) = regLoc(:,1) - min(regLoc(:,1))+1;
+regLoc(:,2) = regLoc(:,2) - min(regLoc(:,2))+1;
 
-regLoc(:,4) = 2160; %image length in pixels
-regLoc(:,5) = 2560; %image width in pixels.
+% 
+% %Get the range of pixels for each of these regions.
+ regLoc(:,3) = regLoc(:,1) + param.imSize(1)-1; %image length in pixels
+ regLoc(:,4) = regLoc(:,2) + param.imSize(2)-1; %image width in pixels.
 
-%Calculate the range of overlap between each region
-pixOverlap = zeros(totalNumRegions-1,2);
+ regLoc(:,5:6) = 1;
+ 
+%Store the result in the structure param.regionExtent, where
+%param.regionExtentXY is a regNum x 6 matrix with entries:
+%[pixel X location, pixel Y Location, pixel extent X, 
+% pixel extent Y,initial x pixel (on image), initial y pixel (on image)]
 
-pixOverlap(:,1) = regLoc(2:totalNumRegions,4)-...
-regLoc(2:totalNumRegions,1)+regLoc(1:totalNumRegions-1,1);
-
-pixOverlap(:,2) = regLoc(2:totalNumRegions,5)-... 
-regLoc(2:totalNumRegions,2)+regLoc(1:totalNumRegions-1,2);
-
-
-
-%%Store the result in the format: 
-%       registerIm(i,1): rectangle giving the pixel range in region A that
-%       overlap with pixels in region B.
-%       registerIm(i,2): rectangel giving the pixel rangein region B that
-%       overlap with pixels in region A.
-%       NOTE: For n regions there will only be n-1 values of i.
-
-registerIm = zeros(totalNumRegions-1, 2, 4);
-
-for regNum =1:totalNumRegions-1
-       rectTop = [regLoc(regNum,5)-pixOverlap(regNum,2)  regLoc(regNum,4)-pixOverlap(regNum,1)...
-           pixOverlap(regNum,2) pixOverlap(regNum,1)];
-       rectBottom =[1 1  pixOverlap(regNum,2) pixOverlap(regNum,1)]; %Changed from 0 to 1
-       registerIm(regNum,1,:) = rectTop;
-       registerIm(regNum,2,:) = rectBottom;
-end
-
-%Returned the overlaped regions.
-registerIm = floor(registerIm);
-param.registerImXY = registerIm;
+param.regionExtent.XY = regLoc;
 
 end
