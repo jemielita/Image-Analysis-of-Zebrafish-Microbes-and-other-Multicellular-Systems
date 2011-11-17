@@ -38,6 +38,14 @@
 %    July 26, 2010 (convert 12-bit images to 8-bit)
 %    June 6, 2011 (minor changes to tracking options)
 %    July 10, 2011: Allow multipage TIFF input
+%
+% Mike Taormina
+% last modified November 16, 2011
+%   November 16, 2011: Free speed up - Use 'Info' for reading multipage TIFF files (as
+%   http://blogs.mathworks.com/steve/2009/04/02/matlab-r2009a-imread-and-multipage-tiffs/).
+%   This is probably noticable when dealing with thousands of images, e.g.,
+%   for high speed video.  The prevented bottleneck is not tied to the resolution of
+%   the images, just the number of frames.
 
 
 function [outA objs] = TIFFseries(rect)
@@ -240,7 +248,7 @@ for k=frmin:Nskip:frmax,
         ds(1) = ds1;
     else
         if ismultipage
-            tempoutA = imread(strcat(fbase, ext), k); % image
+            tempoutA = imread(strcat(fbase, ext), k, 'Info',allinfo); % image
             infoA = allinfo(k);
         else
             framestr = sprintf(formatstr, k);
