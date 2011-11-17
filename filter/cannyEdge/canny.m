@@ -11,6 +11,8 @@ kernelSize = ceil(7*kernelSigma);
 %figure; imshow(gradImage, [])
 [localMax] = nonMaximumSuppression(gradImage, thetaImage);
 
+%figure; imshow(localMax);
+
 %Then clean up edges beyond the hysteresis threshold
 highThresh = 1.25*graythresh(localMax);
 lowThresh = (0.6)*highThresh;

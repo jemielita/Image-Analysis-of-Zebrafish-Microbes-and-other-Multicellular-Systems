@@ -37,12 +37,11 @@ interpGradNeg = interp2(X,Y,gradImage,xInterp,yInterp);
 
 %See if the amplitude of the image is greater at the pixel location than at
 %the pixels in the direction of the gradient.
-localMax = (gradImage>interpGradNeg).*(gradImage>interpGradPos);
+localMax = (gradImage>=interpGradNeg).*(gradImage>=interpGradPos);
 
 %For each pixel location, find the value of the pixel closest to the pixel
 %in question in the direction of the gradient
 
-%Do the same thing in the opposite direction.
 
 localMax = localMax.*gradImage;
 
