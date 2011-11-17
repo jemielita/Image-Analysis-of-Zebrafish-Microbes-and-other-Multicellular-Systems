@@ -8,16 +8,19 @@
 
 %% Initialize parameters and code path
 
-addpath(genpath('~/Documents/code/'))
+%On my own (mlj) machine
+%addpath(genpath('~/Documents/code/'))
 
+%On lsm control computer
+addpath(genpath('C:\code'));
 param.micronPerPixel = 0.1625; %For the 40X objective.
 param.imSize = [2160 2560];
 
 %% Listing the scans to be taken
 
 %Give the master directory for all the scans
-%param.directoryName = 'F:\Nov_9_Aeromonas\Flask_A_wtGFP_DeltaPgmDTomato\Fish_3';
-param.directoryName = '/Volumes/big/guts/Data/Nov_9_Aeromonas/Flask_A_wtGFP_DeltaPgmDTomato/Fish_1';
+param.directoryName = 'F:\Nov_9_Aeromonas\Flask_A_wtGFP_DeltaPgmDTomato\Fish_2';
+%param.directoryName = '/Volumes/big/guts/Data/Nov_9_Aeromonas/Flask_A_wtGFP_DeltaPgmDTomato/Fish_1';
 
 %Give the range of scans to be analyzed. If the variable scans is set to
 %'all' then all the scans in this folder will be analyzed. If not scans
@@ -57,8 +60,7 @@ param.expData = param.expData.parameters;%Only pull out the parameters, not the 
 
 %% Going through the images, and overlapping the images as needed.
 param.registerRegion = 'all';
-
-[imAll,data,param] = registerImagesScan(data,param);
+registerImagesScan(data,param);
 %% Outlining the extent of the gut by hand
 global polyPosition; %Poor form, but global variables are the easiest way to pass info to and from gui's
 

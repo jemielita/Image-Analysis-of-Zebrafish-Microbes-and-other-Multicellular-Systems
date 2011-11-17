@@ -40,6 +40,9 @@ for regNum=1:totalNumRegions
     regLoc(regNum,:) = (1.0/param.micronPerPixel)*0.1*regLoc(regNum,:);
 end
 
+%Round the result
+regLoc = round(regLoc);
+
 %Rescale the pixel range so that the minimum x and y pixel location are
 %both 1.
 regLoc(:,1) = regLoc(:,1) - min(regLoc(:,1))+1;
@@ -58,5 +61,38 @@ regLoc(:,2) = regLoc(:,2) - min(regLoc(:,2))+1;
 % pixel extent Y,initial x pixel (on image), initial y pixel (on image)]
 
 param.regionExtent.XY = regLoc;
+
+%Also store the size of the registered image
+param.regionExtent.regImSize(1) = max(regLoc(:,3));
+param.regionExtent.regImSize(2) = max(regLoc(:,4));
+
+%And get the index location of all pixels that are in parts of the image
+%where regions overlap.
+
+im = ones(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
+
+regOverlap = [1:regNum-1 ; 2:regNum];
+overlap = cell(size(regOverlap,2),1);
+
+for regNum = 1:size(regOverlap,2)
+    im(:) = 0;
+    temp1 = im;
+    temp2 = im;
+    
+    reg1 = regOverlap(1,regNum);
+    reg2 = regOverlap(2,regNum);
+    
+    temp1(param.regionExtent.XY(reg1, 1):param.regionExtent.XY(reg1,3), ...
+        param.regionExtent.XY(reg1,2):param.regionExtent.XY(reg1,4)) = 1;
+    
+    temp2(param.regionExtent.XY(reg2, 1):param.regionExtent.XY(reg2,3), ...
+        param.regionExtent.XY(reg2,2):param.regionExtent.XY(reg2,4)) = 1;
+    im = temp1+temp2;
+    
+    overlap{regNum} = find(im==2);
+    
+end
+ 
+param.regionExtent.overlapIndex = overlap;
 
 end
