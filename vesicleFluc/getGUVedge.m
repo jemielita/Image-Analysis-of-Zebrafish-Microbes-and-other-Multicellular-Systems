@@ -105,7 +105,7 @@ if isempty(ctr)
     if (A2-A1) < 6
         disp('WARNING:  width to examine must be at least 6 pixels. ')
         disp('  Forcing: width = 6 px. (will pause 2 seconds)');
-        dR = [3 3];  % so that 5px parabolic fit works
+        dR = [3 3];  % so that 5px parabolic fit works 
         pause(2)
     end
 else

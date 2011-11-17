@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/personal/!svn/ver/119/jemielita/Day2/edge
+END
+canny.asv
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/personal/!svn/ver/99/jemielita/Day2/edge/canny.asv
+END
+canny.m
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/personal/!svn/ver/99/jemielita/Day2/edge/canny.m
+END
+gaussGrad.m
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/personal/!svn/ver/67/jemielita/Day2/edge/gaussGrad.m
+END
+hysThreshold.m
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/personal/!svn/ver/119/jemielita/Day2/edge/hysThreshold.m
+END
+nonMaximumSuppression.m
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/personal/!svn/ver/119/jemielita/Day2/edge/nonMaximumSuppression.m
+END

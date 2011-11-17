@@ -1,0 +1,16 @@
+%Implements the Canny filter
+
+function edgeIm = canny(im, kernelSigma)
+
+%First compute the gradient of the image
+[gradImage, thetaImage] = gausGrad(im, 7*kernelSize, kernelSigma);
+
+%Then surpess non-local maximum
+[localMax] = nonMaximumSuppression(gradImage, thetaImage);
+
+%Then clean up edges beyond the hysteresis threshold
+highThresh = 1.5*graythresh
+hIm = hysThreshold(localMax, highThresh, 
+
+
+end
