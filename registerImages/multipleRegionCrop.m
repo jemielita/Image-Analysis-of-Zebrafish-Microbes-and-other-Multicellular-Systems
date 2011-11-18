@@ -1,10 +1,16 @@
 
-function [param, data] = multipleRegionCrop(param, data)
+function [param, data] = multipleRegionCrop(paramIn, dataIn)
 
 global param
+param = paramIn;
 global data
+data  = dataIn;
+
+%Manually outline regions that should be cropped.
 multipleRegionCropGUI();
 
+%Find the cropped regions that this corresponds to.
+param = calcCropRegion(param);
 
 end
 
@@ -45,6 +51,8 @@ maxColor = numColor;
 colorType = [param.color];
 colorNum = 1;
 
+%%%number of regions
+totalNumRegions = length(unique([param.expData.Scan.region]));
 
 %%%%%%%%%%%%%%%%
 % The GUI window
@@ -92,6 +100,22 @@ hColorSlider = uicontrol('Parent', hManipPanel,'Units', 'Normalized', 'Position'
     'Callback', @colorSlider_Callback);
 
 
+
+%Create a data table where the user can give the upper and upper bound (in
+%terms of the z level) for different regions.
+ cnames = {'Bottom', 'Top'};
+ rnames = cell(totalNumRegions,1);
+ for i=1:totalNumRegions
+    rnames{i} = i;
+end
+
+dataTable = param.regionExtent.crop.z;
+
+hRegTable = uitable('Parent', fGui,...
+'Data', dataTable, 'ColumnName', cnames,...
+   'RowName', rnames, 'Units', 'Normalized', 'Position', [ 0.36 0.02 0.1 0.19],...
+   'ColumnEditable', true);
+set(hRegTable, 'CellEditCallback', @table_Callback);
 %%%%%%%%%%%
 % GUI Setup
 %%%%%%%%%%%
@@ -113,6 +137,70 @@ hIm = imshow(im, [],'Parent', imageRegion);
 hContrast = imcontrast(imageRegion);
 
 
+
+%%% Draw rectangles on the image, showing the boundary of the different
+%%% regions that we're analyzing.
+cMap = rand(totalNumRegions,3);
+
+for numReg = 1:totalNumRegions
+    x = param.regionExtent.XY(numReg, 2);
+    y = param.regionExtent.XY(numReg, 1);
+    width = param.regionExtent.XY(numReg, 4)-x+1;
+    height = param.regionExtent.XY(numReg,3) -y +1;
+    h = rectangle('Position', [x y width height] );
+    set(h, 'EdgeColor', cMap(numReg,:));
+    set(h, 'LineWidth', 2);
+    pause(0.25)
+end
+
+
+%Create a number of rectangles equal to the number of regions in the
+%registered image. These will be resizable and will allow the user a way to
+%outline the regions that should be kept.
+for numReg = 1:totalNumRegions
+    imrect(imageRegion);
+end
+%After these rectangles have been placed down, find the handles to these
+%rectangles.
+hRect = findobj('Tag', 'imrect');
+
+if(length(hRect)~=totalNumRegions)
+    disp('The total number of rectangles does not match the number of regions!');
+end
+
+%Get the application programmer interface (whatever that means) for this
+%handle (allows us to get position measurements more easily)
+
+for numReg=1:totalNumRegions
+    api(numReg) = iptgetapi(hRect(numReg));
+    %For each of these api's add a callback function that updates a stored
+    %array of all the positions
+end
+
+%Adding in a timer that will every second look for the position of these
+%rectangles and update an array with them in it.
+%Clumsy, but accessing this array of positions is somewhat difficult
+%otherwise.
+t = timer('TimerFcn',@getPositionTime_Callback, 'Period', 1);
+set(t, 'ExecutionMode', 'fixedRate');
+start(t);
+
+%%%%%%%%%%%%%%%%%%%%%% Callback Functions
+    function table_Callback(hObject,eventData)
+       tableData = get(hRegTable, 'Data');
+       param.regionExtent.crop.z = tableData;
+    end
+
+    function getPositionTime_Callback(hObject, eventData)
+       b = 0;
+       cropRegion = zeros(totalNumRegions,4);
+       for numReg=1:totalNumRegions
+          cropRegion(numReg, :) = api(numReg).getPosition(); 
+       end
+           
+       param.regionExtent.crop.XY = cropRegion;
+       
+    end
     function colorSlider_Callback(hObject, eventData)
         colorNum = get(hColorSlider, 'Value');
         colorNum = ceil(colorNum);
@@ -160,5 +248,22 @@ hContrast = imcontrast(imageRegion);
         %Update the previous examined Z slice
         zLast = zNum;
     end
+
+
+end
+
+
+function param = calcCropRegion(param)
+
+%Clumsy, but transparent way to do this.
+
+%Make a mask equal to the size of the total, registered image
+im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
+
+%Create a mask that corresponds to each sub image that makes up this total
+%registered image and also in turn to each cropped region. Find the pixels
+%that overlap and get a range from this.
+
+
 
 end

@@ -62,6 +62,24 @@ for regNum=1:totalNumRegions
     end
 end
 
+%Check to see if any rows contain just -1's. If so remove them (happens at the end sometimes.
+index = [];
+
+notRegion = sum(overlapReg');
+index = find(notRegion==-1*totalNumRegions);
+overlapReg(index,:) = [];
 param.regionExtent.Z = overlapReg;
 
+%Load in the range of z levels for each scan into an array-this will later
+%be pruned down by the user.
+rangeZ = zeros(totalNumRegions,2);
+
+for numReg = 1:totalNumRegions
+    minZ = find( overlapReg(:,numReg) ==0);
+    maxZ = find(overlapReg(:,numReg) ==max(overlapReg(:,numReg)));
+
+    rangeZ(numReg, 1) = minZ;
+    rangeZ(numReg,2) = maxZ;
 end
+
+  param.regionExtent.crop.z= rangeZ;
