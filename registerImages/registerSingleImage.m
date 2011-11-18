@@ -56,7 +56,6 @@ function im = registerSingleImage(nScan,colorType,zNum,im,data,param)
          if(regNum>1 && imNum(regNum-1)>=0 &&imNum(regNum)>=0)
              im(param.regionExtent.overlapIndex{regNum-1} )= ...
                  0.5*im(param.regionExtent.overlapIndex{regNum-1});
-            imNum
          end
         
     end

@@ -61,12 +61,13 @@ param.expData = param.expData.parameters;%Only pull out the parameters, not the 
 %% Going through the images, and overlapping the images as needed.
 param.registerRegion = 'all';
 registerImagesScan(data,param);
-%% Outlining the extent of the gut by hand
-global polyPosition; %Poor form, but global variables are the easiest way to pass info to and from gui's
 
+%% Cropping the regions to the desired size
+[param, data] = multipleRegionCrop(param,data);
+
+%% Outlining the extent of the gut by hand
 gutOutline(imAll, param,data);
 
- 
 %% Saving the result to param
 param.polyPosition = polyPosition;
 
