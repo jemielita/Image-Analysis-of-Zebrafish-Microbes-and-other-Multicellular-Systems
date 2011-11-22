@@ -66,11 +66,12 @@ param.regionExtentOrig = param.regionExtent;
 param.registerRegion = 'all';
 registerImagesScan(data,param);
 
-%% Cropping the regions to the desired size
+%% Open an interactive GUI to crop the images to the desired size
 [param, data] = multipleRegionCrop(param,data);
 
-[data,param] = registerImagesXYData('crop', data,param);
 
+%% C
+[data,param] = registerImagesXYData('crop', data,param);
 
 %% Outlining the extent of the gut by hand
 gutOutline(imAll, param,data);

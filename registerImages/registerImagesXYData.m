@@ -82,24 +82,42 @@ for regNum=1:totalNumRegions
    regLoc(regNum,2) = max(param.regionExtent.crop.XY(regNum,1),...
        param.regionExtent.XY(regNum,2));
    
-   regLoc(regNum,3) = min(regLoc(regNum,1) + param.regionExtent.crop.XY(regNum,4),...
-       param.imSize(1));
-   regLoc(regNum,4) = min(regLoc(regNum,2) + param.regionExtent.crop.XY(regNum,3),...
-       param.imSize(2));
    
-   regLoc(regNum, 5) = param.regionExtent.XY(regNum,5) ...
-       + param.regionExtent.crop.XY(regNum,2) -param.regionExtent.XY(regNum,1);
-   regLoc(regNum,6) = param.regionExtent.XY(regNum,6)...
-       + param.regionExtent.crop.XY(regNum,1) - param.regionExtent.XY(regNum,2);
+   %regLoc(regNum,3) = min(regLoc(regNum,1) + param.regionExtent.crop.XY(regNum,4),...
+    %   param.imSize(1));
+   %regLoc(regNum,4) = min(regLoc(regNum,2) + param.regionExtent.crop.XY(regNum,3),...
+   %    param.imSize(2));
    
+ %  regLoc(regNum, 5) = param.regionExtent.XY(regNum,5) ...
+  %     + param.regionExtent.crop.XY(regNum,2) -param.regionExtent.XY(regNum,1);
+  % regLoc(regNum,6) = param.regionExtent.XY(regNum,6)...
+  %     + param.regionExtent.crop.XY(regNum,1) - param.regionExtent.XY(regNum,2);
+   
+   regLoc(regNum, 5) = max(1,...
+       param.regionExtent.crop.XY(regNum,2)-regLoc(regNum,1));
+   regLoc(regNum,6) = max(1,...
+       param.regionExtent.crop.XY(regNum,1) - regLoc(regNum,2));
+   
+   regLoc(regNum,3) = min(1+param.imSize(1)-regLoc(regNum,5), ...
+       param.regionExtent.crop.XY(regNum,4));
+   regLoc(regNum,4) = min(1+param.imSize(2)- regLoc(regNum,6),...
+       param.regionExtent.crop.XY(regNum,3));
    
 end
+
+
+
+%Rescale the pixel range so that the minimum x and y pixel location are
+%both 1.
+regLoc(:,1) = regLoc(:,1) - min(regLoc(:,1))+1;
+regLoc(:,2) = regLoc(:,2) - min(regLoc(:,2))+1;
+
 
 param.regionExtent.XY = regLoc;
 
 %Also store the size of the registered image
-param.regionExtent.regImSize(1) = max(regLoc(:,3)+regLoc(:,1)-1);
-param.regionExtent.regImSize(2) = max(regLoc(:,4)+regLoc(:,2)-1);
+param.regionExtent.regImSize(1) = max(regLoc(:,1) +regLoc(:,3)-1);
+param.regionExtent.regImSize(2) = max(regLoc(:,2) +regLoc(:,4)-1);
 
 
 end
@@ -134,8 +152,8 @@ regLoc(:,2) = regLoc(:,2) - min(regLoc(:,2))+1;
 
 % 
 % %Get the range of pixels for each of these regions.
- regLoc(:,3) = regLoc(:,1) + param.imSize(1)-1; %image length in pixels
- regLoc(:,4) = regLoc(:,2) + param.imSize(2)-1; %image width in pixels.
+ regLoc(:,3) =  param.imSize(1); %image length in pixels
+ regLoc(:,4) =  param.imSize(2); %image width in pixels.
 
  regLoc(:,5:6) = 1;
  
@@ -145,9 +163,11 @@ regLoc(:,2) = regLoc(:,2) - min(regLoc(:,2))+1;
 % pixel extent Y,initial x pixel (on image), initial y pixel (on image)]
 
 
+
 %Also store the size of the registered image
-param.regionExtent.regImSize(1) = max(regLoc(:,3));
-param.regionExtent.regImSize(2) = max(regLoc(:,4));
+param.regionExtent.regImSize(1) = max(regLoc(:,1) +regLoc(:,3)-1);
+param.regionExtent.regImSize(2) = max(regLoc(:,2) +regLoc(:,4)-1);
+
 
 param.regionExtent.XY = regLoc;
 end

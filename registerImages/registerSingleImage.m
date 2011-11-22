@@ -19,6 +19,9 @@ function im = registerSingleImage(nScan,colorType,zNum,im,data,param)
     
     %Filling the input image with zeros, to be safe.
     im(:) = 0;
+    
+    imIn = ones(2160,2560);
+    
     im = uint16(im); %To match the input type of the images.
     for regNum=1:totalNumRegions
         
@@ -41,9 +44,11 @@ function im = registerSingleImage(nScan,colorType,zNum,im,data,param)
                 strcat(scanDir,  'region_', num2str(regNum),filesep,...
                 colorType, filesep,'pco', num2str(imNum(regNum)),'.tif');
             
-            im(xOutI:xOutF,yOutI:yOutF) = imread(imFileName,...
-                'PixelRegion', {[xInI xInF], [yInI yInF]}) + ...
-                         im(xOutI:xOutF,yOutI:yOutF);
+%            im(xOutI:xOutF,yOutI:yOutF) = imread(imFileName,...
+ %               'PixelRegion', {[xInI xInF], [yInI yInF]}) + ...
+  %                       im(xOutI:xOutF,yOutI:yOutF);
+                     
+                     im(xOutI:xOutF,yOutI:yOutF) = imIn(xInI:xInF, yInI:yInF);
         end
           
         %Overlapping the regions

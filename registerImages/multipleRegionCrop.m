@@ -12,7 +12,6 @@ multipleRegionCropGUI();
 %Find the cropped regions that this corresponds to.
 %param = calcCropRegion(param);
 
- b= 0;
  
 % calcCroppedRegion(param);
  
@@ -58,6 +57,13 @@ colorNum = 1;
 %%%number of regions
 totalNumRegions = length(unique([param.expData.Scan.region]));
 
+
+%%%%api handle
+hApi = '';
+
+%Color map for bounding rectangles and cropping rectangles
+cMap = rand(totalNumRegions,3);
+
 %%%%%%%%%%%%%%%%
 % The GUI window
 fGui = figure('Name', 'Play the Outline the Gut Game!', 'Menubar', 'none', 'Tag', 'fGui',...
@@ -67,6 +73,23 @@ fGui = figure('Name', 'Play the Outline the Gut Game!', 'Menubar', 'none', 'Tag'
 % AXES to DISPLAY IMAGES
 
 
+
+%%%%%%%%%%Create the menu pull downs
+hMenuCrop = uimenu('Label','Crop Images');
+
+uimenu(hMenuCrop,'Label','Create cropping boxes','Callback',@createCropBox_Callback);
+uimenu(hMenuCrop, 'Label', 'Crop the images', 'Callback', @cropImages_Callback);
+uimenu(hMenuCrop, 'Label', 'Restore original image', 'Callback', @restoreImages_Callback);
+
+
+hMenuOutline = uimenu('Label', 'Outline region');
+uimenu(hMenuOutline,'Label','Freehand polygon outline','Callback',@createFreeHandPoly_Callback);
+uimenu(hMenuOutline, 'Label', 'Apply initial guess', 'Callback', @createGuessPoly_Callback);
+uimenu(hMenuOutline,'Label','Create cropping boxes','Callback',@savePoly_Callback);
+uimenu(hMenuOutline,'Label','Clear outline ','Callback',@clearPoly_Callback);
+
+
+%%%%%%Create the displayed control panels
 imageRegion = axes('Tag', 'imageRegion', 'Position', [0.01, .18, .98, .8], 'Visible', 'on',...
     'XTick', [], 'YTick', [], 'DrawMode', 'fast');
 
@@ -79,10 +102,10 @@ dist = 0.3; %Spacing between slider bars
 hZText = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Position', [0.05 0.8 0.1 0.15],...
     'Style', 'text', 'String', 'Z Depth');
 hZTextEdit = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Position', [0.17 0.8 0.1 0.15],...
-    'Style', 'text', 'String', zMin);
+    'Style', 'edit', 'Tag', 'zedit', 'String', zMin, 'Callback', @z_Callback);
 hZSlider = uicontrol('Parent', hManipPanel,'Units', 'Normalized', 'Position', [0.3 0.86 0.65 0.1],...
-    'Style', 'slider', 'Min', zMin, 'Max', zMax, 'SliderStep', [zStepSmall zStepBig], 'Value', 1,...
-    'Callback', @zSlider_Callback);
+    'Style', 'slider', 'Min', zMin, 'Max', zMax, 'SliderStep', [zStepSmall zStepBig], 'Value', 1, 'Tag', 'zslider',...
+    'Callback', @z_Callback);
 
 hScanText = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Position', [0.05 0.8-dist 0.1 0.15],...
     'Style', 'text', 'String', 'Scan Number');
@@ -140,92 +163,128 @@ im = registerSingleImage(scanNum,color, zNum,im, data,param);
 hIm = imshow(im, [],'Parent', imageRegion);
 hContrast = imcontrast(imageRegion);
 
+outlineRegions(); %Outline the different regions that make up the composite region.
 
-
-%%% Draw rectangles on the image, showing the boundary of the different
-%%% regions that we're analyzing.
-cMap = rand(totalNumRegions,3);
-
-
-for numReg = 1:totalNumRegions
-    x = param.regionExtent.XY(numReg, 2);
-    y = param.regionExtent.XY(numReg, 1);
-    width = param.regionExtent.XY(numReg, 4);
-    height = param.regionExtent.XY(numReg,3);
-    h = rectangle('Position', [x y width height] );
-    set(h, 'EdgeColor', cMap(numReg,:));
-    set(h, 'LineWidth', 2);
-    
-    pause(0.25)
-end
-
-
-%Create a number of rectangles equal to the number of regions in the
-%registered image. These will be resizable and will allow the user a way to
-%outline the regions that should be kept.
-
-%Get the initial handles to rectangle images (in case some other windows
-%were open.
-hRectLast = findobj('Tag', 'imrect');
-
-for numReg = 1:totalNumRegions
-    h = imrect(imageRegion);
-    
-    %Set the color of the rectangle. Need to do this using the api
-    %interface. Color will be set to the same color as the region that this
-    %cropping rectangle is associated with.
-    hApi = iptgetapi(h);  
-    hApi.setColor(cMap(numReg,:));
-    
-    hThisRect = findobj('Tag', 'imrect');
-    
-    hRect(numReg) = setdiff(hThisRect, hRectLast);
-    hRectLast = hThisRect; %Update handles to other rectangles.
-    
-    
-end
-%After these rectangles have been placed down, find the handles to these
-%rectangles.
-% hRect = findobj('Tag', 'imrect');
-% 
-% if(length(hRect)~=totalNumRegions)
-%     disp('The total number of rectangles does not match the number of regions!');
-% end
-
-%Get the application programmer interface (whatever that means) for this
-%handle (allows us to get position measurements more easily)
-
-for numReg=1:totalNumRegions
-    api(numReg) = iptgetapi(hRect(numReg));
-    %For each of these api's add a callback function that updates a stored
-    %array of all the positions
-end
-
-%Adding in a timer that will every second look for the position of these
-%rectangles and update an array with them in it.
-%Clumsy, but accessing this array of positions is somewhat difficult
-%otherwise.
-t = timer('TimerFcn',@getPositionTime_Callback, 'Period', 1);
-set(t, 'ExecutionMode', 'fixedRate');
-start(t);
 
 %%%%%%%%%%%%%%%%%%%%%% Callback Functions
+
+
+%%%%% Drop down menu callback
+
+    function outlineRegions(hObject, eventdata)
+        
+        %%% Draw rectangles on the image, showing the boundary of the different
+        %%% regions that we're analyzing.
+        
+        for numReg = 1:totalNumRegions
+            x = param.regionExtent.XY(numReg, 2);
+            y = param.regionExtent.XY(numReg, 1);
+            width = param.regionExtent.XY(numReg, 4);
+            height = param.regionExtent.XY(numReg,3);
+            h = rectangle('Position', [x y width height] );
+            set(h, 'EdgeColor', cMap(numReg,:));
+            set(h, 'LineWidth', 2);
+            
+            pause(0.25)
+        end
+    end
+
+    function createCropBox_Callback(hObject, eventdata)
+        
+        %Create a number of rectangles equal to the number of regions in the
+        %registered image. These will be resizable and will allow the user a way to
+        %outline the regions that should be kept.
+        
+        %Get the initial handles to rectangle images (in case some other windows
+        %were open.
+        hRectLast = findobj('Tag', 'imrect');
+        
+        for numReg = 1:totalNumRegions
+            h = imrect(imageRegion);
+            
+            %Set the color of the rectangle. Need to do this using the api
+            %interface. Color will be set to the same color as the region that this
+            %cropping rectangle is associated with.
+            hApi = iptgetapi(h);
+            hApi.setColor(cMap(numReg,:));
+            
+            hThisRect = findobj('Tag', 'imrect');
+            
+            hRect(numReg) = setdiff(hThisRect, hRectLast);
+            hRectLast = hThisRect; %Update handles to other rectangles.
+            
+            
+        end
+        %After these rectangles have been placed down, find the handles to these
+        %rectangles.
+        %Get the application programmer interface (whatever that means) for this
+        %handle (allows us to get position measurements more easily)
+        
+        for numReg=1:totalNumRegions
+            apiTemp(numReg) = iptgetapi(hRect(numReg));
+            %For each of these api's add a callback function that updates a stored
+            %array of all the positions
+        end
+        hApi = apiTemp;
+        
+    end
+
+    function cropImages_Callback(hObject, eventdata)
+
+        
+        %Updating the position of the cropping rectangles
+        cropRegion = zeros(totalNumRegions,4);
+        for numReg=1:totalNumRegions
+           
+            cropRegion(numReg, :) = hApi(numReg).getPosition();
+        end
+        cropRegion = round(cropRegion);
+        
+        param.regionExtent.crop.XY = cropRegion;
+        
+        %Cropping the image
+        [data,param] = registerImagesXYData('crop', data,param);
+        
+        
+        %Remove the cropping rectangles.
+        hRect = findobj('Tag', 'imrect');
+        delete(hRect);
+        im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
+        color = colorType(colorNum);
+        color = color{1};
+        im = registerSingleImage(scanNum,color, zNum,im, data,param);
+        
+        hIm = imshow(im, [],'Parent', imageRegion);
+        outlineRegions();
+        
+    end
+
+    function restoreImages_Callback(hObject, eventdata)
+        
+        %Remove the cropping rectangles.
+        hRect = findobj('Tag', 'imrect');
+        delete(hRect);
+        
+        %Cropping the image
+        [data,param] = registerImagesXYData('original', data,param);
+        
+        im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
+        color = colorType(colorNum);
+        color = color{1};
+        im = registerSingleImage(scanNum,color, zNum,im, data,param);
+        
+        hIm = imshow(im, [],'Parent', imageRegion);
+        outlineRegions();
+    end
+
+
+
+
     function table_Callback(hObject,eventData)
        tableData = get(hRegTable, 'Data');
        param.regionExtent.crop.z = tableData;
     end
 
-    function getPositionTime_Callback(hObject, eventData)
-       b = 0;
-       cropRegion = zeros(totalNumRegions,4);
-       for numReg=1:totalNumRegions
-          cropRegion(numReg, :) = api(numReg).getPosition(); 
-       end
-           cropRegion = round(cropRegion);
-           
-       param.regionExtent.crop.XY = cropRegion;
-       
-    end
     function colorSlider_Callback(hObject, eventData)
         colorNum = get(hColorSlider, 'Value');
         colorNum = ceil(colorNum);
@@ -257,13 +316,25 @@ start(t);
         im = registerSingleImage(scanNum,color, zNum,im, data,param);
         set(hIm, 'CData', im);
     end
-    function zSlider_Callback(hObject, eventData)
-        zNum = get(hZSlider, 'Value');
-        zNum = ceil(zNum);
-        zNum = int16(zNum);
+    function z_Callback(hObject, eventData)
         
-        %Update the displayed z level.
-        set(hZTextEdit, 'String', zNum);
+        zTag = get(hObject, 'tag');
+        
+        switch zTag
+            case 'zslider'
+                zNum = get(hZSlider, 'Value');
+                zNum = ceil(zNum);
+                zNum = int16(zNum);
+                
+                %Update the displayed z level.
+                set(hZTextEdit, 'String', zNum);
+            case 'zedit'
+                zNum = get(hZTextEdit, 'string');
+                zNum = num2str(zNum);
+                zNum = ceil(zNum);
+                zNum = int16(zNum);
+                zNum = set(hZSlider, 'Value');
+        end
         
         color = colorType(colorNum);
         color = color{1};
@@ -275,6 +346,36 @@ start(t);
     end
 
 
+%Callbacks for the polygon outlining of the gut
+
+    function createFreeHandPoly_Callback(hObject, eventdata)
+        %Start drawing the boundaries!
+        hPoly = impoly('Closed');
+        
+        
+        b= 0;
+        
+        
+    end
+
+
+    function createGuessPoly_Callback(hObject, eventdata)
+        
+    end
+
+
+    function savePoly_Callback(hObject, eventdata)
+        
+    end
+
+
+    function clearPoly_Callback(hObject, eventdata)
+        
+         b= 0;
+         g
+    end
+        
+       
 end
 
 
@@ -313,8 +414,8 @@ for regNum =1:totalNumRegions
            yOutF = yOutI + cropXY(cropNum,4);
            
            imCropRect(xOutI:xOutF, yOutI:yOutF) = 1;
-            
-            imshow(imCropRect);
+           
+           imshow(imCropRect);
            
         end
         
