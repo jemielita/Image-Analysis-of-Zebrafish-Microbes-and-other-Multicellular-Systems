@@ -12,15 +12,16 @@
 %addpath(genpath('~/Documents/code/'))
 
 %On lsm control computer
-addpath(genpath('C:\code'));
+%addpath(genpath('C:\code'));
+addpath(genpath('~/Documents/code'));
 param.micronPerPixel = 0.1625; %For the 40X objective.
 param.imSize = [2160 2560];
 
 %% Listing the scans to be taken
 
 %Give the master directory for all the scans
-param.directoryName = 'F:\Nov_9_Aeromonas\Flask_A_wtGFP_DeltaPgmDTomato\Fish_2';
-%param.directoryName = '/Volumes/big/guts/Data/Nov_9_Aeromonas/Flask_A_wtGFP_DeltaPgmDTomato/Fish_1';
+%param.directoryName = 'F:\Nov_9_Aeromonas\Flask_A_wtGFP_DeltaPgmDTomato\Fish_2';
+param.directoryName = '/Volumes/big-2/guts/Data/Nov_9_Aeromonas/Flask_A_wtGFP_DeltaPgmDTomato/Fish_1';
 
 %Give the range of scans to be analyzed. If the variable scans is set to
 %'all' then all the scans in this folder will be analyzed. If not scans
@@ -53,10 +54,13 @@ param.expData = param.expData.parameters;%Only pull out the parameters, not the 
 
 
 %% Calculate the overlap between different regions
-[data,param] = registerImagesXYData(data,param);
+[data,param] = registerImagesXYData('original', data,param);
 
 [data,param] = registerImagesZData(data,param);
 
+%Store the result in a backup structure, since .regionExtent will be
+%modified by cropping.
+param.regionExtentOrig = param.regionExtent;
 
 %% Going through the images, and overlapping the images as needed.
 param.registerRegion = 'all';
@@ -64,6 +68,9 @@ registerImagesScan(data,param);
 
 %% Cropping the regions to the desired size
 [param, data] = multipleRegionCrop(param,data);
+
+[data,param] = registerImagesXYData('crop', data,param);
+
 
 %% Outlining the extent of the gut by hand
 gutOutline(imAll, param,data);

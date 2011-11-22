@@ -24,16 +24,16 @@ function im = registerSingleImage(nScan,colorType,zNum,im,data,param)
         
         %Get the range of pixels that we will read from and read out to.
         xOutI = param.regionExtent.XY(regNum,1);
-        xOutF = param.regionExtent.XY(regNum,3);
+        xOutF = param.regionExtent.XY(regNum,3)+xOutI-1;
         
         yOutI = param.regionExtent.XY(regNum,2);
-        yOutF = param.regionExtent.XY(regNum,4);
+        yOutF = param.regionExtent.XY(regNum,4)+yOutI -1;
         
         xInI = param.regionExtent.XY(regNum,5);
-        xInF = xOutF - xOutI +1;
+        xInF = xOutF - xOutI +xInI;
         
         yInI = param.regionExtent.XY(regNum,6);
-        yInF = yOutF - yOutI +1;
+        yInF = yOutF - yOutI +yInI;
         
         
         if(imNum(regNum)~=-1)

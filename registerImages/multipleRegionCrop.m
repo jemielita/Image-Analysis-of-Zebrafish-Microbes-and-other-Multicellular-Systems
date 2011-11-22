@@ -10,8 +10,12 @@ data  = dataIn;
 multipleRegionCropGUI();
 
 %Find the cropped regions that this corresponds to.
-param = calcCropRegion(param);
+%param = calcCropRegion(param);
 
+ b= 0;
+ 
+% calcCroppedRegion(param);
+ 
 end
 
 %GUI to manipulate cropped regions.
@@ -142,14 +146,16 @@ hContrast = imcontrast(imageRegion);
 %%% regions that we're analyzing.
 cMap = rand(totalNumRegions,3);
 
+
 for numReg = 1:totalNumRegions
     x = param.regionExtent.XY(numReg, 2);
     y = param.regionExtent.XY(numReg, 1);
-    width = param.regionExtent.XY(numReg, 4)-x+1;
-    height = param.regionExtent.XY(numReg,3) -y +1;
+    width = param.regionExtent.XY(numReg, 4);
+    height = param.regionExtent.XY(numReg,3);
     h = rectangle('Position', [x y width height] );
     set(h, 'EdgeColor', cMap(numReg,:));
     set(h, 'LineWidth', 2);
+    
     pause(0.25)
 end
 
@@ -157,16 +163,34 @@ end
 %Create a number of rectangles equal to the number of regions in the
 %registered image. These will be resizable and will allow the user a way to
 %outline the regions that should be kept.
+
+%Get the initial handles to rectangle images (in case some other windows
+%were open.
+hRectLast = findobj('Tag', 'imrect');
+
 for numReg = 1:totalNumRegions
-    imrect(imageRegion);
+    h = imrect(imageRegion);
+    
+    %Set the color of the rectangle. Need to do this using the api
+    %interface. Color will be set to the same color as the region that this
+    %cropping rectangle is associated with.
+    hApi = iptgetapi(h);  
+    hApi.setColor(cMap(numReg,:));
+    
+    hThisRect = findobj('Tag', 'imrect');
+    
+    hRect(numReg) = setdiff(hThisRect, hRectLast);
+    hRectLast = hThisRect; %Update handles to other rectangles.
+    
+    
 end
 %After these rectangles have been placed down, find the handles to these
 %rectangles.
-hRect = findobj('Tag', 'imrect');
-
-if(length(hRect)~=totalNumRegions)
-    disp('The total number of rectangles does not match the number of regions!');
-end
+% hRect = findobj('Tag', 'imrect');
+% 
+% if(length(hRect)~=totalNumRegions)
+%     disp('The total number of rectangles does not match the number of regions!');
+% end
 
 %Get the application programmer interface (whatever that means) for this
 %handle (allows us to get position measurements more easily)
@@ -197,6 +221,7 @@ start(t);
        for numReg=1:totalNumRegions
           cropRegion(numReg, :) = api(numReg).getPosition(); 
        end
+           cropRegion = round(cropRegion);
            
        param.regionExtent.crop.XY = cropRegion;
        
@@ -253,17 +278,57 @@ start(t);
 end
 
 
-function param = calcCropRegion(param)
 
-%Clumsy, but transparent way to do this.
+function param = calcCroppedRegion(param)
 
-%Make a mask equal to the size of the total, registered image
-im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
+%Make a mask the size of the total registered image
 
-%Create a mask that corresponds to each sub image that makes up this total
-%registered image and also in turn to each cropped region. Find the pixels
-%that overlap and get a range from this.
+im = zeros(param.regionExtent.regImSize);
+imCropRect = im;
 
+totalNumRegions = length(unique([param.expData.Scan.region]));
+
+sizeOverlap = zeros(totalNumRegions);
+
+for regNum =1:totalNumRegions
+        im(:) = 0;
+        imCropRect(:) = 0;
+        
+        %Get the range of pixels that we will read from and read out to.
+        xOutI = param.regionExtent.XY(regNum,1);
+        xOutF = param.regionExtent.XY(regNum,3);
+        
+        yOutI = param.regionExtent.XY(regNum,2);
+        yOutF = param.regionExtent.XY(regNum,4);
+        
+        im(xOutI:xOutF, yOutI:yOutF) = 1;
+        
+        cropXY = param.regionExtent.crop.XY;
+        
+        cropXY = round(cropXY); %Won't be necessary in a bit-will be written into GUI.
+        for cropNum=1:totalNumRegions
+           xOutI = cropXY(cropNum,1);
+           xOutF = xOutI + cropXY(cropNum,3);
+           yOutI = cropXY(cropNum,2);
+           yOutF = yOutI + cropXY(cropNum,4);
+           
+           imCropRect(xOutI:xOutF, yOutI:yOutF) = 1;
+            
+            imshow(imCropRect);
+           
+        end
+        
+        %Find the size of the overlap between these two regions. We will
+        %use the cropping rectangle that has the largest overlap between
+        %the region image and the cropping rectangle to crop that region. 
+        %Somewhat convoluted, but it makes it unnecessary for the user to
+        %keep track of some number on each rectangle.
+        imOverlap = imCropRect.*im;
+        sizeOverlap(cropNum,RegNum) = sum(imOverlap);
+        
+end
+
+%[cropIndex, temp]  = find(sizeOverlap
 
 
 end
