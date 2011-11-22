@@ -61,6 +61,9 @@ totalNumRegions = length(unique([param.expData.Scan.region]));
 %%%%api handle
 hApi = '';
 
+%%%%%handle to polygon
+hPoly = '';
+
 %Color map for bounding rectangles and cropping rectangles
 cMap = rand(totalNumRegions,3);
 
@@ -242,8 +245,12 @@ outlineRegions(); %Outline the different regions that make up the composite regi
         
         param.regionExtent.crop.XY = cropRegion;
         
-        %Cropping the image
+        %Cropping the image in the xy plane
         [data,param] = registerImagesXYData('crop', data,param);
+        
+        %Cropping the image stack in the z direction.
+        [data,param] = registerImagesZData('crop', data,param);
+        
         
         
         %Remove the cropping rectangles.
@@ -350,11 +357,7 @@ outlineRegions(); %Outline the different regions that make up the composite regi
 
     function createFreeHandPoly_Callback(hObject, eventdata)
         %Start drawing the boundaries!
-        hPoly = impoly('Closed');
-        
-        
-        b= 0;
-        
+        hPoly = impoly(imageRegion);   
         
     end
 
@@ -370,9 +373,7 @@ outlineRegions(); %Outline the different regions that make up the composite regi
 
 
     function clearPoly_Callback(hObject, eventdata)
-        
-         b= 0;
-         g
+       delete(hPoly); %Delete the displayed polygon. 
     end
         
        

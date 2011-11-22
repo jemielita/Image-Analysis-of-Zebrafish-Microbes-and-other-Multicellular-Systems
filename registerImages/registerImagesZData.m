@@ -6,7 +6,56 @@
 %       step size. Each row contains the image number in each region that
 %       is at that particular z depth. If no image in that region was found
 %       at that z depth, the entry will be equal to -1.
-function [data, param] = registerImagesZData(data,param)
+function [data, param] = registerImagesZData(type, data,param)
+
+switch lower(type)
+    case 'original'
+        param = registerOriginalImage(param);
+    case 'crop'
+        param = registerCroppedImage(param);
+end
+
+
+end
+
+function param = registerCroppedImage(param)
+ zCropRange = param.regionExtent.crop.z;
+ 
+ zRange = param.regionExtentOrig.Z;
+ zOldCropRange = param.regionExtentOrig.crop.z;
+ 
+ zDepth = size(zRange,1);
+ 
+ totalNumRegions = length(unique([param.expData.Scan.region]));
+ 
+ for numReg = 1:totalNumRegions
+     zMin = max(zOldCropRange(numReg,1), zCropRange(numReg,1));
+     zMax = min(zOldCropRange(numReg,2), zCropRange(numReg,2));
+     
+     if(zMin>1)
+     zRange(1:zMin-1, numReg) = -1;
+     end
+     
+     if(zMax<zDepth)
+     zRange(zMax+1:zDepth, numReg) = -1;
+     end
+     
+     
+     %Update the cropping box
+     
+     zCropRange(numReg,1) = zMin;
+     zCropRange(numReg,2) = zMax;
+ end
+ 
+ param.regionExtent.Z = zRange;
+ param.regionExtent.crop.z = zCropRange;
+ 
+
+end
+
+    
+    
+function param = registerOriginalImage(param)
 
 %Get the maximum and minimum z value.
 %Note: the camera control software always makes sure that .zBegin < .zEnd,
@@ -83,3 +132,8 @@ for numReg = 1:totalNumRegions
 end
 
   param.regionExtent.crop.z= rangeZ;
+  
+end
+
+
+   

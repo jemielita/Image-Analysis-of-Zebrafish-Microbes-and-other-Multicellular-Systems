@@ -21,7 +21,7 @@ param.imSize = [2160 2560];
 
 %Give the master directory for all the scans
 %param.directoryName = 'F:\Nov_9_Aeromonas\Flask_A_wtGFP_DeltaPgmDTomato\Fish_2';
-param.directoryName = '/Volumes/big-2/guts/Data/Nov_9_Aeromonas/Flask_A_wtGFP_DeltaPgmDTomato/Fish_1';
+param.directoryName = '/Volumes/big-2/guts/Data/Nov_9_Aeromonas/Flask_A_wtGFP_DeltaPgmDTomato/Fish_2';
 
 %Give the range of scans to be analyzed. If the variable scans is set to
 %'all' then all the scans in this folder will be analyzed. If not scans
@@ -56,7 +56,7 @@ param.expData = param.expData.parameters;%Only pull out the parameters, not the 
 %% Calculate the overlap between different regions
 [data,param] = registerImagesXYData('original', data,param);
 
-[data,param] = registerImagesZData(data,param);
+[data,param] = registerImagesZData('original', data,param);
 
 %Store the result in a backup structure, since .regionExtent will be
 %modified by cropping.
@@ -99,5 +99,5 @@ save('data.mat', 'data');
 
 
 
-
+ [data, param] = registerImagesZData('crop', data,param)
 
