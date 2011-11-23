@@ -70,9 +70,10 @@ registerImagesScan(data,param);
 global param; %Clumsy, but it's the easiest way to pass information to and from a GUI in matlab
 multipleRegionCrop(param,data);
 
+%% Calculate the 
 
 %% C
-[data,param] = registerImagesXYData('crop', data,param);
+[data,param] = registerImagesZData('crop', data,param);
 
 %% Outlining the extent of the gut by hand
 gutOutline(imAll, param,data);
