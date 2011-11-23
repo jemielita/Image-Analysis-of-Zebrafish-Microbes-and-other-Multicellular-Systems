@@ -47,9 +47,22 @@ function param = registerCroppedImage(param)
      zCropRange(numReg,2) = zMax;
  end
  
+  
+%Check to see if any rows contain just -1's. If so remove them-salient when cropping the z stack.
+index = [];
+
+notRegion = sum(zRange');
+index = find(notRegion==-1*totalNumRegions);
+zRange(index,:) = [];
+param.regionExtent.Z = zRange;
+
+
+
  param.regionExtent.Z = zRange;
  param.regionExtent.crop.z = zCropRange;
  
+
+
 
 end
 

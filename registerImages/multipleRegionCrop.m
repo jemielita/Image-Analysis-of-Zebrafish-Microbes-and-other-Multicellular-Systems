@@ -1,24 +1,11 @@
 
-function [param, data] = multipleRegionCrop(paramIn, dataIn)
+function [] = multipleRegionCrop(paramIn, dataIn)
 
 global param
 param = paramIn;
 global data
 data  = dataIn;
 
-%Manually outline regions that should be cropped.
-multipleRegionCropGUI();
-
-%Find the cropped regions that this corresponds to.
-%param = calcCropRegion(param);
-
- 
-% calcCroppedRegion(param);
- 
-end
-
-%GUI to manipulate cropped regions.
-function [] = multipleRegionCropGUI()
 
 global param
 global data
@@ -87,10 +74,12 @@ uimenu(hMenuCrop, 'Label', 'Restore original image', 'Callback', @restoreImages_
 
 hMenuOutline = uimenu('Label', 'Outline region');
 uimenu(hMenuOutline,'Label','Freehand polygon outline','Callback',@createFreeHandPoly_Callback);
-uimenu(hMenuOutline, 'Label', 'Apply initial guess', 'Callback', @createGuessPoly_Callback);
-uimenu(hMenuOutline,'Label','Create cropping boxes','Callback',@savePoly_Callback);
+uimenu(hMenuOutline, 'Label', 'Load Outline', 'Callback', @loadPoly_Callback);
+uimenu(hMenuOutline,'Label','Save outline','Callback',@savePoly_Callback);
 uimenu(hMenuOutline,'Label','Clear outline ','Callback',@clearPoly_Callback);
 
+hMenuDisplay = uimenu('Label', 'Display');
+uimenu(hMenuDisplay, 'Label', 'Adjust image contrast', 'Callback', @adjustContrast_Callback);
 
 %%%%%%Create the displayed control panels
 imageRegion = axes('Tag', 'imageRegion', 'Position', [0.01, .18, .98, .8], 'Visible', 'on',...
@@ -159,21 +148,26 @@ set(fGui, 'Visible', 'on');
 
 %Show the bottom image in the stack
 im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
+
 color = colorType(colorNum);
 color = color{1};
 im = registerSingleImage(scanNum,color, zNum,im, data,param);
 
 hIm = imshow(im, [],'Parent', imageRegion);
-hContrast = imcontrast(imageRegion);
-
 outlineRegions(); %Outline the different regions that make up the composite region.
 
+%Handle to image contrast toolbar
+hContrast = imcontrast(imageRegion);
 
 %%%%%%%%%%%%%%%%%%%%%% Callback Functions
 
 
 %%%%% Drop down menu callback
-
+    function adjustContrast_Callback(hObject, eventdat)
+        if( ~ishandle(hContrast))
+            hContrast = imcontrast(imageRegion);
+        end
+    end
     function outlineRegions(hObject, eventdata)
         
         %%% Draw rectangles on the image, showing the boundary of the different
@@ -261,7 +255,8 @@ outlineRegions(); %Outline the different regions that make up the composite regi
         color = color{1};
         im = registerSingleImage(scanNum,color, zNum,im, data,param);
         
-        hIm = imshow(im, [],'Parent', imageRegion);
+
+        set(hIm, 'CData', im);
         outlineRegions();
         
     end
@@ -280,7 +275,8 @@ outlineRegions(); %Outline the different regions that make up the composite regi
         color = color{1};
         im = registerSingleImage(scanNum,color, zNum,im, data,param);
         
-        hIm = imshow(im, [],'Parent', imageRegion);
+        set(hIm, 'CData', im);
+
         outlineRegions();
     end
 
@@ -330,17 +326,16 @@ outlineRegions(); %Outline the different regions that make up the composite regi
         switch zTag
             case 'zslider'
                 zNum = get(hZSlider, 'Value');
-                zNum = ceil(zNum);
                 zNum = int16(zNum);
                 
                 %Update the displayed z level.
                 set(hZTextEdit, 'String', zNum);
             case 'zedit'
                 zNum = get(hZTextEdit, 'string');
-                zNum = num2str(zNum);
-                zNum = ceil(zNum);
+                zNum = str2double(zNum);
                 zNum = int16(zNum);
-                zNum = set(hZSlider, 'Value');
+                
+                set(hZSlider, 'Value',double(zNum));
         end
         
         color = colorType(colorNum);
@@ -362,13 +357,15 @@ outlineRegions(); %Outline the different regions that make up the composite regi
     end
 
 
-    function createGuessPoly_Callback(hObject, eventdata)
+    function loadPoly_Callback(hObject, eventdata)
+        hPoly = impoly(imageRegion, param.regionExtent.poly);
         
     end
 
 
     function savePoly_Callback(hObject, eventdata)
-        
+        hApi = iptgetapi(hPoly);
+        param.regionExtent.poly = hApi.getPosition();
     end
 
 

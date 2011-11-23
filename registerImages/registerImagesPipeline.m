@@ -12,16 +12,16 @@
 %addpath(genpath('~/Documents/code/'))
 
 %On lsm control computer
-%addpath(genpath('C:\code'));
-addpath(genpath('~/Documents/code'));
+addpath(genpath('C:\code'));
+%addpath(genpath('~/Documents/code'));
 param.micronPerPixel = 0.1625; %For the 40X objective.
 param.imSize = [2160 2560];
 
 %% Listing the scans to be taken
 
 %Give the master directory for all the scans
-%param.directoryName = 'F:\Nov_9_Aeromonas\Flask_A_wtGFP_DeltaPgmDTomato\Fish_2';
-param.directoryName = '/Volumes/big-2/guts/Data/Nov_9_Aeromonas/Flask_A_wtGFP_DeltaPgmDTomato/Fish_2';
+param.directoryName = 'F:\Nov_9_Aeromonas\Flask_A_wtGFP_DeltaPgmDTomato\Fish_2';
+%param.directoryName = '/Volumes/big-2/guts/Data/Nov_9_Aeromonas/Flask_A_wtGFP_DeltaPgmDTomato/Fish_2';
 
 %Give the range of scans to be analyzed. If the variable scans is set to
 %'all' then all the scans in this folder will be analyzed. If not scans
@@ -67,7 +67,8 @@ param.registerRegion = 'all';
 registerImagesScan(data,param);
 
 %% Open an interactive GUI to crop the images to the desired size
-[param, data] = multipleRegionCrop(param,data);
+global param; %Clumsy, but it's the easiest way to pass information to and from a GUI in matlab
+multipleRegionCrop(param,data);
 
 
 %% C
