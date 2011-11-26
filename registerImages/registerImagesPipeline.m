@@ -70,19 +70,11 @@ registerImagesScan(data,param);
 global param; %Clumsy, but it's the easiest way to pass information to and from a GUI in matlab
 multipleRegionCrop(param,data);
 
-%% Calculate the 
-
-%% C
+%% Crop the images
+%Done autoamaticaly by the multipleRegionCrop function
 [data,param] = registerImagesZData('crop', data,param);
 
-%% Outlining the extent of the gut by hand
-gutOutline(imAll, param,data);
-
-%% Saving the result to param
-param.polyPosition = polyPosition;
-
 %% Saving the parameters created.
-
 %Location that the results of the data will be saved to 
 param.dataSaveDirectory = [param.directoryName, filesep, 'gutOutline'];
 mkdir(param.dataSaveDirectory);
@@ -92,14 +84,6 @@ save('param.mat', 'param');
 %And all of the data
 save('data.mat', 'data');
 
+%% Using the cropped region to calculate features of the fluorescence
 
-
-%Create figures that show the distribution for each of these data sets.
-
-
-%% Calculating correlation functions for this data
-
-
-
- [data, param] = registerImagesZData('crop', data,param)
-
+[data, param] = fluorescence
