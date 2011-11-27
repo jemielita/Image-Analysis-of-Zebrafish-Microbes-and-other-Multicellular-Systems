@@ -53,6 +53,7 @@ hPoly = '';
 
 %Color map for bounding rectangles and cropping rectangles
 cMap = rand(totalNumRegions,3);
+outlineRect = '';
 
 %%%%%%%%%%%%%%%%
 % The GUI window
@@ -178,12 +179,13 @@ hContrast = imcontrast(imageRegion);
             y = param.regionExtent.XY(numReg, 1);
             width = param.regionExtent.XY(numReg, 4);
             height = param.regionExtent.XY(numReg,3);
-            h = rectangle('Position', [x y width height] );
-            set(h, 'EdgeColor', cMap(numReg,:));
-            set(h, 'LineWidth', 2);
-            
+            h(numReg) = rectangle('Position', [x y width height] );
+            set(h(numReg), 'EdgeColor', cMap(numReg,:));
+            set(h(numReg), 'LineWidth', 2);
+            set(h(numReg), 'Tag', 'outlineRect');
             pause(0.25)
         end
+        outlineRect = h;
     end
 
     function createCropBox_Callback(hObject, eventdata)
@@ -246,7 +248,9 @@ hContrast = imcontrast(imageRegion);
         [data,param] = registerImagesZData('crop', data,param);
         
         
-        
+        %Remove the previous outline regions
+        hOutRect = findobj('Tag', 'outlineRect');
+        delete(hOutRect);
         %Remove the cropping rectangles.
         hRect = findobj('Tag', 'imrect');
         delete(hRect);
@@ -255,7 +259,6 @@ hContrast = imcontrast(imageRegion);
         color = color{1};
         im = registerSingleImage(scanNum,color, zNum,im, data,param);
         
-
         set(hIm, 'CData', im);
         outlineRegions();
         

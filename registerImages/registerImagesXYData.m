@@ -59,9 +59,10 @@ for regNum = 1:size(regOverlap,2)
     yInit = param.regionExtent.XY(reg2,2);
     yFinal = yInit + param.regionExtent.XY(reg2,4) -1;
     
+    %Combining them together and looking for the overlaped regions.
     temp2(xInit:xFinal, yInit:yFinal) = 1;
     im = temp1+temp2;
-    
+    %Saving the index number of the overlaped pixels.
     overlap{regNum} = find(im==2);
     
 end
@@ -101,9 +102,9 @@ for regNum=1:totalNumRegions
   %     + param.regionExtent.crop.XY(regNum,1) - param.regionExtent.XY(regNum,2);
    
    regLoc(regNum, 5) = max(1,...
-       param.regionExtent.crop.XY(regNum,2)-regLoc(regNum,1));
+       regLoc(regNum,1)-param.regionExtent.XY(regNum,1)+1);
    regLoc(regNum,6) = max(1,...
-       param.regionExtent.crop.XY(regNum,1) - regLoc(regNum,2));
+       regLoc(regNum,2) - param.regionExtent.XY(regNum,2)+1);
    
    regLoc(regNum,3) = min(1+param.imSize(1)-regLoc(regNum,5), ...
        param.regionExtent.crop.XY(regNum,4));
@@ -111,8 +112,6 @@ for regNum=1:totalNumRegions
        param.regionExtent.crop.XY(regNum,3));
    
 end
-
-
 
 %Rescale the pixel range so that the minimum x and y pixel location are
 %both 1.
