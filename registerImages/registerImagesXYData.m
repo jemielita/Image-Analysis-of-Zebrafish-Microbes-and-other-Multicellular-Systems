@@ -12,8 +12,6 @@
 %the region of overlap in region 2 for the overlap between region 1 and 2.
 %FIX UP THIS SUMMARY!!
 function [data, param] = registerImagesXYData(type, data,param)
-
-
 %%Get the range of pixel data for each region.
 %Note: we should make it possible to use the cropped region to do this
 %calculation, to keep the code as general as possible.
@@ -21,7 +19,6 @@ function [data, param] = registerImagesXYData(type, data,param)
 %%Find the extent of each region of the scan
 totalNumRegions = unique([param.expData.Scan.region]);
 totalNumRegions = length(totalNumRegions);
-
 
 switch lower(type)
     case 'original'
@@ -47,12 +44,22 @@ for regNum = 1:size(regOverlap,2)
     
     reg1 = regOverlap(1,regNum);
     reg2 = regOverlap(2,regNum);
+
+    %Get the part of the registered image from one of the subimages
+    xInit = param.regionExtent.XY(reg1,1);
+    xFinal = xInit + param.regionExtent.XY(reg1,3) -1;
+    yInit = param.regionExtent.XY(reg1,2);
+    yFinal = yInit + param.regionExtent.XY(reg1,4) -1;
     
-    temp1(param.regionExtent.XY(reg1, 1):param.regionExtent.XY(reg1,3), ...
-        param.regionExtent.XY(reg1,2):param.regionExtent.XY(reg1,4)) = 1;
+    temp1(xInit:xFinal,yInit:yFinal) = 1;
     
-    temp2(param.regionExtent.XY(reg2, 1):param.regionExtent.XY(reg2,3), ...
-        param.regionExtent.XY(reg2,2):param.regionExtent.XY(reg2,4)) = 1;
+    %and the other subimage
+    xInit = param.regionExtent.XY(reg2,1);
+    xFinal = xInit + param.regionExtent.XY(reg2,3) -1;
+    yInit = param.regionExtent.XY(reg2,2);
+    yFinal = yInit + param.regionExtent.XY(reg2,4) -1;
+    
+    temp2(xInit:xFinal, yInit:yFinal) = 1;
     im = temp1+temp2;
     
     overlap{regNum} = find(im==2);

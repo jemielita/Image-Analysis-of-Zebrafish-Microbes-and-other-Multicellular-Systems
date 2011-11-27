@@ -50,21 +50,27 @@ function im = registerSingleImage(nScan,colorType,zNum,im,data,param)
                      
             %         im(xOutI:xOutF,yOutI:yOutF) = imIn(xInI:xInF, yInI:yInF);
         end
-          
+
+    end
+
+    
+    for regNum = 2:totalNumRegions
         %Overlapping the regions
         %Overlapping regions
         %This is potentially slow (however we need to be as quick as possible with this type of thing).
         %After we know this code works, we'll come back and write quicker code.
         
-         
          %Overlap for regNum>1
-         if(regNum>1 && imNum(regNum-1)>=0 &&imNum(regNum)>=0)
+         if(imNum(regNum-1)>=0 &&imNum(regNum)>=0)
              im(param.regionExtent.overlapIndex{regNum-1} )= ...
-                 0.5*im(param.regionExtent.overlapIndex{regNum-1});
+                0.5*im(param.regionExtent.overlapIndex{regNum-1});
+          %    im(:) =1;
+           %   im(param.regionExtent.overlapIndex{regNum-1} ) = 0;
          end
-        
+      %   figure; imshow(im,[]);
+  % b = 0;
+   
     end
-  
     
    
 end

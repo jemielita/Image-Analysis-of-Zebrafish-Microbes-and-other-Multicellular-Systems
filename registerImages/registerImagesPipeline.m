@@ -6,8 +6,11 @@
 %We should really exploit our saved experimental variables to make this
 %code much cleaner.
 
+%% The directory we'll work out of
+%Give the master directory for all the scans
+param.directoryName = 'F:\Nov_9_Aeromonas\Flask_A_wtGFP_DeltaPgmDTomato\Fish_2';
+%param.directoryName = '/Volumes/big-2/guts/Data/Nov_9_Aeromonas/Flask_A_wtGFP_DeltaPgmDTomato/Fish_2';
 %% Initialize parameters and code path
-
 %On my own (mlj) machine
 %addpath(genpath('~/Documents/code/'))
 
@@ -17,11 +20,8 @@ addpath(genpath('C:\code'));
 param.micronPerPixel = 0.1625; %For the 40X objective.
 param.imSize = [2160 2560];
 
-%% Listing the scans to be taken
 
-%Give the master directory for all the scans
-param.directoryName = 'F:\Nov_9_Aeromonas\Flask_A_wtGFP_DeltaPgmDTomato\Fish_2';
-%param.directoryName = '/Volumes/big-2/guts/Data/Nov_9_Aeromonas/Flask_A_wtGFP_DeltaPgmDTomato/Fish_2';
+%% Listing the scans to be taken
 
 %Give the range of scans to be analyzed. If the variable scans is set to
 %'all' then all the scans in this folder will be analyzed. If not scans
@@ -39,6 +39,9 @@ param.regions = 'all';
 
 param.color = [{'488nm'}; {'568nm'}];
 
+%Place holder for now-need to get this information from Mike.
+param.thresh(1) = 10;
+param.thresh(2) = 100;
 %For the parameters above construct a structure that will contain all the
 %results of this calculation.
 
@@ -74,6 +77,11 @@ multipleRegionCrop(param,data);
 %Done autoamaticaly by the multipleRegionCrop function
 [data,param] = registerImagesZData('crop', data,param);
 
+%% Calculate features of the gut fluorescence 
+%A first pass at analyzing data about the gut.
+
+[data, param] = analyzeFluoro(data,param, 'all');
+
 %% Saving the parameters created.
 %Location that the results of the data will be saved to 
 param.dataSaveDirectory = [param.directoryName, filesep, 'gutOutline'];
@@ -84,6 +92,10 @@ save('param.mat', 'param');
 %And all of the data
 save('data.mat', 'data');
 
-%% Using the cropped region to calculate features of the fluorescence
+%% Load data
+%Load in information that has already been calculated.
+param.dataSaveDirectory = [param.directoryName, filesep, 'gutOutline'];
+cd(param.dataSaveDirectory);
+load('param.mat', 'param');
+load('data.mat', 'data');
 
-[data, param] = fluorescence
