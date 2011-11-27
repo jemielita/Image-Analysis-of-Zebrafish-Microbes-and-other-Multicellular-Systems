@@ -1,14 +1,27 @@
 
-function [] = multipleRegionCrop(paramIn, dataIn)
+function [param,data] = multipleRegionCrop(paramIn, dataIn)
 
-global param
+%global param
 param = paramIn;
-global data
+%global data
 data  = dataIn;
 
+multipleRegionCropGUI(param,data);
 
-global param
-global data
+%Not the most elegant way to extract information from the GUI, but it seems
+%to work.
+while(~isempty(findobj('Tag', 'fGui')))
+    handles = findobj('Tag', 'fGui');
+    paramTemp = guidata(handles);
+    param = paramTemp.param;
+    pause(0.5);
+end
+
+end
+
+
+function [] = multipleRegionCropGUI(param, data)
+
 %%%%%%%%%%%%%%
 % GUI Elements
 %%%%%%%%%%%%%%
@@ -60,6 +73,12 @@ outlineRect = '';
 fGui = figure('Name', 'Play the Outline the Gut Game!', 'Menubar', 'none', 'Tag', 'fGui',...
     'Visible', 'off', 'Position', [50, 50, 2000, 900], 'Color', [0.925, 0.914, 0.847]);
 
+
+%Handle to GUI data-will be used to pass information out
+myhandles = guihandles(fGui);
+myhandles.param = param;
+myhandles.data = data;
+guidata(fGui, myhandles);
 %%%%%%%%%%%%%%%%%%%%%%%%
 % AXES to DISPLAY IMAGES
 
@@ -80,7 +99,8 @@ uimenu(hMenuOutline,'Label','Save outline','Callback',@savePoly_Callback);
 uimenu(hMenuOutline,'Label','Clear outline ','Callback',@clearPoly_Callback);
 
 hMenuDisplay = uimenu('Label', 'Display');
-uimenu(hMenuDisplay, 'Label', 'Adjust image contrast', 'Callback', @adjustContrast_Callback);
+hMenuContrast = uimenu(hMenuDisplay, 'Label', 'Adjust image contrast', 'Callback', @adjustContrast_Callback);
+hMenuBoundBox = uimenu(hMenuDisplay, 'Label', 'Add region bounding boxes', 'Callback', @modifyBoundingBox_Callback);
 
 %%%%%%Create the displayed control panels
 imageRegion = axes('Tag', 'imageRegion', 'Position', [0.01, .18, .98, .8], 'Visible', 'on',...
@@ -169,6 +189,27 @@ hContrast = imcontrast(imageRegion);
             hContrast = imcontrast(imageRegion);
         end
     end
+
+    function modifyBoundingBox_Callback(hObject, eventdata)
+  
+       %Get the current state of this button
+       value = get(hMenuBoundBox, 'Label');
+       
+       switch value
+           case  'Add region bounding boxes'
+               outlineRegions();
+               set(hMenuBoundBox, 'Label', 'Remove region bounding boxes');
+           case 'Remove region bounding boxes'
+               %Remove the outline rectangles
+               hRect = findobj('Tag', 'outlineRect');
+               delete(hRect);
+               set(hMenuBoundBox, 'Label', 'Add region bounding boxes');
+           
+       end
+       
+        
+    end
+
     function outlineRegions(hObject, eventdata)
         
         %%% Draw rectangles on the image, showing the boundary of the different
@@ -262,12 +303,18 @@ hContrast = imcontrast(imageRegion);
         set(hIm, 'CData', im);
         outlineRegions();
         
+        myhandles.param = param;
+        guidata(fGui, myhandles);
     end
 
     function restoreImages_Callback(hObject, eventdata)
         
         %Remove the cropping rectangles.
         hRect = findobj('Tag', 'imrect');
+        delete(hRect);
+        
+        %Remove the outline rectangles
+        hRect = findobj('Tag', 'outlineRect');
         delete(hRect);
         
         %Cropping the image
@@ -369,6 +416,9 @@ hContrast = imcontrast(imageRegion);
     function savePoly_Callback(hObject, eventdata)
         hApi = iptgetapi(hPoly);
         param.regionExtent.poly = hApi.getPosition();
+        myhandles.param = param;
+        %Save the GUI handles
+        guidata(fGui, myhandles);
     end
 
 
@@ -376,7 +426,8 @@ hContrast = imcontrast(imageRegion);
        delete(hPoly); %Delete the displayed polygon. 
     end
         
-       
+    
+
 end
 
 
