@@ -20,30 +20,31 @@ switch lower(type)
         imOut.totalNum = zeros(size(im,1), size(im,2));
         imOut.totalInten = zeros(size(im,1), size(im,2));
 end
-
+        
 %Create the mask that will be used to outline only the gut
 [temp, imMask] = roifill(im, param.regionExtent.poly(:,1), param.regionExtent.poly(:,2));
 
-
 for nScan=1:length(data.scan)
     %Going through each scan
-        for nColor=1:length(param.color)
-            %and each color
-            for nZ = 1:size(param.regionExtent.Z,1)
+    
+    for nColor=1:length(param.color)
+        %and each color
+        
+        for nZ = 1:size(param.regionExtent.Z,1)
             
-                color = param.color(nColor);
-                color = color{1};
-                %Load in this registered image
-                im = registerSingleImage(nScan, color, nZ, im, data,param);
-                
-                im = double(im);
-                %Apply the mask that outlines only the gut
-                im(~imMask) = 0;
+            color = param.color(nColor);
+            color = color{1};
+            %Load in this registered image
+            im = registerSingleImage(nScan, color, nZ, im, data,param);
+            
+            im = double(im);
+            %Apply the mask that outlines only the gut
+            im(~imMask) = 0;
             %Calculate the desired features about this image
-                 
+            
             switch lower(type)
                 case 'mip'
-                imOut.mip(im>imOut.mip) = im;  
+                    imOut.mip(im>imOut.mip) = im;
                 case 'total intensity'
                     imOut.totalInten = imOut.totalInten + im;
                 case 'total number'
@@ -54,16 +55,17 @@ for nScan=1:length(data.scan)
                 case 'all'
                     index = find(im>imOut.mip);
                     imOut.mip(index) = im(index);
-
+                    
                     imOut.totalInten = imOut.totalInten + im;
                     
                     index = find(im>param.thresh(nColor));
                     imOut.totalNum(index) = imOut.totalNum(index) + 1;
-            end
-
-            end
+            end           
         end
+        data.scan(nScan).allReg.color(nColor).intenData = imOut;
+
+    end
 end
-    
+
 end
 

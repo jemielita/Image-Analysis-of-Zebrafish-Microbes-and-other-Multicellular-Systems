@@ -19,8 +19,6 @@ addpath(genpath('C:\code'));
 %addpath(genpath('~/Documents/code'));
 param.micronPerPixel = 0.1625; %For the 40X objective.
 param.imSize = [2160 2560];
-
-
 %% Listing the scans to be taken
 
 %Give the range of scans to be analyzed. If the variable scans is set to
@@ -40,8 +38,8 @@ param.regions = 'all';
 param.color = [{'488nm'}; {'568nm'}];
 
 %Place holder for now-need to get this information from Mike.
-param.thresh(1) = 10;
-param.thresh(2) = 100;
+param.thresh(1) = 1000;
+param.thresh(2) = 600;
 %For the parameters above construct a structure that will contain all the
 %results of this calculation.
 
@@ -72,6 +70,7 @@ registerImagesScan(data,param);
 %% Open an interactive GUI to crop the images to the desired size
 global param; %Clumsy, but it's the easiest way to pass information to and from a GUI in matlab
 multipleRegionCrop(param,data);
+pause
 
 %% Crop the images
 %Done autoamaticaly by the multipleRegionCrop function
