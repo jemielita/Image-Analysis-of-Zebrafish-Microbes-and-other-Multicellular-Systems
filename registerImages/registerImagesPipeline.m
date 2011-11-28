@@ -27,7 +27,7 @@ param.imSize = [2160 2560];
 %   e.g. scans = 1:10, will analyze all scans from 1 to 10.
 %        scans = [1 6 8] will analyze scans 1, 6, and 8.
 %        scans = 'all' will analze all the scans in this directory
-param.scans = [1];
+param.scans = [3:4];
 
 %Call for regions will be the same as for scans
 param.regions = 'all';

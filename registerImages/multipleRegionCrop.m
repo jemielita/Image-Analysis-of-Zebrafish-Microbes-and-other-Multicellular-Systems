@@ -2,18 +2,16 @@
 function [param,data] = multipleRegionCrop(paramIn, dataIn)
 [data, param] = loadParameters();
 
-
-
 multipleRegionCropGUI(param,data);
 
 %Not the most elegant way to extract information from the GUI, but it seems
 %to work.
-while(~isempty(findobj('Tag', 'fGui')))
-    handles = findobj('Tag', 'fGui');
-    paramTemp = guidata(handles);
-    param = paramTemp.param;
-    pause(0.5);
-end
+% while(~isempty(findobj('Tag', 'fGui')))
+%     handles = findobj('Tag', 'fGui');
+%     paramTemp = guidata(handles);
+%     param = paramTemp.param;
+%     pause(0.5);
+% end
 
     function [data, param] = loadParameters()
         switch nargin
@@ -45,9 +43,12 @@ end
                         expData = load(parameterFile);
                         param.expData = expData.parameters;
                         
+                        param.directoryName = dirName;
+                        
                         %Load in the number of scans. Default will be for all of the
                         %scans...might want to make this an interactive thing at some point.
                         param.scans = 1:param.expData.totalNumberScans;
+  
                         %Number of regions in be analyzed. Hardcoded to be all of them
                         param.regions = 'all';
                         %Colors to be analyzed. Need to provide a more machine readable way and
@@ -136,7 +137,6 @@ outlineRect = '';
 fGui = figure('Name', 'Play the Outline the Gut Game!', 'Menubar', 'none', 'Tag', 'fGui',...
     'Visible', 'off', 'Position', [50, 50, 2000, 900], 'Color', [0.925, 0.914, 0.847]);
 
-
 %Handle to GUI data-will be used to pass information out
 myhandles = guihandles(fGui);
 myhandles.param = param;
@@ -152,7 +152,6 @@ uimenu(hMenuCrop,'Label','Create cropping boxes','Callback',@createCropBox_Callb
 uimenu(hMenuCrop, 'Label', 'Crop the images', 'Callback', @cropImages_Callback);
 uimenu(hMenuCrop, 'Label', 'Restore original image', 'Callback', @restoreImages_Callback);
 
-
 hMenuOutline = uimenu('Label', 'Outline region');
 uimenu(hMenuOutline,'Label','Freehand polygon outline','Callback',@createFreeHandPoly_Callback);
 uimenu(hMenuOutline, 'Label', 'Load Outline', 'Callback', @loadPoly_Callback);
@@ -162,12 +161,21 @@ uimenu(hMenuOutline,'Label','Clear outline ','Callback',@clearPoly_Callback);
 hMenuDisplay = uimenu('Label', 'Display');
 hMenuContrast = uimenu(hMenuDisplay, 'Label', 'Adjust image contrast', 'Callback', @adjustContrast_Callback);
 hMenuBoundBox = uimenu(hMenuDisplay, 'Label', 'Remove region bounding boxes', 'Callback', @modifyBoundingBox_Callback);
+hMenuScroll = uimenu(hMenuDisplay, 'Label', 'Add scroll bar to image display', 'Callback', @scrollBar_Callback);
 
 %%%%%%Create the displayed control panels
-imageRegion = axes('Tag', 'imageRegion', 'Position', [0.01, .18, .98, .8], 'Visible', 'on',...
+
+hImPanel = uipanel('BackgroundColor', 'white', 'Position', [0.01, .18, .98, .8],...
+    'Units', 'Normalized');
+imageRegion = axes('Parent', hImPanel,'Tag', 'imageRegion', 'Position', [0, 0 , 1,1], 'Visible', 'on',...
     'XTick', [], 'YTick', [], 'DrawMode', 'fast');
 
-hManipPanel = uipanel('Parent', fGui, 'Units', 'Normalized', 'Position',[ 0.05 0.02 0.3 0.2],...
+%Handle to the scroll panel, if we make it.
+hScroll = '';
+
+
+offset = 0.05;
+hManipPanel = uipanel('Parent', fGui, 'Units', 'Normalized', 'Position',[ 0.05 0.02 0.3 0.2-offset],...
     'Title', 'Change Registered Image');
 
 dist = 0.3; %Spacing between slider bars
@@ -182,12 +190,12 @@ hZSlider = uicontrol('Parent', hManipPanel,'Units', 'Normalized', 'Position', [0
 hScanText = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Position', [0.05 0.8-dist 0.1 0.15],...
     'Style', 'text', 'String', 'Scan Number');
 hScanTextEdit = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Position', [0.17 0.8-dist 0.1 0.15],...
-    'Style', 'text', 'String', minScan);
+    'Style', 'edit', 'String', minScan, 'Tag', 'scanEdit','Callback', @scanSlider_Callback);
 %Only render slider bar if there are more than one scan in this set.
 if(numScans>1)
 hScanSlider = uicontrol('Parent', hManipPanel,'Units', 'Normalized', 'Position', [0.3 0.86-dist 0.65 0.1],...
     'Style', 'slider', 'Min', minScan, 'Max',maxScan, 'SliderStep', [1 1], 'Value', 1,...
-    'Callback', @scanSlider_Callback);
+    'Callback', @scanSlider_Callback, 'Tag', 'scanSlider');
 end
 
 hColorText = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Position', [0.05 0.8-2*dist 0.1 0.15],...
@@ -212,7 +220,7 @@ dataTable = param.regionExtent.crop.z;
 
 hRegTable = uitable('Parent', fGui,...
 'Data', dataTable, 'ColumnName', cnames,...
-   'RowName', rnames, 'Units', 'Normalized', 'Position', [ 0.36 0.02 0.1 0.19],...
+   'RowName', rnames, 'Units', 'Normalized', 'Position', [ 0.36 0.02 0.1 0.19-offset],...
    'ColumnEditable', true);
 set(hRegTable, 'CellEditCallback', @table_Callback);
 %%%%%%%%%%%
@@ -224,7 +232,7 @@ set([fGui,  hZSlider, imageRegion],...
     'Units', 'normalized');
 
 movegui(fGui, 'center');
-set(fGui, 'Visible', 'on');
+
 
 %Show the bottom image in the stack
 im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
@@ -234,21 +242,56 @@ color = color{1};
 im = registerSingleImage(scanNum,color, zNum,im, data,param);
 
 hIm = imshow(im, [],'Parent', imageRegion);
+
+%Create a scroll panel
+hScroll = imscrollpanel(hImPanel, hIm);
+apiScroll = iptgetapi(hScroll);
+
+initMag = apiScroll.findFitMag();
+apiScroll.setMagnification(initMag);
+
 outlineRegions(); %Outline the different regions that make up the composite region.
+
+
+
+set(fGui, 'Visible', 'on');
 
 %Handle to image contrast toolbar
 hContrast = imcontrast(imageRegion);
+
 
 %%%%%%%%%%%%%%%%%%%%%% Callback Functions
 
 
 %%%%% Drop down menu callback
-    function adjustContrast_Callback(hObject, eventdat)
-        if( ~ishandle(hContrast))
+    function adjustContrast_Callback(hObject, eventdata)
+      % if( ~ishandle(hContrast))
             hContrast = imcontrast(imageRegion);
-        end
+     %   end
     end
 
+    function scrollBar_Callback(hObject, eventdata)
+       value = get(hMenuScroll, 'Label');
+       
+       switch value
+           case 'Add scroll bar to image display'
+               
+               apiScroll.setMagnification(1);
+               set(hMenuScroll, 'Label','Remove scroll bar');
+               
+           case 'Remove scroll bar'
+               
+               initMag = apiScroll.findFitMag();
+               apiScroll.setMagnification(initMag);
+               
+               set(hMenuScroll, 'Label', 'Add scroll bar to image display');
+               
+           
+       end
+       
+       
+        
+    end
     function modifyBoundingBox_Callback(hObject, eventdata)
   
        %Get the current state of this button
@@ -416,12 +459,22 @@ hContrast = imcontrast(imageRegion);
     end
 
     function scanSlider_Callback(hObject, eventData)
-        scanNum = get(hColorSlider, 'Value');
-        scanNum = ceil(scanNum);
-        scanNum = int16(scanNum);
+        scanTag = get(hObject, 'tag');
         
-        %Update the displayed scan number.
-        set(hScanTextEdit, 'String', scanNum);
+        switch scanTag
+            case 'scanSlider'
+                scanNum = get(hScanSlider, 'Value');
+                scanNum = int16(zNum);
+                
+                %Update the displayed z level.
+                set(hScanTextEdit, 'String', scanNum);
+            case 'scanEdit'
+                scanNum = get(hScanTextEdit, 'string');
+                scanNum = str2double(scanNum);
+                scanNum = int16(scanNum);
+                
+                set(hScanSlider, 'Value',double(scanNum));
+        end
         
         %Display the new image
         color = colorType(colorNum);
