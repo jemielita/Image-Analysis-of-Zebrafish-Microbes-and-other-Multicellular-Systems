@@ -1,10 +1,8 @@
 
 function [param,data] = multipleRegionCrop(paramIn, dataIn)
+[data, param] = loadParameters();
 
-%global param
-param = paramIn;
-%global data
-data  = dataIn;
+
 
 multipleRegionCropGUI(param,data);
 
@@ -17,6 +15,71 @@ while(~isempty(findobj('Tag', 'fGui')))
     pause(0.5);
 end
 
+    function [data, param] = loadParameters()
+        switch nargin
+            case 0
+                dirName = uigetdir(pwd, 'Pick a directory to show the registered images from.');
+                paramFile = [dirName, filesep, 'gutOutline', filesep, 'param.mat'];
+                paramFileExist = exist(paramFile, 'file');
+                dataFile = [dirName, filesep, 'gutOutline', filesep, 'data.mat'];
+                %If work has been done on this file already, load in the results
+                
+                switch paramFileExist
+                    case 2
+                        disp('Parameters for this scan have already been (partially?) calculated. Loading them into the workspace.');
+                        
+                        paramTemp = load(paramFile);
+                        dataTemp = load(dataFile);
+                        
+                        param = paramTemp.param;
+                        data = dataTemp.data;
+                        
+                    case 0
+                        
+                        parameterFile = [dirName, filesep, 'ExperimentData.mat'];
+                        %Load in information about this scan...this information should be
+                        %passed in, or stored in one place on the computer.
+                        param.micronPerPixel = 0.1625; %For the 40X objective.
+                        param.imSize = [2160 2560];
+                        
+                        expData = load(parameterFile);
+                        param.expData = expData.parameters;
+                        
+                        %Load in the number of scans. Default will be for all of the
+                        %scans...might want to make this an interactive thing at some point.
+                        param.scans = 1:param.expData.totalNumberScans;
+                        %Number of regions in be analyzed. Hardcoded to be all of them
+                        param.regions = 'all';
+                        %Colors to be analyzed. Need to provide a more machine readable way and
+                        %elegant way to load this into the code.
+                        param.color = [{'488nm'}, {'568nm'}];
+                        %param.color = [{'568nm'}];
+                        %For the parameters above construct a structure that will contain all the
+                        %results of this calculation.
+                        
+                        [data,param] = initializeScanStruct(param);
+                        
+                        disp('Paremeters succesfully loaded.');
+                        
+                        % Calculate the overlap between different regions
+                        
+                        fprintf(2,'Calculating information needed to register the images...');
+                        [data,param] = registerImagesXYData('original', data,param);
+                        
+                        [data,param] = registerImagesZData('original', data,param);
+                        
+                        %Store the result in a backup structure, since .regionExtent will be
+                        %modified by cropping.
+                        param.regionExtentOrig = param.regionExtent;
+                        fprintf(2, 'done!\n');
+                end
+            case 2
+                %global param
+                param = varargin{1};
+                %global data
+                data  = varargin{2};
+        end
+    end
 end
 
 
@@ -82,8 +145,6 @@ guidata(fGui, myhandles);
 %%%%%%%%%%%%%%%%%%%%%%%%
 % AXES to DISPLAY IMAGES
 
-
-
 %%%%%%%%%%Create the menu pull downs
 hMenuCrop = uimenu('Label','Crop Images');
 
@@ -100,16 +161,14 @@ uimenu(hMenuOutline,'Label','Clear outline ','Callback',@clearPoly_Callback);
 
 hMenuDisplay = uimenu('Label', 'Display');
 hMenuContrast = uimenu(hMenuDisplay, 'Label', 'Adjust image contrast', 'Callback', @adjustContrast_Callback);
-hMenuBoundBox = uimenu(hMenuDisplay, 'Label', 'Add region bounding boxes', 'Callback', @modifyBoundingBox_Callback);
+hMenuBoundBox = uimenu(hMenuDisplay, 'Label', 'Remove region bounding boxes', 'Callback', @modifyBoundingBox_Callback);
 
 %%%%%%Create the displayed control panels
 imageRegion = axes('Tag', 'imageRegion', 'Position', [0.01, .18, .98, .8], 'Visible', 'on',...
     'XTick', [], 'YTick', [], 'DrawMode', 'fast');
 
-
 hManipPanel = uipanel('Parent', fGui, 'Units', 'Normalized', 'Position',[ 0.05 0.02 0.3 0.2],...
     'Title', 'Change Registered Image');
-  
 
 dist = 0.3; %Spacing between slider bars
 hZText = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Position', [0.05 0.8 0.1 0.15],...
@@ -324,8 +383,9 @@ hContrast = imcontrast(imageRegion);
         color = colorType(colorNum);
         color = color{1};
         im = registerSingleImage(scanNum,color, zNum,im, data,param);
+        hIm = imshow(im, [],'Parent', imageRegion);
         
-        set(hIm, 'CData', im);
+%        set(hIm, 'CData', im);
 
         outlineRegions();
     end

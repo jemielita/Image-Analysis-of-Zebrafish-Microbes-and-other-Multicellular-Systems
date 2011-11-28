@@ -46,12 +46,12 @@ for numDir =1:length(scanLoc)
     cd(param.dataSaveDirectory);
     
     paramFile = [param.directoryName, filesep, 'gutOutline', filesep, 'param.mat'];
+    dataFile = [param.directoryName, filesep, 'gutOutline', filesep, 'data.mat'];
     paramFileExist = exist(paramFile, 'file');
     switch paramFileExist
         case 2
             disp('Parameters for this scan have already been (partially?) calculated. Loading them into the workspace.');
-            paramFile = [paramDir, filesep, 'param.mat'];
-            dataFile = [paramDir, filesep, 'data.mat'];
+            
             paramTemp = load(paramFile);
             dataTemp = load(dataFile);
             
@@ -76,7 +76,7 @@ for numDir =1:length(scanLoc)
         %Colors to be analyzed. Need to provide a more machine readable way and
         %elegant way to load this into the code.
         param.color = [{'488nm'}, {'568nm'}];
-        
+        %param.color = [{'568nm'}];
         %For the parameters above construct a structure that will contain all the
         %results of this calculation.
         
@@ -96,26 +96,22 @@ for numDir =1:length(scanLoc)
         param.regionExtentOrig = param.regionExtent;
         fprintf(2, 'done!\n');
     end
-  %% Open an interactive GUI to crop the images to the desired size
-%global param; %Clumsy, but it's the easiest way to pass information to and from a GUI in matlab
-[param,data] = multipleRegionCrop(param,data);
-
- %Will pause until the user clicks the keyboard-let's the GUI do it's business before proceeding
-
-%% Saving the parameters created.
-%Location that the results of the data will be saved to 
-param.dataSaveDirectory = [param.directoryName, filesep, 'gutOutline'];
-mkdir(param.dataSaveDirectory);
-cd(param.dataSaveDirectory);
-%Save all the parameters used in making these distributions
-save('param.mat', 'param');
-%And all of the data
-save('data.mat', 'data');
-        
+    
+    %% Open an interactive GUI to crop the images to the desired size
+    [param,data] = multipleRegionCrop(param,data);
+    
+    %% Saving the parameters created.
+    %Location that the results of the data will be saved to
+    param.dataSaveDirectory = [param.directoryName, filesep, 'gutOutline'];
+    mkdir(param.dataSaveDirectory);
+    cd(param.dataSaveDirectory);
+    %Save all the parameters used in making these distributions
+    save('param.mat', 'param');
+    %And all of the data
+    save('data.mat', 'data');
+    
 end
-
-
-
+disp('All selected scans have been analyzed.');
 
 
 
