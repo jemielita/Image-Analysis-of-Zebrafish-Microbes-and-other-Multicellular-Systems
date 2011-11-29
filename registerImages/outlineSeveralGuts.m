@@ -1,5 +1,5 @@
 %Calculates the outline of the gut for an arbitrary number of different 
-function [] = outlineSeveralGuts(varargin)
+function [scanLoc] = outlineSeveralGuts(varargin)
 
 %Load in the desired variables
 switch nargin
