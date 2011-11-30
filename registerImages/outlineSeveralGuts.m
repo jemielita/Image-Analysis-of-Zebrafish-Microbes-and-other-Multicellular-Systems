@@ -98,7 +98,7 @@ for numDir =1:length(scanLoc)
     end
     
     %% Open an interactive GUI to crop the images to the desired size
-    [param,data] = multipleRegionCrop(param,data);
+    [param,data] = multipleRegionCrop(param,data, 'save results');
     
     %% Saving the parameters created.
     %Location that the results of the data will be saved to

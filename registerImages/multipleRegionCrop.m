@@ -1,86 +1,33 @@
 
-function [param,data] = multipleRegionCrop(paramIn, dataIn)
-[data, param] = loadParameters();
+function [param,data] = multipleRegionCrop(varargin)
+switch nargin
+    case 0
+        [data, param] = loadParameters();
+    case 3
+        %global param
+        param = varargin{1};
+        %global data
+        data  = varargin{2};
+end
+
 
 multipleRegionCropGUI(param,data);
 
 %Not the most elegant way to extract information from the GUI, but it seems
 %to work.
-% while(~isempty(findobj('Tag', 'fGui')))
-%     handles = findobj('Tag', 'fGui');
-%     paramTemp = guidata(handles);
-%     param = paramTemp.param;
-%     pause(0.5);
-% end
-
-    function [data, param] = loadParameters()
-        switch nargin
-            case 0
-                dirName = uigetdir(pwd, 'Pick a directory to show the registered images from.');
-                paramFile = [dirName, filesep, 'gutOutline', filesep, 'param.mat'];
-                paramFileExist = exist(paramFile, 'file');
-                dataFile = [dirName, filesep, 'gutOutline', filesep, 'data.mat'];
-                %If work has been done on this file already, load in the results
-                
-                switch paramFileExist
-                    case 2
-                        disp('Parameters for this scan have already been (partially?) calculated. Loading them into the workspace.');
-                        
-                        paramTemp = load(paramFile);
-                        dataTemp = load(dataFile);
-                        
-                        param = paramTemp.param;
-                        data = dataTemp.data;
-                        
-                    case 0
-                        
-                        parameterFile = [dirName, filesep, 'ExperimentData.mat'];
-                        %Load in information about this scan...this information should be
-                        %passed in, or stored in one place on the computer.
-                        param.micronPerPixel = 0.1625; %For the 40X objective.
-                        param.imSize = [2160 2560];
-                        
-                        expData = load(parameterFile);
-                        param.expData = expData.parameters;
-                        
-                        param.directoryName = dirName;
-                        
-                        %Load in the number of scans. Default will be for all of the
-                        %scans...might want to make this an interactive thing at some point.
-                        param.scans = 1:param.expData.totalNumberScans;
-  
-                        %Number of regions in be analyzed. Hardcoded to be all of them
-                        param.regions = 'all';
-                        %Colors to be analyzed. Need to provide a more machine readable way and
-                        %elegant way to load this into the code.
-                        param.color = [{'488nm'}, {'568nm'}];
-                        %param.color = [{'568nm'}];
-                        %For the parameters above construct a structure that will contain all the
-                        %results of this calculation.
-                        
-                        [data,param] = initializeScanStruct(param);
-                        
-                        disp('Paremeters succesfully loaded.');
-                        
-                        % Calculate the overlap between different regions
-                        
-                        fprintf(2,'Calculating information needed to register the images...');
-                        [data,param] = registerImagesXYData('original', data,param);
-                        
-                        [data,param] = registerImagesZData('original', data,param);
-                        
-                        %Store the result in a backup structure, since .regionExtent will be
-                        %modified by cropping.
-                        param.regionExtentOrig = param.regionExtent;
-                        fprintf(2, 'done!\n');
-                end
-            case 2
-                %global param
-                param = varargin{1};
-                %global data
-                data  = varargin{2};
+%If the third argument has been set to 'save Results', pause MATLAB until
+%the gui has been closed.
+if(nargin==3)
+    if(strcmp(lower(varargin{3}), 'save results'))
+        while(~isempty(findobj('Tag', 'fGui')))
+            handles = findobj('Tag', 'fGui');
+            paramTemp = guidata(handles);
+            param = paramTemp.param;
+            pause(0.5);
         end
     end
+end
+
 end
 
 
@@ -146,8 +93,13 @@ guidata(fGui, myhandles);
 % AXES to DISPLAY IMAGES
 
 %%%%%%%%%%Create the menu pull downs
-hMenuCrop = uimenu('Label','Crop Images');
 
+hMenuFile = uimenu('Label', 'File');
+uimenu(hMenuFile, 'Label', 'Load scan stack', 'Callback', @loadScan_Callback);
+uimenu(hMenuFile, 'Label', 'Save single image', 'Callback', @saveImage_Callback);
+uimenu(hMenuFile, 'Label', 'Save scan stack', 'Callback', @saveScan_Callback);
+
+hMenuCrop = uimenu('Label','Crop Images');
 uimenu(hMenuCrop,'Label','Create cropping boxes','Callback',@createCropBox_Callback);
 uimenu(hMenuCrop, 'Label', 'Crop the images', 'Callback', @cropImages_Callback);
 uimenu(hMenuCrop, 'Label', 'Restore original image', 'Callback', @restoreImages_Callback);
@@ -235,7 +187,6 @@ set([fGui,  hZSlider, imageRegion],...
 
 movegui(fGui, 'center');
 
-
 %Show the bottom image in the stack
 im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
 
@@ -254,8 +205,6 @@ apiScroll.setMagnification(initMag);
 
 outlineRegions(); %Outline the different regions that make up the composite region.
 
-
-
 set(fGui, 'Visible', 'on');
 
 %Handle to image contrast toolbar
@@ -266,6 +215,19 @@ hContrast = imcontrast(imageRegion);
 
 
 %%%%% Drop down menu callback
+
+    function loadScan_Callback(hObject, eventdata)
+        zMax = 100;
+    end
+
+    function saveImage_Callback(hObject, eventdata)
+        
+    end
+
+    function saveScan_Callback(hObject, eventdata)
+        
+    end
+
     function adjustContrast_Callback(hObject, eventdata)
       % if( ~ishandle(hContrast))
             hContrast = imcontrast(imageRegion);
@@ -545,8 +507,6 @@ hContrast = imcontrast(imageRegion);
 
 end
 
-
-
 function param = calcCroppedRegion(param)
 
 %Make a mask the size of the total registered image
@@ -600,3 +560,65 @@ end
 
 
 end
+
+function [data, param] = loadParameters()
+                dirName = uigetdir(pwd, 'Pick a directory to show the registered images from.');
+                paramFile = [dirName, filesep, 'gutOutline', filesep, 'param.mat'];
+                paramFileExist = exist(paramFile, 'file');
+                dataFile = [dirName, filesep, 'gutOutline', filesep, 'data.mat'];
+                %If work has been done on this file already, load in the results
+                
+                switch paramFileExist
+                    case 2
+                        disp('Parameters for this scan have already been (partially?) calculated. Loading them into the workspace.');
+                        
+                        paramTemp = load(paramFile);
+                        dataTemp = load(dataFile);
+                        
+                        param = paramTemp.param;
+                        data = dataTemp.data;
+                        
+                    case 0
+                        
+                        parameterFile = [dirName, filesep, 'ExperimentData.mat'];
+                        %Load in information about this scan...this information should be
+                        %passed in, or stored in one place on the computer.
+                        param.micronPerPixel = 0.1625; %For the 40X objective.
+                        param.imSize = [2160 2560];
+                        
+                        expData = load(parameterFile);
+                        param.expData = expData.parameters;
+                        
+                        param.directoryName = dirName;
+                        
+                        %Load in the number of scans. Default will be for all of the
+                        %scans...might want to make this an interactive thing at some point.
+                        param.scans = 1:param.expData.totalNumberScans;
+                        
+                        %Number of regions in be analyzed. Hardcoded to be all of them
+                        param.regions = 'all';
+                        %Colors to be analyzed. Need to provide a more machine readable way and
+                        %elegant way to load this into the code.
+                        param.color = [{'488nm'}, {'568nm'}];
+                        %param.color = [{'568nm'}];
+                        %For the parameters above construct a structure that will contain all the
+                        %results of this calculation.
+                        
+                        [data,param] = initializeScanStruct(param);
+                        
+                        disp('Paremeters succesfully loaded.');
+                        
+                        % Calculate the overlap between different regions
+                        
+                        fprintf(2,'Calculating information needed to register the images...');
+                        [data,param] = registerImagesXYData('original', data,param);
+                        
+                        [data,param] = registerImagesZData('original', data,param);
+                        
+                        %Store the result in a backup structure, since .regionExtent will be
+                        %modified by cropping.
+                        param.regionExtentOrig = param.regionExtent;
+                        fprintf(2, 'done!\n');
+                        
+                end
+    end
