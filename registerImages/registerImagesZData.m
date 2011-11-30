@@ -70,6 +70,13 @@ end
     
 function param = registerOriginalImage(param)
 
+%Forcing all z Begin to be at the nearest multiple of the step size (and
+%divisible by it).
+for i=1:length([param.expData.Scan.zEnd])
+    param.expData.Scan(i).zBegin = param.expData.Scan(i).zBegin -mod(param.expData.Scan(i).zBegin, param.expData.Scan(i).stepSize);
+
+end
+
 %Get the maximum and minimum z value.
 %Note: the camera control software always makes sure that .zBegin < .zEnd,
 %but we'll check to make sure this is true anyway.
@@ -95,6 +102,7 @@ if(length(stepZ)~=1)
    return;
 end
 
+
 posArray = minZ:stepZ:maxZ+stepZ;
 
 %Construct a cell array of all the positions in the z-direction that images
@@ -110,6 +118,11 @@ for regNum=1:totalNumRegions
     
     %Again, we shouldn't be doing this
     imArray{regNum} = 10*round(imArray{regNum}/10);
+    
+    %Again a little bit sketchy-force all z heights to be in even steps of
+    %microns-this is do deal with the step size being 2 microns for the
+    %long term scan.
+    imArray{regNum} = imArray{regNum} + mod(imArray{regNum},2);
 end
 
 %Now see which of these z positions overlap

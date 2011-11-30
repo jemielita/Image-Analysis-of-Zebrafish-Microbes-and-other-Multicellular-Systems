@@ -764,9 +764,10 @@ function [data, param] = loadParameters()
                         %Load in the number of scans. Default will be for all of the
                         %scans...might want to make this an interactive thing at some point.
                         param.scans = 1:param.expData.totalNumberScans;
-                        
+                        param.scans = 3:37;
                         %Number of regions in be analyzed. Hardcoded to be all of them
                         param.regions = 'all';
+                        param.regions = 1:4;
                         %Colors to be analyzed. Need to provide a more machine readable way and
                         %elegant way to load this into the code.
                         param.color = [{'488nm'}, {'568nm'}];
