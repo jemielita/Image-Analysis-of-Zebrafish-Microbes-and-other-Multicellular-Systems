@@ -37,16 +37,16 @@ function [] = multipleRegionCropGUI(param, data)
 % GUI Elements
 %%%%%%%%%%%%%%
 
-%%Variables that we'll use in this GUI
+%%Variables that we'll use in this GUI.
+%All of these are set in the function initializeDisplay()-the values below
+%should be replaced with place holders.
 
 %%%%%% z stack depth
 zMin = 1;
-
 %Put this back in in a second.
 zMax = length([param.regionExtent.Z]);
 zNum = zMin;
 zLast = zNum; %The last z level we went to.
-
 
 zStepSmall = 1.0/(zMax-zMin);
 zStepBig = 15.0/(zMax-zMin);
@@ -67,7 +67,6 @@ colorNum = 1;
 
 %%%number of regions
 totalNumRegions = length(unique([param.expData.Scan.region]));
-
 
 %%%%api handle
 hApi = '';
@@ -114,6 +113,7 @@ hMenuDisplay = uimenu('Label', 'Display');
 hMenuContrast = uimenu(hMenuDisplay, 'Label', 'Adjust image contrast', 'Callback', @adjustContrast_Callback);
 hMenuBoundBox = uimenu(hMenuDisplay, 'Label', 'Remove region bounding boxes', 'Callback', @modifyBoundingBox_Callback);
 hMenuScroll = uimenu(hMenuDisplay, 'Label', 'Add scroll bar to image display', 'Callback', @scrollBar_Callback);
+hMenuDenoise = uimenu(hMenuDisplay, 'Label', 'Denoise!', 'Callback', @denoiseIm_Callback);
 
 %%%%%%Create the displayed control panels
 
@@ -124,7 +124,6 @@ imageRegion = axes('Parent', hImPanel,'Tag', 'imageRegion', 'Position', [0, 0 , 
 
 %Handle to the scroll panel, if we make it.
 hScroll = '';
-
 
 offset = 0.05;
 hManipPanel = uipanel('Parent', fGui, 'Units', 'Normalized', 'Position',[ 0.05 0.02 0.3 0.2-offset],...
@@ -140,7 +139,6 @@ hZSlider = uicontrol('Parent', hManipPanel,'Units', 'Normalized', 'Position', [0
     'Callback', @z_Callback);
 
 
-if(numScans>1)
 hScanText = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Position', [0.05 0.8-2*dist 0.1 0.15],...
     'Style', 'text', 'String', 'Scan Number');
 hScanTextEdit = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Position', [0.17 0.8-2*dist 0.1 0.15],...
@@ -150,7 +148,7 @@ hScanTextEdit = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Positio
 hScanSlider = uicontrol('Parent', hManipPanel,'Units', 'Normalized', 'Position', [0.3 0.86-2*dist 0.65 0.1],...
     'Style', 'slider', 'Min', minScan, 'Max',maxScan, 'SliderStep', [1 1], 'Value', 1,...
     'Callback', @scanSlider_Callback, 'Tag', 'scanSlider');
-end
+
 
 hColorText = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Position', [0.05 0.8-dist 0.1 0.15],...
     'Style', 'text', 'String', 'Color');
@@ -159,8 +157,6 @@ hColorTextEdit = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Positi
 hColorSlider = uicontrol('Parent', hManipPanel,'Units', 'Normalized', 'Position', [0.3 0.86-dist 0.65 0.1],...
     'Style', 'slider', 'Min', minColor, 'Max', maxColor, 'SliderStep', [1 1], 'Value', 1,...
     'Callback', @colorSlider_Callback);
-
-
 
 %Create a data table where the user can give the upper and upper bound (in
 %terms of the z level) for different regions.
@@ -187,13 +183,15 @@ set([fGui,  hZSlider, imageRegion],...
 
 movegui(fGui, 'center');
 
+
 %Show the bottom image in the stack
 im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
 
 color = colorType(colorNum);
 color = color{1};
-im = registerSingleImage(scanNum,color, zNum,im, data,param);
 
+im = registerSingleImage(scanNum,color, zNum,im, data,param);
+im = mat2gray(im);
 hIm = imshow(im, [],'Parent', imageRegion);
 
 %Create a scroll panel
@@ -202,6 +200,26 @@ apiScroll = iptgetapi(hScroll);
 
 initMag = apiScroll.findFitMag();
 apiScroll.setMagnification(initMag);
+
+initializeDisplay('Initial');%Function holding everything to enable display of new information
+%-necessary to make it easy to load in new scans.
+
+
+%And display the first image.
+hRect = findobj('Tag', 'outlineRect');
+delete(hRect);
+
+im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
+
+color = colorType(colorNum);
+color = color{1};
+im = registerSingleImage(scanNum,color, zNum,im, data,param);
+im = mat2gray(im);
+set(hIm, 'CData', im);
+
+initMag = apiScroll.findFitMag();
+apiScroll.setMagnification(initMag);
+
 
 outlineRegions(); %Outline the different regions that make up the composite region.
 
@@ -216,16 +234,77 @@ hContrast = imcontrast(imageRegion);
 
 %%%%% Drop down menu callback
 
+%Load in a new scan stack
     function loadScan_Callback(hObject, eventdata)
-        zMax = 100;
+        fprintf(2, 'Loading in a new scan stack...');
+        
+        initializeDisplay();%Function holding everything to enable display of new information
+        %-necessary to make it easy to load in new scans.
+        
+        
+        %And display the first image.
+        hRect = findobj('Tag', 'outlineRect');
+        delete(hRect);
+        
+        
+        im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
+        
+        color = colorType(colorNum);
+        color = color{1};
+        im = registerSingleImage(scanNum,color, zNum,im, data,param);
+        im = mat2gray(im);
+        set(hIm, 'XData', [1 param.regionExtent.regImSize(2)]);
+        set(hIm, 'YData', [2 param.regionExtent.regImSize(1)]);
+        set(hIm, 'CData', im);
+        
+        initMag = apiScroll.findFitMag();
+        apiScroll.setMagnification(initMag);
+        
+        
+        outlineRegions(); %Outline the different regions that make up the composite region.
+        
+        
+
+        fprintf(2, 'Done!\n');
     end
 
     function saveImage_Callback(hObject, eventdata)
-        
+        [filename, pathname, fIndex] = uiputfile('.tif', 'Save the displayed scan.');
+        if isequal(filename,0) || isequal(pathname,0)
+            disp('User pressed cancel-image will not be saved')
+        else
+            disp(['Saving image in the file ', fullfile(pathname, filename)])
+            imwrite(im, strcat(pathname,filename), 'tiff');
+        end
+              
     end
 
     function saveScan_Callback(hObject, eventdata)
+      dirName = uigetdir(param.directoryName, 'Save the entire scan stack, both colors. Only current scan number will be saved!');
+      if isequal(dirName,0) 
+          disp('User pressed cancel-image stack will not be saved')
+          return
+      end
+      
+      disp(['Saving image stack in the directory ', dirName]);
+      
+      for c = minColor:maxColor
         
+          color = colorType(colorNum);
+          color = color{1};
+          colorDir = strcat(dirName, filesep,color);
+          mkdir(colorDir);
+          disp(strcat('Saving color ', color));
+          
+          for i=zMin:zMax
+              im = registerSingleImage(scanNum, color, i, im, data,param);
+              filename = strcat('pco', num2str(i), '.tif');
+              
+              imwrite(im, strcat(colorDir, filesep,filename), 'tiff');
+          fprintf(2,'.');
+          end
+          fprintf('\n');
+      end
     end
 
     function adjustContrast_Callback(hObject, eventdata)
@@ -234,6 +313,17 @@ hContrast = imcontrast(imageRegion);
      %   end
     end
 
+    function denoiseIm_Callback(hObject, eventdat)
+        %Denoise the image by filtering with a gaussian filter with a sigma
+        %equal to the width of the PSF
+        %sigma = 0.22*wavelength/NA...I think I got all the terms right.
+        hG = fspecial('Gaussian', ceil(7*0.66),0.66);
+        im = mat2gray(im);%This should have been done somewhere else.
+        imF = imfilter(im, hG);
+        set(hIm, 'CData', imF);
+        
+        
+    end
     function scrollBar_Callback(hObject, eventdata)
        value = get(hMenuScroll, 'Label');
        
@@ -365,7 +455,7 @@ hContrast = imcontrast(imageRegion);
         color = colorType(colorNum);
         color = color{1};
         im = registerSingleImage(scanNum,color, zNum,im, data,param);
-        
+        im = mat2gray(im);
         set(hIm, 'CData', im);
         outlineRegions();
         
@@ -390,7 +480,7 @@ hContrast = imcontrast(imageRegion);
         color = colorType(colorNum);
         color = color{1};
         im = registerSingleImage(scanNum,color, zNum,im, data,param);
-        hIm = imshow(im, [],'Parent', imageRegion);
+        im = mat2gray(im);
         
 %        set(hIm, 'CData', im);
 
@@ -416,7 +506,7 @@ hContrast = imcontrast(imageRegion);
         color = colorType(colorNum);
         color = color{1};
         im = registerSingleImage(scanNum,color, zNum,im, data,param);
-
+        im = mat2gray(im);
         set(hIm, 'CData', im);
         
     %    hContrast = imcontrast(hIm);
@@ -444,6 +534,7 @@ hContrast = imcontrast(imageRegion);
         color = colorType(colorNum);
         color = color{1};
         im = registerSingleImage(scanNum,color, zNum,im, data,param);
+        im = mat2gray(im);
         set(hIm, 'CData', im);
     end
     function z_Callback(hObject, eventData)
@@ -468,6 +559,7 @@ hContrast = imcontrast(imageRegion);
         color = colorType(colorNum);
         color = color{1};
         im = registerSingleImage(scanNum,color, zNum,im, data,param);
+        im = mat2gray(im);
         set(hIm, 'CData', im);
                 
         %Update the previous examined Z slice
@@ -503,7 +595,85 @@ hContrast = imcontrast(imageRegion);
        delete(hPoly); %Delete the displayed polygon. 
     end
         
-    
+ %%%%%%%%%%%%%Code to initialize the display of all data
+ 
+    function []= initializeDisplay(varargin)
+        
+        if nargin==0
+            %Load in new parameters
+            [data,param] = loadParameters;
+        end
+        
+        %Set z values
+        zMax = length([param.regionExtent.Z]);
+        
+        zStepSmall = 1.0/(zMax-zMin);
+        zStepBig = 15.0/(zMax-zMin);
+        
+        %Update the display of z values
+        set(hZTextEdit, 'String', zMin);
+        set(hZSlider, 'Min', zMin);
+        set(hZSlider, 'Max', zMax);
+        set(hZSlider, 'SliderStep', [zStepSmall, zStepBig]);
+        
+        
+        %Set the number of scans
+        %%%%%% number of scans
+        numScans = param.expData.totalNumberScans;
+        numScans = uint16(numScans);
+        minScan = uint16(1);
+        maxScan = uint16(numScans);
+        scanNum = 1;
+        
+        scanStepSmall = 1;
+        scanStepBig = 1;
+       
+        set(hScanTextEdit, 'String', minScan);
+        set(hScanSlider, 'Min', minScan);
+        set(hScanSlider, 'Max', maxScan);
+        set(hScanSlider, 'SliderStep', [scanStepSmall, scanStepSmall]);
+        
+        if(maxScan==1)
+           set(hScanText, 'Visible', 'off');
+           set(hScanSlider, 'Visible', 'off');
+           set(hScanTextEdit, 'Visible', 'off'); 
+        else
+            set(hScanText, 'Visible', 'on');
+            set(hScanSlider, 'Visible', 'on');
+            set(hScanTextEdit, 'Visible', 'on');
+        end
+        
+        
+        
+        %%%%%% number of colors
+        numColor = length([param.color]);
+        minColor = 1;
+        maxColor = numColor;
+        colorType = [param.color];
+        colorNum = 1;
+        %%%%And update the slider bar
+        set(hColorTextEdit, 'String', minColor);
+        set(hColorSlider, 'Min', minColor);
+        set(hColorSlider, 'Max', maxColor);
+        
+        
+        %%%number of regions
+        totalNumRegions = length(unique([param.expData.Scan.region]));
+        
+        %Color map for bounding rectangles.
+        cMap = rand(totalNumRegions,3);
+        
+        
+        %Update the table for max and min z values.
+        dataTable = param.regionExtent.crop.z;
+        set(hRegTable, 'Data', dataTable);
+        for i=1:totalNumRegions
+            rnames{i} = i;
+        end
+        set(hRegTable, 'RowName', rnames);
+        
+
+    end
 
 end
 
