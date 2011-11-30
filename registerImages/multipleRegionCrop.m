@@ -290,7 +290,7 @@ hContrast = imcontrast(imageRegion);
       
       for c = minColor:maxColor
         
-          color = colorType(colorNum);
+          color = colorType(c);
           color = color{1};
           colorDir = strcat(dirName, filesep,color);
           mkdir(colorDir);
@@ -298,6 +298,12 @@ hContrast = imcontrast(imageRegion);
           
           for i=zMin:zMax
               im = registerSingleImage(scanNum, color, i, im, data,param);
+              
+              hG = fspecial('Gaussian', ceil(7*0.66),0.66);
+              im = mat2gray(im);%This should have been done somewhere else.
+              im = imfilter(im, hG);
+              
+              
               filename = strcat('pco', num2str(i), '.tif');
               
               imwrite(im, strcat(colorDir, filesep,filename), 'tiff');
@@ -764,10 +770,10 @@ function [data, param] = loadParameters()
                         %Load in the number of scans. Default will be for all of the
                         %scans...might want to make this an interactive thing at some point.
                         param.scans = 1:param.expData.totalNumberScans;
-                     %   param.scans = 3:37;
+                       % param.scans = 3:37;
                         %Number of regions in be analyzed. Hardcoded to be all of them
                         param.regions = 'all';
-                     %   param.regions = 1:4;
+                       % param.regions = 1:4;
                         %Colors to be analyzed. Need to provide a more machine readable way and
                         %elegant way to load this into the code.
                         param.color = [{'488nm'}, {'568nm'}];

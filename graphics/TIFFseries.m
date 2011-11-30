@@ -32,20 +32,20 @@
 %   functions.  If no tracking, objs = [].
 %
 % Raghuveer Parthasarathy
-% last modified July 12, 2011
-%    Sept. 20, 2010: Use getnumfilelist.m to get information on files to
-%    load.
-%    July 26, 2010 (convert 12-bit images to 8-bit)
-%    June 6, 2011 (minor changes to tracking options)
-%    July 10, 2011: Allow multipage TIFF input
-%
-% Mike Taormina
-% last modified November 16, 2011
+% last modified:
+%   Nov. 16, 2011 (minor issue with reading multipage TIFF)
+%   Mike Taormina
 %   November 16, 2011: Free speed up - Use 'Info' for reading multipage TIFF files (as
 %   http://blogs.mathworks.com/steve/2009/04/02/matlab-r2009a-imread-and-multipage-tiffs/).
 %   This is probably noticable when dealing with thousands of images, e.g.,
 %   for high speed video.  The prevented bottleneck is not tied to the resolution of
 %   the images, just the number of frames.
+%
+%    Sept. 20, 2010: Use getnumfilelist.m to get information on files to
+%    load.
+%    July 26, 2010 (convert 12-bit images to 8-bit)
+%    June 6, 2011 (minor changes to tracking options)
+%    July 10, 2011: Allow multipage TIFF input
 
 
 function [outA objs] = TIFFseries(rect)
@@ -119,7 +119,7 @@ if ismultipage
     info1 = allinfo(1);
 else
     Fr1 = imread(FileName1);
-    info1 = imfinfo(FileName1, 'tif');
+    info1 = imfinfo(FileName1);
 end
 if convert12to8opt
     % user says it's a 12-bit image; convert to 8-bit (rescale)
@@ -252,9 +252,9 @@ for k=frmin:Nskip:frmax,
             infoA = allinfo(k);
         else
             framestr = sprintf(formatstr, k);
-            FileName = strcat(fbase, framestr, '.tif');
-            tempoutA  = imread(FileName, 'tif');  % image
-            infoA = imfinfo(FileName, 'tif');
+            FileName = strcat(fbase, framestr, ext);
+            tempoutA  = imread(FileName);  % image
+            infoA = imfinfo(FileName);
         end
         if convert12to8opt
             % user says it's a 12-bit image; convert to 8-bit (rescale)
@@ -373,8 +373,6 @@ if AVIopt
     % An 8-bit 'hot' colormap
       hot8 = ones(256,3);
       hot8(1:96,1) = (1:96)/96;
-%      hot8(1:12,1) = zeros(12,1);
-%      hot8(13:96,1) = (1:84)/84;
       hot8(1:96,2) = zeros(96,1);
       hot8(97:192,2) = (1:96)/96;
       hot8(1:192,3) = zeros(192,1);
@@ -382,22 +380,27 @@ if AVIopt
     % Output parameters
     prompt = {'Enter the output filename (will add .avi):', ...
         'Enter the output frames per second:', ...
-        'Enter the output compression type:', ...
         'Enter the output compression quality (0-100)', ...
         'Re-scale max. intensity to full range? (1==yes)'};
     dlg_title = 'Output AVI parameters'; num_lines= 1;
-    def     = {fbase, '10', 'none', '100', '0'};  % default values
+    def     = {fbase, '10', '100', '0'};  % default values
     answer  = inputdlg(prompt,dlg_title,num_lines,def);
     Aoutfiletemp = char(answer(1));
     Aoutfile = strcat(Aoutfiletemp, '.avi');  % output filename
     fps = str2double(answer(2));
-    newcompr = char(answer(3));
-    newqual = str2double(answer(4));
-    AVIscaleint = logical(str2double(answer(5)));
+    newqual = str2double(answer(3));
+    AVIscaleint = logical(str2double(answer(4)));
+    vidObj = VideoWriter(Aoutfile);
+    vidObj.FrameRate = fps;
+    vidObj.Quality = newqual;
+    open(vidObj);
     if (newqual > 100.0)
         newqual = 100; end
     if (newqual < 1.0)
         newqual = 1; end
+    disp('Creating frame matrix for AVI output.  Caution: Slow, and not tested well!');
+    disp('WARNING: May Crash!  Should perhaps call writeVideo differently.  Pause 4')
+    pause(4)
     if AVIscaleint
         % scale so max intensity is 255
         for k=1:Noutframes
@@ -418,7 +421,8 @@ if AVIopt
     end
     disp(' ')
     disp('   Writing file (wait for "done" indication...)');
-    movie2avi(outA, Aoutfile, 'compression', newcompr, 'quality', newqual, 'fps', fps);
+    writeVideo(vidObj,outA);
+    close(vidObj);
     disp('      ... done.');
     cd(firstdir)  % Return to the original directory
 end
