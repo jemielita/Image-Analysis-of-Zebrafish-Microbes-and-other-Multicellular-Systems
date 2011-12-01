@@ -59,9 +59,18 @@ for nScan=1:length(data.scan)
                     imOut.totalInten = imOut.totalInten + im;
                     
                     index = find(im>param.thresh(nColor));
-                    imOut.totalNum(index) = imOut.totalNum(index) + 1;
+                    
+                    %There must be a non-for-loop way of doing this.
+                    for i=1:length(index)
+                        imOut.totalNum(index(i)) = imOut.totalNum(index(i)) + 1;
+                    
+                    end
             end           
         end
+        %Normalizing the total intensity and the maximum intensity
+        %projection by the intensity of a single bacteria
+        imOut.totalInten = imOut.totalInten/param.thresh(nColor);
+        imOut.mip = imOut.mip/param.thresh(nColor);
         data.scan(nScan).allReg.color(nColor).intenData = imOut;
 
     end
