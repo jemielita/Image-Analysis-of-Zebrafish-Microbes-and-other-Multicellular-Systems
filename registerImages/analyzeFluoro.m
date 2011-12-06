@@ -19,8 +19,8 @@ switch lower(type)
         imOut.mip = zeros(size(im,1), size(im,2));
         imOut.totalNum = zeros(size(im,1), size(im,2));
         imOut.totalInten = zeros(size(im,1), size(im,2));
-end
-        
+end    
+    
 %Create the mask that will be used to outline only the gut
 [temp, imMask] = roifill(im, param.regionExtent.poly(:,1), param.regionExtent.poly(:,2));
 
@@ -29,6 +29,19 @@ for nScan=1:length(data.scan)
     
     for nColor=1:length(param.color)
         %and each color
+        %Need to reset imOut for every scan and color
+        switch lower(type)
+            case 'mip'
+                imOut.mip = zeros(size(im,1), size(im,2));
+            case 'total number'
+                imOut.totalNum = zeros(size(im,1), size(im,2));
+            case 'total intensity'
+                imOut.totalInten = zeros(size(im,1), size(im,2));
+            case 'all'
+                imOut.mip = zeros(size(im,1), size(im,2));
+                imOut.totalNum = zeros(size(im,1), size(im,2));
+                imOut.totalInten = zeros(size(im,1), size(im,2));
+        end
         
         for nZ = 1:size(param.regionExtent.Z,1)
             
@@ -39,6 +52,18 @@ for nScan=1:length(data.scan)
             
             im = double(im);
             %Apply the mask that outlines only the gut
+            %Remove background intensity. In the red channel to background
+            %pixel intenisty is ~ 109, while in the green it's 105
+            switch nColor
+                case 1
+                    im = im-105;
+
+                case 2
+                    im = im-109;                  
+            end
+            index = find(im<0);
+            im(index) = 0;%Suppress all negative values
+                
             im(~imMask) = 0;
             %Calculate the desired features about this image
             
@@ -67,10 +92,7 @@ for nScan=1:length(data.scan)
                     end
             end           
         end
-        %Normalizing the total intensity and the maximum intensity
-        %projection by the intensity of a single bacteria
-        imOut.totalInten = imOut.totalInten/param.thresh(nColor);
-        imOut.mip = imOut.mip/param.thresh(nColor);
+        
         data.scan(nScan).allReg.color(nColor).intenData = imOut;
 
     end

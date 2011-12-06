@@ -47,7 +47,7 @@ for numDir =1:length(scanLoc)
     
  %% Analyzing the fluorescence signal for that image stack
  disp([ 'Analyzing fluorescene in: ', param.directoryName]);
- [data,param] = analyzeFluoro(data,param, 'all');
+ [data,param] = analyzeFluoro(data,param, 'total intensity');
  
  %% Saving the fluorescence data
     %Location that the results of the data will be saved to
