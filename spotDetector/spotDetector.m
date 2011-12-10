@@ -41,6 +41,9 @@ res = img - imgDenoised; % residuals
 sigma_res0 = std(res(:));
 
 delta = 1;
+
+%Keep on iterating algorithm until the difference in the result is below
+%some threshold (0.002 is probably an arbitrary choice)
 while delta > 0.002
     resDenoised = significantCoefficientDenoising(res, S);
     imgDenoised = imgDenoised + resDenoised; % add significant residuals
@@ -50,6 +53,9 @@ while delta > 0.002
     sigma_res0 = sigma_res1;
 end
 
+%The code above is the only thing that uses the paper Olivo-Marin, Pattern
+%Recognition, 2002.
+
 %===================================================
 % Multiscale product of wavelet coefficients
 %===================================================
@@ -57,14 +63,20 @@ end
 W = awt(imgDenoised, S);
 imgMSP = abs(prod(W(:,:,1:S),3));
 
-
 %===================================================
 % Binary mask
 %===================================================
 % Establish thresholds
+
+%The value of 9 here probably corresponds to the expected pixel range for
+%diffraction limited spots...would potentially want to adapt this for
+%picking out larger spots.
 [imAvg imStd] = localAvgStd2D(imgDenoised, 9);
 
 mask = zeros(ny,nx);
+%In the second argument, why no reference to the std of imgDenoised? Is it
+%because values away from the std. have already been cut off by the
+%iterative procedure used?
 mask((imgDenoised >= imAvg+0.5*imStd) & (imgDenoised.*imgMSP >= mean(imgDenoised(:)))) = 1;
 
 
