@@ -30,28 +30,17 @@ end
  b= 0;
  %Get the indices of points on this line
  [xx yy] = find(BW==1);
- %(the indices seem to be flipped for some reason...keep this in mind
- 
- 
-  
- 
- %4) cull the 
- 
- 
- %Showing that they overlap
- %figure; imshow(BW)
- %hold on
- %plot(column, row)
- 
- 
  
  %Now drawing the lines perpendicular to all points on this thinned line.
- 
+%  
+%  figure; imshow(BWInit)
+%  hold on
+%  plot(xx, yy)
  
  stepSize = 20; %Steps in pixels to take along the arc length.
  
  %Smoothing the curve a little bit.
- %There's potentially a better way to do this. Currently downsampling thema
+ %There's potentially a better way to do this. Currently downsampling the
  %data and then fitting it with a spline (to minimize curvature of the
  %line)
  xxT = xx(1:10:length(xx));
@@ -69,11 +58,13 @@ end
  
  %Somewhat of a brute force approach
  
- %1) Interpolate xx and yy so that they extend pass these minimum and
- %maximum values
- xxTemp = interp1(yy, xx, 1:size(BW,2),'linear', 'extrap');
+ %1) Interpolate xx and yy so that they extend to the end of the image
+ %range
+ xxTemp = interp1( yy,xx,1:size(BW,2),'linear', 'extrap');
  
  yyTemp = 1:size(BW,2);
+ 
+ 
  
  %2) round to the nearest pixel
  xxTemp = round(xxTemp);
@@ -82,28 +73,16 @@ end
  %2) Find the intersection of the points in 2) and in the interior of the
  %gut.
  
-%Find the indices corresponding to the line
- index = sub2ind(size(BW), yyTemp, xxTemp);
+ %Find the indices corresponding to the line
+ index = sub2ind(size(BW), xxTemp, yyTemp);
  lineIm =zeros(size(BW));
  lineIm(index) = 1;
  
  lineIm = lineIm.*BWInit; %the intersection of the line w/ the region
  
  %Get the indices on this new and improved line.
- [yy xx] = find(lineIm==1);
- 
-%  figure; imshow(BW)
-%  hold on
-%  plot(xx, yy)
-%  
-%  b= 0;
-%  
-% figure; imshow(BWInit);
-% hold on
-% plot(xx, yy);
-% 
-% b = 0;
-
+ %Not sure why the indices have to be flipped here, but it seems to work.
+ [yy,xx] = find(lineIm==1);
  
  %Now we need to find points along this line that are equally spaced.
  %0) first smoothing out the curve again (need to minimize the number of
@@ -131,7 +110,7 @@ end
  yy = yI;
  
  
- 
+
 %  
 %  
 %  figure; imshow(BWInit);
@@ -139,30 +118,77 @@ end
 %  plot(xx, yy);
 %   
 % b= 0;
-   
-%  for i=2:length(xx)
-%  
-%  %Find the orthogonal vector using Gram-Schmidt orthogonalization
+%    
+%%%%WARNING: THE CODE BELOW DOESN'T CONVERGE!. But after a couple of
+%%%%iterations it appears as if it doesn't change the shape of the line too
+%%%%much.
+% %Readjust the location of this line so that it's equidistant from both
+% %sides of the gut.
 % 
-%  x = xx(i)-xx(i-1);
-%  y = yy(i)-yy(i-1);
-%  xI = x+1;
-%  yI = y+2;
-%  
-%  Orth = [xI yI] - ((x*xI + yI*y)/(x^2 +y^2))*[x y];
-%  
-%  xVal = xx(i)+ Orth(1)*(-100:100);
-%  yVal = yy(i)+ Orth(2)*(-100:100);
-%  
-%  imshow(BWInit);
-%  hold on
-%  plot(yy, xx);
-%  plot(yVal, xVal);
-%  
-%  pause
-%  
-%  end
-
+% %Get a mask of the outine of the gut. Dilate it a bit, so that there aren't
+% %any holes in it.
+% perim = bwperim(BWInit);
+% perim = bwmorph(perim, 'dilate');
+% %Get the indices of the outline of the gut
+% [perimIndex(:,2), perimIndex(:,1)] = find(perim==1);
+% 
+% 
+% newPos = cat(2, xx',yy');
+% newPos(:) = 0;
+% err = 11;
+% 
+% figure; imshow(BWInit);
+% hold on
+% 
+% while err > 10;
+%     plot(xx, yy);
+%     for i=2:length(xx)
+%         
+%         %Find the orthogonal vector using Gram-Schmidt orthogonalization
+%         
+%         x = xx(i)-xx(i-1);
+%         y = yy(i)-yy(i-1);
+%         xI = x+1;
+%         yI = y+2;
+%         
+%         Orth = [xI yI] - ((x*xI + yI*y)/(x^2 +y^2))*[x y];
+%         
+%         xVal = xx(i)+ Orth(1)*(-100:100); %Need to change this line to only go to the end of the image
+%         yVal = yy(i)+ Orth(2)*(-100:100);
+%         
+%         xVal = round(xVal);%Round to the nearest pixel
+%         yVal = round(yVal);
+%         
+%         val = cat(2, xVal', yVal');
+%         %Find the intersection of these pixel values with the boundary
+%         interL = ismember(val, perimIndex, 'rows');%Returns indices of val that intersect the perimeter
+%         
+%         %Get the x, y coordinates of members of interL
+%         index = find(interL==1);
+%         interL = val(index,:); %Coordinates of the intersection of the regions
+%         
+%         
+%         while(size(interL,1) >2)
+%             d = triu(dist(interL')); %Get distance between found pixels that make up the intersection of the perimeter and the line
+%             %Only get upper triangular portion to avoide double counting when removing
+%             %elements
+%             index = find(d==0);
+%             d(index) = NaN; %We'll remove minimum values. Want to ignore values equal to zero.
+%             
+%             index = find(d==min(d(:)));
+%             [index, temp] = ind2sub(size(d), index);
+%             interL(index,:) = []; %Removing elements that are close to other ones
+%             
+%         end
+%         
+%         newPos(i,:)= mean(interL);
+%           
+%     end
+%     %Get the error with this iteration of the readjustment of the line
+%     err = sqrt(sum((newPos(:,1)-xx').^2 + (newPos(:,2)-yy').^2));
+%     xx(2:end) = newPos(2:end,1)';%The beginning point is fixed.
+%     yy(2:end) = newPos(2:end,2)';
+% end
 
 %We'll assume the size of the boxes is such that the only possible overlap
 %is between adjacent boxes.
@@ -174,7 +200,7 @@ testOverlap = zeros(size(BW));
 
  for i=2:length(xx)-1
  %Find the orthogonal vector using Gram-Schmidt orthogonalization
-
+ 
  x = xx(i)-xx(i-1);
  y = yy(i)-yy(i-1);
  xI = x+1;
@@ -187,23 +213,17 @@ testOverlap = zeros(size(BW));
  
  xVal(2,:) = xx(i+1)+ Orth(1)*(100)*[-1, 1];
  yVal(2,:) = yy(i+1)+ Orth(2)*(100)*[-1,1];
-
+ 
  pos = [xVal(1,1), yVal(1,1); xVal(1,2), yVal(1,2); xVal(2,2), yVal(2,2);...
      xVal(2,1), yVal(2,1)];
-
+ 
  thisMask = poly2mask(pos(:,1), pos(:,2), size(BW,1), size(BW,2));
  
  %Cut off any part of the mask outside the fish
  thisMask = thisMask.*BWInit;
  
- 
- 
- %Switch between putting the mask in the 1st and 2nd array.
- %mask(:,:,mod(i,2)+1) = i*thisMask + mask(:,:,mod(i,2)+1);
+ %Save this mask
  mask(:,:,i-1) = i* thisMask;
- %imshow(label2rgb(mask(:,:,mod(i,2)+1)))
-
-% pause
  
  
  end
