@@ -1,7 +1,10 @@
-function [mask, centerLine] = curveMask
+function [mask, centerLine] = curveMask(poly,sizeIm)
 
-
-load 'BW.mat' BW
+ b= 0;
+ 
+ %Create a mask out of the polygon.
+ BW = poly2mask(poly(:,1), poly(:,2), sizeIm(1), sizeIm(2));
+ 
 %Fit this polygon to an ellipse
 %We'll use a piece of code Raghu wrote (Note: I don't think this code gives 
 %the optimal elliptical fitting to the data. Not a big deal for our application, but
@@ -32,29 +35,51 @@ BWlast = zeros(size(BW));
 
 %Thin down the curve to a line, this will be our first pass at the center
 %of the gut.
+fprintf(2, 'Iteritavely thinning out the region...');
 while (sum(BWlast(:)-BW(:))~= 0)
     BWlast = BW;
     BW = bwmorph(BW, 'thin');
+    fprintf(2, '.');
 end
+fprintf(2, '\n');
 
 
 %Get the indices of points on this line
-[xx yy] = find(BW==1);
+[yy xx] = find(BW==1);
 
-%Now drawing the lines perpendicular to all points on this thinned line.
+tempPos = cat(2, xx, yy);
+tempPos = sort(tempPos, 1); %Sorting x values
+xx = tempPos(:,1);
+yy = tempPos(:,2);
+%Remove indices that repeat in the xx column
+index = 1;
+for i=2:length(xx)
+    if(xx(i)-xx(index)==0)
+       xx(i) = -1;
+       yy(i) = -1;
+    else
+        index = i;
+    end
+end
 
-%Smoothing the curve a little bit.
-%There's potentially a better way to do this. Currently downsampling the
-%data and then fitting it with a spline (to minimize curvature of the
-%line)
-xxT = xx(1:10:length(xx));
-yyT= yy(1:10:length(yy));
+xx(find(xx==-1)) = [];
+yy(find(yy==-1)) = [];
 
-
-yy = spline(xxT, yyT, xxT);
-
-%Transposing the position vectors
-yy = yy'; xx= xxT';
+    %Now drawing the lines perpendicular to all points on this thinned line.
+    
+    %Smoothing the curve a little bit.
+    %There's potentially a better way to do this. Currently downsampling the
+    %data and then fitting it with a spline (to minimize curvature of the
+    %line)
+    xxT = xx(1:10:length(xx));
+    yyT= yy(1:10:length(yy));
+    
+    
+    yy = spline(xxT, yyT, xxT);
+    
+    %Transposing the position vectors
+    yy = yy'; xx= xxT';
+    
 
 %The thinning procedure cuts off the beginning and end of the line, so
 %that it doesn't link up with the outline of the shape. Extrapolate the
@@ -64,9 +89,9 @@ yy = yy'; xx= xxT';
 
 %1) Interpolate xx and yy so that they extend to the end of the image
 %range
-xxTemp = interp1( yy,xx,1:size(BW,2),'linear', 'extrap');
+yyTemp = interp1(xx,yy,1:size(BW,2),'linear', 'extrap');
 
-yyTemp = 1:size(BW,2);
+xxTemp = 1:size(BW,2);
 
 
 
@@ -78,7 +103,7 @@ yyTemp = round(yyTemp);
 %gut.
 
 %Find the indices corresponding to the line
-index = sub2ind(size(BW), xxTemp, yyTemp);
+index = sub2ind(size(BW), yyTemp, xxTemp);
 lineIm =zeros(size(BW));
 lineIm(index) = 1;
 
@@ -122,7 +147,14 @@ function [mask] = createMask(BW, xx, yy)
 
 numBoxes = length(xx)-1 -2 +1;
 
-mask = zeros(size(BW,1), size(BW,2),numBoxes);
+%Try to allocate a relatively big array to begin with. If that doesn't work
+%start with a small one.
+try
+mask = zeros(size(BW,1), size(BW,2),5);
+catch err
+    mask = zeros(size(BW,1), size(BW,2),1);
+end
+
 
 for i=2:length(xx)-1
     %Find the orthogonal vector using Gram-Schmidt orthogonalization
@@ -148,15 +180,32 @@ for i=2:length(xx)-1
     %Cut off any part of the mask outside the fish
     thisMask = thisMask.*BW;
     
-    %Save this mask
-    mask(:,:,i-1) = i* thisMask;
+    thisMask = i*thisMask; %Uniquely label each mask
+    %See if this mask doesn't overlap with any of the previously found
+    %masks. If it doesn't then add this mask to that array, if not put it
+    %into a new array.
     
+    for mComp=1:size(mask,3)
+        isOverlap = unique(thisMask.*mask(:,:,mComp)>0);
+        
+        if(ismember(1, abs(isOverlap)))
+            %Regions overlap, skip this mask for now,
+        if(mComp)<size(mask,3)
+            continue %Continue comparing masks if you're not at the end of the array of masks.
+        else
+           mask(:,:,mComp+1) = mask; %Enlarge the array storing the masks. 
+        end
+        
+        else
+            mask(:,:,mComp) = thisMask + mask(:,:,mComp);      
+        end
+          
+    end
     
 end
 %The mask structure above is somewhat unwieldy and unncessarily large
 %Convert it to an array of label matrices that contain non-overlapping
 %elements.
-
 
 %Collect the indices of all the boxes
 boxRegions =1:numBoxes;

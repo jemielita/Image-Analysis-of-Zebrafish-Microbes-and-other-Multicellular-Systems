@@ -514,8 +514,7 @@ hContrast = imcontrast(imageRegion);
         im = registerSingleImage(scanNum,color, zNum,im, data,param);
         im = mat2gray(im);
         set(hIm, 'CData', im);
-        
-    %    hContrast = imcontrast(hIm);
+
     end
 
     function scanSlider_Callback(hObject, eventData)
