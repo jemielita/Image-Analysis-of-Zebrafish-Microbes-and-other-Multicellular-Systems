@@ -1,12 +1,10 @@
 function [mask, centerLine] = curveMask(poly,sizeIm)
 
- b= 0;
- 
- %Create a mask out of the polygon.
- BW = poly2mask(poly(:,1), poly(:,2), sizeIm(1), sizeIm(2));
- 
+%Create a mask out of the polygon.
+BW = poly2mask(poly(:,1), poly(:,2), sizeIm(1), sizeIm(2));
+
 %Fit this polygon to an ellipse
-%We'll use a piece of code Raghu wrote (Note: I don't think this code gives 
+%We'll use a piece of code Raghu wrote (Note: I don't think this code gives
 %the optimal elliptical fitting to the data. Not a big deal for our application, but
 %I wouldn't use it for anything fancier.
 
@@ -19,7 +17,6 @@ mask = createMask(BW, xx, yy);
 centerLine = cat(2, xx', yy');
 
 end
-
 
 %Calculates the center of the gut, first by morphological thinning of the
 %gut (As a result this code should only be used for "cigar" shaped objects,
@@ -43,6 +40,24 @@ while (sum(BWlast(:)-BW(:))~= 0)
 end
 fprintf(2, '\n');
 
+%It's possible that the line left has a couple of branches. To get rid of
+%those, repeatedly apply the morphological operation 'spur', until the
+%number of points removed at each iteration is equal to 2. This will occur
+%when only the main line remains and is being trimmed from both ends
+BWNext = BW;
+
+index = [0 0 0]; %just to trick the 1st loop below
+
+while (length(index)>2)
+    BW = BWNext;
+    BWNext = bwmorph(BW, 'spur');
+    
+    index = find(BW(:)-BWNext(:) ==1);
+    
+end
+%Note: could do some tricks to recover the lost pixels from the main line,
+%but it might not be worth it.
+
 
 %Get the indices of points on this line
 [yy xx] = find(BW==1);
@@ -55,31 +70,31 @@ yy = tempPos(:,2);
 index = 1;
 for i=2:length(xx)
     if(xx(i)-xx(index)==0)
-       xx(i) = -1;
-       yy(i) = -1;
+        xx(i) = -1;
+        yy(i) = -1;
     else
         index = i;
     end
 end
 
-xx(find(xx==-1)) = [];
-yy(find(yy==-1)) = [];
+xx(xx==-1) = [];
+yy(yy==-1) = [];
 
-    %Now drawing the lines perpendicular to all points on this thinned line.
-    
-    %Smoothing the curve a little bit.
-    %There's potentially a better way to do this. Currently downsampling the
-    %data and then fitting it with a spline (to minimize curvature of the
-    %line)
-    xxT = xx(1:10:length(xx));
-    yyT= yy(1:10:length(yy));
-    
-    
-    yy = spline(xxT, yyT, xxT);
-    
-    %Transposing the position vectors
-    yy = yy'; xx= xxT';
-    
+%Now drawing the lines perpendicular to all points on this thinned line.
+
+%Smoothing the curve a little bit.
+%There's potentially a better way to do this. Currently downsampling the
+%data and then fitting it with a spline (to minimize curvature of the
+%line)
+xxT = xx(1:10:length(xx));
+yyT= yy(1:10:length(yy));
+
+
+yy = spline(xxT, yyT, xxT);
+
+%Transposing the position vectors
+yy = yy'; xx= xxT';
+
 
 %The thinning procedure cuts off the beginning and end of the line, so
 %that it doesn't link up with the outline of the shape. Extrapolate the
@@ -93,6 +108,10 @@ yyTemp = interp1(xx,yy,1:size(BW,2),'linear', 'extrap');
 
 xxTemp = 1:size(BW,2);
 
+%Remove elements of yyTemp that are above and below the range of the image
+index = find(yyTemp<0 | yyTemp>size(BW,1));
+yyTemp(index) = [];
+xxTemp(index) = [];
 
 
 %2) round to the nearest pixel
@@ -145,13 +164,12 @@ end
 function [mask] = createMask(BW, xx, yy)
 
 
-numBoxes = length(xx)-1 -2 +1;
-
-%Try to allocate a relatively big array to begin with. If that doesn't work
+%Try to allocate a relatively big array to begin with (to avoid having to reallocate mid-stride. If that doesn't work
 %start with a small one.
 try
-mask = zeros(size(BW,1), size(BW,2),5);
+    mask = zeros(size(BW,1), size(BW,2),5);
 catch err
+    
     mask = zeros(size(BW,1), size(BW,2),1);
 end
 
@@ -177,7 +195,7 @@ for i=2:length(xx)-1
     
     thisMask = poly2mask(pos(:,1), pos(:,2), size(BW,1), size(BW,2));
     
-    %Cut off any part of the mask outside the fish
+    %Cut off any part of the mask outside the outlined region
     thisMask = thisMask.*BW;
     
     thisMask = i*thisMask; %Uniquely label each mask
@@ -190,76 +208,26 @@ for i=2:length(xx)-1
         
         if(ismember(1, abs(isOverlap)))
             %Regions overlap, skip this mask for now,
-        if(mComp)<size(mask,3)
-            continue %Continue comparing masks if you're not at the end of the array of masks.
-        else
-           mask(:,:,mComp+1) = mask; %Enlarge the array storing the masks. 
-        end
-        
-        else
-            mask(:,:,mComp) = thisMask + mask(:,:,mComp);      
-        end
-          
-    end
-    
-end
-%The mask structure above is somewhat unwieldy and unncessarily large
-%Convert it to an array of label matrices that contain non-overlapping
-%elements.
-
-%Collect the indices of all the boxes
-boxRegions =1:numBoxes;
-boxRegionsNext = boxRegions;
-
-numberPanels = 0;
-
-while(~isempty(boxRegionsNext))
-    numberPanels = numberPanels+1; %Record the number of label matrices we'll need.
-    
-    boxRegions = boxRegionsNext;%Get the boxes that haven't been resorted from the previous iteration.
-    boxRegionsNext = [];
-    
-    %If there's only one boxRegion then break
-    if length(boxRegions)==1
-        break
-    end
-    
-    maskComp = boxRegions(1);
-    
-    %See if any of the other boxes don't overlap with the chosen box. If
-    %so, add them to the label matrix corresponding to that box.
-    for i = 2:length(boxRegions)
-        maskNum = boxRegions(i);
-        isOverlap = unique(mask(:,:,maskNum).*mask(:,:,maskComp)>0);
-        
-        if(ismember(1, abs(isOverlap)))
-            %Regions overlap, skip this mask for now, keep track of this
-            %one
-            boxRegionsNext(end+1) = maskNum; %#ok<AGROW>
-            continue
-        else
-            mask(:,:,maskComp) = mask(:,:,maskComp) + mask(:,:,maskNum);
-            mask(:,:,maskNum) = 0;
+            if(mComp<size(mask,3))
+                continue %Continue comparing masks if you're not at the end of the array of masks.
+            else
+                mask(:,:,mComp+1) = thisMask; %Enlarge the array storing the masks.
+            end
             
+        else
+            mask(:,:,mComp) = thisMask + mask(:,:,mComp);
+            break
         end
         
     end
     
+    
 end
 
-%Remove masks that are now empty
-nMask= 1;
-maskTemp = zeros(size(BW,1), size(BW,2), numberPanels);
-
-for maskNum =1:numBoxes
-    if (max(max(mask(:,:,maskNum))) ~=0   )
-        maskTemp(:,:,nMask) = mask(:,:,maskNum);
-        nMask = nMask +1;
-    end
+%Remove any arrays in mask that don't contain regions.
+while(~any(mask(:,:,end)>0))
+    mask(:,:,end) = [];
 end
 
-%Renaming the structure containing all the data about the different
-%regions.
-mask = maskTemp;
 
 end
