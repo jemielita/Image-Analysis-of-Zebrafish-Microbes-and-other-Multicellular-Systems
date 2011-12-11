@@ -524,7 +524,7 @@ hContrast = imcontrast(imageRegion);
         switch scanTag
             case 'scanSlider'
                 scanNum = get(hScanSlider, 'Value');
-                scanNum = int16(zNum);
+                scanNum = int16(scanNum);
                 
                 %Update the displayed z level.
                 set(hScanTextEdit, 'String', scanNum);
@@ -631,13 +631,13 @@ hContrast = imcontrast(imageRegion);
         maxScan = uint16(numScans);
         scanNum = 1;
         
-        scanStepSmall = 1;
-        scanStepBig = 1;
+        scanStepSmall = 1/double(numScans);
+        scanStepBig = 2.0/double(numScans);
        
         set(hScanTextEdit, 'String', minScan);
         set(hScanSlider, 'Min', minScan);
         set(hScanSlider, 'Max', maxScan);
-        set(hScanSlider, 'SliderStep', [scanStepSmall, scanStepSmall]);
+        set(hScanSlider, 'SliderStep', [scanStepSmall, scanStepBig]);
         
         if(maxScan==1)
            set(hScanText, 'Visible', 'off');
@@ -798,4 +798,13 @@ function [data, param] = loadParameters()
                         fprintf(2, 'done!\n');
                         
                 end
+                
+                
+                %The number of scans might not equal the number reported
+                %if the scan was halted early...manually updating this 
+
+                scanDir = dir([param.directoryName filesep 'Scans']);
+                numScans = regexp({scanDir.name}, 'scan_\d+');
+                numScans = sum([numScans{:}]);
+                param.expData.totalNumberScans = numScans;
     end

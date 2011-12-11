@@ -41,8 +41,7 @@ for numDir =1:length(scanLoc)
     
     %Place holder for now-need to get this information from Mike.
     param.thresh(1) = 436.68;
-    param.thresh(2) = 299.51;
-    
+    param.thresh(2) = 299.51;  
     
  %% Analyzing the fluorescence signal for that image stack
  disp([ 'Analyzing fluorescene in: ', param.directoryName]);
@@ -58,9 +57,5 @@ for numDir =1:length(scanLoc)
     
 end
 disp('All selected scans have been analyzed.');
-
-
-
-
 
 end
