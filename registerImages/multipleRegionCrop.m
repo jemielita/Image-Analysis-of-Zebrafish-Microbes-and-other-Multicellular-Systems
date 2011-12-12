@@ -690,11 +690,15 @@ hContrast = imcontrast(imageRegion);
         
     function drawGutCenter_Callback(hObject, eventdata)
         h = impoly('Closed', false);
-           position = wait(h);
-           
+        position = wait(h);
+        
+        param.centerLine = position;
+        myhandles.param = param;
+        guidata(fGui, myhandles);
+        
         
     end
- %%%%%%%%%%%%%Code to initialize the display of all data
+%%%%%%%%%%%%%Code to initialize the display of all data
  
     function []= initializeDisplay(varargin)
         

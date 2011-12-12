@@ -1,4 +1,4 @@
-function [mask, centerLine] = curveMask(poly,sizeIm,stepSize,param)
+function [mask, centerLine] = curveMask(poly,line,sizeIm,stepSize,param)
 
 %Create a mask out of the polygon.
 BW = poly2mask(poly(:,1), poly(:,2), sizeIm(1), sizeIm(2));
@@ -18,7 +18,7 @@ end
 stepSize  = round(stepSize);
 
 disp('Curve Mask: Calculating the center of the gut.');
-[xx, yy] = getCenterLine(BW, stepSize);
+[xx, yy] = getCenterLine(BW,line, stepSize);
 
 disp('Curve Mask: Creating masks for the gut.');
 mask = createMask(BW, xx, yy);
@@ -34,85 +34,27 @@ end
 %function returns xx, and yy the x and y position of points on the curve
 %that are each a distance of stepSize (in pixels) apart on the line through the center
 %of the gut.
-function [xx, yy] = getCenterLine(BW, stepSize)
-BWInit = BW;
+function [xx, yy] = getCenterLine(BW, line,stepSize)
 
-BWlast = zeros(size(BW));
+xx = line(:,1);
+yy = line(:,2);
+%Parameterizing curve in terms of arc length
+t = cumsum(sqrt([0,diff(line(:,1)')].^2 + [0,diff(line(:,2)')].^2));
+%Find x and y positions as a function of arc length
+lineFit(:,1) = spline(t, line(:,1), t);
+lineFit(:,2) = spline(t, line(:,2), t);
 
-%Thin down the curve to a line, this will be our first pass at the center
-%of the gut.
-fprintf(2, 'Iteratively thinning out the region...');
-while (sum(BWlast(:)-BW(:))~= 0)
-    BWlast = BW;
-    BW = bwmorph(BW, 'thin');
-    fprintf(2, '.');
-end
-fprintf(2, '\n');
+%Interpolate curve to make it less jaggedy, arbitrarily we'll
+%set the number of points to be 50.
+stepSize = (max(t)-min(t))/100.0;
 
-%It's possible that the line left has a couple of branches. To get rid of
-%those, repeatedly apply the morphological operation 'spur', until the
-%number of points removed at each iteration is equal to 2. This will occur
-%when only the main line remains and is being trimmed from both ends
-BWNext = BW;
+lineT(:,2) = interp1(t, lineFit(:,2),min(t):stepSize:max(t),'spline', 'extrap');
+lineT(:,1) = interp1(t, lineFit(:,1),min(t):stepSize:max(t), 'spline', 'extrap');
 
-index = [0 0 0]; %just to trick the 1st loop below
-fprintf(2, 'Removing extra branches...');
+%Redefining poly
+line = cat(2, lineT(:,1), lineT(:,2));
 
-%Find interesection points of branches
-branchInt = bwmorph(BW, 'branchpoints');
-%Get the pixel locations for the branches and (hopefully the main branch);
-branchBW = BW-branchInt;
-connComp = bwconncomp(branchBW, 8);
-%Set the image to only be the main branch
-BW(:) = 0;
-numComp = zeros(connComp.NumObjects,1);
-for i=1:connComp.NumObjects
-   numComp(i) =  size(connComp.PixelIdxList{i},1);
-end
-index = find(numComp == max(numComp));
-BW(connComp.PixelIdxList{index} ) = 1;
-
-fprintf(2, 'done! \n');
-
-%Note: could do some tricks to recover the lost pixels from the main line,
-%but it might not be worth it.
-
-
-%Get the indices of points on this line
-[yy xx] = find(BW==1);
-
-tempPos = cat(2, xx, yy);
-tempPos = sort(tempPos, 1); %Sorting x values
-xx = tempPos(:,1);
-yy = tempPos(:,2);
-%Remove indices that repeat in the xx column
-index = 1;
-for i=2:length(xx)
-    if(xx(i)-xx(index)==0)
-        xx(i) = -1;
-        yy(i) = -1;
-    else
-        index = i;
-    end
-end
-
-xx(xx==-1) = [];
-yy(yy==-1) = [];
-
-%Smoothing the curve a little bit.
-%There's potentially a better way to do this. Currently downsampling the
-%data and then fitting it with a spline (to minimize curvature of the
-%line)
-fprintf(2, 'Smoothing out the curve...');
-xxT = xx(1:10:length(xx));
-yyT= yy(1:10:length(yy));
-
-
-yy = spline(xxT, yyT, xxT);
-
-%Transposing the position vectors
-yy = yy'; xx= xxT';
-
+           
 %The thinning procedure cuts off the beginning and end of the line, so
 %that it doesn't link up with the outline of the shape. Extrapolate the
 %beginning and end so that this is no longer the case.
