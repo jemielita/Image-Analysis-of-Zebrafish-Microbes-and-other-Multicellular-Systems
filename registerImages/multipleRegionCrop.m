@@ -18,7 +18,7 @@ multipleRegionCropGUI(param,data);
 %If the third argument has been set to 'save Results', pause MATLAB until
 %the gui has been closed.
 if(nargin==3)
-    if(strcmp(lower(varargin{3}), 'save results'))
+    if(strcmpi(varargin{3}, 'save results'))
         while(~isempty(findobj('Tag', 'fGui')))
             handles = findobj('Tag', 'fGui');
             paramTemp = guidata(handles);
@@ -107,13 +107,18 @@ hMenuOutline = uimenu('Label', 'Outline region');
 uimenu(hMenuOutline,'Label','Freehand polygon outline','Callback',@createFreeHandPoly_Callback);
 uimenu(hMenuOutline, 'Label', 'Load Outline', 'Callback', @loadPoly_Callback);
 uimenu(hMenuOutline,'Label','Save outline','Callback',@savePoly_Callback);
+uimenu(hMenuOutline, 'Label', 'Smooth Polygon', 'Callback', @smoothPoly_Callback);
 uimenu(hMenuOutline,'Label','Clear outline ','Callback',@clearPoly_Callback);
 
+uimenu(hMenuOutline, 'Label', 'Draw center of gut', 'Separator', 'on', ...
+    'Callback',@drawGutCenter_Callback);
 hMenuDisplay = uimenu('Label', 'Display');
 hMenuContrast = uimenu(hMenuDisplay, 'Label', 'Adjust image contrast', 'Callback', @adjustContrast_Callback);
 hMenuBoundBox = uimenu(hMenuDisplay, 'Label', 'Remove region bounding boxes', 'Callback', @modifyBoundingBox_Callback);
 hMenuScroll = uimenu(hMenuDisplay, 'Label', 'Add scroll bar to image display', 'Callback', @scrollBar_Callback);
 hMenuDenoise = uimenu(hMenuDisplay, 'Label', 'Denoise!', 'Callback', @denoiseIm_Callback);
+set(hMenuDenoise, 'Checked', 'off');
+        
 
 %%%%%%Create the displayed control panels
 
@@ -252,6 +257,10 @@ hContrast = imcontrast(imageRegion);
         color = colorType(colorNum);
         color = color{1};
         im = registerSingleImage(scanNum,color, zNum,im, data,param);
+        %Optionally denoise image
+        if strcmp(get(hMenuDenoise, 'Checked'),'on')
+            im = denoiseImage();
+        end
         im = mat2gray(im);
         set(hIm, 'XData', [1 param.regionExtent.regImSize(2)]);
         set(hIm, 'YData', [2 param.regionExtent.regImSize(1)]);
@@ -320,13 +329,16 @@ hContrast = imcontrast(imageRegion);
     end
 
     function denoiseIm_Callback(hObject, eventdat)
-        %Denoise the image by filtering with a gaussian filter with a sigma
-        %equal to the width of the PSF
-        %sigma = 0.22*wavelength/NA...I think I got all the terms right.
-        hG = fspecial('Gaussian', ceil(7*0.66),0.66);
-        im = mat2gray(im);%This should have been done somewhere else.
-        imF = imfilter(im, hG);
-        set(hIm, 'CData', imF);
+        
+        %Use a check mark to indicate whether we'll align or not
+        if strcmp(get(hMenuDenoise, 'Checked'),'on')
+            set(hMenuDenoise, 'Checked', 'off');
+        else
+            set(hMenuDenoise, 'Checked', 'on');
+            im = denoiseImage();
+            set(hIm, 'CData', im);
+        end
+
         
         
     end
@@ -461,9 +473,21 @@ hContrast = imcontrast(imageRegion);
         color = colorType(colorNum);
         color = color{1};
         im = registerSingleImage(scanNum,color, zNum,im, data,param);
+        %Optionally denoise image
+        if strcmp(get(hMenuDenoise, 'Checked'),'on')
+            im = denoiseImage();
+        end
         im = mat2gray(im);
+        
+        
+        %Optionally denoise image
+        if strcmp(get(hMenuDenoise, 'Checked'),'on')
+            im = denoiseImage();
+        end
+        
         set(hIm, 'CData', im);
         outlineRegions();
+        
         
         myhandles.param = param;
         guidata(fGui, myhandles);
@@ -486,6 +510,12 @@ hContrast = imcontrast(imageRegion);
         color = colorType(colorNum);
         color = color{1};
         im = registerSingleImage(scanNum,color, zNum,im, data,param);
+        
+        %Optionally denoise image
+        if strcmp(get(hMenuDenoise, 'Checked'),'on')
+            im = denoiseImage();
+        end
+        
         im = mat2gray(im);
         
 %        set(hIm, 'CData', im);
@@ -498,7 +528,19 @@ hContrast = imcontrast(imageRegion);
 
     function table_Callback(hObject,eventData)
        tableData = get(hRegTable, 'Data');
-       param.regionExtent.crop.z = tableData;
+       
+       lowVal = tableData(:,1)>=param.regionExtentOrig.crop.z(:,1);
+       highVal = tableData(:,2)<=param.regionExtentOrig.crop.z(:,2);
+       
+       extent = lowVal.*highVal;
+       index = find(extent==1);
+       
+       %Only update z values if they are greater than or equal to the
+       %smallest z value for that region, and less than or equal to the
+       %highest z value
+       param.regionExtent.crop.z(index,:) = tableData(index,:);
+       
+       set(hRegTable, 'Data', param.regionExtent.crop.z);
     end
 
     function colorSlider_Callback(hObject, eventData)
@@ -512,6 +554,10 @@ hContrast = imcontrast(imageRegion);
         color = colorType(colorNum);
         color = color{1};
         im = registerSingleImage(scanNum,color, zNum,im, data,param);
+        %Optionally denoise image
+        if strcmp(get(hMenuDenoise, 'Checked'),'on')
+            im = denoiseImage();
+        end
         im = mat2gray(im);
         set(hIm, 'CData', im);
 
@@ -539,6 +585,11 @@ hContrast = imcontrast(imageRegion);
         color = colorType(colorNum);
         color = color{1};
         im = registerSingleImage(scanNum,color, zNum,im, data,param);
+
+        %Optionally denoise image
+        if strcmp(get(hMenuDenoise, 'Checked'),'on')
+            im = denoiseImage();
+        end
         im = mat2gray(im);
         set(hIm, 'CData', im);
     end
@@ -564,6 +615,10 @@ hContrast = imcontrast(imageRegion);
         color = colorType(colorNum);
         color = color{1};
         im = registerSingleImage(scanNum,color, zNum,im, data,param);
+        %Optionally denoise image
+        if strcmp(get(hMenuDenoise, 'Checked'),'on')
+            im = denoiseImage();
+        end
         im = mat2gray(im);
         set(hIm, 'CData', im);
                 
@@ -586,6 +641,39 @@ hContrast = imcontrast(imageRegion);
         
     end
 
+    function smoothPoly_Callback(hObject, eventdata)
+       if(isfield(param.regionExtent, 'poly'));
+           %Only smooth the polygon if it exists.
+           poly = param.regionExtent.poly;
+           
+           %Parameterizing curve in terms of arc length
+           t = cumsum(sqrt([0,diff(poly(:,1)')].^2 + [0,diff(poly(:,2)')].^2));
+           %Find x and y positions as a function of arc length
+           polyFit(:,1) = spline(t, poly(:,1), t);
+           polyFit(:,2) = spline(t, poly(:,2), t);
+           
+           %Interpolate curve to make it less jaggedy, arbitrarily we'll
+           %set the number of points to be 50.
+           stepSize = (max(t)-min(t))/100.0;
+           
+           polyT(:,2) = interp1(t, polyFit(:,2),min(t):stepSize:max(t),'spline', 'extrap');
+           polyT(:,1) = interp1(t, polyFit(:,1),min(t):stepSize:max(t), 'spline', 'extrap');
+           
+           %Redefining poly
+           poly = cat(2, polyT(:,1), polyT(:,2));
+           
+           param.regionExtent.poly = poly;
+           %Redrawing the polygon
+           hApi = iptgetapi(hPoly);
+           hApi.setPosition(poly);
+           
+           %Saving the resulting polygon
+           myhandles.param = param;
+           
+           guidata(fGui, myhandles);
+       end
+        
+    end
 
     function savePoly_Callback(hObject, eventdata)
         hApi = iptgetapi(hPoly);
@@ -600,6 +688,12 @@ hContrast = imcontrast(imageRegion);
        delete(hPoly); %Delete the displayed polygon. 
     end
         
+    function drawGutCenter_Callback(hObject, eventdata)
+        h = impoly('Closed', false);
+           position = wait(h);
+           
+        
+    end
  %%%%%%%%%%%%%Code to initialize the display of all data
  
     function []= initializeDisplay(varargin)
@@ -680,6 +774,16 @@ hContrast = imcontrast(imageRegion);
 
     end
 
+    function imF = denoiseImage()
+                 
+        %Denoise the image by filtering with a gaussian filter with a sigma
+        %equal to the width of the PSF
+        %sigma = 0.22*wavelength/NA...I think I got all the terms right.
+        hG = fspecial('Gaussian', ceil(7*0.66),0.66);
+        im = mat2gray(im);%This should have been done somewhere else.
+        imF = imfilter(im, hG);
+        
+    end
 end
 
 function param = calcCroppedRegion(param)

@@ -1,4 +1,4 @@
-function [mask, centerLine] = curveMask(poly,sizeIm)
+function [mask, centerLine] = curveMask(poly,sizeIm,stepSize,param)
 
 %Create a mask out of the polygon.
 BW = poly2mask(poly(:,1), poly(:,2), sizeIm(1), sizeIm(2));
@@ -8,10 +8,19 @@ BW = poly2mask(poly(:,1), poly(:,2), sizeIm(1), sizeIm(2));
 %the optimal elliptical fitting to the data. Not a big deal for our application, but
 %I wouldn't use it for anything fancier.
 
-stepSize = 20;
+%The input step size is in microns, convert to pixels:
+if (isfield(param, 'micronPerPixel'))
+    stepSize = stepSize/param.micronPerPixel;
+else
+    stepSize = stepSize/0.1625; %If the conversion hasn't been specified, assume that we're using our 40X.
+end
+%Round the step size to avoid potential (although unlikely) problems.
+stepSize  = round(stepSize);
 
+disp('Curve Mask: Calculating the center of the gut.');
 [xx, yy] = getCenterLine(BW, stepSize);
 
+disp('Curve Mask: Creating masks for the gut.');
 mask = createMask(BW, xx, yy);
 
 centerLine = cat(2, xx', yy');
@@ -32,7 +41,7 @@ BWlast = zeros(size(BW));
 
 %Thin down the curve to a line, this will be our first pass at the center
 %of the gut.
-fprintf(2, 'Iteritavely thinning out the region...');
+fprintf(2, 'Iteratively thinning out the region...');
 while (sum(BWlast(:)-BW(:))~= 0)
     BWlast = BW;
     BW = bwmorph(BW, 'thin');
@@ -47,14 +56,24 @@ fprintf(2, '\n');
 BWNext = BW;
 
 index = [0 0 0]; %just to trick the 1st loop below
+fprintf(2, 'Removing extra branches...');
 
-while (length(index)>2)
-    BW = BWNext;
-    BWNext = bwmorph(BW, 'spur');
-    
-    index = find(BW(:)-BWNext(:) ==1);
-    
+%Find interesection points of branches
+branchInt = bwmorph(BW, 'branchpoints');
+%Get the pixel locations for the branches and (hopefully the main branch);
+branchBW = BW-branchInt;
+connComp = bwconncomp(branchBW, 8);
+%Set the image to only be the main branch
+BW(:) = 0;
+numComp = zeros(connComp.NumObjects,1);
+for i=1:connComp.NumObjects
+   numComp(i) =  size(connComp.PixelIdxList{i},1);
 end
+index = find(numComp == max(numComp));
+BW(connComp.PixelIdxList{index} ) = 1;
+
+fprintf(2, 'done! \n');
+
 %Note: could do some tricks to recover the lost pixels from the main line,
 %but it might not be worth it.
 
@@ -80,12 +99,11 @@ end
 xx(xx==-1) = [];
 yy(yy==-1) = [];
 
-%Now drawing the lines perpendicular to all points on this thinned line.
-
 %Smoothing the curve a little bit.
 %There's potentially a better way to do this. Currently downsampling the
 %data and then fitting it with a spline (to minimize curvature of the
 %line)
+fprintf(2, 'Smoothing out the curve...');
 xxT = xx(1:10:length(xx));
 yyT= yy(1:10:length(yy));
 
@@ -94,7 +112,6 @@ yy = spline(xxT, yyT, xxT);
 
 %Transposing the position vectors
 yy = yy'; xx= xxT';
-
 
 %The thinning procedure cuts off the beginning and end of the line, so
 %that it doesn't link up with the outline of the shape. Extrapolate the
@@ -142,7 +159,9 @@ yy = spline(xxT, yyT, xxT);
 
 %Transposing the position vectors
 yy = yy'; xx= xxT';
+fprintf(2, 'done!\n');
 %1) Finding the arc length
+fprintf(2, 'Parameterizing in terms of arc length...');
 t = cumsum(sqrt([0,diff(xx)].^2 + [0,diff(yy)].^2));
 
 %2) Finding the x and y position as a function of the arc length.
@@ -157,7 +176,7 @@ xI = interp1(t, xFit,min(t):stepSize:max(t), 'spline', 'extrap');
 xx = xI;
 yy = yI;
 
-
+fprintf(2, 'done!\n');
 
 end
 
@@ -173,8 +192,9 @@ catch err
     mask = zeros(size(BW,1), size(BW,2),1);
 end
 
-
+fprintf(2,'Creating Masks ');
 for i=2:length(xx)-1
+    fprintf(2, '.');
     %Find the orthogonal vector using Gram-Schmidt orthogonalization
     
     x = xx(i)-xx(i-1);
@@ -224,6 +244,7 @@ for i=2:length(xx)-1
     
 end
 
+fprintf(2,'done!\n');
 %Remove any arrays in mask that don't contain regions.
 while(~any(mask(:,:,end)>0))
     mask(:,:,end) = [];

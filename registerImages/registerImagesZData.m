@@ -33,22 +33,21 @@ function param = registerCroppedImage(param)
      zMax = min(zOldCropRange(numReg,2), zCropRange(numReg,2));
      
      if(zMin>1)
-     zRange(1:zMin-1, numReg) = -1;
+         zRange(1:zMin-1, numReg) = -1;
      end
      
      if(zMax<zDepth)
-     zRange(zMax+1:zDepth, numReg) = -1;
+         zRange(zMax+1:zDepth, numReg) = -1;
      end
      
      
      %Update the cropping box
-     
      zCropRange(numReg,1) = zMin;
      zCropRange(numReg,2) = zMax;
  end
  
-  
-%Check to see if any rows contain just -1's. If so remove them-salient when cropping the z stack.
+ 
+ %Check to see if any rows contain just -1's. If so remove them-salient when cropping the z stack.
 index = [];
 
 notRegion = sum(zRange');
