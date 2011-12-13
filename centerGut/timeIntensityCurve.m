@@ -18,6 +18,7 @@ for scanNum =1:totNumScan
     mess = ['Scan...', num2str(scanNum)];
     disp(mess);
     %Load in this projection
+    
     fileName = [dirName, filesep, 'FluoroScan_', num2str(scanNum), '.mat'];
     im = load(fileName);
     im = im.dataOut;
