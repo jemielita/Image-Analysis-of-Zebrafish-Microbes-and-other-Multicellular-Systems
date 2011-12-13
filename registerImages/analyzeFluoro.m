@@ -24,10 +24,11 @@ end
 %Create the mask that will be used to outline only the gut
 [temp, imMask] = roifill(im, param.regionExtent.poly(:,1), param.regionExtent.poly(:,2));
 
-for nScan=1:length(data.scan)
+for nScan=1:param.totalNumberScans
     %Going through each scan
-    
+    disp(['Analyzing scan ', num2str(nScan)]);
     for nColor=1:length(param.color)
+        disp(['Analyzing color ', num2str(nColor)]);
         %and each color
         %Need to reset imOut for every scan and color
         switch lower(type)
@@ -42,9 +43,9 @@ for nScan=1:length(data.scan)
                 imOut.totalNum = zeros(size(im,1), size(im,2));
                 imOut.totalInten = zeros(size(im,1), size(im,2));
         end
-        
+        fprintf(2, 'Going through the stack');
         for nZ = 1:size(param.regionExtent.Z,1)
-            
+            fprintf(2, '.');
             color = param.color(nColor);
             color = color{1};
             %Load in this registered image
@@ -92,10 +93,23 @@ for nScan=1:length(data.scan)
                     end
             end           
         end
+        fprintf(2, '\n');
         
-        data.scan(nScan).allReg.color(nColor).intenData = imOut;
-
+       % data.scan(nScan).allReg.color(nColor).intenData = imOut;
+    dataOut(nColor) = imOut;
     end
+    
+    %% Saving the fluorescence data
+    %Location that the results of the data will be saved to
+    
+    fprintf(2, 'Saving the result for this scan...');
+    param.dataSaveDirectory = [param.directoryName, filesep, 'gutOutline'];
+    cd(param.dataSaveDirectory);
+    %And all of the data produced by this scan
+    saveName = strcat('FluoroScan_', num2str(nScan), '.mat');
+    save(saveName, 'dataOut','-v7.3');
+    fprintf(2, 'done!\n');
+    
 end
 
 end

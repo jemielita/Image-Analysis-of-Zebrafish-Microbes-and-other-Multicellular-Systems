@@ -6,11 +6,11 @@ function im = registerSingleImage(nScan,colorType,zNum,im,data,param)
     totalNumRegions = length(unique([param.expData.Scan.region]));
     %%Now loading in the images
     %Base directory for image location
-    baseDir = strcat(data.directory, filesep, 'Scans',filesep);
-    
+    %baseDir = strcat(data.directory, filesep, 'Scans',filesep);
+    baseDir = [param.directoryName filesep 'Scans' filesep];
     %Going through each scan
-    scanDir = strcat(baseDir, data.scan(nScan).directory, filesep);
-    
+    %scanDir = strcat(baseDir, data.scan(nScan).directory, filesep);
+    scanDir = [baseDir, 'scan_', num2str(nScan), filesep];
     %And each color (in the debugging phase, we'll restrict ourselves
     %to one color
 
@@ -67,8 +67,6 @@ function im = registerSingleImage(nScan,colorType,zNum,im,data,param)
           %    im(:) =1;
            %   im(param.regionExtent.overlapIndex{regNum-1} ) = 0;
          end
-      %   figure; imshow(im,[]);
-  % b = 0;
    
     end
     

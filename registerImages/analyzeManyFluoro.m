@@ -43,17 +43,17 @@ for numDir =1:length(scanLoc)
     param.thresh(1) = 436.68;
     param.thresh(2) = 299.51;  
     
- %% Analyzing the fluorescence signal for that image stack
- disp([ 'Analyzing fluorescene in: ', param.directoryName]);
- [data,param] = analyzeFluoro(data,param, 'total intensity');
- 
- %% Saving the fluorescence data
-    %Location that the results of the data will be saved to
-    param.dataSaveDirectory = [param.directoryName, filesep, 'gutOutline'];
-    mkdir(param.dataSaveDirectory);
-    cd(param.dataSaveDirectory);
-     %And all of the data produced by this scan
-    save('data.mat', 'data');
+    %% Analyzing the fluorescence signal for that image stack
+    disp([ 'Analyzing fluorescence in: ', param.directoryName]);
+    [data,param] = analyzeFluoro(data,param, 'total intensity');
+    
+%     %% Saving the fluorescence data
+%     %Location that the results of the data will be saved to
+%     param.dataSaveDirectory = [param.directoryName, filesep, 'gutOutline'];
+%     mkdir(param.dataSaveDirectory);
+%     cd(param.dataSaveDirectory);
+%     %And all of the data produced by this scan
+%     save('data.mat', 'data');
     
 end
 disp('All selected scans have been analyzed.');
