@@ -1,4 +1,4 @@
-function [mask, centerLine] = curveMask(BW,line,param, type)
+function mask = curveMask(BW,line,param, type)
 
 xx = line(:,1);
 yy = line(:,2);

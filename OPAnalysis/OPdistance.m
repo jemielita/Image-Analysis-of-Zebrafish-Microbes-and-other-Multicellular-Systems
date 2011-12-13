@@ -7,9 +7,10 @@ else
     disp('Please use 1 for light sheet scale and 2 for spinning disk')
 end
 
-data = data(:,6:8);
+%data = data(:,6:8);
     
     datasc = data.*scale;
     d1 = sqrt((datasc(1,:)-datasc(2,:))*(datasc(1,:) - datasc(2,:))');
     d2 = sqrt((datasc(3,:)-datasc(4,:))*(datasc(3,:) - datasc(4,:))');
 end
+
