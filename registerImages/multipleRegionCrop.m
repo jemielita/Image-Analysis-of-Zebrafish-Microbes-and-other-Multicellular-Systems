@@ -196,7 +196,7 @@ color = colorType(colorNum);
 color = color{1};
 
 im = registerSingleImage(scanNum,color, zNum,im, data,param);
-im = mat2gray(im);
+im(im(:)>40000) = 0;
 hIm = imshow(im, [],'Parent', imageRegion);
 
 %Create a scroll panel
@@ -218,9 +218,7 @@ im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
 
 color = colorType(colorNum);
 color = color{1};
-im = registerSingleImage(scanNum,color, zNum,im, data,param);
-im = mat2gray(im);
-set(hIm, 'CData', im);
+getRegisteredImage(scanNum, color, zNum, im, data, param )
 
 initMag = apiScroll.findFitMag();
 apiScroll.setMagnification(initMag);
@@ -256,15 +254,11 @@ hContrast = imcontrast(imageRegion);
         
         color = colorType(colorNum);
         color = color{1};
-        im = registerSingleImage(scanNum,color, zNum,im, data,param);
-        %Optionally denoise image
-        if strcmp(get(hMenuDenoise, 'Checked'),'on')
-            im = denoiseImage();
-        end
-        im = mat2gray(im);
+        getRegisteredImage(scanNum, color, zNum, im, data, param );
+       
         set(hIm, 'XData', [1 param.regionExtent.regImSize(2)]);
         set(hIm, 'YData', [2 param.regionExtent.regImSize(1)]);
-        set(hIm, 'CData', im);
+
         
         initMag = apiScroll.findFitMag();
         apiScroll.setMagnification(initMag);
@@ -305,27 +299,21 @@ hContrast = imcontrast(imageRegion);
           mkdir(colorDir);
           disp(strcat('Saving color ', color));
           
-          for i=zMin:zMax
-              im = registerSingleImage(scanNum, color, i, im, data,param);
-              
-              hG = fspecial('Gaussian', ceil(7*0.66),0.66);
-              im = mat2gray(im);%This should have been done somewhere else.
-              im = imfilter(im, hG);
-              
-              
+          for zNum=zMin:zMax
+              im = getRegisteredImage(scanNum, color, zNum, im, data, param);
               filename = strcat('pco', num2str(i), '.tif');
               
               imwrite(im, strcat(colorDir, filesep,filename), 'tiff');
-          fprintf(2,'.');
+              fprintf(2,'.');
           end
           fprintf('\n');
       end
     end
 
+%Adjust the contrast of the images.
     function adjustContrast_Callback(hObject, eventdata)
-      % if( ~ishandle(hContrast))
             hContrast = imcontrast(imageRegion);
-     %   end
+
     end
 
     function denoiseIm_Callback(hObject, eventdat)
@@ -472,20 +460,7 @@ hContrast = imcontrast(imageRegion);
         im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
         color = colorType(colorNum);
         color = color{1};
-        im = registerSingleImage(scanNum,color, zNum,im, data,param);
-        %Optionally denoise image
-        if strcmp(get(hMenuDenoise, 'Checked'),'on')
-            im = denoiseImage();
-        end
-        im = mat2gray(im);
-        
-        
-        %Optionally denoise image
-        if strcmp(get(hMenuDenoise, 'Checked'),'on')
-            im = denoiseImage();
-        end
-        
-        set(hIm, 'CData', im);
+        getRegisteredImage(scanNum, color, zNum, im, data, param )
         outlineRegions();
         
         
@@ -509,16 +484,7 @@ hContrast = imcontrast(imageRegion);
         im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
         color = colorType(colorNum);
         color = color{1};
-        im = registerSingleImage(scanNum,color, zNum,im, data,param);
-        
-        %Optionally denoise image
-        if strcmp(get(hMenuDenoise, 'Checked'),'on')
-            im = denoiseImage();
-        end
-        
-        im = mat2gray(im);
-        
-%        set(hIm, 'CData', im);
+        getRegisteredImage(scanNum, color, zNum, im, data, param);
 
         outlineRegions();
     end
@@ -553,14 +519,7 @@ hContrast = imcontrast(imageRegion);
         %Display the new image
         color = colorType(colorNum);
         color = color{1};
-        im = registerSingleImage(scanNum,color, zNum,im, data,param);
-        %Optionally denoise image
-        if strcmp(get(hMenuDenoise, 'Checked'),'on')
-            im = denoiseImage();
-        end
-        im = mat2gray(im);
-        set(hIm, 'CData', im);
-
+        getRegisteredImage(scanNum, color, zNum, im, data, param);
     end
 
     function scanSlider_Callback(hObject, eventData)
@@ -584,14 +543,7 @@ hContrast = imcontrast(imageRegion);
         %Display the new image
         color = colorType(colorNum);
         color = color{1};
-        im = registerSingleImage(scanNum,color, zNum,im, data,param);
-
-        %Optionally denoise image
-        if strcmp(get(hMenuDenoise, 'Checked'),'on')
-            im = denoiseImage();
-        end
-        im = mat2gray(im);
-        set(hIm, 'CData', im);
+        getRegisteredImage(scanNum, color, zNum, im, data, param);
     end
     function z_Callback(hObject, eventData)
         
@@ -614,13 +566,9 @@ hContrast = imcontrast(imageRegion);
         
         color = colorType(colorNum);
         color = color{1};
-        im = registerSingleImage(scanNum,color, zNum,im, data,param);
-        %Optionally denoise image
-        if strcmp(get(hMenuDenoise, 'Checked'),'on')
-            im = denoiseImage();
-        end
-        im = mat2gray(im);
-        set(hIm, 'CData', im);
+        
+        %Get the desired image and display it
+        getRegisteredImage(scanNum, color, zNum, im, data, param );
                 
         %Update the previous examined Z slice
         zLast = zNum;
@@ -787,6 +735,21 @@ hContrast = imcontrast(imageRegion);
         im = mat2gray(im);%This should have been done somewhere else.
         imF = imfilter(im, hG);
         
+    end
+
+%Function to get a desired image for either display or for saving
+    function [] = getRegisteredImage(scanNum, color, zNum, im, data, param )
+        im = registerSingleImage(scanNum,color, zNum,im, data,param);
+        %Optionally denoise image
+        if strcmp(get(hMenuDenoise, 'Checked'),'on')
+            im = denoiseImage();
+        end
+        %Get rid of really bright pixels. WARNING: if the image is bright
+        %to begin with this will mess things up. This approach is somewhat
+        %crude. What we should really be doing is 
+        im(im(:)>50000) = 0;
+        set(hIm, 'CData', im);
+
     end
 end
 

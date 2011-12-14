@@ -14,7 +14,7 @@ intenL = zeros(numReg,1);
 
 for numMask = 1:totalNumMask
     props = regionprops(regionMask(:,:,numMask), im, 'MeanIntensity', 'Area');
-    props = [props.MeanIntensity].*[props.Area];
+    props = [props.MeanIntensity];
     
     %Get the elements that are numbers (NaN are for label matrices that
     %weren't picked up in this iteration.

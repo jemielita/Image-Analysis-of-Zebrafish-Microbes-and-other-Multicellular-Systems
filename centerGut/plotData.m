@@ -31,9 +31,10 @@ green = combGreen;
 
 hFig = figure; 
 hAxis = axes('Parent', hFig);
-
+ set(hAxis, 'ZLim', [0 100000]);
 hold on
-cData = cool(timePoints);
+% cData = cool(timePoints);
+cData = summer(ceil(1.5*timePoints));
 for i=1:timePoints
     
  p =    plot3(green(i,:,3), green(i,:,2), green(i,:,1));
@@ -43,13 +44,15 @@ end
 plotTitle = strcat(dataTitle, ': green channel');
 title(plotTitle);
 hold off
+view([-64 36]);
 
 
 hFig = figure; 
 hAxis = axes('Parent', hFig);
-
+% set(hAxis, 'ZLim', [0 300000]);
+%set(hAxis, 'ZLim', [0 40000]);
 hold on
-cData = cool(timePoints);
+cData = hot(2*timePoints);
 for i=1:timePoints
     
  p =    plot3(red(i,:,3), red(i,:,2), red(i,:,1));
@@ -60,3 +63,4 @@ end
 plotTitle = strcat(dataTitle, ': red channel');
 title (plotTitle)
 hold off
+view([-64 36]);
