@@ -28,39 +28,82 @@ combGreen(:,:,3) = repmat(tp, 1, distPoints);
 green = combGreen;
 
 
+scrsz = get(0,'ScreenSize');
+hFig = figure('Position',[1+500 scrsz(4)/2 - 300 scrsz(3)/2 scrsz(4)/2])
 
-hFig = figure; 
 hAxis = axes('Parent', hFig);
- set(hAxis, 'ZLim', [0 100000]);
+set(hAxis, 'ZLim', [0 1500]);
 hold on
 % cData = cool(timePoints);
-cData = summer(ceil(1.5*timePoints));
+cData = summer(ceil(2*timePoints));
 for i=1:timePoints
     
- p =    plot3(green(i,:,3), green(i,:,2), green(i,:,1));
+ p =    plot3(green(i,:,3), green(i,:,2), green(i,:,1)/436.68);
     set(p, 'Color', cData(i,:));
     
 end
-plotTitle = strcat(dataTitle, ': green channel');
-title(plotTitle);
+plotTitle = strcat(dataTitle, ': GFP');
+hTitle = title(plotTitle);
+set(hTitle, 'FontSize', [16]);
+
+% hYLabel = ylabel('Distance down gut (microns)');
+% hXLabel = xlabel('Time (hours)');
+% hZLabel = zlabel('Normalized Total pixel intensity');
+
+
 hold off
 view([-64 36]);
+% 
+% set(hXLabel, 'FontSize', [16]);
+% set(hYLabel, 'FontSize', [16]);
+% set(hZLabel, 'FontSize', [16]);
+% 
+% set(hZLabel, 'Position', 1.0e+003*[-0.3084, -2.6754, 0.3870]);
+% set(hXLabel, 'Position', 1.0e+003*[-0.2938, -4.4404, 0.3592]);
+% set(hYLabel, 'Position', 1.0e+003*[-0.3120, -3.7374, 0.3488]);
+
+set(hAxis, 'XTick', [10.28 20.56 30.84 41.12]);
+set(hAxis, 'XTickLabel', [4 8 12 16]);
+%set(hFig, 'Position', [680 344 815 634]);
 
 
-hFig = figure; 
-hAxis = axes('Parent', hFig);
+scrsz = get(0,'ScreenSize');
+hFigRed = figure('Position',[1+500 scrsz(4)/2 - 300 scrsz(3)/2 scrsz(4)/2])
+
+hAxisRed = axes('Parent', hFigRed);
 % set(hAxis, 'ZLim', [0 300000]);
 %set(hAxis, 'ZLim', [0 40000]);
 hold on
 cData = hot(2*timePoints);
 for i=1:timePoints
     
- p =    plot3(red(i,:,3), red(i,:,2), red(i,:,1));
+ p = plot3(red(i,:,3), red(i,:,2), red(i,:,1)/299.51);
     set(p, 'Color', cData(i,:));
     
     
 end
-plotTitle = strcat(dataTitle, ': red channel');
-title (plotTitle)
+plotTitle = strcat(dataTitle, ': tdTomato');
+hTitle = title(plotTitle);
+set(hTitle, 'FontSize', [16]);
+% 
+% hYLabel = ylabel('Distance down gut (microns)');
+% hXLabel = xlabel('Time (hours)');
+% hZLabel = zlabel('Normalized Total pixel intensity');
+
+
 hold off
 view([-64 36]);
+% 
+% set(hXLabel, 'FontSize', [16]);
+% set(hYLabel, 'FontSize', [16]);
+% % set(hZLabel, 'FontSize', [16]);
+% 
+% set(hZLabel, 'Position', 1.0e+003*[-0.3084, -2.6754, 0.3870]);
+% set(hXLabel, 'Position', 1.0e+003*[-0.2938, -4.4404, 0.3592]);
+% set(hYLabel, 'Position', 1.0e+003*[-0.3120, -3.7374, 0.3488]);
+
+%Redefine in terms of time
+set(hAxisRed, 'XTick', [10.28 20.56 30.84 41.12]);
+set(hAxisRed, 'XTickLabel', [4 8 12 16]);
+%set(hFigRed, 'Position', [680 344 815 634]);
+

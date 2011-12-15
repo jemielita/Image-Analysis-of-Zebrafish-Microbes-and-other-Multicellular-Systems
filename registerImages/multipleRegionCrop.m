@@ -277,6 +277,12 @@ hContrast = imcontrast(imageRegion);
             disp('User pressed cancel-image will not be saved')
         else
             disp(['Saving image in the file ', fullfile(pathname, filename)])
+                    im = registerSingleImage(scanNum,color, zNum,im, data,param);
+        %Optionally denoise image
+        if strcmp(get(hMenuDenoise, 'Checked'),'on')
+            im = denoiseImage(im);
+        end
+        
             imwrite(im, strcat(pathname,filename), 'tiff');
         end
               
@@ -323,8 +329,7 @@ hContrast = imcontrast(imageRegion);
             set(hMenuDenoise, 'Checked', 'off');
         else
             set(hMenuDenoise, 'Checked', 'on');
-            im = denoiseImage();
-            set(hIm, 'CData', im);
+
         end
 
         
@@ -726,13 +731,12 @@ hContrast = imcontrast(imageRegion);
 
     end
 
-    function imF = denoiseImage()
+    function imF = denoiseImage(im)
                  
         %Denoise the image by filtering with a gaussian filter with a sigma
         %equal to the width of the PSF
         %sigma = 0.22*wavelength/NA...I think I got all the terms right.
         hG = fspecial('Gaussian', ceil(7*0.66),0.66);
-        im = mat2gray(im);%This should have been done somewhere else.
         imF = imfilter(im, hG);
         
     end
@@ -742,7 +746,7 @@ hContrast = imcontrast(imageRegion);
         im = registerSingleImage(scanNum,color, zNum,im, data,param);
         %Optionally denoise image
         if strcmp(get(hMenuDenoise, 'Checked'),'on')
-            im = denoiseImage();
+            im = denoiseImage(im);
         end
         %Get rid of really bright pixels. WARNING: if the image is bright
         %to begin with this will mess things up. This approach is somewhat
