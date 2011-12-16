@@ -112,6 +112,10 @@ uimenu(hMenuOutline,'Label','Clear outline ','Callback',@clearPoly_Callback);
 
 uimenu(hMenuOutline, 'Label', 'Draw center of gut', 'Separator', 'on', ...
     'Callback',@drawGutCenter_Callback);
+uimenu(hMenuOutline, 'Label', 'Load center of gut', 'Callback', @loadGutCenter_Callback);
+uimenu(hMenuOutline, 'Label', 'Smooth line', 'Callback', @smoothGutCenter_Callback);
+uimenu(hMenuOutline, 'Label', 'Save line', 'Callback', @saveGutCenter_Callback);
+
 hMenuDisplay = uimenu('Label', 'Display');
 hMenuContrast = uimenu(hMenuDisplay, 'Label', 'Adjust image contrast', 'Callback', @adjustContrast_Callback);
 hMenuBoundBox = uimenu(hMenuDisplay, 'Label', 'Remove region bounding boxes', 'Callback', @modifyBoundingBox_Callback);
@@ -591,7 +595,7 @@ hContrast = imcontrast(imageRegion);
 
     function loadPoly_Callback(hObject, eventdata)
         hPoly = impoly(imageRegion, param.regionExtent.poly);
-        
+       
     end
 
     function smoothPoly_Callback(hObject, eventdata)
@@ -634,6 +638,10 @@ hContrast = imcontrast(imageRegion);
         myhandles.param = param;
         %Save the GUI handles
         guidata(fGui, myhandles);
+        
+        %Save the result to the param file associated with the data.
+        saveFile = [param.dataSaveDirectory filesep 'param.mat'];
+        save(saveFile, 'param');
     end
 
 
@@ -643,14 +651,48 @@ hContrast = imcontrast(imageRegion);
         
     function drawGutCenter_Callback(hObject, eventdata)
         h = impoly('Closed', false);
+        
+        set(h, 'Tag', 'gutCenter');
         position = wait(h);
         
         param.centerLine = position;
         myhandles.param = param;
         guidata(fGui, myhandles);
-        
+               
+    end
+
+    function smoothGutCenter_Callback(hObject, eventdata)
+        hLine = findobj('Tag', 'gutCenter');
+        delete(hLine);
+        line = getCenterLine(param.centerLine, 5, param);
+        h = impoly(imageRegion, line, 'Closed', false);
+        set(h, 'Tag', 'gutCenter');
         
     end
+
+    function saveGutCenter_Callback(hObject, eventdata)
+        
+        %Annoying way to get the position of the line
+        hLine = findobj('Tag', 'gutCenter');
+        hLine = iptgetapi(hLine);
+        
+        param.centerLine = hLine.getPosition();
+        myhandles.param = param;
+        guidata(fGui, myhandles);
+
+        saveFile = [param.dataSaveDirectory filesep 'param.mat'];
+        save(saveFile, 'param');
+    end
+    function loadGutCenter_Callback(hObject, eventdata)
+        if(isfield(param, 'centerLine'))
+            hLine = findobj('Tag', 'gutCenter');
+            delete(hLine);
+            h = impoly(imageRegion, param.centerLine, 'Closed', false);
+            set(h, 'Tag', 'gutCenter');
+       end
+        
+    end
+  
 %%%%%%%%%%%%%Code to initialize the display of all data
  
     function []= initializeDisplay(varargin)

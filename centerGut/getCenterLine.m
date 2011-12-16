@@ -6,7 +6,7 @@
 %function returns xx, and yy the x and y position of points on the curve
 %that are each a distance of stepSize (in pixels) apart on the line through the center
 %of the gut.
-function line = getCenterLine(BW,line, stepSize, param)
+function line = getCenterLine(line, stepSize, param)
 fprintf(2, 'Smoothing curve and parameterizing in terms of length...');
 xx = line(:,1);
 yy = line(:,2);
