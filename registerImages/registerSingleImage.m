@@ -10,7 +10,11 @@ switch nargin
         colorType = varargin{2};
         zNum = varargin{3};
         im = varargin{4};
-        data = varargin{5};
+        if ischar(varargin{5})
+            filterType = varargin{5};
+        else
+            data = varargin{5};
+        end
         param = varargin{6};
         
     case 5
@@ -91,6 +95,22 @@ for regNum = 2:totalNumRegions
         %   im(param.regionExtent.overlapIndex{regNum-1} ) = 0;
     end
     
+end
+
+
+if exist('filterType','var') && strcmp(filterType,'bpass')
+    prompt = {'Pixel size of noise: ','Pixel size of object: '};
+    dlg_title = 'Filter Options'; num_lines = 1;
+    def = {'1','100'};
+    answer = inputdlg(prompt,dlg_title,num_lines,def);
+    lnoise = str2double(answer(1));
+    lobject = str2double(answer(2));
+    im = bpassRegisteredSinglePlane(im,param,lnoise,lobject);
+elseif exist('filterType','var') && strcmp(filterType,'bpass stack')
+    global Glnoise Globject;
+    lnoise = Glnoise;
+    lobject = Globject;
+    im = bpassRegisteredSinglePlane(im,param,lnoise,lobject);
 end
 
 
