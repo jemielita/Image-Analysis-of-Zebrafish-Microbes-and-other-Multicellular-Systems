@@ -24,7 +24,18 @@ end
 %Create the mask that will be used to outline only the gut
 [temp, imMask] = roifill(im, param.regionExtent.poly(:,1), param.regionExtent.poly(:,2));
 
-for nScan=1:param.totalNumberScans
+if strcmp(data,'bpass stack')
+    prompt = {'Pixel size of noise: ','Pixel size of object: '};
+    dlg_title = 'Filter Options'; num_lines = 1;
+    def = {'1','100'};
+    answer = inputdlg(prompt,dlg_title,num_lines,def);
+    global Glnoise Globject;
+    Glnoise = str2double(answer(1));
+    Globject = str2double(answer(2));
+end
+
+%for nScan=1:param.totalNumberScans
+for nScan=11:param.totalNumberScans
     %Going through each scan
     disp(['Analyzing scan ', num2str(nScan)]);
     for nColor=1:length(param.color)
@@ -103,7 +114,7 @@ for nScan=1:param.totalNumberScans
     %Location that the results of the data will be saved to
     
     fprintf(2, 'Saving the result for this scan...');
-    param.dataSaveDirectory = [param.directoryName, filesep, 'gutOutline'];
+    %param.dataSaveDirectory = [param.directoryName, filesep, 'gutOutline'];
     cd(param.dataSaveDirectory);
     %And all of the data produced by this scan
     saveName = strcat('FluoroScan_', num2str(nScan), '.mat');
