@@ -13,14 +13,17 @@ end
 %Going through each of these arrays and averaging them across the boxes.
 %Note: need to test this code on a good test image.
 
-%Let's see if this works for the memory allocation-allocate memory for 10
+%Let's see if this works for the memory allocation-allocate memory for 3
 %line distributions at once;
-lineSpace = 1:10:length(xArr);
+lineSpace = 1:3:length(xArr);
 lineSpace(end+1) = length(xArr)-1;
 
 %Allocate space for the image that we'll be working with
 im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
 
+%Save the line that we're calculating this on
+filename = [param.dataSaveDirectory filesep 'radialDist' filesep 'rd.mat'];
+save(filename, 'xArr', 'yArr', 'lineExt');
 for lineSet =1:length(lineSpace)-1
     clear radRegion
    %For each set of lines, preallocate enough memory for the  entire z
