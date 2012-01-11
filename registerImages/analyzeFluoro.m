@@ -34,8 +34,7 @@ if strcmp(data,'bpass stack')
     Globject = str2double(answer(2));
 end
 
-%for nScan=1:param.totalNumberScans
-for nScan=11:param.totalNumberScans
+for nScan=1:param.totalNumberScans
     %Going through each scan
     disp(['Analyzing scan ', num2str(nScan)]);
     for nColor=1:length(param.color)
