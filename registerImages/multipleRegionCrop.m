@@ -443,18 +443,23 @@ hContrast = imcontrast(imageRegion);
     function cropImages_Callback(hObject, eventdata)
 
         
-        %Updating the position of the cropping rectangles
-        cropRegion = zeros(totalNumRegions,4);
-        for numReg=1:totalNumRegions
-           
-            cropRegion(numReg, :) = hApi(numReg).getPosition();
+        %Only crop images in xy if hApi.getPosition exists.
+        
+        if(isfield(myhandles, 'getPosition'))
+            
+            %Updating the position of the cropping rectangles
+            cropRegion = zeros(totalNumRegions,4);
+            for numReg=1:totalNumRegions
+                
+                cropRegion(numReg, :) = hApi(numReg).getPosition();
+            end
+            cropRegion = round(cropRegion);
+            
+            param.regionExtent.crop.XY = cropRegion;
+            
+            %Cropping the image in the xy plane
+            [data,param] = registerImagesXYData('crop', data,param);     
         end
-        cropRegion = round(cropRegion);
-        
-        param.regionExtent.crop.XY = cropRegion;
-        
-        %Cropping the image in the xy plane
-        [data,param] = registerImagesXYData('crop', data,param);
         
         %Cropping the image stack in the z direction.
         [data,param] = registerImagesZData('crop', data,param);
