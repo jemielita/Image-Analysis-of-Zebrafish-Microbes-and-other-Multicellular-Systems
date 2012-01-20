@@ -445,7 +445,7 @@ hContrast = imcontrast(imageRegion);
         
         %Only crop images in xy if hApi.getPosition exists.
         
-        if(isfield(myhandles, 'getPosition'))
+        if(isfield(hApi, 'getPosition'))
             
             %Updating the position of the cropping rectangles
             cropRegion = zeros(totalNumRegions,4);
