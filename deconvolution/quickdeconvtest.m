@@ -6,7 +6,8 @@
 % Dec. 2011 -- Jan. 2012
 
 % Parameters
-sigmaz = 7000;   % nm, Gaussian width of sheet in z
+%sigmaz = 7000;   % nm, Gaussian width of sheet in z
+sigmaz = 9000;
 numAper = 1.0;   % NA to use in the calculation
 lambdaEm = 532;  % emission wavelength, nm
 magObj = 28;  % Magnification.  Nominally 40; alter to deal with scale problem (see deconv. notes 1 Jan 2012); 
@@ -21,8 +22,12 @@ nor = 1;   % normalize to max==1
 
 %cd 'C:\Users\Raghu\Documents\Experiments and Projects\Light Sheet Microscope\Image Analysis\wfmpsf\wfmpsf'
 
-% Calculate the psf
+% Calculate the psf-doing this twice, for both sides of the center z.
 psf = wfmpsf_SPIM(sigmaz, lambdaEm, numAper, magObj, rindexObj,  ccdSize, dz, xysize, nslices, rindex_sp, depth, nor);
+
+%sigmaz = 7000;
+%psf2 = wfmpsf_SPIM(sigmaz, lambdaEm, numAper, magObj, rindexObj,  ccdSize, dz, xysize, nslices, rindex_sp, depth, nor);
+
 
 %cd 'C:\Users\Raghu\Documents\Experiments and Projects\Light Sheet Microscope\Image Analysis\Deconvolution'
 
