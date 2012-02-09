@@ -1,10 +1,47 @@
-%For a given scan number and color, combine all the different regions
-%together.
+%registerSingleImage: For a given scan number and color, combine all 
+%the different regions together to produce one large registered image
+%
+%USAGE: im = registerSingleImage(nScan, color, zNum, im, filterType)
+%       For a given scan number, color, height in the z stack use the
+%       variables in param that gives the relative position of the
+%       different regions to fill the variable im with the appropriate
+%       registered images. Filter the images with the filter given by
+%       filterType.
+%
+%       im = registerSingleImage(nScan, color, zNum, im, param)
+%       Same as above, but with no image filtering.
+%
+%       im = registerSingleImage(nScan, color, zNum, param)
+%       Same as previous but the variable im is now created within this
+%       program (somewhat slower than the other two ways of calling this
+%       function).
+%
+%       im = registerSingleImage(nScan, color, zNum, data, param).
+%       Includes unused variable data. No longer necessary and code needs
+%       to be picked through to remove this way of calling the function.
+%
+%INPUT: nScan: integer giving the scan number for the image. Should be
+%       greater than 0 and not exceed the number of scans taken.
+%       
+%       color: string giving the wavelength for a given scan. Same as the
+%       name of the subdirectory for each color. e.g. '488nm'
+%       zNum: integer giving the height in the stack for the image
+%       im: array of the same size as the output registered image. This
+%       program resets all elements of im to 0, before adding any new
+%       images.
+%       filterType: string giving the type of filtering to be done on this
+%       image. Will be expanded in the future.
+%       param: contains all the relevant experimental parameters for this
+%       fish
+%       data: currently unused variable
+%
+%OUTPUT: im: image made up of all the registerd images from different
+%        regions.
 
 function im = registerSingleImage(varargin)
 %Get the appropriate variables
 switch nargin
-    %We shoudl get rid of case 6-data is a useless variable
+    %We should get rid of case 6-data is a useless variable
     case 6
         nScan = varargin{1};
         colorType = varargin{2};

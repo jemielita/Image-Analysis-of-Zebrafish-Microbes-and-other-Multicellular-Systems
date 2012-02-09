@@ -25,6 +25,8 @@ else
     stepSize = stepSize/0.1625; %If no pixel size mentioned, assume it's for our 40x
 end
 
+
+
 lineT(:,2) = interp1(t, lineFit(:,2),min(t):stepSize:max(t),'spline', 'extrap');
 lineT(:,1) = interp1(t, lineFit(:,1),min(t):stepSize:max(t), 'spline', 'extrap');
 

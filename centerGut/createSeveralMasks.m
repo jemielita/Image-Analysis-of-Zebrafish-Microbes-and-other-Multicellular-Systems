@@ -1,4 +1,4 @@
-%For a given set of fish, find the center of the gut and creat mask,
+%For a given set of fish, find the center of the gut and create mask,
 %corresponding to different regions down the length of the gut.
 
 function [] = createSeveralMasks(scanLoc, stepSize)

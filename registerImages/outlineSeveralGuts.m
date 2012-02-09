@@ -1,5 +1,37 @@
-%Calculates the outline of the gut for an arbitrary number of different 
-function [scanLoc] = outlineSeveralGuts(varargin)
+%outlineSeveralGuts: Calculates the outline of the gut, and other features
+%for an arbitrary number of different guts.
+%
+%USAGE: 
+%    scanLoc = outlineSeveralGuts(dirPath)
+%       For a given set of directories containing scans of different fish,
+%       repeatedly open the program multipleRegionCrop to manually select
+%       a range of features of the gut. Any features that are selected will
+%       be saved to the subdirectory dirPath/gutOutline/param.mat. The
+%       current features that are supported are selecting the outline of 
+%       the gut, the size of the cropping regions on each of
+%       the scans, and drawing a line down the center of the gut. As the
+%       code develops more features may be added.
+%
+%INPUT: dirPath: a cell array of strings each containing the path to a
+%different directory of scans. Use the program uigetfile_n_dir to collect
+%these directoris. This variable is optional, if there is no input variable
+%uigetfile_n_dir will be called by this program.
+%
+%OUTPUT: scanLoc: same as dirPath. Also an optional variable
+
+function varargout = outlineSeveralGuts(varargin)
+
+%Check the input and output variables
+if (nargout~=1 || nargout~=0)
+   disp('outlineSeveralGuts must return either 0 or 1 variables!');
+   return 
+end
+
+if (nargin~=1 || nargin~=0)
+   disp('outlineSeveralGuts takes either 0 or 1 variables!');
+   return 
+end
+
 
 %Load in the desired variables
 switch nargin
@@ -10,7 +42,13 @@ switch nargin
         scanLoc = uigetfile_n_dir;
     case 1
         scanLoc = varargin{1};
+        
 end
+
+if nargout==1
+   varargout{1} = scanLoc; 
+end
+
 
 %Check to make sure that each of these directories has the valid structure
 %for storing scan data from our microscope.
@@ -112,11 +150,6 @@ for numDir =1:length(scanLoc)
     
 end
 disp('All selected scans have been analyzed.');
-
-
-
-
-
 
 
 end

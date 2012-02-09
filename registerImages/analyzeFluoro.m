@@ -1,5 +1,27 @@
-%Calculate features of the fluorescence signal for all image stacks
-%produced.
+%analyzeFluoro: Calculate features of the fluorescence signal for all the
+%scans in a given directory
+%
+%USAGE: [data, param] = analyzeFluoro(data, param, type)
+%       For all the scans given in param, construct different types of
+%       projections along the z-axis. All the projections made are stored
+%       in the subdirectory gutOutline/FluoroScan_scanNum.mat. Where scanNum
+%       is an integer giving the current scan. The .mat file contains
+%       images of all the different projections for all the colors
+%       analyzed.
+%
+%INPUT: data: unnecessary variable. Should be removed.
+%       param: contains all the experimental parameters
+%       type: string giving the type of projection to do on the data.
+%           'mip': maximum intensity projection
+%           'total number': only counts pixels above the threshold given by
+%           param.thresh(nColor).
+%           'total intensity': sum of all the pixel intensities in the
+%           z-direction
+%
+%OUTPUT: data: no longer used.
+%        param: experimental parameters. Currently analyzeFluoro.m doesn't
+%        change any elements of param.
+
 
 function [data, param] = analyzeFluoro(data,param, type)
 
@@ -105,7 +127,6 @@ for nScan=1:param.totalNumberScans
         end
         fprintf(2, '\n');
         
-       % data.scan(nScan).allReg.color(nColor).intenData = imOut;
     dataOut(nColor) = imOut;
     end
     
