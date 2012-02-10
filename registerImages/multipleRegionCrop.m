@@ -230,7 +230,7 @@ initMag = apiScroll.findFitMag();
 apiScroll.setMagnification(initMag);
 
 
-outlineRegions(); %Outline the different regions that make up the composite region.
+outlineRegions(); %Outline the different regions that makes up the composite region.
 
 set(fGui, 'Visible', 'on');
 
@@ -272,8 +272,6 @@ hContrast = imcontrast(imageRegion);
         
         outlineRegions(); %Outline the different regions that make up the composite region.
         
-        
-
         fprintf(2, 'Done!\n');
     end
 
@@ -872,6 +870,7 @@ function [data, param] = loadParameters()
                 paramFileExist = exist(paramFile, 'file');
                 dataFile = [dirName, filesep, 'gutOutline', filesep, 'data.mat'];
                 %If work has been done on this file already, load in the results
+                
                 
                 switch paramFileExist
                     case 2
