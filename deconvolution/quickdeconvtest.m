@@ -15,16 +15,18 @@ rindexObj = 1.33;
 ccdSize = 6500;  % ccd pixel size, nm
 rindex_sp = 1.44; % index of specimen.  Doesn't matter if depth = 0
 dz = 1000;  % nm per slice
-xysize = 64; % xy pixel dimension for psf
-nslices = 2*round(2*sigmaz/dz + 2*lambdaEm/dz);  
+xysize = 100; % xy pixel dimension for psf
+nslices = 16*round(2*sigmaz/dz + 2*lambdaEm/dz);  
 depth = 0; % 10000;
 nor = 1;   % normalize to max==1
 
 %cd 'C:\Users\Raghu\Documents\Experiments and Projects\Light Sheet Microscope\Image Analysis\wfmpsf\wfmpsf'
 
 % Calculate the psf-doing this twice, for both sides of the center z.
-psf = wfmpsf_SPIM(sigmaz, lambdaEm, numAper, magObj, rindexObj,  ccdSize, dz, xysize, nslices, rindex_sp, depth, nor);
+psf1 = wfmpsf_SPIM(sigmaz, lambdaEm, numAper, magObj, rindexObj,  ccdSize, dz, xysize, nslices, rindex_sp, depth, nor);
+sigmaz = 7000;
 
+psf2 =wfmpsf_SPIM(sigmaz, lambdaEm, numAper, magObj, rindexObj,  ccdSize, dz, xysize, nslices, rindex_sp, depth, nor);
 %sigmaz = 7000;
 %psf2 = wfmpsf_SPIM(sigmaz, lambdaEm, numAper, magObj, rindexObj,  ccdSize, dz, xysize, nslices, rindex_sp, depth, nor);
 
