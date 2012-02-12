@@ -50,7 +50,7 @@ switch nargin
         if ischar(varargin{5})
             filterType = varargin{5};
         else
-            data = varargin{5};
+            data = varargin{5}; %To deal with an unused data structure that should be culled.
         end
         param = varargin{6};
         
@@ -112,7 +112,6 @@ for regNum=1:totalNumRegions
             'PixelRegion', {[xInI xInF], [yInI yInF]}) + ...
             im(xOutI:xOutF,yOutI:yOutF);
         
-        %         im(xOutI:xOutF,yOutI:yOutF) = imIn(xInI:xInF, yInI:yInF);
     end
     
 end

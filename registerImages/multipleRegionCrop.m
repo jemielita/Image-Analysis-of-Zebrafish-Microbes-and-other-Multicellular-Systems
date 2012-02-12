@@ -504,9 +504,49 @@ hContrast = imcontrast(imageRegion);
     end
 
     function saveCropped_Callback(hObject, eventdata)
-        
-        
-        
+    %Function to save the cropped region. Either to a new directory,
+    %or overwriting the previous images. This function will also save all
+    %the metadata associated with the new cropped region (i.e. pixel
+    %location of each region).
+    
+    prompt = {'Save the cropped region to a new directory (1) or overwrite the existing directory structure (2)?',...
+        'Save as TIFF (1) or PNG (2)?'};
+    
+     dlg_title = 'Saving cropped images';
+     num_lines = 1;
+     def = {'1','2'};
+     answer = inputdlg(prompt,dlg_title,num_lines,def);
+
+
+     switch answer{1}
+         
+         case '1'
+             %Save to a new directory structure
+             %directory = uigetdir(param.saveLocation);
+             cropDir = uigetdir();
+             
+             %Now duplicate the directory structure that the orignal set of
+             %scans had
+             
+         case '2'
+             %Overwrite the previous directory structure
+             cropDir = param.saveLocation; %Check to make sure that this is the right syntax.
+         otherwise
+            disp('Input must be either 1 or 2!');
+            return
+         
+     end
+     
+     %Save the meta-data necessary to register the images after they've
+     %been cropped.
+     
+     %Go through the directory structure and load the appropriate images,
+     %crop them, and then save the result as either a TIFF or PNG.
+     
+     
+     
+    
+     
     end
 
 
