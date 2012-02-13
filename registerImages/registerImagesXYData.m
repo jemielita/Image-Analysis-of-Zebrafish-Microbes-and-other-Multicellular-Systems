@@ -28,7 +28,6 @@ switch lower(type)
         param = registerCroppedImage(param,totalNumRegions);
 end
 
-
 %And get the index location of all pixels that are in parts of the image
 %where regions overlap.
 
@@ -146,6 +145,23 @@ for regNum=1:totalNumRegions
     %Note: .xBegin, .yBegin are measured in 1/10th of microns (format used
     %by ASI)
     regLoc(regNum,:) = (1.0/param.micronPerPixel)*0.1*regLoc(regNum,:);
+
+    %Get the size of the images in this region, if it's different from the
+    %total field of view (which will happen if the cropped image was saved
+    %at any point;
+    
+    if(isfield(param.expData.Scan, 'imSize'))
+        regLoc(regNum,3) = param.expData.Scan(regionIndex).imSize(1);
+        regLoc(regNum,4) = param.expData.Scan(regionIndex).imSize(2);
+        
+    else
+        %Otherwise default to the maximum pixel size of the camera
+        regLoc(regNum,3) =  param.imSize(1); %image length in pixels
+        regLoc(regNum,4) =  param.imSize(2); %image width in pixels.
+        
+    end
+    
+    
 end
 
 %Round the result
@@ -155,12 +171,6 @@ regLoc = round(regLoc);
 %both 1.
 regLoc(:,1) = regLoc(:,1) - min(regLoc(:,1))+1;
 regLoc(:,2) = regLoc(:,2) - min(regLoc(:,2))+1;
-
-% 
-% %Get the range of pixels for each of these regions.
- regLoc(:,3) =  param.imSize(1); %image length in pixels
- regLoc(:,4) =  param.imSize(2); %image width in pixels.
-
  regLoc(:,5:6) = 1;
  
 %Store the result in the structure param.regionExtent, where
@@ -168,12 +178,9 @@ regLoc(:,2) = regLoc(:,2) - min(regLoc(:,2))+1;
 %[pixel X location, pixel Y Location, pixel extent X, 
 % pixel extent Y,initial x pixel (on image), initial y pixel (on image)]
 
-
-
 %Also store the size of the registered image
 param.regionExtent.regImSize(1) = max(regLoc(:,1) +regLoc(:,3)-1);
 param.regionExtent.regImSize(2) = max(regLoc(:,2) +regLoc(:,4)-1);
-
 
 param.regionExtent.XY = regLoc;
 end

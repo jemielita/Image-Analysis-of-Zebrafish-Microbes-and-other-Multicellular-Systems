@@ -514,34 +514,119 @@ hContrast = imcontrast(imageRegion);
     
      dlg_title = 'Saving cropped images';
      num_lines = 1;
-     def = {'1','2'};
+     def = {'1','1'};
      answer = inputdlg(prompt,dlg_title,num_lines,def);
 
-
+     
+     totalNumRegions = length(unique([param.expData.Scan.region]));
+     totalNumScans = param.expData.totalNumberScans;
+     totalNumColors = size(param.color,2);
+    
      switch answer{1}
          
          case '1'
              %Save to a new directory structure
              %directory = uigetdir(param.saveLocation);
-             cropDir = uigetdir();
+             cropDir = uigetdir(pwd, 'Pick a location to save the images to');
              
              %Now duplicate the directory structure that the orignal set of
-             %scans had
+             %scans had. Should include some more error handling here.
+             
+             for nS=1:totalNumScans
+                 for nR = 1:totalNumRegions
+                     for nC = 1:totalNumColors
+                         dirName = [cropDir filesep 'Scans' filesep 'scan_', num2str(nS), filesep ...
+                             'region_', num2str(nR), filesep param.color{nC}];
+                         mkdir(dirName);
+                     end
+                 end
+             end
              
          case '2'
              %Overwrite the previous directory structure
-             cropDir = param.saveLocation; %Check to make sure that this is the right syntax.
+             cropDir = param.directoryName; %Check to make sure that this is the right syntax.
          otherwise
             disp('Input must be either 1 or 2!');
             return
-         
+            
+     end
+
+     %save the meta-data necessary to register the images after they've
+     %been cropped.
+     for nR = 1:totalNumRegions
+        index = find([param.expData.Scan.region]==nR);
+        for nIndex=1:length(index)%Do you really have to use this FOR loop?
+            %Save the new x-y location of the images
+            param.expData.Scan(index(nIndex)).xBegin = 10*param.micronPerPixel*(param.regionExtent.XY(nR,5)-1)+...
+                param.expData.Scan(index(nIndex)).xBegin;
+            
+            param.expData.Scan(index(nIndex)).yBegin = 10*param.micronPerPixel*(param.regionExtent.XY(nR,6)-1)+...
+                param.expData.Scan(index(nIndex)).yBegin;
+            %Save the size of the new cropped image
+            param.expData.Scan(index(nIndex)).imSize = [param.regionExtent.XY(nR,3), param.regionExtent.XY(nR,4)];
+  
+        end
+        
+        
      end
      
-     %Save the meta-data necessary to register the images after they've
-     %been cropped.
+     parameters = param.expData;
+     timeData = param.expData.timeData;
+     
+     %Note: currently not updating the experimentData.txt file!!!!
+     save([cropDir filesep 'ExperimentData.mat'], 'parameters', 'timeData');
      
      %Go through the directory structure and load the appropriate images,
      %crop them, and then save the result as either a TIFF or PNG.
+     
+     for nS=1:totalNumScans
+         mess = ['Cropping scan ', num2str(nS)];
+         fprintf(2, mess);
+         for nR = 1:totalNumRegions
+             for nC = 1:totalNumColors
+                 outputDirName = [cropDir filesep 'Scans' filesep 'scan_', num2str(nS), filesep ...
+                     'region_', num2str(nR), filesep param.color{nC}];
+                 inputDirName =  [param.directoryName filesep 'Scans' filesep 'scan_', num2str(nS), filesep ...
+                     'region_', num2str(nR), filesep param.color{nC}];
+                 index = find([param.expData.Scan.region]==nR);
+                 totalNumIm = param.expData.Scan(index(1)).nImgsPerScan;%Assuming there are equal number of images in both channels...
+                 %a reasonable assumption.
+                 
+                 for nI = 1:totalNumIm
+                     fN = [inputDirName, filesep, 'pco', num2str(nI-1), '.tif'];
+                     %Same code as in registerSingleImage.m
+                     xOutI = param.regionExtent.XY(nR,1);
+                     xOutF = param.regionExtent.XY(nR,3)+xOutI-1;
+                     
+                     yOutI = param.regionExtent.XY(nR,2);
+                     yOutF = param.regionExtent.XY(nR,4)+yOutI -1;
+                     xInI = param.regionExtent.XY(nR,5);
+                     xInF = xOutF - xOutI +xInI;
+                     
+                     yInI = param.regionExtent.XY(nR,6);
+                     yInF = yOutF - yOutI +yInI;
+                     
+                     %Loading in this image
+                     imI = imread(fN,...
+                         'PixelRegion', {[xInI xInF], [yInI yInF]});
+                    %Saving this image to the new location, in either a
+                    %tiff or png format.
+                    switch answer{2}
+                        case '1'
+                            fNout = [outputDirName, filesep, 'pco', num2str(nI-1), '.tif'];
+                            imwrite(imI, fNout);
+                        case '2'
+                            fNout = [outputDirName, filesep, 'pco', num2str(nI-1), '.png'];
+                            imwrite(imI, fNout);
+                    end
+                    fprintf(2, '.');
+                 end
+                 
+             end
+         end
+         b = 0;
+         fprintf(2, '\n');
+     end
      
      
      
@@ -928,10 +1013,12 @@ function [data, param] = loadParameters()
                         %Load in information about this scan...this information should be
                         %passed in, or stored in one place on the computer.
                         param.micronPerPixel = 0.1625; %For the 40X objective.
+                        
                         param.imSize = [2160 2560];
                         
                         expData = load(parameterFile);
                         param.expData = expData.parameters;
+                        param.expData.timeData = expData.timeData;
                         
                         param.directoryName = dirName;
                         
