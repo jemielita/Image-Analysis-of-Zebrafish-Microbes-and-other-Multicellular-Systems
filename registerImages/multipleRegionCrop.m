@@ -103,7 +103,7 @@ uimenu(hMenuCrop,'Label','Create cropping boxes','Callback',@createCropBox_Callb
 uimenu(hMenuCrop, 'Label', 'Crop the images', 'Callback', @cropImages_Callback);
 uimenu(hMenuCrop, 'Label', 'Restore original image', 'Callback', @restoreImages_Callback);
 
-uimenu(hMenuCrop, 'Label', 'Crop and overwrite images', 'Callback', @saveCropped_Callback);
+uimenu(hMenuCrop, 'Label', 'Save cropped region', 'Callback', @saveCropped_Callback);
 
 hMenuOutline = uimenu('Label', 'Outline region');
 uimenu(hMenuOutline,'Label','Freehand polygon outline','Callback',@createFreeHandPoly_Callback);
