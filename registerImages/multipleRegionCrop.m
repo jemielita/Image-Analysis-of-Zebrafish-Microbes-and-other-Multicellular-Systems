@@ -928,7 +928,7 @@ hContrast = imcontrast(imageRegion);
         end
         %Get rid of really bright pixels. WARNING: if the image is bright
         %to begin with this will mess things up. This approach is somewhat
-        %crude. What we should really be doing is 
+        %crude. What we should really be doing is in nicer fashion.
         im(im(:)>50000) = 0;
         set(hIm, 'CData', im);
 

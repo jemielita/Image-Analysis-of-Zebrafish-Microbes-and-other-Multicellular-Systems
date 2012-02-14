@@ -4,7 +4,6 @@ fprintf(1, 'Initializing arrays for radial distribution calculation...')
 [xArr, yArr, lineExt] = radialDistInit(line, mask, param, averageBox, averageBoxType);
 
 %Create a directory to store the results, if necessary
-
 dirName = [param.dataSaveDirectory filesep 'radialDist'];
 if(~isdir(dirName))
     disp(strcat('Making the directory: ', dirName)); 
@@ -210,7 +209,6 @@ end
         [indexGutY, indexGutX]  = find(maskP==1);
         indexGut = cat(2, indexGutX, indexGutY);
      
-        
         %For a given point along the gut, get the orthogonal vector, for a series of
         %lines.
         x = xx(lineNum)-xx(lineNum-1);

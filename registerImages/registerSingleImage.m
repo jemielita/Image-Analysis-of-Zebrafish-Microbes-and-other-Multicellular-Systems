@@ -37,7 +37,7 @@
 %
 %OUTPUT: im: image made up of all the registerd images from different
 %        regions.
-
+% Author: Matthew Jemielita
 function im = registerSingleImage(varargin)
 %Get the appropriate variables
 switch nargin
@@ -71,10 +71,8 @@ end
 totalNumRegions = length(unique([param.expData.Scan.region]));
 %%Now loading in the images
 %Base directory for image location
-%baseDir = strcat(data.directory, filesep, 'Scans',filesep);
 baseDir = [param.directoryName filesep 'Scans' filesep];
 %Going through each scan
-%scanDir = strcat(baseDir, data.scan(nScan).directory, filesep);
 scanDir = [baseDir, 'scan_', num2str(nScan), filesep];
 %And each color (in the debugging phase, we'll restrict ourselves
 %to one color
@@ -84,7 +82,6 @@ imNum = param.regionExtent.Z(zNum,:);
 
 %Filling the input image with zeros, to be safe.
 im(:) = 0;
-
 
 im = uint16(im); %To match the input type of the images.
 for regNum=1:totalNumRegions
@@ -142,10 +139,16 @@ if exist('filterType','var') && strcmp(filterType,'bpass')
     lnoise = str2double(answer(1));
     lobject = str2double(answer(2));
     im = bpassRegisteredSinglePlane(im,param,lnoise,lobject);
+
 elseif exist('filterType','var') && strcmp(filterType,'bpass stack')
-    global Glnoise Globject;
-    lnoise = Glnoise;
-    lobject = Globject;
+    
+    %mlj: setting this in param instead-global variables can do some
+    %fubar'd things.
+    %global Glnoise Globject;
+    %lnoise = Glnoise;
+    %lobject = Globject;    
+    lnoise = param.filter.bpass.lNoise;
+    lobject = param.filter.bpass.lObject;
     im = bpassRegisteredSinglePlane(im,param,lnoise,lobject);
 end
 
