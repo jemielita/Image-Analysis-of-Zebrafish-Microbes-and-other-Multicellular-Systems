@@ -967,9 +967,37 @@ function [data, param] = loadParameters()
                         %Number of regions in be analyzed. Hardcoded to be all of them
                         param.regions = 'all';
                        % param.regions = 1:4;
-                        %Colors to be analyzed. Need to provide a more machine readable way and
-                        %elegant way to load this into the code.
-                        param.color = [{'488nm'}, {'568nm'}];
+                        
+                        %Find all the colors in the scan. Semi-clumsy b/c
+                        %the expData file doesn't contain a nice list of
+                        %colors used.
+                        allColors = {param.expData.Scan.color};
+                        
+                        param.color = [];
+                        
+                        %See if 488 nm is present;
+                        isGreen = strcmp(allColors, '488 nm: GFP');
+                        
+                        nColor = length(param.color);
+                        
+                        if(sum(isGreen)>0)
+                        param.color= {'488nm'};
+                        end
+                        
+                        nColor = length(param.color);
+                        %See if 568 nm is present;
+                        isGreen = strcmp(allColors, '568 nm: RFP');
+                        
+                        if(sum(isGreen)>0)
+                            if(nColor>0)
+                                param.color(nColor+1)= {'568nm'};
+                            else
+                                
+                                param.color= {'568nm'};
+                            end
+                        end
+                        
+                        
                         %param.color = [{'568nm'}];
                         %For the parameters above construct a structure that will contain all the
                         %results of this calculation.
