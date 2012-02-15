@@ -130,7 +130,6 @@ for regNum = 2:totalNumRegions
     
 end
 
-
 if exist('filterType','var') && strcmp(filterType,'bpass')
     prompt = {'Pixel size of noise: ','Pixel size of object: '};
     dlg_title = 'Filter Options'; num_lines = 1;

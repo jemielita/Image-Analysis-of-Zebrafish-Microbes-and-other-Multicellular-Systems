@@ -299,10 +299,13 @@ hContrast = imcontrast(imageRegion);
        %your choice...currently this will only be used to create a script
        %for cropping images.
        
-       [fileName, pathName] = uiputfile('*.mat', 'Select a location to save the param.mat file');
+       [fileName, saveDir]  = uiputfile('*.mat', 'Select a location to save the param.mat file');
+
        
        %Save the result to the param file associated with the data.
-       saveFile = [saveDir filesep fileName];
+
+       saveFile = [saveDir fileName];
+
        save(saveFile, 'param');
        
        
@@ -1002,7 +1005,8 @@ function [data, param] = loadParameters()
                         %For the parameters above construct a structure that will contain all the
                         %results of this calculation.
                         
-                        [data,param] = initializeScanStruct(param);
+                        %[data,param] = initializeScanStruct(param);
+                        data = '';%I think we can slowly remove this variable from the code.
                         
                         disp('Paremeters succesfully loaded.');
                         

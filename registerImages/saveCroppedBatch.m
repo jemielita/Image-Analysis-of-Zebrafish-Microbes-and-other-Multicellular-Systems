@@ -21,6 +21,12 @@
 
 function saveCroppedBatch(param, cropDir, fileType,cropType)
 
+%Get some needed variables.
+totalNumRegions = length(unique([param.expData.Scan.region]));
+totalNumScans = param.expData.totalNumberScans;
+totalNumColors = size(param.color,2);
+
+
 %Create a new directory structure if necessary
 if(~strcmp(cropDir, param.directoryName))
     for nS=1:totalNumScans
