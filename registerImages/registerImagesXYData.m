@@ -153,14 +153,11 @@ for regNum=1:totalNumRegions
     if(isfield(param.expData.Scan, 'imSize'))
         regLoc(regNum,3) = param.expData.Scan(regionIndex).imSize(1);
         regLoc(regNum,4) = param.expData.Scan(regionIndex).imSize(2);
-        
     else
         %Otherwise default to the maximum pixel size of the camera
         regLoc(regNum,3) =  param.imSize(1); %image length in pixels
         regLoc(regNum,4) =  param.imSize(2); %image width in pixels.
-        
     end
-    
     
 end
 
