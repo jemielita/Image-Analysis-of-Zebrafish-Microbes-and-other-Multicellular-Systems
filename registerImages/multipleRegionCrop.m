@@ -974,7 +974,8 @@ function [data, param] = loadParameters()
                         %For the parameters above construct a structure that will contain all the
                         %results of this calculation.
                         
-                        [data,param] = initializeScanStruct(param);
+                        %[data,param] = initializeScanStruct(param);
+                        data = '';%I think we can slowly remove this variable from the code.
                         
                         disp('Paremeters succesfully loaded.');
                         
