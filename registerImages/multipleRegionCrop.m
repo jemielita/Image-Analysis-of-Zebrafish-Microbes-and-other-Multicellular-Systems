@@ -532,105 +532,28 @@ hContrast = imcontrast(imageRegion);
              %Now duplicate the directory structure that the orignal set of
              %scans had. Should include some more error handling here.
              
-             for nS=1:totalNumScans
-                 for nR = 1:totalNumRegions
-                     for nC = 1:totalNumColors
-                         dirName = [cropDir filesep 'Scans' filesep 'scan_', num2str(nS), filesep ...
-                             'region_', num2str(nR), filesep param.color{nC}];
-                         mkdir(dirName);
-                     end
-                 end
-             end
-             
          case '2'
              %Overwrite the previous directory structure
              cropDir = param.directoryName; %Check to make sure that this is the right syntax.
          otherwise
-            disp('Input must be either 1 or 2!');
+            disp('Location input must be either 1 or 2!');
             return
             
      end
+     
+     switch answer{2}
+         case '1'
+             fileType = 'tiff';
+         case '2'
+             fileType = 'png';
+         otherwise
+            disp('File type input must be either 1 or 2!');
+            return
+     end
+     
+     %Run a script to crop these images.
+     saveCroppedBatch(param, cropDir, fileType, 'xy');
 
-     %save the meta-data necessary to register the images after they've
-     %been cropped.
-     for nR = 1:totalNumRegions
-        index = find([param.expData.Scan.region]==nR);
-        for nIndex=1:length(index)%Do you really have to use this FOR loop?
-            %Save the new x-y location of the images
-            param.expData.Scan(index(nIndex)).xBegin = 10*param.micronPerPixel*(param.regionExtent.XY(nR,5)-1)+...
-                param.expData.Scan(index(nIndex)).xBegin;
-            
-            param.expData.Scan(index(nIndex)).yBegin = 10*param.micronPerPixel*(param.regionExtent.XY(nR,6)-1)+...
-                param.expData.Scan(index(nIndex)).yBegin;
-            %Save the size of the new cropped image
-            param.expData.Scan(index(nIndex)).imSize = [param.regionExtent.XY(nR,3), param.regionExtent.XY(nR,4)];
-  
-        end
-        
-        
-     end
-     
-     parameters = param.expData;
-     timeData = param.expData.timeData;
-     
-     %Note: currently not updating the experimentData.txt file!!!!
-     save([cropDir filesep 'ExperimentData.mat'], 'parameters', 'timeData');
-     
-     %Go through the directory structure and load the appropriate images,
-     %crop them, and then save the result as either a TIFF or PNG.
-     
-     for nS=1:totalNumScans
-         mess = ['Cropping scan ', num2str(nS)];
-         fprintf(2, mess);
-         for nR = 1:totalNumRegions
-             for nC = 1:totalNumColors
-                 outputDirName = [cropDir filesep 'Scans' filesep 'scan_', num2str(nS), filesep ...
-                     'region_', num2str(nR), filesep param.color{nC}];
-                 inputDirName =  [param.directoryName filesep 'Scans' filesep 'scan_', num2str(nS), filesep ...
-                     'region_', num2str(nR), filesep param.color{nC}];
-                 index = find([param.expData.Scan.region]==nR);
-                 totalNumIm = param.expData.Scan(index(1)).nImgsPerScan;%Assuming there are equal number of images in both channels...
-                 %a reasonable assumption.
-                 
-                 for nI = 1:totalNumIm
-                     fN = [inputDirName, filesep, 'pco', num2str(nI-1), '.tif'];
-                     %Same code as in registerSingleImage.m
-                     xOutI = param.regionExtent.XY(nR,1);
-                     xOutF = param.regionExtent.XY(nR,3)+xOutI-1;
-                     
-                     yOutI = param.regionExtent.XY(nR,2);
-                     yOutF = param.regionExtent.XY(nR,4)+yOutI -1;
-                     xInI = param.regionExtent.XY(nR,5);
-                     xInF = xOutF - xOutI +xInI;
-                     
-                     yInI = param.regionExtent.XY(nR,6);
-                     yInF = yOutF - yOutI +yInI;
-                     
-                     %Loading in this image
-                     imI = imread(fN,...
-                         'PixelRegion', {[xInI xInF], [yInI yInF]});
-                    %Saving this image to the new location, in either a
-                    %tiff or png format.
-                    switch answer{2}
-                        case '1'
-                            fNout = [outputDirName, filesep, 'pco', num2str(nI-1), '.tif'];
-                            imwrite(imI, fNout);
-                        case '2'
-                            fNout = [outputDirName, filesep, 'pco', num2str(nI-1), '.png'];
-                            imwrite(imI, fNout);
-                    end
-                    fprintf(2, '.');
-                 end
-                 
-             end
-         end
-         b = 0;
-         fprintf(2, '\n');
-     end
-     
-     
-     
-    
      
     end
 
