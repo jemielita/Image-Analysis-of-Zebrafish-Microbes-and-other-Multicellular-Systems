@@ -97,6 +97,7 @@ hMenuFile = uimenu('Label', 'File');
 uimenu(hMenuFile, 'Label', 'Load scan stack', 'Callback', @loadScan_Callback);
 uimenu(hMenuFile, 'Label', 'Save single image', 'Callback', @saveImage_Callback);
 uimenu(hMenuFile, 'Label', 'Save scan stack', 'Callback', @saveScan_Callback);
+uimenu(hMenuFile, 'Label', 'Save param file', 'Callback', @saveParam_Callback);
 
 hMenuCrop = uimenu('Label','Crop Images');
 uimenu(hMenuCrop,'Label','Create cropping boxes','Callback',@createCropBox_Callback);
@@ -292,6 +293,20 @@ hContrast = imcontrast(imageRegion);
               
     end
 
+    function saveParam_Callback(hObject, eventdata)
+       %Function to save the param file that's created in the course of this analysis.
+       %This is done in other function calls, but not with a directory of
+       %your choice...currently this will only be used to create a script
+       %for cropping images.
+       
+       saveDir = uigetdir(pwd, 'Select a location to save the param.mat file');
+       
+       %Save the result to the param file associated with the data.
+       saveFile = [saveDir filesep 'param.mat'];
+       save(saveFile, 'param');
+       
+       
+    end
     function saveScan_Callback(hObject, eventdata)
       dirName = uigetdir(param.directoryName, 'Save the entire scan stack, both colors. Only current scan number will be saved!');
       if isequal(dirName,0) 
