@@ -299,10 +299,10 @@ hContrast = imcontrast(imageRegion);
        %your choice...currently this will only be used to create a script
        %for cropping images.
        
-       saveDir = uigetdir(pwd, 'Select a location to save the param.mat file');
+       [fileName, pathName] = uiputfile('*.mat', 'Select a location to save the param.mat file');
        
        %Save the result to the param file associated with the data.
-       saveFile = [saveDir filesep 'param.mat'];
+       saveFile = [saveDir filesep fileName];
        save(saveFile, 'param');
        
        
