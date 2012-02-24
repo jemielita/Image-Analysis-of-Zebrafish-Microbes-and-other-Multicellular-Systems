@@ -716,6 +716,15 @@ hContrast = imcontrast(imageRegion);
         %Save the GUI handles
         guidata(fGui, myhandles);
         
+        
+        if(~isfield(param, 'dataSaveDirectory'))
+           param.dataSaveDirectory = ...
+               [param.directoryName filesep 'gutOutline'];
+        end
+        %If this directory doesn't exist then make it.
+           if(~isdir(param.dataSaveDirectory))
+               mkdir(param.directoryName, 'gutOutline');
+           end
         %Save the result to the param file associated with the data.
         saveFile = [param.dataSaveDirectory filesep 'param.mat'];
         save(saveFile, 'param');
@@ -732,7 +741,10 @@ hContrast = imcontrast(imageRegion);
         set(h, 'Tag', 'gutCenter');
         position = wait(h);
         
-        param.centerLine = position;
+        hLine = findobj('Tag', 'gutCenter');
+        hLine = iptgetapi(hLine);
+        
+        param.centerLine = hLine.getPosition();
         myhandles.param = param;
         guidata(fGui, myhandles);
                
@@ -742,6 +754,7 @@ hContrast = imcontrast(imageRegion);
         hLine = findobj('Tag', 'gutCenter');
         delete(hLine);
         line = getCenterLine(param.centerLine, 5, param);
+        param.centerLine = line;
         h = impoly(imageRegion, line, 'Closed', false);
         set(h, 'Tag', 'gutCenter');
         

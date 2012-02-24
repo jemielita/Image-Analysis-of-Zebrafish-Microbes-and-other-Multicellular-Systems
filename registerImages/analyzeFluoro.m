@@ -102,7 +102,8 @@ for nScan=1:param.totalNumberScans
             
             switch lower(type)
                 case 'mip'
-                    imOut.mip(im>imOut.mip) = im;
+                    index = find(im>imOut.mip);
+                    imOut.mip(index) = im(index);
                 case 'total intensity'
                     imOut.totalInten = imOut.totalInten + im;
                 case 'total number'
