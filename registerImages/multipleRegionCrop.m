@@ -105,6 +105,8 @@ uimenu(hMenuCrop, 'Label', 'Crop the images', 'Callback', @cropImages_Callback);
 uimenu(hMenuCrop, 'Label', 'Restore original image', 'Callback', @restoreImages_Callback);
 
 uimenu(hMenuCrop, 'Label', 'Save cropped region', 'Callback', @saveCropped_Callback);
+uimenu(hMenuCrop, 'Label', 'Single crop region', 'Separator', 'on', ...
+    'Callback', @singleCrop_Callback);
 
 hMenuOutline = uimenu('Label', 'Outline region');
 uimenu(hMenuOutline,'Label','Freehand polygon outline','Callback',@createFreeHandPoly_Callback);
@@ -264,9 +266,8 @@ hContrast = imcontrast(imageRegion);
         getRegisteredImage(scanNum, color, zNum, im, data, param );
        
         set(hIm, 'XData', [1 param.regionExtent.regImSize(2)]);
-        set(hIm, 'YData', [2 param.regionExtent.regImSize(1)]);
+        set(hIm, 'YData', [1 param.regionExtent.regImSize(1)]);
 
-        
         initMag = apiScroll.findFitMag();
         apiScroll.setMagnification(initMag);
         
@@ -282,7 +283,7 @@ hContrast = imcontrast(imageRegion);
             disp('User pressed cancel-image will not be saved')
         else
             disp(['Saving image in the file ', fullfile(pathname, filename)])
-                    im = registerSingleImage(scanNum,color, zNum,im, data,param);
+                im = getRegisteredImage(scanNum, color, zNum, im, data, param);
         %Optionally denoise image
         if strcmp(get(hMenuDenoise, 'Checked'),'on')
             im = denoiseImage(im);
@@ -300,10 +301,8 @@ hContrast = imcontrast(imageRegion);
        %for cropping images.
        
        [fileName, saveDir]  = uiputfile('*.mat', 'Select a location to save the param.mat file');
-
-       
+ 
        %Save the result to the param file associated with the data.
-
        saveFile = [saveDir fileName];
 
        save(saveFile, 'param');
@@ -311,31 +310,57 @@ hContrast = imcontrast(imageRegion);
        
     end
     function saveScan_Callback(hObject, eventdata)
-      dirName = uigetdir(param.directoryName, 'Save the entire scan stack, both colors. Only current scan number will be saved!');
-      if isequal(dirName,0) 
-          disp('User pressed cancel-image stack will not be saved')
-          return
-      end
-      
-      disp(['Saving image stack in the directory ', dirName]);
-      
-      for c = minColor:maxColor
+        prompt = {'Scan range: initial', 'Scan range: final',...
+            'Z depth: initial', 'Z depth: final'};
+        name = 'Set range of scans to save-currently saves both colors';
+        defaultAnswer = {num2str(scanNum), num2str(scanNum), num2str(zNum), num2str(zNum)};
+        numLines = 1;
+        answer = inputdlg(prompt, name, numLines, defaultAnswer);
         
-          color = colorType(c);
-          color = color{1};
-          colorDir = strcat(dirName, filesep,color);
-          mkdir(colorDir);
-          disp(strcat('Saving color ', color));
-          
-          for zNum=zMin:zMax
-              im = getRegisteredImage(scanNum, color, zNum, im, data, param);
-              filename = strcat('pco', num2str(i), '.tif');
-              
-              imwrite(im, strcat(colorDir, filesep,filename), 'tiff');
-              fprintf(2,'.');
-          end
-          fprintf('\n');
-      end
+        if isempty(answer)
+            disp('User pressed cancel-image stack will not be saved')
+            return
+        end
+        
+        %Unpacking results
+        scanMin = str2num(answer{1});
+        scanMax = str2num(answer{2});
+        zMin = str2num(answer{3});
+        zMax = str2num(answer{4});
+        
+        dirName = uigetdir(param.directoryName, 'Save location');
+        if isequal(dirName,0)
+            disp('User pressed cancel-image stack will not be saved')
+            return
+        end
+        
+        disp(['Saving image stack in the directory ', dirName]);
+        
+        imBig = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
+        
+        for scanNum = scanMin:scanMax
+            scanDir = strcat(dirName, filesep, 'scan_', num2str(scanNum));
+            mkdir(scanDir);          
+            for c = minColor:maxColor  
+                color = colorType(c);
+                color = color{1};
+                colorDir = strcat(scanDir, filesep,color);
+                mkdir(colorDir);
+                disp(strcat('Saving color ', color));
+                
+                imNum=0;
+                for zStackN=zMin:zMax
+                    im = getRegisteredImage(scanNum, color, zStackN, imBig, data, param);
+                    filename = strcat('pco', num2str(imNum), '.tif');
+                    
+                    imwrite(im, strcat(colorDir, filesep,filename), 'tiff');
+                    fprintf(2,'.');
+                    imNum = imNum+1;
+                end
+                fprintf('\n');
+            end    
+        end
+        
     end
 
 %Adjust the contrast of the images.
@@ -576,7 +601,64 @@ hContrast = imcontrast(imageRegion);
     end
 
 
+    function singleCrop_Callback(hObject, eventData)
+        if strcmp(get(gcbo, 'Checked'), 'off')
+            set(gcbo, 'Checked', 'on');
+            %Only add crop box if there isn't one there
+            h = imrect(imageRegion);
+            
+            position = wait(h);
+            param.regionExtent.singleCrop = position;
+            set(h, 'Tag', 'largeCropRegion');
+            
+            %Crop the image down to this size
+            param.regionExtent.singleCrop = round(position);
+            
+            getRegisteredImage(scanNum, color, zNum, im, data, param)
+          
+            set(hIm, 'XData', [1 param.regionExtent.singleCrop(3)]);
+            set(hIm, 'YData', [1 param.regionExtent.singleCrop(4)]);
+            
+            initMag = apiScroll.findFitMag();
+            apiScroll.setMagnification(initMag);
+            
+            
+            
+            %Remove other boxes...
+            
+            %Remove cropping box and restore the original image.
+            cropRect = findobj('Tag', 'largeCropRegion');
+            delete(cropRect);
+            
+            %Remove the outline rectangles
+            hRect = findobj('Tag', 'outlineRect');
+            delete(hRect);
+            set(hMenuBoundBox, 'Label', 'Add region bounding boxes');
+            
+            
+        else
+            %Remove cropping box and restore the original image.
+            cropRect = findobj('Tag', 'largeCropRegion');
+            delete(cropRect);
+            set(gcbo, 'Checked', 'off');
+            
+            
+            %Add region bounding boxes.
+            outlineRegions();
+            set(hMenuBoundBox, 'Label', 'Remove region bounding boxes');
+            %Restore the original image
+            param.regionExtent.singleCrop = '';
+            
+            getRegisteredImage(scanNum, color, zNum, im, data, param)
 
+            set(hIm, 'XData', [1 param.regionExtent.regImSize(2)]);
+            set(hIm, 'YData', [1 param.regionExtent.regImSize(1)]);
+
+            
+            initMag = apiScroll.findFitMag();
+            apiScroll.setMagnification(initMag);
+        end
+    end
 
     function table_Callback(hObject,eventData)
        tableData = get(hRegTable, 'Data');
@@ -874,7 +956,8 @@ hContrast = imcontrast(imageRegion);
     end
 
 %Function to get a desired image for either display or for saving
-    function [] = getRegisteredImage(scanNum, color, zNum, im, data, param )
+    function varargout = getRegisteredImage(scanNum, color, zNum, im, data, param )
+
         im = registerSingleImage(scanNum,color, zNum,im, data,param);
         %Optionally denoise image
         if strcmp(get(hMenuDenoise, 'Checked'),'on')
@@ -884,9 +967,26 @@ hContrast = imcontrast(imageRegion);
         %to begin with this will mess things up. This approach is somewhat
         %crude. What we should really be doing is in nicer fashion.
         im(im(:)>50000) = 0;
-        set(hIm, 'CData', im);
+        
+        %If a single crop region (not region specific crop boxes) for the
+        %whole image has been selected, then crop down to this size.
+        if( isfield(param.regionExtent, 'singleCrop'))
+            if(~isempty(param.regionExtent.singleCrop))
+                im = imcrop(im, param.regionExtent.singleCrop);
+            end
+        end
+        
+        switch nargout
+            case 0
+                set(hIm, 'CData', im);
+            case 1
+                %Used for saving potentially modified images to a new
+                %folder
+                varargout{1} = im;
+                
+        end
+    end    
 
-    end
 end
 
 function param = calcCroppedRegion(param)
@@ -1021,7 +1121,7 @@ function [data, param] = loadParameters()
                         %[data,param] = initializeScanStruct(param);
                         data = '';%I think we can slowly remove this variable from the code.
                         
-                        disp('Paremeters succesfully loaded.');
+                        disp('Parameters succesfully loaded.');
                         
                         % Calculate the overlap between different regions
                         

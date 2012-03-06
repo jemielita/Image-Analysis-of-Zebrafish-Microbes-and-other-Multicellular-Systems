@@ -41,6 +41,10 @@
 function im = registerSingleImage(varargin)
 %Get the appropriate variables
 switch nargin
+    
+    case 0
+        %Prompt the user for directories, etc...
+        
     %We should get rid of case 6-data is a useless variable
     case 6
         nScan = varargin{1};
@@ -98,7 +102,6 @@ for regNum=1:totalNumRegions
     
     yInI = param.regionExtent.XY(regNum,6);
     yInF = yOutF - yOutI +yInI;
-    
     
     if(imNum(regNum)~=-1)
         imFileName = ...
