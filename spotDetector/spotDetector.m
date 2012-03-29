@@ -101,7 +101,11 @@ end
 % rescale denoised image
 imgDenoised = (imgDenoised-min(imgDenoised(:))) * (maxI-minI) / (max(imgDenoised(:))-min(imgDenoised(:)));
 
-imgDenoised = mask.*imgDenoised;
+
+%mlj: temporarily removing this to see what the denoised image looks like
+%imgDenoised = mask.*imgDenoised;
+
+
 localMax = locmax2d(imgDenoised, [9 9]);
 
 %===================================================

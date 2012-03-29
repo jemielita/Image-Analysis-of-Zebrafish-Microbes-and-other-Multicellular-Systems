@@ -31,10 +31,17 @@ for i=1:100
     %If there aren't any new regions picked up, break.
     if(sum(newRegion(:))==0)
         disp(i)
+        break
     end
     %Append these regions to hIm and repeat
     hIm = hIm+newRegion;
-    
+   
+    index = find(newRegion>0);
+    lIm(index) = 0;
+    %lIm = lIm-newRegion; %Remove these regions from the low threshold region
+    imshow(newRegion>0);
+    title(sum(newRegion(:)))
+    pause(0.5)
 end
 
 end
