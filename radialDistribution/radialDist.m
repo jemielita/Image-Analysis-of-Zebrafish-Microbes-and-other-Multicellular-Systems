@@ -84,7 +84,6 @@ for lineSet =1:length(lineSpace)-1
     end
     fprintf(1, 'done!\n');
     
-    
 end
 
 
