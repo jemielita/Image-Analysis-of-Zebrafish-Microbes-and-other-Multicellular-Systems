@@ -2,12 +2,30 @@
 %directory, but lacking the directory structure.
 %Will be used to load images into Hyugens. Images will also be cropped.
 
-function []= flattenDir(rect)
+function []= flattenDir(varargin)
 
-imDir = uigetdir(pwd, 'Load images from this directory');
+loadSeries =1; %Default to load from our type of directory structure.
+if nargin==1
+    imDir = uigetdir(pwd, 'Load images from this directory');
+    
+    outDir = uigetdir(imDir, 'Location to save the images');
+elseif nargin ==2
+    loadSeries =varargin{2};
+    %If LoadSeries ==1, then load from our type of diretory structure, if
+    %loadseries ==0, then load from tiff stacks.
+    imDir = uigetdir(pwd, 'Load images from this directory');
+    
+    outDir = uigetdir(imDir, 'Location to save the images');
+    nameRoot = 'sp7_80_percent_w1Yoko GFP_s5_t';
+elseif nargin==3
+    imDir = varargin{2};
+    outDir = varargin{3};
+end
 
-outDir = uigetdir(imDir, 'Location to save the images');
-minN = 0;
+rect = varargin{1};
+
+
+minN = 1;
 maxN = 50;
 
 minScan = 1;
@@ -26,11 +44,16 @@ for scanN=minScan:maxScan
     filename = [outDir, filesep, filename];
     
     for imN=minN:maxN
-       imF = [imDir,filesep,'scan_', num2str(scanN), filesep, region, filesep,...
-           color, filesep, 'pco', num2str(imN), '.tif'];
-       temp = imread(imF);
-       temp = imcrop(temp, rect);
-       imwrite(temp, filename, 'writemode', 'append');       
+        if loadSeries ==1
+            imF = [imDir,filesep,'scan_', num2str(scanN), filesep, region, filesep,...
+                color, filesep, 'pco', num2str(imN), '.tif'];
+            temp = imread(imF);
+        elseif loadSeries ==0
+            imF = [imDir, filesep, nameRoot, sprintf('%03d', scanN), '.TIF'];
+            temp = imread(imF, imN);
+        end
+        temp = imcrop(temp, rect);
+        imwrite(temp, filename, 'writemode', 'append');
     end
  
 end

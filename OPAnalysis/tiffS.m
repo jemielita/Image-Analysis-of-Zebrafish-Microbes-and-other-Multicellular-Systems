@@ -5,7 +5,7 @@
 function [] = tiffS(varargin)
 
 %Where we'll save all the marker regions.
-saveDir = 'C:\jemielita\markers\';
+saveDir = 'C:\jemielita\markers_ConfocalFish2\';
 
 saveFile = saveDir;
 
@@ -24,13 +24,13 @@ if nargin==0
     for i=1:size(imL,1)
         im(:,:,i) = imread(imPath, i);
     end
-
 end
 
 im = mat2gray(im);
 
 h_fig = figure;
 set(h_fig,'KeyPressFcn',{@key_Callback,h_fig});
+set(h_fig, 'WindowScrollWheelFcn', {@mouse_Callback, h_fig});
 
 minN = 1;
 maxN = size(im,3);
@@ -47,28 +47,127 @@ imcontrast;
 
 imT = im;
 
-hLine = imline(origAxes);
-pos = wait(hLine);
 
-imT = roughSegment(im);
+%What fraction of the Otsu threshold to use.
+threshScale = 1;
 
+%hLine = imline(origAxes);
+%pos = wait(hLine);
+
+maxN = 50;
+
+polyZ = cell(maxN,1);
+hPoly = '';
+topIndex = 51;
+bottomIndex = 1;
+
+title(segAxes, ['Top: ', num2str(topIndex)]);
+
+fN = [saveDir 'OP_Scan', sprintf('%03d', 138), '.mat'];
+%Load the already thresholded images if we can.
+try
+    imT = load(fN);
+    imT = imT.imT;
+catch
+    imT = roughSegment(im);
+end
 %Only keep the regions that intersect the line that we drew through the
 %center of the opercle.
-
-xx = pos(1,1) + (1:1000)*(pos(2,1)-pos(1,1))/1000;
-yy = pos(1,2) + (1:1000)*(pos(2,2)-pos(1,2))/1000;
+% 
+% xx = pos(1,1) + (1:1000)*(pos(2,1)-pos(1,1))/1000;
+% yy = pos(1,2) + (1:1000)*(pos(2,2)-pos(1,2))/1000;
 
 b = 0;
 
+    function mouse_Callback(varargin)
+       counter = varargin{2}.VerticalScrollCount;
+       
+       if(counter==-1)
+           zUp();
+       elseif(counter==1)
+           zDown();
+       end
+       
+    end
     function imOut = roughSegment(imIn)
         %As a first pass let's see if a simple thresholding does the trick
         thresh = graythresh(imIn);
-        imOut = imIn>thresh;
+        imOut = imIn>threshScale*thresh;
         imOut = double(imOut);
         
         %imT = cleanup3dMarkers(imT);
         
         imOut = bwlabeln(imOut>0);
+    end
+    function zDown
+        %The left arrow key was pressed
+        if(index~=1)
+            if(~isempty(hPoly))
+                
+                %Get the position of the polygon for this level...we'll
+                %save this and use to to further remove extraneous
+                %regions from the segmented opercle.
+                posApi = iptgetapi(hPoly);
+                polyZ{index} = posApi.getPosition();
+                
+                delete(hPoly);
+                if(isempty(polyZ{index-1}))
+                    hPoly = impoly(segAxes, polyZ{index}, 'Closed', true);
+                else
+                    hPoly = impoly(segAxes, polyZ{index-1}, 'Closed', true);
+                end
+            end
+            index = index-1;
+            set(hIm, 'CData', im(:,:,index));
+            set(origT, 'string',num2str(index));
+            
+            
+            temp = segmentIm(im(:,:,index));
+            imOut = overlayIm(im(:,:,index), temp>0);
+            set(segIm, 'CData', imOut);
+            
+            
+        end
+                 
+    end
+
+    function zUp
+        %The right arrow key was pressed
+        if(index==maxN &&~isempty(hPoly))
+            posApi = iptgetapi(hPoly);
+            polyZ{index} = posApi.getPosition();
+        end
+        if(index~=maxN)
+            
+            if(~isempty(hPoly))
+                
+                %Get the position of the polygon for the previous level...we'll
+                %save this and use to to further remove extraneous
+                %regions from the segmented opercle.
+                posApi = iptgetapi(hPoly);
+                polyZ{index} = posApi.getPosition();
+                
+                delete(hPoly)
+                if(isempty(polyZ{index+1}))
+                    hPoly = impoly(segAxes, polyZ{index}, 'Closed', true);
+                else
+                    hPoly = impoly(segAxes, polyZ{index+1}, 'Closed', true);
+                end
+            end
+            
+            index = index+1;
+            set(hIm, 'CData', im(:,:,index));
+            set(origT, 'string', num2str(index));
+            
+            
+            temp = segmentIm(im(:,:,index));
+            imOut = overlayIm(im(:,:,index), temp>0);
+            
+            set(segIm, 'CData', imOut);
+            
+        end
+        
+        
     end
     function imOut = onlyOP(imIn, xx, yy)
         xx = round(xx);yy = round(yy);
@@ -100,50 +199,85 @@ b = 0;
         val = varargin{1,2}.Key;
 
         switch val
-            case 'leftarrow'
-                %The left arrow key was pressed
-                if(index~=1)
-                    index = index-1;
-                    set(hIm, 'CData', im(:,:,index));
-                    set(origT, 'string',num2str(index));
-                   
-                   
-                   temp = segmentIm(im(:,:,index));
-                   imOut = overlayIm(im(:,:,index), temp>0);
-                   set(segIm, 'CData', imOut);
-                end
-            case 'rightarrow'
-                %The right arrow key was pressed
-                if(index~=maxN)
-                    index = index+1;
-                    set(hIm, 'CData', im(:,:,index));
-                    set(origT, 'string', num2str(index));
+            
+            case '1'
+                %Delete current polygon and load in the one from the
+                %previous index instead. Useful when the fish has shifted.
+                 delete(hPoly);
+
+                    hPoly = impoly(segAxes, polyZ{index-1}, 'Closed', true);
                     
-                    
-                    temp = segmentIm(im(:,:,index));
-                    imOut = overlayIm(im(:,:,index), temp>0);
-                   
-                    set(segIm, 'CData', imOut);
-                end
+            case '2'
+                  %Delete current polygon and load in the one from the
+                %previous index instead. Useful when the fish has shifted.
+                 delete(hPoly);
+
+                    hPoly = impoly(segAxes, polyZ{index+1}, 'Closed', true);
                 
+                    
+            case 't'
+               topIndex = index;
+               title(segAxes, ['Bottom: ', num2str(bottomIndex), '   Top: ', num2str(topIndex)]);
+
+            case 'b'
+                bottomIndex = index;
+                title(segAxes, ['Bottom: ', num2str(bottomIndex), '   Top: ', num2str(topIndex)]);
+                 
+            case 'leftarrow'
+                zDown();
+      
+                
+            case 'rightarrow'
+                zUp();
+                
+            case 'p'
+                polyZ = cell(maxN,1);
+
+                    delete(hPoly)
+  
+                    hPoly = impoly(segAxes,'Closed', true);
+                    position = wait(hPoly);
+                    polyZ{index} = position;
+                 
             case 's'
                 
-                posApi = iptgetapi(hLine);
-                pos = posApi.getPosition();
+                for i=1:maxN
+                    if(~isempty(polyZ{i}))
+                        mask = poly2mask(polyZ{i}(:,1), polyZ{i}(:,2), imL(2).Height, imL(1).Width);
+                        imT(:,:,i) = imT(:,:,i).*mask;
+                    end
+                end
+                imT = imT>0;
+%                 
+%                 posApi = iptgetapi(hLine);
+%                 pos = posApi.getPosition();
+%                 
+%                 xx = pos(1,1) + (1:1000)*(pos(2,1)-pos(1,1))/1000;
+%                 yy = pos(1,2) + (1:1000)*(pos(2,2)-pos(1,2))/1000;
+% 
+%                 
+%                 imT = roughSegment(imT);
+%                 imT = onlyOP(imT, xx, yy);
+%                 %Force the opercle to be the only region segmented.
+                 %Remove all regions above and equal to this one
+                for iT = topIndex:size(imT,3)
+                    imT(:,:,iT) = zeros(size(imT(:,:,iT)));
+                end
                 
-                xx = pos(1,1) + (1:1000)*(pos(2,1)-pos(1,1))/1000;
-                yy = pos(1,2) + (1:1000)*(pos(2,2)-pos(1,2))/1000;
-
+                for iT = 1:bottomIndex;
+                    imT(:,:,iT) = zeros(size(imT(:,:,iT)));
+                end
                 
-                imT = roughSegment(imT);
-                imT = onlyOP(imT, xx, yy);
-                %Force the opercle to be the only region segmented.
+                    
+                
+                
                 
                 temp = segmentIm(im(:,:,index));
                 imOut = overlayIm(im(:,:,index), temp>0);
                 
                 set(segIm, 'CData', imOut);
                 
+                disp('Segmentation done!');
                 
             case 'm'
                 %measure the narrowest and widest part of the opercle
@@ -155,21 +289,45 @@ b = 0;
                 answer=inputdlg(prompt,name,numlines,defaultanswer); 
                 b = 0;
                
+                
+            case 'o'
+                %Change the threshold for Otsu
+                threshScale = input('New Threshold');
             case 'c'
                 %Coursely segment the images
                 imT = roughSegment(im);
-               
-            case 'l'
+                
+            case 'a'
+                %Set the top image to be 51-so that up to the top is saved
+                topIndex = 51;
+                title(segAxes, ['Bottom: ', num2str(bottomIndex), '   Top: ', num2str(topIndex)]);
+                               
+            case 'f' %Load new images and save previous ones
+                
+                
+                %Save markers made for this image
+                
+               % outM = ['OP_Scan', imLoc(end-11:end-9)];
+             outM = ['OP_Scan', imLoc(end-6:end-4)];
+               fn = [saveFile outM '.mat'];
+                evalC = ['save(' ,'''' , fn , ''' ,' ,' ''imT'', ''polyZ'' )'];
+                eval(evalC);
+                
+                disp('saving done!');
+                
+                
                 %Load in a new set of images
-                nextIm = str2num(imPath(end-11:end-9));
+                nextIm = str2num(imPath(end-6:end-4));
+     %        nextIm = str2num(imPath(end-11:end-9));
                 nextIm = nextIm+1;
-                imPathNew = [imPath(1:end-12), sprintf('%03d', nextIm), imPath(end-8:end)];
-
-                %                 [imLoc, pathN] = uigetfile('.tif', 'Select the image stack to load in.',imPathNew);
-                %                 imPath = [pathN imLoc];
+                 imPathNew = [imPath(1:end-7), sprintf('%03d',nextIm), imPath(end-3:end)];
+%imPathNew = [imPath(1:end-12), sprintf('%03d', nextIm), imPath(end-8:end)];
+disp(imPathNew);
+%                 [imLoc, pathN] = uigetfile('.tif', 'Select the image stack to load in.',imPathNew);
+%                 imPath = [pathN imLoc];
                 %                 imL  = imfinfo(imPath, 'tif');
                 
-                %Don't bother prompting the user-let's just wizz through
+                %Don't bother prompting the user-let's just whizz through
                 %these.
                 imPath  = imPathNew;
                 im = zeros(imL(1).Height, imL(2).Width, size(imL,1));
@@ -182,7 +340,23 @@ b = 0;
                 
                 im = mat2gray(im);
                 
-                imT = im;
+                
+                fN = [saveDir 'OP_Scan', sprintf('%03d', nextIm), '.mat'];
+                %Load the already thresholded images if we can.
+                try
+                    imT = load(fN);
+                    imT = imT.imT;
+                catch
+                    imT = roughSegment(im);
+                end
+                
+                %Go to just below the previous bottom index on the last
+                %scan
+                if(bottomIndex~=1)
+                    index = bottomIndex-1;
+                else
+                    index = bottomIndex;
+                end
                 
                 set(hIm, 'CData', im(:,:,index));
                 set(origT, 'string', num2str(index));
@@ -191,8 +365,10 @@ b = 0;
                 imOut = overlayIm(im(:,:,index), temp>0);
                 
                 set(segIm, 'CData', imOut);
-                
-                    
+                  
+                delete(hPoly)
+                hPoly = impoly(segAxes, polyZ{index}, 'Closed', true);
+        
                 
                 
             case 'd'
@@ -205,9 +381,25 @@ b = 0;
                 eval(evalC);
                 b = 0;
                 
+                disp('saving done!');
+                
+                
+            case 'v'
+                
+                for vI=1:size(imL,1)
+                    set(hIm, 'CData', im(:,:,vI));
+                    set(origT, 'string', num2str(vI));
+                    
+                    temp = segmentIm(im(:,:,vI));
+                    imOut = overlayIm(im(:,:,vI), temp>0);
+                    
+                    set(segIm, 'CData', imOut);
+                    
+                    pause(0.5);
+                end
                 
            
-            case 'a'
+            case '`'
                 thisIm = 47;
                 while(thisIm<145)
                     thisIm = thisIm+1;

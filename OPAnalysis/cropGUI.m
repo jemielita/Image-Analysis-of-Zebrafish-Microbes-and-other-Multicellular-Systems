@@ -4,14 +4,22 @@
 function [rect] = cropGUI(varargin)
 if nargin==1
     imDir = varargin{1};
+    loadSeries = 1;
+    nameRoot = '';
 elseif nargin==0
     imDir = uigetdir();
+    loadSeries = 1;
+    nameRoot = '';
+elseif nargin ==2
+    imDir = varargin{1};
+    nameRoot = varargin{2};
+    loadSeries = 0;
 else
     disp('Function requires either 0 or 1 inputs!');
     return
 end
 
-cropGUIinternal(imDir);
+cropGUIinternal(imDir, loadSeries, nameRoot);
 
  while(~isempty(findobj('Tag', 'cropGUI')))
             handles = findobj('Tag', 'cropGUI');
@@ -24,7 +32,7 @@ cropGUIinternal(imDir);
 
 end
 
-function [] = cropGUIinternal(imDir)
+function [] = cropGUIinternal(imDir, loadSeries, nameRoot)
 
 
 h_fig = figure;
@@ -42,15 +50,20 @@ minN = 0;
 maxN = 50;
 
 minScan = 1;
-maxScan = 144;
+maxScan = 146;
 color = '488nm';
 region = 'region_1';
 
 index = 1;
 
+if loadSeries ==1
 fN = [imDir, filesep, 'scan_',num2str(scan), filesep,region,...
     filesep, color, filesep, 'pco', num2str(index), '.tif'];
 im = imread(fN);
+else
+    fN = [imDir, filesep, nameRoot, sprintf('%03d', 1), '.TIF'];
+    im = imread(fN, 1);
+end
 hIm = imshow(im,[]);
 
 
@@ -77,11 +90,12 @@ hRect = [];
                 if(scan~=minScan)
                     scan = scan-1;
                 end
+                title(num2str(scan));
             case 'uparrow'
                 if(scan~=maxScan)
                     scan = scan+1;
                 end
-
+                title(num2str(scan));
             case 'c'
                 hRect = imrect;
                 
@@ -103,11 +117,15 @@ hRect = [];
               
                
         end
-        fN = [imDir, filesep, 'scan_',num2str(scan), filesep,region,...
-            filesep, color, filesep, 'pco', num2str(index), '.tif'];
-            titleV = ['scan: ', num2str(scan), '   index: ', num2str(index)];
-            title(titleV);
-        im = imread(fN);
+        if loadSeries ==1
+            fN = [imDir, filesep, 'scan_',num2str(scan), filesep,region,...
+                filesep, color, filesep, 'pco', num2str(index), '.tif'];
+            im = imread(fN);
+        else
+            fN = [imDir, filesep, nameRoot, sprintf('%03d', scan), '.TIF'];
+            im = imread(fN, index);
+        end
+        
         
         set(hIm, 'CData', im);
                     
