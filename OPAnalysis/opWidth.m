@@ -20,9 +20,9 @@
 %
 %AUTHOR: Matthew Jemielita
 
-function [convexPt, linePt] = opWidth(imT,scanNum)
+function [convexPt, linePt, perimVal] = opWidth(imT,scanNum)
 
-plotData = 'true';
+plotData = 'false';
 
 convexPt = [];
 linePt = [];
@@ -157,7 +157,6 @@ linePt = cat(2, xx',yy',zz');
 %     
 % end
     
-
 %Now producing meshgrid perpendicular to the principal axis at one micron
 %spacings.
 [xgrid, ygrid] = meshgrid(min(X(:,1)):max(X(:,1)), min(X(:,2)):max(X(:,2)));
@@ -167,6 +166,9 @@ linePt = cat(2, xx',yy',zz');
 
 %axis equal
 gridPlane = zeros(size(xgrid));
+% pause
+% close all
+% return
 
 %figure; 
 fprintf(2, 'Calculating the convex hull perpendicular to the principal axis');
@@ -176,17 +178,35 @@ for lineNum = 1:size(linePt,1)
     zgrid = (1/normal(3)) .* (lineVal*normal - (xgrid.*normal(1) + ygrid.*normal(2)));
     
     if(lineNum==1)
-     %   h = mesh(xgrid,ygrid,zgrid,'EdgeColor',[0 0 0],'FaceAlpha',0);
+        %   h = mesh(xgrid,ygrid,zgrid,'EdgeColor',[0 0 0],'FaceAlpha',0.5);
     else
-      % set(h, 'xData', xgrid);set(h, 'yData', ygrid); set(h, 'zData', zgrid); 
+        % set(h, 'xData', xgrid);set(h, 'yData', ygrid); set(h, 'zData', zgrid);
     end
     
     planePt = cat(2, xgrid(:), ygrid(:), zgrid(:));
-    planePt = round(planePt);
-    interPtIn = ismember(planePt, perimVal,'rows');
+    %Remove points that are outside the range of the opercle data
+%     for remP=1:3
+%     index = find(planePt(:,remP)>max(perimVal(:,remP))  );
+%     planePt(~index,:) = [];
+%     index = find(planePt(:,remP)<min(perimVal(:,remP)));
+%     planePt(~index,:) = [];
+%     end
     
+    
+    %dataDist = pdist2(planePt, perimVal);
+    %index = find(min(dataDist,[],2)<=1);
+    %valOrig = planePt(index,:);
+    %    planePt = round(planePt);
+    %    interPtIn = ismember(planePt, perimVal,'rows');
+    %idx = rangesearch(planePt, perimVal,50);
+    idx = rangesearch(planePt, perimVal, 1);
+    index = ~ cellfun('isempty', idx);
+    %    idx = [idx{:}];
+    valOrig = perimVal(index,:);
+%    valOrig = planePt(idx,:);
+   valOrig = unique(valOrig, 'rows');
     %Find the coordinates of these points in the original coordinate system
-    valOrig = cat(2, xgrid(interPtIn), ygrid(interPtIn), zgrid(interPtIn));
+    % valOrig = cat(2, xgrid(interPtIn), ygrid(interPtIn), zgrid(interPtIn));
     %Transforming to the coordinate system of the plane perpendicular to
     %the principal axis.
     val = basis'*valOrig';
@@ -211,7 +231,14 @@ for lineNum = 1:size(linePt,1)
       
 if(strcmp(plotData, 'true')) 
        %Convex hull is what one expects.
-       plot3(valOrig(:,1), valOrig(:,2), valOrig(:,3), '-rs');
+      if(~exist('hP'))
+          hP =  plot3(valOrig(:,1), valOrig(:,2), valOrig(:,3), '-rs');
+      else
+          set(hP, 'XData', valOrig(:,1));
+          set(hP, 'YData', valOrig(:,2));
+          set(hP, 'ZData', valOrig(:,3));
+      end
+      
        %plot(valCon(1,:), valCon(2,:), '--rs');
        
        plot3(lineVal(1), lineVal(2), lineVal(3), '--rs');

@@ -12,12 +12,13 @@ end
 for i=minS:maxS
     
     convex = load(['OP_Scan', sprintf('%03d', i), 'convex.mat']);
-    outline = load(['OP_Scan', sprintf('%03d', i), 'perim.mat']);
+   % outline = load(['OP_Scan', sprintf('%03d', i), 'perim.mat']);
     
     perim = convex.perim;
     
-    perimVal = outline.perimVal;
-    endpts = outline.endpts;
+    %perimVal = outline.perimVal;
+    %endpts = outline.endpts;
+    
     h1 = subplot(1,2,1);
     if(i==minS)
         hP1 = plot3(perimVal(:,1), perimVal(:,2), perimVal(:,3), '*', 'MarkerSize',1);

@@ -2,7 +2,7 @@
 %Multiple convex hulls
 
 function [] = multipleHulls(fileDir, sMin, sMax, type)
-plotData = 'true';
+plotData = 'false';
 for i=sMin:sMax
     
     if(type==1)
@@ -17,11 +17,11 @@ for i=sMin:sMax
     
     imT = load(fN);
     imT = imT.imT;
-    [convexPt, linePt] = opWidth(imT,i);
+    [convexPt, linePt, perimVal] = opWidth(imT,i);
     
     if(strcmp(plotData, 'false'))
         conF = [fileDir,filesep,'OP_Scan', sprintf('%03d', i), 'convex.mat'];
-        save(conF, 'convexPt', 'linePt');
+        save(conF, 'convexPt', 'linePt', 'perimVal');
     end
 end
 
