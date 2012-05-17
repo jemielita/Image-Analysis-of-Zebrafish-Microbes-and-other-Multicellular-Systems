@@ -20,9 +20,9 @@
 %
 %AUTHOR: Matthew Jemielita
 
-function [convexPt, linePt, perimVal] = opWidth(imT,scanNum)
+function [convexPt, linePt, perimVal] = opWidth(imT,scanNum, microscope)
 
-plotData = 'false';
+plotData = 'true';
 
 convexPt = [];
 linePt = [];
@@ -85,7 +85,14 @@ sumPerim = find(sumPerim==1);
 
 indP = find(imPerim ==1);
 [xp, yp, zp] = ind2sub(size(imPerim), indP);
-xp = 0.3636*xp; yp = 0.3636*yp;
+
+switch microscope
+    case 'confocal'
+        xp = 0.3636*xp; yp = 0.3636*yp;
+    case 'lightsheet'
+        xp = 0.1625*xp; yp = 0.1625*yp;
+end
+
 if(strcmp(plotData, 'true'))
     figure; plot3(xp, yp, zp, '*', 'MarkerSize', 1);
     axis equal
@@ -104,14 +111,17 @@ ind = find(imT==1);
 [x, y,z] = ind2sub(size(imT), ind);
 %rescaling the z axis to account for the spacing
 
-%For the Confocal Data
-x = 0.3636*x;
-y = 0.3636*y;
-
-%For the Light sheet data
-%x = 0.1625*x;
-%y = 0.1625*y;
-
+switch microscope
+    case 'confocal'
+        %For the Confocal Data
+        x = 0.3636*x;
+        y = 0.3636*y;
+    case 'lightsheet'
+        %For the Light sheet data
+        x = 0.1625*x;
+        y = 0.1625*y;
+        
+end
 X = cat(2, x,y,z);
 
 %Get the principal components
@@ -183,11 +193,10 @@ rotM = [cos(phi) -cos(phi) + sin(phi)*sin(theta), sin(phi)+cos(phi)*sin(theta);.
 
 rotM1 = [cos(phi), sin(phi), 0; -sin(phi), cos(phi), 0 ;0, 0,1];
 rotM2 = [1, 0, 0; 0, cos(theta), sin(theta); 0, -sin(theta), cos(theta)];
-lineVal = linePt(20,:);
 
 
 %plot3(gridV(:,1), gridV(:,2), gridV(:,3));
-b = 0;
+
 
 for i=1:size(gridV,1)
     planePt(i,:) = rotM2*rotM1*gridV(i,:)';
@@ -259,7 +268,7 @@ for lineNum = 1:size(linePt,1)
     %    planePt = round(planePt);
     %    interPtIn = ismember(planePt, perimVal,'rows');
     %idx = rangesearch(planePt, perimVal,50);
-    idx = rangesearch(planePt, perimVal, 1); %Careful! This is somewhat large. What's an appropriate value?
+    idx = rangesearch(planePt, perimVal, 1);
     index = ~ cellfun('isempty', idx);
     %    idx = [idx{:}];
     valOrig = perimVal(index,:);
@@ -292,7 +301,7 @@ if(strcmp(plotData, 'true'))
        
       % plot3(lineVal(1), lineVal(2), lineVal(3), '--rs');
 
-     pause(0.1);
+     b = 0;
 
 end
     
