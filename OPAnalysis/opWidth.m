@@ -26,6 +26,7 @@ plotData = 'false';
 
 convexPt = [];
 linePt = [];
+
 %Rescale the thresholded image so that it is only as large as necessary
 imT = double(imT>0);
 
@@ -76,6 +77,7 @@ imT(CC.PixelIdxList{idx}) = 1;
 imPerim = zeros(size(imT));
 for i=1:size(imT,3)
     imPerim(:,:,i) = bwperim(imT(:,:,i));
+    
 end
 
 sumPerim = sum(imPerim,3);
@@ -159,13 +161,44 @@ linePt = cat(2, xx',yy',zz');
     
 %Now producing meshgrid perpendicular to the principal axis at one micron
 %spacings.
-[xgrid, ygrid] = meshgrid(min(X(:,1)):max(X(:,1)), min(X(:,2)):max(X(:,2)));
+%[xgrid, ygrid] = meshgrid(min(X(:,1)):0.05:max(X(:,1)), min(X(:,2)):0.05:max(X(:,2)));
+zFinalGrid = meshgrid(min(X(:,3)):max(X(:,3)));
 
-%[xgrid,ygrid] = meshgrid(linspace(min(X(:,1)),max(X(:,1))), ...
-%    linspace(min(X(:,2)),max(X(:,2)),5));
+[xgrid, ygrid,zgrid] = meshgrid(-100+min(X(:,1)):max(X(:,1))+100, 0,...
+    -100+min(X(:,3)):max(X(:,3))+100);
 
-%axis equal
-gridPlane = zeros(size(xgrid));
+gridV = cat(2, xgrid(:), ygrid(:), zgrid(:));
+r = sqrt(sum(normal.^2));
+phi = pi/2-atan(normal(2)/normal(1));
+
+zDist = linePt(end,3)-linePt(1,3);
+zR = sqrt(sum((linePt(end,1:2)-linePt(1,1:2)).^2));
+
+theta = atan(zDist/zR);
+
+rotM = [cos(phi) -cos(phi) + sin(phi)*sin(theta), sin(phi)+cos(phi)*sin(theta);...
+    cos(theta), cos(phi) + sin(phi)*sin(theta), -sin(phi)+cos(phi)*sin(theta);...
+    -sin(theta), sin(phi)*cos(theta), cos(phi)*cos(theta)];
+
+
+rotM1 = [cos(phi), sin(phi), 0; -sin(phi), cos(phi), 0 ;0, 0,1];
+rotM2 = [1, 0, 0; 0, cos(theta), sin(theta); 0, -sin(theta), cos(theta)];
+lineVal = linePt(20,:);
+
+
+%plot3(gridV(:,1), gridV(:,2), gridV(:,3));
+b = 0;
+
+for i=1:size(gridV,1)
+    planePt(i,:) = rotM2*rotM1*gridV(i,:)';
+end
+
+% plot3(planePt(:,1), planePt(:,2), planePt(:,3))
+b = 0;
+
+%[xgrid,ygrid] = meshgrid(linspace(min(X(:,1)),max(X(:,1)),1000), ...
+%   linspace(min(X(:,2)),max(X(:,2)),1000));
+
 % pause
 % close all
 % return
@@ -173,24 +206,51 @@ gridPlane = zeros(size(xgrid));
 %figure; 
 fprintf(2, 'Calculating the convex hull perpendicular to the principal axis');
 fprintf(2, '\n');
+
+planePtO = planePt;
+%zOr = (1/normal(3)) .*(xgrid.*normal(1) + ygrid.*normal(2));
+
 for lineNum = 1:size(linePt,1)
     lineVal = linePt(lineNum,:);
-    zgrid = (1/normal(3)) .* (lineVal*normal - (xgrid.*normal(1) + ygrid.*normal(2)));
+    planePt(:,1) = planePtO(:,1) + lineVal(1);
+    planePt(:,2) = planePtO(:,2) + lineVal(2);
+    planePt(:,3) = planePtO(:,3) + lineVal(3);
+    %zgrid = (1/normal(3)) .* (lineVal*normal) - zOr;
     
+    % zgrid = (lineVal*normal - (xgrid.*normal(1) + ygrid.*normal(2)));
     if(lineNum==1)
         %   h = mesh(xgrid,ygrid,zgrid,'EdgeColor',[0 0 0],'FaceAlpha',0.5);
     else
         % set(h, 'xData', xgrid);set(h, 'yData', ygrid); set(h, 'zData', zgrid);
-    end
-    
-    planePt = cat(2, xgrid(:), ygrid(:), zgrid(:));
-    %Remove points that are outside the range of the opercle data
-%     for remP=1:3
-%     index = find(planePt(:,remP)>max(perimVal(:,remP))  );
-%     planePt(~index,:) = [];
-%     index = find(planePt(:,remP)<min(perimVal(:,remP)));
-%     planePt(~index,:) = [];
 %     end
+%     planePt(:,1) = gridV(:,1) + lineVal(1);
+%     planePt(:,2) = gridV(:,2) + lineVal(2);
+%     planePt(:,3) = gridV(:,3) + lineVal(3);
+%     %
+%     planePt = cat(2, xgrid(:), ygrid(:), zgrid(:));
+%     index =  find(planePt(:,3)>max(perimVal(:,3))  );
+%     planePt(index, :) = [];
+%     index =  find(planePt(:,3)<min(perimVal(:,3))  );
+%     planePt(index, :) = [];
+% %     
+%     [~,~,zMesh] = meshgrid(planePt(:,1), planePt(:,2), planePt(:,3));
+%     xi = interp1(1:length(planePt(:,1)), planePt(:,1), linspace(min(planePt(:,1)), max(planePt(:,1)),100));
+%     yi = interp1(1:length(planePt(:,2)), planePt(:,2), linspace(min(planePt(:,2)), max(planePt(:,2)),100));
+%     [xMesh, yMesh] = meshgrid(xi',yi');
+%     
+%     zi = interp2(zMesh, xMesh,yMesh);
+%     
+%  
+%     
+%     [xgL, ygL, zgL] = meshgrid(planePt(:,1), planePt(:,2), planePt(:,3));
+    
+    %Remove points that are outside the range of the opercle data
+    %     for remP=1:3
+    %     index =
+    %     planePt(~index,:) = [];
+    %     index = find(planePt(:,remP)<min(perimVal(:,remP)));
+    %     planePt(~index,:) = [];
+    %     end
     
     
     %dataDist = pdist2(planePt, perimVal);
@@ -199,12 +259,12 @@ for lineNum = 1:size(linePt,1)
     %    planePt = round(planePt);
     %    interPtIn = ismember(planePt, perimVal,'rows');
     %idx = rangesearch(planePt, perimVal,50);
-    idx = rangesearch(planePt, perimVal, 1);
+    idx = rangesearch(planePt, perimVal, 1); %Careful! This is somewhat large. What's an appropriate value?
     index = ~ cellfun('isempty', idx);
     %    idx = [idx{:}];
     valOrig = perimVal(index,:);
-%    valOrig = planePt(idx,:);
-   valOrig = unique(valOrig, 'rows');
+    %    valOrig = planePt(idx,:);
+    %valOrig = unique(valOrig, 'rows');
     %Find the coordinates of these points in the original coordinate system
     % valOrig = cat(2, xgrid(interPtIn), ygrid(interPtIn), zgrid(interPtIn));
     %Transforming to the coordinate system of the plane perpendicular to
@@ -217,18 +277,7 @@ for lineNum = 1:size(linePt,1)
     %is what you would expect.
     %val2 = normal'*valOrig';
     
-    
-    
-   if(size(val,2)>2)
-       try
-           k = convhull(val(1,:), val(2,:));
-           valCon = val(:,k);
-           convexPt{lineNum} = valCon;
-       catch
-          convexPt{lineNum} = -1; %record that there was an error calculating this convex hull. 
-       end
-       
-      
+          
 if(strcmp(plotData, 'true')) 
        %Convex hull is what one expects.
       if(~exist('hP'))
@@ -241,11 +290,22 @@ if(strcmp(plotData, 'true'))
       
        %plot(valCon(1,:), valCon(2,:), '--rs');
        
-       plot3(lineVal(1), lineVal(2), lineVal(3), '--rs');
+      % plot3(lineVal(1), lineVal(2), lineVal(3), '--rs');
 
-     b = 0;
+     pause(0.1);
 
 end
+    
+   if(size(val,2)>2)
+       try
+           k = convhull(val(1,:), val(2,:));
+           valCon = val(:,k);
+           convexPt{lineNum} = valCon;
+       catch
+          convexPt{lineNum} = -1; %record that there was an error calculating this convex hull. 
+       end
+       
+
        
    else
        convexPt{lineNum} = -1;
@@ -260,6 +320,8 @@ end
     
     fprintf(2, '.');
     
+    end
+
 end
 fprintf(2, '\n');
 
