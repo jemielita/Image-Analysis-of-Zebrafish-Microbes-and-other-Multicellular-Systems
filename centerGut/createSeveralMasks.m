@@ -44,9 +44,11 @@ for numDir = 1:length(scanLoc)
     %% Find the center of this gut and the masks running down the length of
     %%the gut.
     poly = param.regionExtent.poly;
-    [mask, centerLine] = curveMask(poly, param.regionExtent.regImSize, stepSize,param);
+    BW = poly2mask(poly(:,1), poly(:,2), param.regionExtent.regImSize(1),...
+        param.regionExtent.regImSize(2));
+    mask = curveMask(BW, param.centerLine, param,'rectangle');
     param.mask = mask;
-    param.centerLine = centerLine;
+  
     
     %% Saving the parameters created.
     %Location that the results of the data will be saved to
@@ -54,9 +56,11 @@ for numDir = 1:length(scanLoc)
     mkdir(param.dataSaveDirectory);
     cd(param.dataSaveDirectory);
     %Save all the parameters used in making these distributions
-    save('param.mat', 'param');
+    save('param.mat', 'param', '-v7.3');
     %And all of the data
     save('data.mat', 'data');
+    
+    save('regMask.mat', 'mask');
     
 end
 
