@@ -44,7 +44,20 @@ switch nargin
     
     case 0
         %Prompt the user for directories, etc...
+    
+    case 4
+        nScan = varargin{1};
+        colorType = varargin{2};
+        zNum = varargin{3};
+        param = varargin{4};
+        im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
         
+    case 5
+        nScan = varargin{1};
+        colorType = varargin{2};
+        zNum = varargin{3};
+        im = varargin{4};
+        param = varargin{5};        
     %We should get rid of case 6-data is a useless variable
     case 6
         nScan = varargin{1};
@@ -58,18 +71,6 @@ switch nargin
         end
         param = varargin{6};
         
-    case 5
-        nScan = varargin{1};
-        colorType = varargin{2};
-        zNum = varargin{3};
-        im = varargin{4};
-        param = varargin{5};
-    case 4
-        nScan = varargin{1};
-        colorType = varargin{2};
-        zNum = varargin{3};
-        param = varargin{4};
-        im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
 end
 
 totalNumRegions = length(unique([param.expData.Scan.region]));

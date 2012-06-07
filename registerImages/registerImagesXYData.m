@@ -26,6 +26,8 @@ switch lower(type)
         
     case 'crop'
         param = registerCroppedImage(param,totalNumRegions);
+    case 'overlap'
+        %Just keep on going and calculate the overlapped region
 end
 
 %And get the index location of all pixels that are in parts of the image
@@ -43,7 +45,7 @@ for regNum = 1:size(regOverlap,2)
     
     reg1 = regOverlap(1,regNum);
     reg2 = regOverlap(2,regNum);
-
+    
     %Get the part of the registered image from one of the subimages
     xInit = param.regionExtent.XY(reg1,1);
     xFinal = xInit + param.regionExtent.XY(reg1,3) -1;
@@ -65,7 +67,7 @@ for regNum = 1:size(regOverlap,2)
     overlap{regNum} = find(im==2);
     
 end
- 
+
 
 
 param.regionExtent.overlapIndex = overlap;
@@ -78,38 +80,38 @@ function param = registerCroppedImage(param,totalNumRegions)
 
 %Store the result in the structure param.regionExtent, where
 %param.regionExtentXY is a regNum x 6 matrix with entries:
-%[pixel X location, pixel Y Location, pixel extent X, 
+%[pixel X location, pixel Y Location, pixel extent X,
 % pixel extent Y,initial x pixel (on image), initial y pixel (on image)]
 
 regLoc = zeros(totalNumRegions,6);
 
 for regNum=1:totalNumRegions
-   regLoc(regNum,1) = max(param.regionExtent.crop.XY(regNum,2), ...
-       param.regionExtent.XY(regNum,1));
-   regLoc(regNum,2) = max(param.regionExtent.crop.XY(regNum,1),...
-       param.regionExtent.XY(regNum,2));
-   
-   
-   %regLoc(regNum,3) = min(regLoc(regNum,1) + param.regionExtent.crop.XY(regNum,4),...
+    regLoc(regNum,1) = max(param.regionExtent.crop.XY(regNum,2), ...
+        param.regionExtent.XY(regNum,1));
+    regLoc(regNum,2) = max(param.regionExtent.crop.XY(regNum,1),...
+        param.regionExtent.XY(regNum,2));
+    
+    
+    %regLoc(regNum,3) = min(regLoc(regNum,1) + param.regionExtent.crop.XY(regNum,4),...
     %   param.imSize(1));
-   %regLoc(regNum,4) = min(regLoc(regNum,2) + param.regionExtent.crop.XY(regNum,3),...
-   %    param.imSize(2));
-   
- %  regLoc(regNum, 5) = param.regionExtent.XY(regNum,5) ...
-  %     + param.regionExtent.crop.XY(regNum,2) -param.regionExtent.XY(regNum,1);
-  % regLoc(regNum,6) = param.regionExtent.XY(regNum,6)...
-  %     + param.regionExtent.crop.XY(regNum,1) - param.regionExtent.XY(regNum,2);
-   
-   regLoc(regNum, 5) = max(1,...
-       regLoc(regNum,1)-param.regionExtent.XY(regNum,1)+1);
-   regLoc(regNum,6) = max(1,...
-       regLoc(regNum,2) - param.regionExtent.XY(regNum,2)+1);
-   
-   regLoc(regNum,3) = min(1+param.imSize(1)-regLoc(regNum,5), ...
-       param.regionExtent.crop.XY(regNum,4));
-   regLoc(regNum,4) = min(1+param.imSize(2)- regLoc(regNum,6),...
-       param.regionExtent.crop.XY(regNum,3));
-   
+    %regLoc(regNum,4) = min(regLoc(regNum,2) + param.regionExtent.crop.XY(regNum,3),...
+    %    param.imSize(2));
+    
+    %  regLoc(regNum, 5) = param.regionExtent.XY(regNum,5) ...
+    %     + param.regionExtent.crop.XY(regNum,2) -param.regionExtent.XY(regNum,1);
+    % regLoc(regNum,6) = param.regionExtent.XY(regNum,6)...
+    %     + param.regionExtent.crop.XY(regNum,1) - param.regionExtent.XY(regNum,2);
+    
+    regLoc(regNum, 5) = max(1,...
+        regLoc(regNum,1)-param.regionExtent.XY(regNum,1)+1);
+    regLoc(regNum,6) = max(1,...
+        regLoc(regNum,2) - param.regionExtent.XY(regNum,2)+1);
+    
+    regLoc(regNum,3) = min(1+param.imSize(1)-regLoc(regNum,5), ...
+        param.regionExtent.crop.XY(regNum,4));
+    regLoc(regNum,4) = min(1+param.imSize(2)- regLoc(regNum,6),...
+        param.regionExtent.crop.XY(regNum,3));
+    
 end
 
 %Rescale the pixel range so that the minimum x and y pixel location are
@@ -134,10 +136,13 @@ function param = registerOriginalImage(param,totalNumRegions)
 regLoc = zeros(totalNumRegions, 6);
 
 for regNum=1:totalNumRegions
-    regionIndex = find([param.expData.Scan.region]==regNum,1); 
-    %Only return first found value, in case there are more than one color. 
+    regionIndex = find([param.expData.Scan.region]==regNum,1);
+    %Only return first found value, in case there are more than one color.
     
     %Read out the locations in 1/10ths of microns
+    
+    %mlj: temporarily changed from xBegin to zBegin-I think this is what's
+    %causing the bug in the registration
     regLoc(regNum,1) = param.expData.Scan(regionIndex).xBegin;
     regLoc(regNum,2) = param.expData.Scan(regionIndex).yBegin;
     
@@ -145,7 +150,7 @@ for regNum=1:totalNumRegions
     %Note: .xBegin, .yBegin are measured in 1/10th of microns (format used
     %by ASI)
     regLoc(regNum,:) = (1.0/param.micronPerPixel)*0.1*regLoc(regNum,:);
-
+    
     %Get the size of the images in this region, if it's different from the
     %total field of view (which will happen if the cropped image was saved
     %at any point;
@@ -168,11 +173,11 @@ regLoc = round(regLoc);
 %both 1.
 regLoc(:,1) = regLoc(:,1) - min(regLoc(:,1))+1;
 regLoc(:,2) = regLoc(:,2) - min(regLoc(:,2))+1;
- regLoc(:,5:6) = 1;
- 
+regLoc(:,5:6) = 1;
+
 %Store the result in the structure param.regionExtent, where
 %param.regionExtentXY is a regNum x 6 matrix with entries:
-%[pixel X location, pixel Y Location, pixel extent X, 
+%[pixel X location, pixel Y Location, pixel extent X,
 % pixel extent Y,initial x pixel (on image), initial y pixel (on image)]
 
 %Also store the size of the registered image

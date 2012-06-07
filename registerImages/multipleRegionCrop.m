@@ -129,6 +129,41 @@ hMenuDenoise = uimenu(hMenuDisplay, 'Label', 'Denoise!', 'Callback', @denoiseIm_
 set(hMenuDenoise, 'Checked', 'off');
         
 
+hMenuRegister = uimenu('Label', 'Registration');
+hMenuRegisterManual = uimenu(hMenuRegister, 'Label', 'Manually register images',...
+    'Callback', @getImageArray_Callback);
+
+
+%Create a table that will contain the x and y location of each of the image
+%panels-we'll use this to manually adjust the location of each of the
+%images to fix our registration issues.
+
+ cnames = {'x', 'y'};
+ rnames = cell(totalNumRegions,1);
+ for i=1:totalNumRegions
+    rnames{i} = i;
+ end
+rnames{end+1} = 'size';
+dataTable = param.regionExtent.XY(:, 1:2);
+dataTable(end+1,:) = param.regionExtent.regImSize;
+offset = 0.05;
+hxyRegTable = uitable('Parent', fGui,...
+'Data', dataTable, 'ColumnName', cnames,...
+   'RowName', rnames, 'Units', 'Normalized', 'Position', [ 0.50 0.02 0.13 0.19-offset],...
+   'ColumnEditable', true);
+set(hxyRegTable, 'CellEditCallback', @manualRegisterImage_Callback);
+
+hMenuAlternateRegions = uibuttongroup('Parent', fGui, 'Units', 'Normalized',...
+    'Position', [ 0.65 0.02 0.05 0.1]);
+hReg1 = uicontrol('Parent', hMenuAlternateRegions,'Style', 'Radio', 'String', 'Odd','Units', 'Normalized',...
+    'Position', [0.1 0.05 0.9 0.25]);
+hReg1 = uicontrol('Parent', hMenuAlternateRegions,'Style', 'Radio', 'String', 'Even','Units', 'Normalized',...
+    'Position', [0.1 0.40 0.9 0.25]);
+hReg1 = uicontrol('Parent', hMenuAlternateRegions,'Style', 'Radio', 'String', 'Both','Units', 'Normalized',...
+    'Position', [0.1 0.70 0.9 0.25]);
+set(hMenuAlternateRegions, 'SelectionChangeFcn', @alternateRegions_Callback);
+
+
 %%%%%%Create the displayed control panels
 
 hImPanel = uipanel('BackgroundColor', 'white', 'Position', [0.01, .18, .98, .8],...
@@ -184,7 +219,7 @@ dataTable = param.regionExtent.crop.z;
 
 hRegTable = uitable('Parent', fGui,...
 'Data', dataTable, 'ColumnName', cnames,...
-   'RowName', rnames, 'Units', 'Normalized', 'Position', [ 0.36 0.02 0.1 0.19-offset],...
+   'RowName', rnames, 'Units', 'Normalized', 'Position', [ 0.36 0.02 0.11 0.19-offset],...
    'ColumnEditable', true);
 set(hRegTable, 'CellEditCallback', @table_Callback);
 %%%%%%%%%%%
@@ -208,6 +243,8 @@ im = registerSingleImage(scanNum,color, zNum,im, data,param);
 im(im(:)>40000) = 0;
 hIm = imshow(im, [],'Parent', imageRegion);
 
+imArray = cell(10,1); %Will be used for quickly registering the different regions of the image.
+imC = [];
 %Create a scroll panel
 hScroll = imscrollpanel(hImPanel, hIm);
 apiScroll = iptgetapi(hScroll);
@@ -217,7 +254,6 @@ apiScroll.setMagnification(initMag);
 
 initializeDisplay('Initial');%Function holding everything to enable display of new information
 %-necessary to make it easy to load in new scans.
-
 
 %And display the first image.
 hRect = findobj('Tag', 'outlineRect');
@@ -549,7 +585,7 @@ hContrast = imcontrast(imageRegion);
     function saveCropped_Callback(hObject, eventdata)
     %Function to save the cropped region. Either to a new directory,
     %or overwriting the previous images. This function will also save all
-    %the metadata associated with the new cropped region (i.e. pixel
+    %the metadata associated withthe new cropped region (i.e. pixel
     %location of each region).
     
     prompt = {'Save the cropped region to a new directory (1) or overwrite the existing directory structure (2)?',...
@@ -677,6 +713,125 @@ hContrast = imcontrast(imageRegion);
        set(hRegTable, 'Data', param.regionExtent.crop.z);
     end
 
+
+    function getImageArray_Callback(hObject, eventdata)
+        
+        totalNumRegions = length(unique([param.expData.Scan.region]));
+        
+        imNum = param.regionExtent.Z(zNum,:);
+        %Load in the associated images
+        
+        
+        baseDir = [param.directoryName filesep 'Scans' filesep];
+        %Going through each scan
+        scanDir = [baseDir, 'scan_', num2str(scanNum), filesep];
+        for regNum=1:totalNumRegions
+            
+            %Get the range of pixels that we will read from and read out to.
+            xOutI = param.regionExtent.XY(regNum,1);
+            xOutF = param.regionExtent.XY(regNum,3)+xOutI-1;
+            
+            yOutI = param.regionExtent.XY(regNum,2);
+            yOutF = param.regionExtent.XY(regNum,4)+yOutI -1;
+            
+            xInI = param.regionExtent.XY(regNum,5);
+            xInF = xOutF - xOutI +xInI;
+            
+            yInI = param.regionExtent.XY(regNum,6);
+            yInF = yOutF - yOutI +yInI;
+            
+            if(imNum(regNum)~=-1)
+                imFileName = ...
+                    strcat(scanDir,  'region_', num2str(regNum),filesep,...
+                    color, filesep,'pco', num2str(imNum(regNum)),'.tif');
+                whichC = mod(regNum, 2)+1;
+                imArray{regNum} = imread(imFileName,...
+                    'PixelRegion', {[xInI xInF], [yInI yInF]});
+                
+            end
+            
+        end
+        
+    end
+
+
+    function alternateRegions_Callback(hObject, eventdata)
+
+         switch get(eventdata.NewValue, 'String')
+             case 'Even'
+                 set(hIm, 'CData', imC(:,:,1));
+             case 'Odd'
+                 set(hIm, 'CData', imC(:,:,2));
+             case 'Both'
+                 set(hIm, 'CData', imC(:,:,1)+imC(:,:,2));
+         end
+    end
+
+    function manualRegisterImage_Callback(hObject, eventdata)
+        %Get values from the table and update the .regionExtent values in
+        %param. Then update the displayed image.
+        tableData = get(hxyRegTable, 'Data');
+        param.regionExtent.XY(:, 1:2) = tableData(1:end-1,:);
+        totalNumRegions = length(unique([param.expData.Scan.region]));
+
+        %If we've changed the size of the image, then redefine image
+        if(sum(param.regionExtent.regImSize~=tableData(end,:))~=0)
+            param.regionExtent.regImSize= tableData(end,:);
+            im = zeros(param.regionExtent.regImSize);
+        end
+        [~,param] = registerImagesXYData('overlap', data,param);
+        
+        
+        imNum = param.regionExtent.Z(zNum,:);
+        %Load in the associated images
+        
+        %Filling the input image with zeros, to be safe.
+        imC = zeros(size(im,1),size(im,2),3);
+        imC(:) = 0;
+        
+        imC = uint16(imC); %To match the input type of the images.
+
+        baseDir = [param.directoryName filesep 'Scans' filesep];
+        %Going through each scan
+        scanDir = [baseDir, 'scan_', num2str(scanNum), filesep];
+        for regNum=1:totalNumRegions
+            
+            %Get the range of pixels that we will read from and read out to.
+            xOutI = param.regionExtent.XY(regNum,1);
+            xOutF = param.regionExtent.XY(regNum,3)+xOutI-1;
+            
+            yOutI = param.regionExtent.XY(regNum,2);
+            yOutF = param.regionExtent.XY(regNum,4)+yOutI -1;
+            
+            xInI = param.regionExtent.XY(regNum,5);
+            xInF = xOutF - xOutI +xInI;
+            
+            yInI = param.regionExtent.XY(regNum,6);
+            yInF = yOutF - yOutI +yInI;
+            
+            if(imNum(regNum)~=-1)
+                whichC = mod(regNum, 2)+1;
+                imC(xOutI:xOutF,yOutI:yOutF,whichC) = ...
+                    imArray{regNum}(xInI:xInF,yInI:yInF) + ...
+                    imC(xOutI:xOutF,yOutI:yOutF,whichC);
+                
+%                 imC(xOutI:xOutF,yOutI:yOutF,whichC) = imread(imFileName,...
+%                     'PixelRegion', {[xInI xInF], [yInI yInF]}) + ...
+%                     imC(xOutI:xOutF,yOutI:yOutF,whichC);
+%                 
+            end
+            
+        end
+        set(hIm, 'CData', imC(:,:,1)+imC(:,:,2));
+        %Draw the bounding boxes again
+        hRect = findobj('Tag', 'outlineRect');
+        if(~isempty(hRect))
+            delete(hRect);
+            outlineRegions();
+        end
+         
+
+    end
     function colorSlider_Callback(hObject, eventData)
         colorNum = get(hColorSlider, 'Value');
         colorNum = ceil(colorNum);
@@ -1113,12 +1268,9 @@ function [data, param] = loadParameters()
                             end
                         end
                         
-                        
-                        %param.color = [{'568nm'}];
                         %For the parameters above construct a structure that will contain all the
                         %results of this calculation.
                         
-                        %[data,param] = initializeScanStruct(param);
                         data = '';%I think we can slowly remove this variable from the code.
                         
                         disp('Parameters succesfully loaded.');
