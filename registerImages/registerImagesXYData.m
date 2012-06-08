@@ -11,6 +11,9 @@
 %the overlap between region 1 and 2, and param.regsiterIm(1,2,:) will give
 %the region of overlap in region 2 for the overlap between region 1 and 2.
 %FIX UP THIS SUMMARY!!
+%
+%Code assumes that all of the regions scanned have the same color order:
+%ex: rg, rg, rg,...
 function [data, param] = registerImagesXYData(type, data,param)
 %%Get the range of pixel data for each region.
 %Note: we should make it possible to use the cropped region to do this
@@ -19,6 +22,19 @@ function [data, param] = registerImagesXYData(type, data,param)
 %%Find the extent of each region of the scan
 totalNumRegions = unique([param.expData.Scan.region]);
 totalNumRegions = length(totalNumRegions);
+% 
+% cIn1 = 1;cIn2 = 1;
+% for i=1:size(param.expData.Scan,2)
+%    thisColor= param.expData.Scan(i).color;
+%    switch thisColor
+%        case '488 nm: GFP'
+%            colorIndex{1}(cIn1) = i;
+%            cIn1 = cIn1+1;
+%        case '568 nm: RFP'
+%            colorIndex{2}(cIn2)=i;
+%            cIn2 = cIn2+1;
+%    end
+% end
 
 switch lower(type)
     case 'original'
@@ -33,44 +49,50 @@ end
 %And get the index location of all pixels that are in parts of the image
 %where regions overlap.
 
-im = ones(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
-
+numColor = length(param.color);  
 regOverlap = [1:totalNumRegions-1 ; 2:totalNumRegions];
-overlap = cell(size(regOverlap,2),1);
 
-for regNum = 1:size(regOverlap,2)
-    im(:) = 0;
-    temp1 = im;
-    temp2 = im;
+numOverlapReg = size(regOverlap,2);
+
+overlap = cell(numColor, numOverlapReg);
+
+for colorNum=1:numColor
     
-    reg1 = regOverlap(1,regNum);
-    reg2 = regOverlap(2,regNum);
+    im = ones(param.regionExtent.regImSize{colorNum}(1), param.regionExtent.regImSize{colorNum}(2));
     
-    %Get the part of the registered image from one of the subimages
-    xInit = param.regionExtent.XY(reg1,1);
-    xFinal = xInit + param.regionExtent.XY(reg1,3) -1;
-    yInit = param.regionExtent.XY(reg1,2);
-    yFinal = yInit + param.regionExtent.XY(reg1,4) -1;
+    for regNum = 1:numOverlapReg
+        im(:) = 0;
+        temp1 = im;
+        temp2 = im;
+        
+        reg1 = regOverlap(1,regNum);
+        reg2 = regOverlap(2,regNum);
+        
+        %Get the part of the registered image from one of the subimages
+        xInit = param.regionExtent.XY{colorNum}(reg1,1);
+        xFinal = xInit + param.regionExtent.XY{colorNum}(reg1,3) -1;
+        yInit = param.regionExtent.XY{colorNum}(reg1,2);
+        yFinal = yInit + param.regionExtent.XY{colorNum}(reg1,4) -1;
+        
+        temp1(xInit:xFinal,yInit:yFinal) = 1;
+        
+        %and the other subimage
+        xInit = param.regionExtent.XY{colorNum}(reg2,1);
+        xFinal = xInit + param.regionExtent.XY{colorNum}(reg2,3) -1;
+        yInit = param.regionExtent.XY{colorNum}(reg2,2);
+        yFinal = yInit + param.regionExtent.XY{colorNum}(reg2,4) -1;
+        
+        %Combining them together and looking for the overlaped regions.
+        temp2(xInit:xFinal, yInit:yFinal) = 1;
+
+        im = temp1+temp2;
+        %Saving the index number of the overlaped pixels.
+        param.regionExtent.overlapIndex{colorNum,regNum} = find(im==2);        
+    end
     
-    temp1(xInit:xFinal,yInit:yFinal) = 1;
-    
-    %and the other subimage
-    xInit = param.regionExtent.XY(reg2,1);
-    xFinal = xInit + param.regionExtent.XY(reg2,3) -1;
-    yInit = param.regionExtent.XY(reg2,2);
-    yFinal = yInit + param.regionExtent.XY(reg2,4) -1;
-    
-    %Combining them together and looking for the overlaped regions.
-    temp2(xInit:xFinal, yInit:yFinal) = 1;
-    im = temp1+temp2;
-    %Saving the index number of the overlaped pixels.
-    overlap{regNum} = find(im==2);
-    
+
 end
 
-
-
-param.regionExtent.overlapIndex = overlap;
 
 end
 
@@ -83,48 +105,54 @@ function param = registerCroppedImage(param,totalNumRegions)
 %[pixel X location, pixel Y Location, pixel extent X,
 % pixel extent Y,initial x pixel (on image), initial y pixel (on image)]
 
+numColor = length(param.color);
 regLoc = zeros(totalNumRegions,6);
 
-for regNum=1:totalNumRegions
-    regLoc(regNum,1) = max(param.regionExtent.crop.XY(regNum,2), ...
-        param.regionExtent.XY(regNum,1));
-    regLoc(regNum,2) = max(param.regionExtent.crop.XY(regNum,1),...
-        param.regionExtent.XY(regNum,2));
+
+for colorNum =1:numColor
+    for regNum=1:totalNumRegions
+        
+        regLoc(regNum,1) = max(param.regionExtent.crop.XY(regNum,2), ...
+            param.regionExtent.XY{colorNum}(regNum,1));
+        regLoc(regNum,2) = max(param.regionExtent.crop.XY(regNum,1),...
+            param.regionExtent.XY{colorNum}(regNum,2));
+        
+        
+        %regLoc(regNum,3) = min(regLoc(regNum,1) + param.regionExtent.crop.XY(regNum,4),...
+        %   param.imSize(1));
+        %regLoc(regNum,4) = min(regLoc(regNum,2) + param.regionExtent.crop.XY(regNum,3),...
+        %    param.imSize(2));
+        
+        %  regLoc(regNum, 5) = param.regionExtent.XY(regNum,5) ...
+        %     + param.regionExtent.crop.XY(regNum,2) -param.regionExtent.XY(regNum,1);
+        % regLoc(regNum,6) = param.regionExtent.XY(regNum,6)...
+        %     + param.regionExtent.crop.XY(regNum,1) - param.regionExtent.XY(regNum,2);
+        
+        regLoc(regNum, 5) = max(1,...
+            regLoc(regNum,1)-param.regionExtent.XY{colorNum}(regNum,1)+1);
+        regLoc(regNum,6) = max(1,...
+            regLoc(regNum,2) - param.regionExtent.XY{colorNum}(regNum,2)+1);
+        
+        regLoc(regNum,3) = min(1+param.imSize(1)-regLoc(regNum,5), ...
+            param.regionExtent.crop.XY(regNum,4));
+        regLoc(regNum,4) = min(1+param.imSize(2)- regLoc(regNum,6),...
+            param.regionExtent.crop.XY(regNum,3));
+        
+    end
+
+    %Rescale the pixel range so that the minimum x and y pixel location are
+    %both 1.
+    regLoc(:,1) = regLoc(:,1) - min(regLoc(:,1))+1;
+    regLoc(:,2) = regLoc(:,2) - min(regLoc(:,2))+1;
+
+    param.regionExtent.XY{colorNum} = regLoc;
     
+    %Also store the size of the registered image
+    param.regionExtent.regImSize{colorNum}(1) = max(regLoc(:,1) +regLoc(:,3)-1);
+    param.regionExtent.regImSize{colorNum}(2) = max(regLoc(:,2) +regLoc(:,4)-1);
     
-    %regLoc(regNum,3) = min(regLoc(regNum,1) + param.regionExtent.crop.XY(regNum,4),...
-    %   param.imSize(1));
-    %regLoc(regNum,4) = min(regLoc(regNum,2) + param.regionExtent.crop.XY(regNum,3),...
-    %    param.imSize(2));
-    
-    %  regLoc(regNum, 5) = param.regionExtent.XY(regNum,5) ...
-    %     + param.regionExtent.crop.XY(regNum,2) -param.regionExtent.XY(regNum,1);
-    % regLoc(regNum,6) = param.regionExtent.XY(regNum,6)...
-    %     + param.regionExtent.crop.XY(regNum,1) - param.regionExtent.XY(regNum,2);
-    
-    regLoc(regNum, 5) = max(1,...
-        regLoc(regNum,1)-param.regionExtent.XY(regNum,1)+1);
-    regLoc(regNum,6) = max(1,...
-        regLoc(regNum,2) - param.regionExtent.XY(regNum,2)+1);
-    
-    regLoc(regNum,3) = min(1+param.imSize(1)-regLoc(regNum,5), ...
-        param.regionExtent.crop.XY(regNum,4));
-    regLoc(regNum,4) = min(1+param.imSize(2)- regLoc(regNum,6),...
-        param.regionExtent.crop.XY(regNum,3));
     
 end
-
-%Rescale the pixel range so that the minimum x and y pixel location are
-%both 1.
-regLoc(:,1) = regLoc(:,1) - min(regLoc(:,1))+1;
-regLoc(:,2) = regLoc(:,2) - min(regLoc(:,2))+1;
-
-
-param.regionExtent.XY = regLoc;
-
-%Also store the size of the registered image
-param.regionExtent.regImSize(1) = max(regLoc(:,1) +regLoc(:,3)-1);
-param.regionExtent.regImSize(2) = max(regLoc(:,2) +regLoc(:,4)-1);
 
 
 end
@@ -135,9 +163,15 @@ function param = registerOriginalImage(param,totalNumRegions)
 %region
 regLoc = zeros(totalNumRegions, 6);
 
+%Create a different list of regions locations for the different colors in
+%the experiment.
+numColor = length(param.color);
+for colorNum=1:numColor
+
 for regNum=1:totalNumRegions
-    regionIndex = find([param.expData.Scan.region]==regNum,1);
-    %Only return first found value, in case there are more than one color.
+    
+    regionIndex = find([param.expData.Scan.region]==regNum,numColor);
+    regionIndex = regionIndex(colorNum);%Return the appropriate region for this color
     
     %Read out the locations in 1/10ths of microns
     
@@ -181,8 +215,13 @@ regLoc(:,5:6) = 1;
 % pixel extent Y,initial x pixel (on image), initial y pixel (on image)]
 
 %Also store the size of the registered image
-param.regionExtent.regImSize(1) = max(regLoc(:,1) +regLoc(:,3)-1);
-param.regionExtent.regImSize(2) = max(regLoc(:,2) +regLoc(:,4)-1);
+param.regionExtent.regImSize{colorNum}(1) = max(regLoc(:,1) +regLoc(:,3)-1);
+param.regionExtent.regImSize{colorNum}(2) = max(regLoc(:,2) +regLoc(:,4)-1);
 
-param.regionExtent.XY = regLoc;
+param.regionExtent.XY{colorNum} = regLoc;
+
 end
+
+
+end
+

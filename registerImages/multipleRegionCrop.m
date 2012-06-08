@@ -10,7 +10,6 @@ switch nargin
         data  = varargin{2};
 end
 
-
 multipleRegionCropGUI(param,data);
 
 %Not the most elegant way to extract information from the GUI, but it seems
@@ -132,29 +131,41 @@ set(hMenuDenoise, 'Checked', 'off');
 hMenuRegister = uimenu('Label', 'Registration');
 hMenuRegisterManual = uimenu(hMenuRegister, 'Label', 'Manually register images',...
     'Callback', @getImageArray_Callback);
-
+set(hMenuRegisterManual, 'Checked', 'off');
+hMenuRegisterResize = uimenu(hMenuRegister, 'Label', 'Minimize total image size',...
+    'Callback', @setMinImageSize_Callback);
 
 %Create a table that will contain the x and y location of each of the image
 %panels-we'll use this to manually adjust the location of each of the
 %images to fix our registration issues.
 
- cnames = {'x', 'y'};
- rnames = cell(totalNumRegions,1);
- for i=1:totalNumRegions
+for i=0:length(param.color)-1
+   cnames{2*i+1} = [param.color{i+1}, '  x'];
+   cnames{2*i+2} = [param.color{i+1}, '   y'];
+end
+
+rnames = cell(totalNumRegions,1);
+for i=1:totalNumRegions
     rnames{i} = i;
- end
+end
+
 rnames{end+1} = 'size';
-dataTable = param.regionExtent.XY(:, 1:2);
-dataTable(end+1,:) = param.regionExtent.regImSize;
+
+dataTable = [];
+for i=1:length(param.color)
+    thisColorData = [param.regionExtent.XY{i}(:, 1:2); param.regionExtent.regImSize{i}];
+dataTable = [dataTable,thisColorData];
+end
+
 offset = 0.05;
 hxyRegTable = uitable('Parent', fGui,...
 'Data', dataTable, 'ColumnName', cnames,...
-   'RowName', rnames, 'Units', 'Normalized', 'Position', [ 0.50 0.02 0.13 0.19-offset],...
+   'RowName', rnames, 'Units', 'Normalized', 'Position', [ 0.50 0.02 0.23 0.19-offset],...
    'ColumnEditable', true);
 set(hxyRegTable, 'CellEditCallback', @manualRegisterImage_Callback);
 
 hMenuAlternateRegions = uibuttongroup('Parent', fGui, 'Units', 'Normalized',...
-    'Position', [ 0.65 0.02 0.05 0.1]);
+    'Position', [ 0.76 0.02 0.05 0.1]);
 hReg1 = uicontrol('Parent', hMenuAlternateRegions,'Style', 'Radio', 'String', 'Odd','Units', 'Normalized',...
     'Position', [0.1 0.05 0.9 0.25]);
 hReg1 = uicontrol('Parent', hMenuAlternateRegions,'Style', 'Radio', 'String', 'Even','Units', 'Normalized',...
@@ -234,7 +245,7 @@ movegui(fGui, 'center');
 
 
 %Show the bottom image in the stack
-im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
+im = zeros(param.regionExtent.regImSize{1}(1), param.regionExtent.regImSize{1}(2));
 
 color = colorType(colorNum);
 color = color{1};
@@ -243,7 +254,8 @@ im = registerSingleImage(scanNum,color, zNum,im, data,param);
 im(im(:)>40000) = 0;
 hIm = imshow(im, [],'Parent', imageRegion);
 
-imArray = cell(10,1); %Will be used for quickly registering the different regions of the image.
+numColor = length(param.color);
+imArray = cell(numColor,totalNumRegions); %Will be used for quickly registering the different regions of the image.
 imC = [];
 %Create a scroll panel
 hScroll = imscrollpanel(hImPanel, hIm);
@@ -259,7 +271,7 @@ initializeDisplay('Initial');%Function holding everything to enable display of n
 hRect = findobj('Tag', 'outlineRect');
 delete(hRect);
 
-im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
+im = zeros(param.regionExtent.regImSize{1}(1), param.regionExtent.regImSize{1}(2));
 
 color = colorType(colorNum);
 color = color{1};
@@ -337,7 +349,9 @@ hContrast = imcontrast(imageRegion);
        %for cropping images.
        
        [fileName, saveDir]  = uiputfile('*.mat', 'Select a location to save the param.mat file');
- 
+       if(fileName==0)
+           return
+       end
        %Save the result to the param file associated with the data.
        saveFile = [saveDir fileName];
 
@@ -462,14 +476,16 @@ hContrast = imcontrast(imageRegion);
 
     function outlineRegions(hObject, eventdata)
         
-        %%% Draw rectangles on the image, showing the boundary of the different
-        %%% regions that we're analyzing.
+        thisColor = get(hColorSlider, 'Value');
+        thisColor = ceil(thisColor);
+        thisColor = int16(thisColor);
+        
         
         for numReg = 1:totalNumRegions
-            x = param.regionExtent.XY(numReg, 2);
-            y = param.regionExtent.XY(numReg, 1);
-            width = param.regionExtent.XY(numReg, 4);
-            height = param.regionExtent.XY(numReg,3);
+            x = param.regionExtent.XY{thisColor}(numReg, 2);
+            y = param.regionExtent.XY{thisColor}(numReg, 1);
+            width = param.regionExtent.XY{thisColor}(numReg, 4);
+            height = param.regionExtent.XY{thisColor}(numReg,3);
             h(numReg) = rectangle('Position', [x y width height] );
             set(h(numReg), 'EdgeColor', cMap(numReg,:));
             set(h(numReg), 'LineWidth', 2);
@@ -544,21 +560,40 @@ hContrast = imcontrast(imageRegion);
         [data,param] = registerImagesZData('crop', data,param);
         
         
+         
+        colorNum = get(hColorSlider, 'Value');
+        colorNum = ceil(colorNum);
+        colorNum = int16(colorNum);
+        
+        %Display the new image
+        color = colorType(colorNum);
+        color = color{1};
+        
+        
         %Remove the previous outline regions
         hOutRect = findobj('Tag', 'outlineRect');
         delete(hOutRect);
         %Remove the cropping rectangles.
         hRect = findobj('Tag', 'imrect');
         delete(hRect);
-        im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
+        im = zeros(param.regionExtent.regImSize{colorNum}(1), param.regionExtent.regImSize{colorNum}(2));
         color = colorType(colorNum);
         color = color{1};
         getRegisteredImage(scanNum, color, zNum, im, data, param )
         outlineRegions();
         
-        
         myhandles.param = param;
         guidata(fGui, myhandles);
+    
+        dataTable = [];
+        for i=1:length(param.color)
+            thisColorData = [param.regionExtent.XY{i}(:, 1:2); param.regionExtent.regImSize{i}];
+            dataTable = [dataTable,thisColorData];
+        end
+        set(hxyRegTable, 'Data', dataTable);
+        
+        
+        
     end
 
     function restoreImages_Callback(hObject, eventdata)
@@ -715,7 +750,67 @@ hContrast = imcontrast(imageRegion);
 
 
     function getImageArray_Callback(hObject, eventdata)
+        if(strcmp(get(hMenuRegisterManual, 'Checked'), 'on'))
+            set(hMenuRegisterManual, 'Checked', 'off');
+        else
+            set(hMenuRegisterManual, 'Checked', 'on');
+            getIndividualRegions();
+        end
+            
+    end
+
+    function setMinImageSize_Callback(hObject, eventdata)
+        numColor = length(param.color);
         
+        for i=1:numColor
+            thisColor = param.regionExtent.XY{i};
+            
+            cMinX(i) = min(thisColor(:,1));
+            cMinY(i) = min(thisColor(:,2));
+            
+            cMaxX(i) = max(thisColor(:,1)+thisColor(:,3));
+            cMaxY(i) = max(thisColor(:,2) + thisColor(:,4));
+            
+        end
+        minX = min(cMinX);
+        minY = min(cMinY);
+        maxX = max(cMaxX);
+        maxY = max(cMaxY);
+        
+       for i=1:numColor
+        param.regionExtent.regImSize{i} = [maxX-minX+1 maxY-minY+1];
+        param.regionExtent.XY{i}(:,1) = param.regionExtent.XY{i}(:,1)-minX+1;
+        param.regionExtent.XY{i}(:,2) = param.regionExtent.XY{i}(:,2)-minY+1;
+       end
+        
+
+       regDataTable = [];
+       for i=1:length(param.color)
+           thisColorData = [param.regionExtent.XY{i}(:, 1:2); param.regionExtent.regImSize{i}];
+           regDataTable = [regDataTable,thisColorData];
+       end
+       set(hxyRegTable, 'Data', regDataTable);
+       
+       [~,param] = registerImagesXYData('overlap', data,param);
+       set(imageRegion, 'YLim', [1 param.regionExtent.regImSize{1}(1)]);
+       set(imageRegion, 'XLim', [1 param.regionExtent.regImSize{1}(2)]);
+       
+       im = zeros(param.regionExtent.regImSize{1});
+       im = registerSingleImage(scanNum,color, zNum,im, data,param);
+       set(hIm, 'CData', im);
+       if(~isempty(hContrast))
+           hContrast = imcontrast(imageRegion);    
+       end
+       %Draw the bounding boxes again
+       hRect = findobj('Tag', 'outlineRect');
+       if(~isempty(hRect))
+           delete(hRect);
+           outlineRegions();
+       end
+       
+    end
+
+    function getIndividualRegions()
         totalNumRegions = length(unique([param.expData.Scan.region]));
         
         imNum = param.regionExtent.Z(zNum,:);
@@ -725,35 +820,42 @@ hContrast = imcontrast(imageRegion);
         baseDir = [param.directoryName filesep 'Scans' filesep];
         %Going through each scan
         scanDir = [baseDir, 'scan_', num2str(scanNum), filesep];
-        for regNum=1:totalNumRegions
+        
+        numColor = length(param.color);
+        for colorNum=1:numColor
             
-            %Get the range of pixels that we will read from and read out to.
-            xOutI = param.regionExtent.XY(regNum,1);
-            xOutF = param.regionExtent.XY(regNum,3)+xOutI-1;
-            
-            yOutI = param.regionExtent.XY(regNum,2);
-            yOutF = param.regionExtent.XY(regNum,4)+yOutI -1;
-            
-            xInI = param.regionExtent.XY(regNum,5);
-            xInF = xOutF - xOutI +xInI;
-            
-            yInI = param.regionExtent.XY(regNum,6);
-            yInF = yOutF - yOutI +yInI;
-            
-            if(imNum(regNum)~=-1)
-                imFileName = ...
-                    strcat(scanDir,  'region_', num2str(regNum),filesep,...
-                    color, filesep,'pco', num2str(imNum(regNum)),'.tif');
-                whichC = mod(regNum, 2)+1;
-                imArray{regNum} = imread(imFileName,...
-                    'PixelRegion', {[xInI xInF], [yInI yInF]});
+            for regNum=1:totalNumRegions
+                
+                %Get the range of pixels that we will read from and read out to.
+                xOutI = param.regionExtent.XY{colorNum}(regNum,1);
+                xOutF = param.regionExtent.XY{colorNum}(regNum,3)+xOutI-1;
+                
+                yOutI = param.regionExtent.XY{colorNum}(regNum,2);
+                yOutF = param.regionExtent.XY{colorNum}(regNum,4)+yOutI -1;
+                
+                xInI = param.regionExtent.XY{colorNum}(regNum,5);
+                xInF = xOutF - xOutI +xInI;
+                
+                yInI = param.regionExtent.XY{colorNum}(regNum,6);
+                yInF = yOutF - yOutI +yInI;
+                
+                if(imNum(regNum)~=-1)
+                    imFileName = ...
+                        strcat(scanDir,  'region_', num2str(regNum),filesep,...
+                        color, filesep,'pco', num2str(imNum(regNum)),'.tif');
+                    whichC = mod(regNum, 2)+1;
+                    imArray{colorNum,regNum} = imread(imFileName,...
+                        'PixelRegion', {[xInI xInF], [yInI yInF]});
+                    
+                end
                 
             end
             
         end
+         
+        
         
     end
-
 
     function alternateRegions_Callback(hObject, eventdata)
 
@@ -771,13 +873,34 @@ hContrast = imcontrast(imageRegion);
         %Get values from the table and update the .regionExtent values in
         %param. Then update the displayed image.
         tableData = get(hxyRegTable, 'Data');
-        param.regionExtent.XY(:, 1:2) = tableData(1:end-1,:);
+        
+        numColor = length(param.color);
+        
+        for i=0:numColor-1
+            param.regionExtent.XY{i+1}(:, 1:2) = tableData(1:end-1,2*i+1:2*i+2);
+        end
         totalNumRegions = length(unique([param.expData.Scan.region]));
 
         %If we've changed the size of the image, then redefine image
-        if(sum(param.regionExtent.regImSize~=tableData(end,:))~=0)
-            param.regionExtent.regImSize= tableData(end,:);
-            im = zeros(param.regionExtent.regImSize);
+        
+        for i=0:numColor-1
+            if(sum(param.regionExtent.regImSize{i+1}~=tableData(end,2*i+1:2*i+2))~=0)
+                param.regionExtent.regImSize{i+1}= tableData(end,2*i+1:2*i+2);
+                im = zeros(param.regionExtent.regImSize{i+1});
+                %hIm = imshow(im,[],'Parent', imageRegion);
+               
+                hContrast = findobj('Tag', 'imcontrast');
+                if(~isempty(hContrast))
+                    delete(hContrast);
+                end
+                set(hIm, 'CData', im);
+                set(imageRegion, 'YLim', [1 param.regionExtent.regImSize{i+1}(1)]);
+                set(imageRegion, 'XLim', [1 param.regionExtent.regImSize{i+1}(2)]);
+                if(~isempty(hContrast))
+                    hContrast = imcontrast(imageRegion);
+
+                end
+            end
         end
         [~,param] = registerImagesXYData('overlap', data,param);
         
@@ -794,35 +917,41 @@ hContrast = imcontrast(imageRegion);
         baseDir = [param.directoryName filesep 'Scans' filesep];
         %Going through each scan
         scanDir = [baseDir, 'scan_', num2str(scanNum), filesep];
-        for regNum=1:totalNumRegions
-            
+        
+
+        thisColor = get(hColorSlider, 'Value');
+        thisColor = ceil(thisColor);
+        thisColor = int16(thisColor);
+        
+        imC(:) = 0;
+        
+        for regNum=1:totalNumRegions    
             %Get the range of pixels that we will read from and read out to.
-            xOutI = param.regionExtent.XY(regNum,1);
-            xOutF = param.regionExtent.XY(regNum,3)+xOutI-1;
+            xOutI = param.regionExtent.XY{thisColor}(regNum,1);
+            xOutF = param.regionExtent.XY{thisColor}(regNum,3)+xOutI-1;
             
-            yOutI = param.regionExtent.XY(regNum,2);
-            yOutF = param.regionExtent.XY(regNum,4)+yOutI -1;
+            yOutI = param.regionExtent.XY{thisColor}(regNum,2);
+            yOutF = param.regionExtent.XY{thisColor}(regNum,4)+yOutI -1;
             
-            xInI = param.regionExtent.XY(regNum,5);
+            xInI = param.regionExtent.XY{thisColor}(regNum,5);
             xInF = xOutF - xOutI +xInI;
             
-            yInI = param.regionExtent.XY(regNum,6);
+            yInI = param.regionExtent.XY{thisColor}(regNum,6);
             yInF = yOutF - yOutI +yInI;
             
             if(imNum(regNum)~=-1)
                 whichC = mod(regNum, 2)+1;
                 imC(xOutI:xOutF,yOutI:yOutF,whichC) = ...
-                    imArray{regNum}(xInI:xInF,yInI:yInF) + ...
+                    imArray{thisColor,regNum}(xInI:xInF,yInI:yInF) + ...
                     imC(xOutI:xOutF,yOutI:yOutF,whichC);
                 
-%                 imC(xOutI:xOutF,yOutI:yOutF,whichC) = imread(imFileName,...
-%                     'PixelRegion', {[xInI xInF], [yInI yInF]}) + ...
-%                     imC(xOutI:xOutF,yOutI:yOutF,whichC);
-%                 
             end
             
         end
+        
+        
         set(hIm, 'CData', imC(:,:,1)+imC(:,:,2));
+        
         %Draw the bounding boxes again
         hRect = findobj('Tag', 'outlineRect');
         if(~isempty(hRect))
@@ -843,6 +972,12 @@ hContrast = imcontrast(imageRegion);
         color = colorType(colorNum);
         color = color{1};
         getRegisteredImage(scanNum, color, zNum, im, data, param);
+        
+        hRect = findobj('Tag', 'outlineRect');
+        if(~isempty(hRect))
+            delete(hRect);
+            outlineRegions();
+        end
     end
 
     function scanSlider_Callback(hObject, eventData)
@@ -862,6 +997,10 @@ hContrast = imcontrast(imageRegion);
                 
                 set(hScanSlider, 'Value',double(scanNum));
         end
+        
+        colorNum = get(hColorSlider, 'Value');
+        colorNum = ceil(colorNum);
+        colorNum = int16(colorNum);
         
         %Display the new image
         color = colorType(colorNum);
@@ -887,6 +1026,11 @@ hContrast = imcontrast(imageRegion);
                 set(hZSlider, 'Value',double(zNum));
         end
         
+        colorNum = get(hColorSlider, 'Value');
+        colorNum = ceil(colorNum);
+        colorNum = int16(colorNum);
+        
+        %Display the new image
         color = colorType(colorNum);
         color = color{1};
         
@@ -1140,6 +1284,13 @@ hContrast = imcontrast(imageRegion);
                 varargout{1} = im;
                 
         end
+        
+        
+        %If we're manually registering things then also update the cell
+        %structure that contains the individual regions
+        if strcmp(get(hMenuRegisterManual, 'Checked'),'on')
+            getIndividualRegions();
+        end
     end    
 
 end
@@ -1203,6 +1354,8 @@ function [data, param] = loadParameters()
                 paramFile = [dirName, filesep, 'gutOutline', filesep, 'param.mat'];
                 paramFileExist = exist(paramFile, 'file');
                 dataFile = [dirName, filesep, 'gutOutline', filesep, 'data.mat'];
+                
+                dataFileExist = exist(dataFile, 'file');
                 %If work has been done on this file already, load in the results
                 
                 
@@ -1211,10 +1364,13 @@ function [data, param] = loadParameters()
                         disp('Parameters for this scan have already been (partially?) calculated. Loading them into the workspace.');
                         
                         paramTemp = load(paramFile);
-                        dataTemp = load(dataFile);
-                        
                         param = paramTemp.param;
-                        data = dataTemp.data;
+                        if(dataFileExist==2)
+                            dataTemp = load(dataFile);
+                            data = dataTemp.data;
+                        else
+                            data = ''; %We don't use it anyway...we need to cull this from our code!
+                        end
                         
                     case 0
                         

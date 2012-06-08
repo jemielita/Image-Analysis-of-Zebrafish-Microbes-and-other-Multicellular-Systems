@@ -50,7 +50,10 @@ switch nargin
         colorType = varargin{2};
         zNum = varargin{3};
         param = varargin{4};
-        im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
+        
+        colorNum =  find(strcmp(param.color, colorType));
+        im = zeros(param.regionExtent.regImSize{colorNum}(1),...
+            param.regionExtent.regImSize{colorNum}(2));
         
     case 5
         nScan = varargin{1};
@@ -89,19 +92,24 @@ imNum = param.regionExtent.Z(zNum,:);
 im(:) = 0;
 
 im = uint16(im); %To match the input type of the images.
+
+
+%Find which color's regionExtent.XY to use
+colorNum =  find(strcmp(param.color, colorType));
+    
 for regNum=1:totalNumRegions
     
     %Get the range of pixels that we will read from and read out to.
-    xOutI = param.regionExtent.XY(regNum,1);
-    xOutF = param.regionExtent.XY(regNum,3)+xOutI-1;
+    xOutI = param.regionExtent.XY{colorNum}(regNum,1);
+    xOutF = param.regionExtent.XY{colorNum}(regNum,3)+xOutI-1;
     
-    yOutI = param.regionExtent.XY(regNum,2);
-    yOutF = param.regionExtent.XY(regNum,4)+yOutI -1;
+    yOutI = param.regionExtent.XY{colorNum}(regNum,2);
+    yOutF = param.regionExtent.XY{colorNum}(regNum,4)+yOutI -1;
     
-    xInI = param.regionExtent.XY(regNum,5);
+    xInI = param.regionExtent.XY{colorNum}(regNum,5);
     xInF = xOutF - xOutI +xInI;
     
-    yInI = param.regionExtent.XY(regNum,6);
+    yInI = param.regionExtent.XY{colorNum}(regNum,6);
     yInF = yOutF - yOutI +yInI;
     
     if(imNum(regNum)~=-1)
@@ -126,8 +134,8 @@ for regNum = 2:totalNumRegions
     
     %Overlap for regNum>1
     if(imNum(regNum-1)>=0 &&imNum(regNum)>=0)
-        im(param.regionExtent.overlapIndex{regNum-1} )= ...
-            0.5*im(param.regionExtent.overlapIndex{regNum-1});
+        im(param.regionExtent.overlapIndex{colorNum,regNum-1} )= ...
+            0.5*im(param.regionExtent.overlapIndex{colorNum,regNum-1});
         %    im(:) =1;
         %   im(param.regionExtent.overlapIndex{regNum-1} ) = 0;
     end
