@@ -145,7 +145,7 @@ for regNum=1:totalNumRegions
     %Note: .xBegin, .yBegin are measured in 1/10th of microns (format used
     %by ASI)
     regLoc(regNum,:) = (1.0/param.micronPerPixel)*0.1*regLoc(regNum,:);
-
+   % regLoc(regNum,1) = regLoc(regNum,1) +(regNum-1)*400;
     %Get the size of the images in this region, if it's different from the
     %total field of view (which will happen if the cropped image was saved
     %at any point;

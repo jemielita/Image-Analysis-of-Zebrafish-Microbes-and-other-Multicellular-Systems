@@ -88,6 +88,7 @@ imNum = param.regionExtent.Z(zNum,:);
 im(:) = 0;
 
 im = uint16(im); %To match the input type of the images.
+
 for regNum=1:totalNumRegions
     
     %Get the range of pixels that we will read from and read out to.
@@ -110,8 +111,7 @@ for regNum=1:totalNumRegions
         
         im(xOutI:xOutF,yOutI:yOutF) = imread(imFileName,...
             'PixelRegion', {[xInI xInF], [yInI yInF]}) + ...
-            im(xOutI:xOutF,yOutI:yOutF);
-        
+            im(xOutI:xOutF,yOutI:yOutF);  
     end
     
 end
