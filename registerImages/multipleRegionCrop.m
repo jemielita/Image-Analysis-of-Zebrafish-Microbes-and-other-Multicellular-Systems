@@ -126,6 +126,7 @@ hMenuBoundBox = uimenu(hMenuDisplay, 'Label', 'Remove region bounding boxes', 'C
 hMenuScroll = uimenu(hMenuDisplay, 'Label', 'Add scroll bar to image display', 'Callback', @scrollBar_Callback);
 hMenuDenoise = uimenu(hMenuDisplay, 'Label', 'Denoise!', 'Callback', @denoiseIm_Callback);
 set(hMenuDenoise, 'Checked', 'off');
+hMenuMIP = uimenu(hMenuDisplay, 'Label', 'Maximum intensity projection', 'Callback', @mip_Callback);
         
 
 hMenuRegister = uimenu('Label', 'Registration');
@@ -419,7 +420,24 @@ hContrast = imcontrast(imageRegion);
 
     end
 
-    function denoiseIm_Callback(hObject, eventdat)
+    function mip_Callback(hObject, eventdata)
+        colorNum = get(hColorSlider, 'Value');
+        colorNum = ceil(colorNum);
+        colorNum = int16(colorNum);
+        
+        imBig = zeros(param.regionExtent.regImSize{colorNum}(1), param.regionExtent.regImSize{colorNum}(2));
+        for zStackN=zMin:zMax
+            imOut = getRegisteredImage(scanNum, color, zStackN, imBig, data, param);
+            index = find(imOut>imBig);
+            imBig(index) = imOut(index);
+            fprintf('.');
+        end
+        fprintf('\n');
+        set(hIm, 'CData', imBig);
+        
+    end
+
+    function denoiseIm_Callback(hObject, eventdata)
         
         %Use a check mark to indicate whether we'll align or not
         if strcmp(get(hMenuDenoise, 'Checked'),'on')
