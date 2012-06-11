@@ -23,14 +23,14 @@
 %           tau11, tau12, ... , tau21, ...;
 %           tr1,   tr1,   ... , tr2,   ...}
 %   first index is track number, second is time-delay tau index
-%   theta : normalized angular correlation during the each time delay
+%   theta : normalized angular correlation (cos(theta)) during the each time delay
 %   std : standard deviation of theta during the each time delay
 %   tau : the time step
 %   tr  : the trackid, corresponding to the track id in objs.
 %
 % Raghu Parthasarathy
 % April 12, 2009
-% Last modified: 
+% Last modified: September 18, 2009 (deal better with NaN -- ignore for mean)
 
 function thetacorr = angleCorr_rp(stepvec, fps) 
 
@@ -58,7 +58,6 @@ for i = utrk
     % highest frame numbers with NaN (not a number).  e.g. 1 2 4 5 becomes
     % 1 2 NaN 4 5.
     ttmp = nanpad(trtmp(2,:), trtmp(3,:));
-    
     for k = 1:length(ttmp)-1
         dtheta = ttmp(1:end-k)-ttmp(1+k:end);
         % this dtheta is a 1D array. 
@@ -66,32 +65,15 @@ for i = utrk
         % For k=2, it's [theta(1)-theta(3) theta(2)-theta(4) ... theta(N-2)-theta(N)]
         goodt = ~isnan(dtheta);  % all the good elements
         if (sum(goodt) > 0)
-            thetacorrtmp(1,k) = mean(cos(dtheta));
-            thetacorrtmp(2,k) = std(cos(dtheta));
+%            thetacorrtmp(1,k) = mean(cos(dtheta));
+%            thetacorrtmp(2,k) = std(cos(dtheta));
+            thetacorrtmp(1,k) = mean(cos(dtheta(goodt)));
+            thetacorrtmp(2,k) = std(cos(dtheta(goodt)));
         else
             thetacorrtmp(1,k) = NaN;
             thetacorrtmp(2,k) = NaN;
         end
-        
-%         temptjk = ttmp(1:end-k).*ttmp(1+k:end);
-%         % this temptjk is a 1D array. 
-%         % For k=1, it's [theta(1)*theta(2) theta(2)*theta(3) ... theta(N-1)*theta(N)]
-%         % For k=2, it's [theta(1)*theta(3) theta(2)*theta(4) ... theta(N-2)*theta(N)]
-%         temptjj = ttmp(1:end-k).*ttmp(1:end-k);
-%         % this temptjk is a 1D array of theta-squared values, for normalization        
-%         % We take the mean of the elements of temptjk that are not NaN, thus 
-%         % avoiding problems with lost frames
-%         % Also, normalize
-%         goodt = ~isnan(temptjk);  % all the good elements
-%         if (sum(goodt) > 0)
-%             thetacorrtmp(1,k) = mean(temptjk(goodt)./temptjj(goodt));
-%             thetacorrtmp(2,k) = std(temptjk(goodt)./temptjj(goodt));
-%         else
-%             thetacorrtmp(1,k) = NaN;
-%             thetacorrtmp(2,k) = NaN;
-%         end
-        
-        
+                
     end
     ftmp = trtmp(3,1):trtmp(3,end);  % array of frame numbers
     thetacorrtmp(3,:) = (ftmp(2:end)-ftmp(2))/fps;   % array of time steps, for N-1 frames
@@ -107,7 +89,8 @@ function padvec = nanpad(spvec, fmvec)
 % pads spvec with NaNs based on fmvec
 
 allfms = fmvec(1):fmvec(end);
-padvec = zeros(size(allfms));
+padvec = NaN(size(allfms));
 notmissing = ismember(allfms, fmvec); % find missing frames
 padvec(notmissing) = spvec;
-padvec(padvec == 0) = NaN;
+% padvec(padvec == 0) = NaN;  % No -- gives problems if padvec is really
+%   supposed to have a zero value (e.g. in simulated noise-free data)!
