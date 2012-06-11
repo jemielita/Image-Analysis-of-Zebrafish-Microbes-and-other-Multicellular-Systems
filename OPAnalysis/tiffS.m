@@ -4,10 +4,7 @@
 
 function [] = tiffS(varargin)
 
-%Where we'll save all the marker regions.
-saveDir = 'C:\jemielita\markers_ConfocalFish2\';
 
-saveFile = saveDir;
 
 if nargin==1
     im = mat2gray(varargin{1});
@@ -19,12 +16,19 @@ if nargin==0
     imPath = [pathN imLoc];
     imL  = imfinfo(imPath, 'tif');
     
-    im = zeros(imL(1).Height, imL(2).Width, size(imL,1));
+    im = zeros(imL(1).Height, imL(1).Width, size(imL,1));
     
     for i=1:size(imL,1)
         im(:,:,i) = imread(imPath, i);
     end
 end
+
+%Where we'll save all the marker regions.
+saveDir = 'C:\jemielita\confocal_control\fish2\';
+saveDir = pathN;
+
+saveFile = saveDir;
+
 
 im = mat2gray(im);
 
@@ -43,27 +47,26 @@ origT = title(index);
 segAxes = subplot(1,2,2);
 segIm = imshow(im(:,:,1),[]);
 
-imcontrast;
 
 imT = im;
 
 
 %What fraction of the Otsu threshold to use.
 threshScale = 1;
-
+threshOffset = 0;
 %hLine = imline(origAxes);
 %pos = wait(hLine);
 
-maxN = 50;
+maxN = 61;
 
 polyZ = cell(maxN,1);
 hPoly = '';
-topIndex = 51;
+topIndex = 61;
 bottomIndex = 1;
 
 title(segAxes, ['Top: ', num2str(topIndex)]);
 
-fN = [saveDir 'OP_Scan', sprintf('%03d', 138), '.mat'];
+fN = [saveDir 'OP_Scan', sprintf('%03d', 1), '.mat'];
 %Load the already thresholded images if we can.
 try
     imT = load(fN);
@@ -79,6 +82,7 @@ end
 
 b = 0;
 
+hImC = imcontrast(hIm);
     function mouse_Callback(varargin)
        counter = varargin{2}.VerticalScrollCount;
        
@@ -88,11 +92,13 @@ b = 0;
            zDown();
        end
        
+       
+     
     end
     function imOut = roughSegment(imIn)
         %As a first pass let's see if a simple thresholding does the trick
         thresh = graythresh(imIn);
-        imOut = imIn>threshScale*thresh;
+        imOut = imIn>threshScale*thresh + threshOffset;
         imOut = double(imOut);
         
         %imT = cleanup3dMarkers(imT);
@@ -293,6 +299,8 @@ b = 0;
             case 'o'
                 %Change the threshold for Otsu
                 threshScale = input('New Threshold');
+            case 'l'
+                threshOffset = input('Offset for threshold');
             case 'c'
                 %Coursely segment the images
                 imT = roughSegment(im);

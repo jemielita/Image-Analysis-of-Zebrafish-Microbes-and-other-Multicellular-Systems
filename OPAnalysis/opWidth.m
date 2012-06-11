@@ -22,7 +22,7 @@
 
 function [convexPt, linePt, perimVal] = opWidth(imT,scanNum, microscope)
 
-plotData = 'true';
+plotData = 'false';
 
 convexPt = [];
 linePt = [];
@@ -297,9 +297,9 @@ if(strcmp(plotData, 'true'))
           set(hP, 'ZData', valOrig(:,3));
       end
       
-       %plot(valCon(1,:), valCon(2,:), '--rs');
+   %    plot(valCon(1,:), valCon(2,:), '--rs');
        
-      % plot3(lineVal(1), lineVal(2), lineVal(3), '--rs');
+    %  plot3(lineVal(1 ), lineVal(2), lineVal(3), '--rs');
 
      b = 0;
 

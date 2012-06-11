@@ -2,7 +2,7 @@
 %Multiple convex hulls
 
 function [] = multipleHulls(fileDir, sMin, sMax, type,microscope)
-plotData = 'true';
+plotData = 'false';
 for i=sMin:sMax
     disp(i);
     if(type==1)

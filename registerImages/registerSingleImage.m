@@ -35,7 +35,7 @@
 %       fish
 %       data: currently unused variable
 %
-%OUTPUT: im: image made up of all the registerd images from different
+%OUTPUT: im: image made up of all the registered images from different
 %        regions.
 % Author: Matthew Jemielita
 function im = registerSingleImage(varargin)

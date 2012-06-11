@@ -26,6 +26,8 @@ totalNumRegions = length(unique([param.expData.Scan.region]));
 totalNumScans = param.expData.totalNumberScans;
 totalNumColors = size(param.color,2);
 
+loadType = 'wholeStack'; %This is a slightly faster way to do it than loading in each images individually
+allImages = [];
 %Create a new directory structure if necessary
 if(~strcmp(cropDir, param.directoryName))
     for nS=1:totalNumScans
@@ -55,8 +57,10 @@ end
 for nS=1:totalNumScans
     mess = ['Cropping scan ', num2str(nS)];
     fprintf(2, mess);
-    for nC = 1:totalNumColors
-        for nR = 1:totalNumRegions
+    
+    for nR = 1:totalNumRegions
+
+        for nC = 1:totalNumColors
             
             outputDirName = [cropDir filesep 'Scans' filesep 'scan_', num2str(nS), filesep ...
                 'region_', num2str(nR), filesep param.color{nC}];
@@ -94,28 +98,22 @@ for nS=1:totalNumScans
             yInI = thisRegion(nR,6);
             yInF = yOutF - yOutI +yInI;
             
-            for nI = 1:totalNumIm
-                fN = [inputDirName, filesep, 'pco', num2str(nI-1), '.tif'];
-                %Loading in this image
-                imI = imread(fN,...
-                    'PixelRegion', {[xInI xInF], [yInI yInF]});
-                %Saving this image to the new location, in either a
-                %tiff or png format.
-                switch fileType
-                    case 'tiff'
-                        fNout = [outputDirName, filesep, 'pco', num2str(nI-1), '.tif'];
-                        imwrite(imI, fNout);
-                    case 'png'
-                        fNout = [outputDirName, filesep, 'pco', num2str(nI-1), '.png'];
-                        imwrite(imI, fNout);
-                        if(strcmp(cropDir, param.directoryName))
-                            delete(fN);%If we're overwriting the original file, then delete the .tiff file and replace it with a .png
-                        end
-                end
-                fprintf(2, '.');
+            switch loadType
+                
+                case 'individual'
+                    %Load in each image one after another and then save
+                    tic;
+                    saveIndividualImages();
+                    toc
+                case 'wholeStack'
+                    %Allocate memory for this image stack if necessary
+                    tic;
+                    saveWholeStack(); 
+                    toc
             end
             
         end
+
     end
     
     fprintf(2, '\n');
@@ -150,5 +148,69 @@ param.directoryName = cropDir;
 save([cropDir filesep 'gutOutline', filesep 'param.mat'], 'param');
 save([cropDir filesep 'ExperimentData.mat'], 'parameters', 'timeData', 'param');
 
+
+    function [] = saveIndividualImages()
+        
+        for nI = 1:totalNumIm
+            fN = [inputDirName, filesep, 'pco', num2str(nI-1), '.tif'];
+            %Loading in this image
+            imI = imread(fN,...
+                'PixelRegion', {[xInI xInF], [yInI yInF]});
+            %Saving this image to the new location, in either a
+            %tiff or png format.
+            switch fileType
+                case 'tiff'
+                    fNout = [outputDirName, filesep, 'pco', num2str(nI-1), '.tif'];
+                    imwrite(imI, fNout);
+                case 'png'
+                    fNout = [outputDirName, filesep, 'pco', num2str(nI-1), '.png'];
+                    imwrite(imI, fNout);
+                    if(strcmp(cropDir, param.directoryName))
+                        delete(fN);%If we're overwriting the original file, then delete the .tiff file and replace it with a .png
+                    end
+            end
+            fprintf(2, '.');
+        end
+        
+    end
+
+    function [] = saveWholeStack()
+
+       xSize = xInF-xInI+1;
+       ySize = yInF-yInI+1;
+       zSize = totalNumIm;
+       if(isempty(allImages))
+           allImages = zeros(xSize, ySize, zSize);
+       end
+       
+       if(sum(size(allImages)==[xSize ySize zSize])~=3)
+          allImages = zeros(xSize, ySize, zSize);   
+       end
+       
+       for nI = 1:totalNumIm
+           fN = [inputDirName, filesep, 'pco', num2str(nI-1), '.tif'];
+           %Loading in this image
+           allImages(:,:,nI) = imread(fN,...
+               'PixelRegion', {[xInI xInF], [yInI yInF]});
+       end
+       
+       for nI=1:totalNumIm
+           switch fileType
+               case 'tiff'
+                   fNout = [outputDirName, filesep, 'pco', num2str(nI-1), '.tif'];
+                   imwrite(allImages(:,:,nI), fNout);
+               case 'png'
+                   fNout = [outputDirName, filesep, 'pco', num2str(nI-1), '.png'];
+                   imwrite(allImages(:,:,nI), fNout);
+                   if(strcmp(cropDir, param.directoryName))
+                       delete(fN);%If we're overwriting the original file, then delete the .tiff file and replace it with a .png
+                   end
+           end
+           
+       end
+       
+       
+        
+    end
 
 end

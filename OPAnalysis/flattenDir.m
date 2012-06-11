@@ -25,11 +25,11 @@ end
 rect = varargin{1};
 
 
-minN = 1;
+minN = 0;
 maxN = 50;
 
 minScan = 1;
-maxScan = 144;
+maxScan = 1;
 color = '488nm';
 region = 'region_1';
 
