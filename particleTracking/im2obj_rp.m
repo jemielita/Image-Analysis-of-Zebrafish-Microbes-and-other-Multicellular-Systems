@@ -5,19 +5,19 @@ function objs = im2obj_rp(im, objsize, thresh, fitstr)
 % objsize : size in pixels of objects to find
 % thresh  : number in [0 1] to threshold objects with
 % fitstr : (Optional) string that selects the fitting option (Gaussian or
-%    centroid) for use in fo4_rp.  Default is Gaussian ('gauss').  
-%    For centroid, enter 'centroid'.
+%    centroid) for use in fo4_rp.  Default is non-linear 2DGaussian 
+%    ('nonlineargauss').   For centroid, enter 'centroid'.  For linear-fit
+%    of a 2D gaussian, enter 'gauss'
 %
 % Output:
 % objs    : object matrix with following form:
 %
 %             objs = [x;
 %                     y; 
-%                     mass; 
+%                     mass; (brightness)
 %                     particleid; 
 %                     frame; 
 %                     trackid]
-%           
 %           frame field is set by im2obj().  
 %
 % based on Andrew Demond's im2obj.m
@@ -25,16 +25,24 @@ function objs = im2obj_rp(im, objsize, thresh, fitstr)
 %   Calls fo4_rp -- RP's modified fo4.m -- no t-test, just std test
 %   (deleted iput p : standard deviation value for maxima test in fo4_rp()
 %           -- recommended: not > 1 )
+% June 3, 2011: use distance.m for close pair calculation -- very small
+% speedup
 %
-% Last modified: June 11, 2009
+% Last modified: June 28, 2011
 
 % Fitting option; default is Gaussian
-if (nargin<4)
-    fitstr = 'gauss';
+if ~exist('fitstr', 'var') || isempty(fitstr)
+    disp('Default fitting option: non-linear 2D Gaussian');
+    fitstr = 'nonlineargauss';
 end
 if strcmpi(fitstr, 'centroid')
     disp('Center of mass (centroid) fit -- AVOID unless necessary (saturated images)');
 end
+
+% Get nonlinear fitting options, to avoid repeated calls
+% These are only used for non-linear Gaussian fitting, but it doesn't hurt
+% to define them and pass them on to fo4_rp.m 
+lsqoptions = optimset('lsqnonlin');
 
 objs = [];
 nf = size(im,3);
@@ -43,7 +51,7 @@ if (nf > 1)
     progbar = waitbar(0, progtitle);  % will display progress
 end
 for j = 1:nf
-    tmpobj = fo4_rp(im(:,:,j), objsize, thresh, fitstr);
+    tmpobj = fo4_rp(im(:,:,j), objsize, thresh, fitstr, lsqoptions);
     tmpobj(5,:) = j;
     objs = [objs tmpobj];
     % show progress
@@ -69,19 +77,13 @@ for j=unqframes,
         % columns of the object matrix for this frame
     if size(objframe,2)>1
         % more than one particle found in this frame
-        % loop through all particle pairs, find any for which
+        % consider all particle pairs, find any for which
         % separation < 2*objsize
-        closepair = 0;
-        for k=1:(size(objframe,2)-1),
-            for m=(k+1):size(objframe,2),
-                dx = objframe(1,k)-objframe(1,m);
-                dy = objframe(2,k)-objframe(2,m);
-                d = sqrt(dx*dx+dy*dy);
-                if (d < 2*objsize)
-                    closepair = closepair+1;
-                end
-            end
-        end
+
+        allr = [objframe(1,:); objframe(2,:)];  % 2 x "N" matrix of x,y
+        d = distance(allr,allr);  % Euclidiean distance matrix
+        isclose = (d < 2*objsize);  % close pairs, and d for same pairs
+        closepair = (sum(isclose(:)) - size(objframe,2))/2.0;  
         if (closepair > 0)
             fs = sprintf('Frame %d: %d close pairs.', j, closepair);
             disp(fs);

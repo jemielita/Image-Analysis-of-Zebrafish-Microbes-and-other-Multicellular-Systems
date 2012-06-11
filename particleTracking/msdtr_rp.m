@@ -38,6 +38,8 @@ function msd = msdtr_rp(objs, fps, scale)
 % August 2, 2007 -- error in time step corrected
 % March 22, 2009 -- changed size of dtmp at initialization (minor fix)
 % April 12, 2009 -- minor fix related to mean calculation
+% September 21, 2009 -- minor fix to padvec
+% Nov. 24, 2010 -- altered time output so first element is "1 frame," not 0
 
 utrk = unique(objs(6,:));  % all the unique track ids
 msd = [];
@@ -52,9 +54,9 @@ for i = utrk
     msdtmp = zeros(4, size(trtmp, 2)-1);
     % What to do if the track is "lost" for some number of frames?  The
     % next two lines call the function nanpad (at the end of this .m file)
-    % which fills in frame numbers that are missing between the lowest and
-    % highest frame numbers with NaN (not a number).  e.g. 1 2 4 5 becomes
-    % 1 2 NaN 4 5.
+    % which fills in x and y from frames that are missing between the lowest and
+    % highest frame numbers with NaN (not a number).  e.g. x info from 
+    % frames 1 2 4 5 becomes x1 x2 NaN x4 x5.
     xtmp = nanpad(trtmp(1,:), trtmp(5,:));
     ytmp = nanpad(trtmp(2,:), trtmp(5,:));
     
@@ -75,7 +77,7 @@ for i = utrk
         end
     end
     ftmp = trtmp(5,1):trtmp(5,end);  % array of frame numbers
-    msdtmp(3,:) = (ftmp(2:end)-ftmp(2))/fps;   % array of time steps, for N-1 frames
+    msdtmp(3,:) = (ftmp(2:end)-ftmp(1))/fps;   % array of time steps, for N-1 frames
     msdtmp(4,:) = repmat(i, 1, size(msdtmp,2)); 
        % tile the value of i (i.e. the trackid) N-1 times
     msd = [msd msdtmp];
@@ -87,7 +89,8 @@ function padvec = nanpad(spvec, fmvec)
 % pads spvec with NaNs based on fmvec
 
 allfms = fmvec(1):fmvec(end);
-padvec = zeros(size(allfms));
+padvec = NaN(size(allfms));
 notmissing = ismember(allfms, fmvec); % find missing frames
 padvec(notmissing) = spvec;
-padvec(padvec == 0) = NaN;
+% padvec(padvec == 0) = NaN;  % No -- gives problems if padvec is really
+%   supposed to have a zero value (e.g. in simulated noise-free data)!
