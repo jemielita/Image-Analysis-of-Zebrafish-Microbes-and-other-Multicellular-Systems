@@ -26,7 +26,8 @@ totalNumRegions = length(unique([param.expData.Scan.region]));
 totalNumScans = param.expData.totalNumberScans;
 totalNumColors = size(param.color,2);
 
-
+loadType = 'wholeStack'; %This is a slightly faster way to do it than loading in each images individually
+allImages = [];
 %Create a new directory structure if necessary
 if(~strcmp(cropDir, param.directoryName))
     for nS=1:totalNumScans
@@ -40,24 +41,6 @@ if(~strcmp(cropDir, param.directoryName))
     end
 end
 
-%save the meta-data necessary to register the images after they've
-%been cropped.
-for nR = 1:totalNumRegions
-    index = find([param.expData.Scan.region]==nR);
-    for nIndex=1:length(index)%Do you really have to use this FOR loop?
-        %Save the new x-y location of the images
-        param.expData.Scan(index(nIndex)).xBegin = 10*param.micronPerPixel*(param.regionExtent.XY(nR,5)-1)+...
-            param.expData.Scan(index(nIndex)).xBegin;
-        
-        param.expData.Scan(index(nIndex)).yBegin = 10*param.micronPerPixel*(param.regionExtent.XY(nR,6)-1)+...
-            param.expData.Scan(index(nIndex)).yBegin;
-        %Save the size of the new cropped image
-        param.expData.Scan(index(nIndex)).imSize = [param.regionExtent.XY(nR,3), param.regionExtent.XY(nR,4)];
-        
-    end
-    
-end
-
 parameters = param.expData;
 timeData = param.expData.timeData;
 
@@ -68,62 +51,166 @@ if(strcmp(cropDir, param.directoryName))
        [cropDir, filesep, 'ExperimentData.mat_backup']);
 end
 
-%Note: currently not updating the experimentData.txt file!!!!
-save([cropDir filesep 'ExperimentData.mat'], 'parameters', 'timeData');
-
 %Go through the directory structure and load the appropriate images,
 %crop them, and then save the result as either a TIFF or PNG.
 
 for nS=1:totalNumScans
     mess = ['Cropping scan ', num2str(nS)];
     fprintf(2, mess);
+    
     for nR = 1:totalNumRegions
+
         for nC = 1:totalNumColors
+            
             outputDirName = [cropDir filesep 'Scans' filesep 'scan_', num2str(nS), filesep ...
                 'region_', num2str(nR), filesep param.color{nC}];
             inputDirName =  [param.directoryName filesep 'Scans' filesep 'scan_', num2str(nS), filesep ...
                 'region_', num2str(nR), filesep param.color{nC}];
-            index = find([param.expData.Scan.region]==nR);
-            totalNumIm = param.expData.Scan(index(1)).nImgsPerScan;%Assuming there are equal number of images in both channels...
+            
+            index = find([param.expData.Scan.region]==nR,nC);
+            index = index(nC);%Return the appropriate region for this color
+            
+            totalNumIm = param.expData.Scan(index).nImgsPerScan;%Assuming there are equal number of images in both channels...
             %a reasonable assumption.
             
-            for nI = 1:totalNumIm
-                fN = [inputDirName, filesep, 'pco', num2str(nI-1), '.tif'];
-                %Same code as in registerSingleImage.m
-                xOutI = param.regionExtent.XY(nR,1);
-                xOutF = param.regionExtent.XY(nR,3)+xOutI-1;
+            %Same code as in registerSingleImage.m
+            %The the different regionExtent for different
+            %colors-necessary if there was a glitch in image
+            %acquisition that made the two colors offset...should be a
+            %rare bug but we have seen it.
+            if(length(param.regionExtent.XY)==1)
+                thisRegion = param.regionExtent.XY;
+            elseif(length(param.regionExtent.XY)==totalNumColors)
+                thisRegion = param.regionExtent.XY{nC};
+            else
+                disp('The number of different colors in param.regionExtent.XY does not match the total number of colors!');
+                return;
+            end
+            
+            xOutI = thisRegion(nR,1);
+            xOutF = thisRegion(nR,3)+xOutI-1;
+            
+            yOutI = thisRegion(nR,2);
+            yOutF = thisRegion(nR,4)+yOutI -1;
+            xInI = thisRegion(nR,5);
+            xInF = xOutF - xOutI +xInI;
+            
+            yInI = thisRegion(nR,6);
+            yInF = yOutF - yOutI +yInI;
+            
+            switch loadType
                 
-                yOutI = param.regionExtent.XY(nR,2);
-                yOutF = param.regionExtent.XY(nR,4)+yOutI -1;
-                xInI = param.regionExtent.XY(nR,5);
-                xInF = xOutF - xOutI +xInI;
-                
-                yInI = param.regionExtent.XY(nR,6);
-                yInF = yOutF - yOutI +yInI;
-                
-                %Loading in this image
-                imI = imread(fN,...
-                    'PixelRegion', {[xInI xInF], [yInI yInF]});
-                %Saving this image to the new location, in either a
-                %tiff or png format.
-                switch fileType
-                    case 'tiff'
-                        fNout = [outputDirName, filesep, 'pco', num2str(nI-1), '.tif'];
-                        imwrite(imI, fNout);
-                    case 'png'
-                        fNout = [outputDirName, filesep, 'pco', num2str(nI-1), '.png'];
-                        imwrite(imI, fNout);
-                        if(strcmp(cropDir, param.directoryName))
-                            delete(fN);%If we're overwriting the origina file, then delete the .tiff file and replace it with a .png
-                        end
-                end
-                fprintf(2, '.');
+                case 'individual'
+                    %Load in each image one after another and then save
+                    tic;
+                    saveIndividualImages();
+                    toc
+                case 'wholeStack'
+                    %Allocate memory for this image stack if necessary
+                    tic;
+                    saveWholeStack(); 
+                    toc
             end
             
         end
+
     end
     
     fprintf(2, '\n');
 end
+
+
+%Saving the new range of pixel locations
+for nC = 1:totalNumColors
+    
+    if(length(param.regionExtent.XY)==1)
+        param.regionExtent.XY(:,5)= 1;
+        param.regionExtent.XY(:,6) = 1;
+    elseif(length(param.regionExtent.XY)==totalNumColors)
+        param.regionExtent.XY{nC}(:,5) = 1;
+        param.regionExtent.XY{nC}(:,6) = 1;
+    else
+        disp('The number of different colors in param.regionExtent.XY does not match the total number of colors!');
+        return;
+    end
+end
+
+
+%Note: currently not updating the experimentData.txt file!!!!
+%Also save the full param structure so that we can use this to load in the
+%appropriate variables after cropping the images.
+if(~isdir([cropDir filesep 'gutOutline']))
+    mkdir(cropDir, 'gutOutline');
+end
+
+param.directoryName = cropDir;
+
+save([cropDir filesep 'gutOutline', filesep 'param.mat'], 'param');
+save([cropDir filesep 'ExperimentData.mat'], 'parameters', 'timeData', 'param');
+
+
+    function [] = saveIndividualImages()
+        
+        for nI = 1:totalNumIm
+            fN = [inputDirName, filesep, 'pco', num2str(nI-1), '.tif'];
+            %Loading in this image
+            imI = imread(fN,...
+                'PixelRegion', {[xInI xInF], [yInI yInF]});
+            %Saving this image to the new location, in either a
+            %tiff or png format.
+            switch fileType
+                case 'tiff'
+                    fNout = [outputDirName, filesep, 'pco', num2str(nI-1), '.tif'];
+                    imwrite(imI, fNout);
+                case 'png'
+                    fNout = [outputDirName, filesep, 'pco', num2str(nI-1), '.png'];
+                    imwrite(imI, fNout);
+                    if(strcmp(cropDir, param.directoryName))
+                        delete(fN);%If we're overwriting the original file, then delete the .tiff file and replace it with a .png
+                    end
+            end
+            fprintf(2, '.');
+        end
+        
+    end
+
+    function [] = saveWholeStack()
+
+       xSize = xInF-xInI+1;
+       ySize = yInF-yInI+1;
+       zSize = totalNumIm;
+       if(isempty(allImages))
+           allImages = zeros(xSize, ySize, zSize);
+       end
+       
+       if(sum(size(allImages)==[xSize ySize zSize])~=3)
+          allImages = zeros(xSize, ySize, zSize);   
+       end
+       
+       for nI = 1:totalNumIm
+           fN = [inputDirName, filesep, 'pco', num2str(nI-1), '.tif'];
+           %Loading in this image
+           allImages(:,:,nI) = imread(fN,...
+               'PixelRegion', {[xInI xInF], [yInI yInF]});
+       end
+       
+       for nI=1:totalNumIm
+           switch fileType
+               case 'tiff'
+                   fNout = [outputDirName, filesep, 'pco', num2str(nI-1), '.tif'];
+                   imwrite(allImages(:,:,nI), fNout);
+               case 'png'
+                   fNout = [outputDirName, filesep, 'pco', num2str(nI-1), '.png'];
+                   imwrite(allImages(:,:,nI), fNout);
+                   if(strcmp(cropDir, param.directoryName))
+                       delete(fN);%If we're overwriting the original file, then delete the .tiff file and replace it with a .png
+                   end
+           end
+           
+       end
+       
+       
+        
+    end
 
 end

@@ -1,5 +1,35 @@
-function [convexPt, linePt] = opWidth(imT, pos)
+%[convexPt, linePt, imT] = opWidth(imT)
+%
+%INPUT: imT: thresholded 3D image giving the extent of an opercle. Image
+%stack should be binary. 1: opercle, 0: not opercle.
+%
+%OUTPUT: convexPt: gives points defining the convex hull at given points
+%along the opercle. Stored as a cell array.
+%        linePt: gives points that define the principal axis through the
+%        opercle.
+%        imT: returns the thresholded image of the opercle, but cropped
+%        down so that the image stack is only as large as the opercle.
+%
+%DETAILS: For a given 3D segmented image of an opercle calculate the
+%principal axis of the image using principal component analysis. Since the
+%opercle is longer than it is wide, the long axis of the opercle will be
+%given by the first principal component. Along this line find points of the
+%opercle that are perpendicular to the principal axis. Calculate the convex
+%hull of these points and return them. This will give the perimeter of the
+%opercle at different points along its length.
+%
+%AUTHOR: Matthew Jemielita
+
+function [convexPt, linePt, perimVal] = opWidth(imT,scanNum, microscope)
+
+plotData = 'false';
+
+convexPt = [];
+linePt = [];
+
 %Rescale the thresholded image so that it is only as large as necessary
+imT = double(imT>0);
+
 xy = sum(imT,3);
 
 xR = sum(xy,1);
@@ -23,11 +53,31 @@ zMax = find(zR, 1, 'last');
 imT = imT( yMin:yMax, xMin:xMax, zMin:zMax);
 
 
+%Clean up the thresh. images
+for i=1:size(imT,3)
+    %Use binary closure on the image to clean up the edges
+    imT(:,:,i) = bwmorph(imT(:,:,i), 'close');
+    
+    %Remove regions with fewer than 10 pixels
+    imT(:,:,i) = bwareaopen(imT(:,:,i), 10);
+    %Fill interior pixels
+    imT(:,:,i) = bwmorph(imT(:,:,i), 'fill');
+    
+end
+
+%Find the connected components and remove those that aren't part of the
+%large object
+CC = bwconncomp(imT);
+numPixels = cellfun(@numel, CC.PixelIdxList);
+[biggest, idx] = max(numPixels);
+imT(:)  =0;
+imT(CC.PixelIdxList{idx}) = 1;
 
 %Find the perimeter of these regions
 imPerim = zeros(size(imT));
 for i=1:size(imT,3)
     imPerim(:,:,i) = bwperim(imT(:,:,i));
+    
 end
 
 sumPerim = sum(imPerim,3);
@@ -35,28 +85,47 @@ sumPerim = find(sumPerim==1);
 
 indP = find(imPerim ==1);
 [xp, yp, zp] = ind2sub(size(imPerim), indP);
-zp = (1/0.1625)*zp;
-figure; plot3(xp, yp, zp, '*', 'MarkerSize', 1);
-axis equal
+
+switch microscope
+    case 'confocal'
+        xp = 0.3636*xp; yp = 0.3636*yp;
+    case 'lightsheet'
+        xp = 0.1625*xp; yp = 0.1625*yp;
+end
+
+if(strcmp(plotData, 'true'))
+    figure; plot3(xp, yp, zp, '*', 'MarkerSize', 1);
+    axis equal
+    title(num2str(scanNum));
+    hold on
+end
 
 perimVal = cat(2, xp, yp, zp);
 perimVal = round(perimVal);
-hold on
+
 
 %We'll use PCA to define the major axis of the opercle and then we'll get
 %the convex hull of the plane perpendicular to this line
 ind = find(imT==1);
 
-
 [x, y,z] = ind2sub(size(imT), ind);
 %rescaling the z axis to account for the spacing
-z = (1/0.1625)*z;
 
+switch microscope
+    case 'confocal'
+        %For the Confocal Data
+        x = 0.3636*x;
+        y = 0.3636*y;
+    case 'lightsheet'
+        %For the Light sheet data
+        x = 0.1625*x;
+        y = 0.1625*y;
+        
+end
 X = cat(2, x,y,z);
 
 %Get the principal components
 [coeff,score,roots] = princomp(X);
-
 %We'll find a plane normal to the principal axis
 basis = coeff(:,2:3);
 
@@ -67,15 +136,15 @@ meanX = mean(X,1);
 Xfit = repmat(meanX,n,1) + score(:,1:2)*coeff(:,1:2)';
 residuals = X - Xfit;
 
-
-%Getting points along the principal axis
+%Getting points along the principal axis  
 dirVect = coeff(:,1);
 t = [min(score(:,1))-.2, max(score(:,1))+.2];
 endpts = [meanX + t(1)*dirVect'; meanX + t(2)*dirVect'];
 
 %resampling at a space of one pixel-maybe overkill
-
-plot3(endpts(:,1), endpts(:,2), endpts(:,3), 'k-');
+if(strcmp(plotData, 'true'))
+    plot3(endpts(:,1), endpts(:,2), endpts(:,3), 'k-'); 
+end
 
 %Parameterizing curve in terms of arc length
 t = cumsum(sqrt([0,diff(endpts(:,1)')].^2 + [0,diff(endpts(:,2)')].^2+...
@@ -94,55 +163,163 @@ yy = interp1(t, endpts(:,2), min(t):stepSize:max(t), 'spline', 'extrap');
 zz = interp1(t, endpts(:,3), min(t):stepSize:max(t), 'spline', 'extrap');
 linePt = cat(2, xx',yy',zz');
 
-%plot3(xx,yy, zz,'*', 'markersize', 10);
-
-
+% if(strcmp(plotData, 'true'))
+%     plot3(xx,yy, zz,'*', 'markersize', 10);
+% 
+%     
+% end
+    
 %Now producing meshgrid perpendicular to the principal axis at one micron
 %spacings.
-[xgrid, ygrid] = meshgrid(min(X(:,1)):max(X(:,1)), min(X(:,2)):max(X(:,2)));
+%[xgrid, ygrid] = meshgrid(min(X(:,1)):0.05:max(X(:,1)), min(X(:,2)):0.05:max(X(:,2)));
+zFinalGrid = meshgrid(min(X(:,3)):max(X(:,3)));
 
-%[xgrid,ygrid] = meshgrid(linspace(min(X(:,1)),max(X(:,1))), ...
-%    linspace(min(X(:,2)),max(X(:,2)),5));
+[xgrid, ygrid,zgrid] = meshgrid(-100+min(X(:,1)):max(X(:,1))+100, 0,...
+    -100+min(X(:,3)):max(X(:,3))+100);
 
-axis equal
-gridPlane = zeros(size(xgrid));
+gridV = cat(2, xgrid(:), ygrid(:), zgrid(:));
+r = sqrt(sum(normal.^2));
+phi = pi/2-atan(normal(2)/normal(1));
 
-figure; 
+zDist = linePt(end,3)-linePt(1,3);
+zR = sqrt(sum((linePt(end,1:2)-linePt(1,1:2)).^2));
+
+theta = atan(zDist/zR);
+
+rotM = [cos(phi) -cos(phi) + sin(phi)*sin(theta), sin(phi)+cos(phi)*sin(theta);...
+    cos(theta), cos(phi) + sin(phi)*sin(theta), -sin(phi)+cos(phi)*sin(theta);...
+    -sin(theta), sin(phi)*cos(theta), cos(phi)*cos(theta)];
+
+
+rotM1 = [cos(phi), sin(phi), 0; -sin(phi), cos(phi), 0 ;0, 0,1];
+rotM2 = [1, 0, 0; 0, cos(theta), sin(theta); 0, -sin(theta), cos(theta)];
+
+
+%plot3(gridV(:,1), gridV(:,2), gridV(:,3));
+
+
+for i=1:size(gridV,1)
+    planePt(i,:) = rotM2*rotM1*gridV(i,:)';
+end
+
+% plot3(planePt(:,1), planePt(:,2), planePt(:,3))
+b = 0;
+
+%[xgrid,ygrid] = meshgrid(linspace(min(X(:,1)),max(X(:,1)),1000), ...
+%   linspace(min(X(:,2)),max(X(:,2)),1000));
+
+% pause
+% close all
+% return
+
+%figure; 
 fprintf(2, 'Calculating the convex hull perpendicular to the principal axis');
 fprintf(2, '\n');
+
+planePtO = planePt;
+%zOr = (1/normal(3)) .*(xgrid.*normal(1) + ygrid.*normal(2));
+
 for lineNum = 1:size(linePt,1)
-    
     lineVal = linePt(lineNum,:);
-    zgrid = (1/normal(3)) .* (lineVal*normal - (xgrid.*normal(1) + ygrid.*normal(2)));
+    planePt(:,1) = planePtO(:,1) + lineVal(1);
+    planePt(:,2) = planePtO(:,2) + lineVal(2);
+    planePt(:,3) = planePtO(:,3) + lineVal(3);
+    %zgrid = (1/normal(3)) .* (lineVal*normal) - zOr;
     
+    % zgrid = (lineVal*normal - (xgrid.*normal(1) + ygrid.*normal(2)));
     if(lineNum==1)
-     %   h = mesh(xgrid,ygrid,zgrid,'EdgeColor',[0 0 0],'FaceAlpha',0);
+        %   h = mesh(xgrid,ygrid,zgrid,'EdgeColor',[0 0 0],'FaceAlpha',0.5);
     else
-    %   set(h, 'xData', xgrid);set(h, 'yData', ygrid); set(h, 'zData', zgrid); 
-    end
+        % set(h, 'xData', xgrid);set(h, 'yData', ygrid); set(h, 'zData', zgrid);
+%     end
+%     planePt(:,1) = gridV(:,1) + lineVal(1);
+%     planePt(:,2) = gridV(:,2) + lineVal(2);
+%     planePt(:,3) = gridV(:,3) + lineVal(3);
+%     %
+%     planePt = cat(2, xgrid(:), ygrid(:), zgrid(:));
+%     index =  find(planePt(:,3)>max(perimVal(:,3))  );
+%     planePt(index, :) = [];
+%     index =  find(planePt(:,3)<min(perimVal(:,3))  );
+%     planePt(index, :) = [];
+% %     
+%     [~,~,zMesh] = meshgrid(planePt(:,1), planePt(:,2), planePt(:,3));
+%     xi = interp1(1:length(planePt(:,1)), planePt(:,1), linspace(min(planePt(:,1)), max(planePt(:,1)),100));
+%     yi = interp1(1:length(planePt(:,2)), planePt(:,2), linspace(min(planePt(:,2)), max(planePt(:,2)),100));
+%     [xMesh, yMesh] = meshgrid(xi',yi');
+%     
+%     zi = interp2(zMesh, xMesh,yMesh);
+%     
+%  
+%     
+%     [xgL, ygL, zgL] = meshgrid(planePt(:,1), planePt(:,2), planePt(:,3));
     
-    planePt = cat(2, xgrid(:), ygrid(:), zgrid(:));
-    planePt = round(planePt);
-    interPtIn = ismember(planePt, perimVal,'rows');
+    %Remove points that are outside the range of the opercle data
+    %     for remP=1:3
+    %     index =
+    %     planePt(~index,:) = [];
+    %     index = find(planePt(:,remP)<min(perimVal(:,remP)));
+    %     planePt(~index,:) = [];
+    %     end
     
-    gridPlane(:) = 0;
-    gridPlane(interPtIn) = 1;
-    imshow(gridPlane);
-    title(lineNum);
-    drawnow;
     
-    interPt = planePt(interPtIn,:);
-   [xyCon, zCon] = ind2sub(size(xgrid), interPtIn);
-   
-   
-   if(length(unique(zCon))>1)
-       k = convhull(xyCon, zCon);
-       xyCon = xyCon(k); zCon = zCon(k);
-       convexPt{lineNum-1} = [xyCon, zCon];
-   end
+    %dataDist = pdist2(planePt, perimVal);
+    %index = find(min(dataDist,[],2)<=1);
+    %valOrig = planePt(index,:);
+    %    planePt = round(planePt);
+    %    interPtIn = ismember(planePt, perimVal,'rows');
+    %idx = rangesearch(planePt, perimVal,50);
+    idx = rangesearch(planePt, perimVal, 1);
+    index = ~ cellfun('isempty', idx);
+    %    idx = [idx{:}];
+    valOrig = perimVal(index,:);
+    %    valOrig = planePt(idx,:);
+    %valOrig = unique(valOrig, 'rows');
+    %Find the coordinates of these points in the original coordinate system
+    % valOrig = cat(2, xgrid(interPtIn), ygrid(interPtIn), zgrid(interPtIn));
+    %Transforming to the coordinate system of the plane perpendicular to
+    %the principal axis.
+    val = basis'*valOrig';
+    
+    %DOUBLE CHECK THAT THIS IS THE CORRECT TRANSFORMATION!!!
+    %I believe it is. If you run the command below-finding the coordinate
+    %of all these points along the normal all the values are the same. This
+    %is what you would expect.
+    %val2 = normal'*valOrig';
+    
+          
+if(strcmp(plotData, 'true')) 
+       %Convex hull is what one expects.
+      if(~exist('hP'))
+          hP =  plot3(valOrig(:,1), valOrig(:,2), valOrig(:,3), '-rs');
+      else
+          set(hP, 'XData', valOrig(:,1));
+          set(hP, 'YData', valOrig(:,2));
+          set(hP, 'ZData', valOrig(:,3));
+      end
+      
+   %    plot(valCon(1,:), valCon(2,:), '--rs');
        
-    %if(size(interPt,1)==0)
-    %delete(hP1), delete(hP2)
+    %  plot3(lineVal(1 ), lineVal(2), lineVal(3), '--rs');
+
+     b = 0;
+
+end
+    
+   if(size(val,2)>2)
+       try
+           k = convhull(val(1,:), val(2,:));
+           valCon = val(:,k);
+           convexPt{lineNum} = valCon;
+       catch
+          convexPt{lineNum} = -1; %record that there was an error calculating this convex hull. 
+       end
+       
+
+       
+   else
+       convexPt{lineNum} = -1;
+   end
+   
     if(exist('hP1'))
         delete(hP1)
     end
@@ -152,137 +329,10 @@ for lineNum = 1:size(linePt,1)
     
     fprintf(2, '.');
     
-%     hP1 = plot3(interPt(:,1), interPt(:,2), interPt(:,3), '-rs','MarkerFaceColor', 'g',...
-%         'MarkerSize', 5);
-%     hP2 = plot3(lineVal(:,1), lineVal(:,2), lineVal(:,3), '-s','MarkerSize', 5, 'MarkerFaceColor', 'r');
-%     %pause
-%     
-% %     else
-% %        set(hP1, 'xData', interPt(:,1));set(hP1, 'Data', interPt(:,2)); 
-% %        set(hP1, 'yData', interPt(:,3)); 
-% %        
-% %         set(hP2, 'xData', lineVal(:,1));set(hP2, 'yData', lineVal(:,2)); 
-% %        set(hP2, 'zData', lineVal(:,3)); 
-% %        
-% %        
-% %         
-% %     end
-%     title(lineNum)
-%     drawnow;
-%     b =0;
-    
-    %Now finding the location of these 
-    
+    end
+
 end
 fprintf(2, '\n');
-% 
-% 
-% %Rescaling pos
-% pos(1,1) = pos(1,1) - xMin;
-% pos(2,1) = pos(2,1) - xMin;
-% pos(1,2) = pos(1,2) - yMin;
-% pos(2,2) = pos(2,2) - yMin;
-% 
-% %Along the length of the gut, calculate the projection
-% xx = pos(1,1) + (pos(2,1)-pos(1,1))*(1:500)/500;
-% 
-% yy = pos(1,2) + (pos(2,2)-pos(1,2))*(1:500)/500;
-%     
-% 
-% %Parameterizing curve in terms of arc length
-% t = cumsum(sqrt([0,diff(xx(:)')].^2 + [0,diff(yy(:)')].^2));
-% 
-% %Resampling so that y is sampled at spacings of one pixel-there's no need
-% %to sample any finer.
-% 
-% xx = spline(t, xx, t);
-% yy = spline(t, yy, t);
-% 
-% stepSize = 1;
-% xx = interp1(t, xx, min(t):stepSize:max(t), 'spline', 'extrap');
-% yy = interp1(t, yy, min(t):stepSize:max(t), 'spline', 'extrap');
-% 
-% yMin = 1;
-% xMin = 1;
-% 
-% yMax = size(imT,1);
-% xMax = size(imT,2);
-% 
-% figure; imshow(sum(imPerim,3));
-% hold on
-%     
-% fprintf(2,'Getting convex hull down the width of OP:\n');
-% 
-% perimW = zeros(length(xx)-1);
-% 
-% 
-% lineIm = zeros(size(imT,1), size(imT,2)); %For getting a mask for the line
-% 
-% for lineNum=2:length(xx)
-%     
-%     x = xx(lineNum)-xx(lineNum-1);
-%     y = yy(lineNum)-yy(lineNum-1);
-%     xI = x+1;
-%     yI = y+2;
-%     
-%     %Line should be long enough to span the entire gut...Far more than that
-%     %right now.
-%     Orth = [xI yI] - ((x*xI + yI*y)/(x^2 +y^2))*[x y];    
-%     xVal = xx(lineNum)+ Orth(1)*[-500:1:500];
-%     yVal = yy(lineNum)+ Orth(2)*[-500:1:500];
-%     
-%     %Get rid of elements of xVal and yVal outside the image size
-%     index = find(round(xVal)>xMax |round(xVal)<xMin);
-%     xVal(index) = [];
-%     yVal(index) = [];
-%     
-%     index = find(round(yVal)>yMax |round(yVal)<yMin);
-%     xVal(index) = [];
-%     yVal(index) =[];
-%     
-%     indexLine = cat(2, round(xVal)', round(yVal)');
-%    
-%     onLine = sub2ind([size(imT,1), size(imT,2)], indexLine(:,2), indexLine(:,1));
-%     lineIm(:) = 0;
-%     lineIm(onLine) =1;
-%     
-%     %See where the line intersects with the perimeter of the opercle.
-%     overlapIm = imPerim.*repmat(lineIm, [1,1,size(imT,3)]);
-%     
-%     %Get the location of the pixels that make up the boundary
-%     ind = find(overlapIm==1);
-%     [xPerim, yPerim, zPerim] = ind2sub(size(imT), ind);
-%     
-%     unZ = unique(zPerim);
-%     
-%     xyCon = [];
-%     zCon = [];
-%    
-%     ptVal = 1:size(indexLine,1);
-%     
-%     for zH=1:length(unZ); 
-%         ind = find(zPerim ==unZ(zH));
-%         thisRow = cat(2, yPerim(ind), xPerim(ind));
-%         
-%         %See where this lies on the line
-%         t = ismember(indexLine, thisRow, 'rows');
-%         
-%         xyCon = [xyCon; ptVal(t)'];
-%         zCon  = [zCon; (1/0.1625)*zH*ones(length(ptVal(t)),1  )];
-%         
-%     end
-%     
-%     if(length(unique(zCon))>1)
-%        %Calculate the convex hull at this point along the line
-%        k = convhull(xyCon, zCon);
-%        xyCon = xyCon(k); zCon = zCon(k);
-%        convexPt{lineNum-1} = [xyCon, zCon];
-%     end
-%     
-% fprintf(2, '.');
-% 
-% end
-% 
-% fprintf('\n');
 
+close all
 end

@@ -5,10 +5,11 @@
 %  -- have at least a minimal amount of variance (i.e. aren't stuck)
 %
 % input
-%   objs -- 6-row linked object matrix, from nnlink_rp.m  (See that file,
+%   objs -- linked object matrix, from nnlink_rp.m  (See that file,
 %           im2obj_rp for object structure)
 %   minNframes -- minimal number of frames (optional; can input during analysis)
 %   minstd -- minimal standard deviation, px (optional; can input during analysis)
+%   dispopt -- Show track information if true [optional]
 %
 % output
 %   objs_out -- tracks that are kept (at least minNframes)
@@ -21,10 +22,10 @@
 %
 % Raghuveer Parthasarathy
 % March 10, 2009
-% last modified April 21, 2009
+% last modified March 31, 2011 -- display option
 
 
-function [objs_out] = trackedit(objs, minNframes, minstd)
+function [objs_out] = trackedit(objs, minNframes, minstd, dispopt)
 
 allids = objs(6,:);
 utrk = unique(allids);  % all the unique track ids
@@ -33,11 +34,13 @@ startframe = min(objs(5,:));  % minimal frame #
 endframe = max(objs(5,:));  % maximal frame #
 maxNframes = endframe - startframe;
 
-if (nargin<2)
+if nargin<2
     minNframes = [];
     minstd = [];
-elseif (nargin < 3)
+elseif nargin < 3
     minstd = [];
+elseif nargin<4
+    dispopt = false;
 end
 
 if or((nargin < 2), isempty(minNframes))
@@ -48,7 +51,7 @@ else
 end
 
 if or((nargin < 3), isempty(minstd))
-    minstd = 0.0;  % user will assign later
+    minstd = [];  % user will assign later
     plotoptV = true;
 else
     plotoptV = false;
@@ -78,36 +81,41 @@ if plotoptV
     xlabel('standard deviation of position, pixels')
 end
 
-if ~(minstd > 0)
+if isempty(minstd)
     minstd = input('Enter new standard dev. cutoff (px/frame): ');
 end
 
-objs_out1 = zeros(size(objs));  % the largest it could possibly be
-k=1;  % for re-numbering tracks
-nc = 1;  % number of columns, for re-sizing the array
-progtitle = sprintf('trackedit: Editing tracks...  '); 
-progbar = waitbar(0, progtitle);  % will display progress
-for j=1:length(utrk)
-    % loop through each track
-    if stdtrk(j) >= minstd
-        % keep this track
-        trtmp = objs(:, allids==utrk(j));  % objects that are part of track j
-        trtmp(6,:) = k;  % renumber track id
-        objs_out1(:,nc:(nc+size(trtmp,2))-1) = trtmp; % keep these
-        k = k+1;
-        nc = nc + size(trtmp,2);
+if minstd>0.0
+    objs_out1 = zeros(size(objs));  % the largest it could possibly be
+    k=1;  % for re-numbering tracks
+    nc = 1;  % number of columns, for re-sizing the array
+    progtitle = sprintf('trackedit: Editing tracks...  ');
+    progbar = waitbar(0, progtitle);  % will display progress
+    for j=1:length(utrk)
+        % loop through each track
+        if stdtrk(j) >= minstd
+            % keep this track
+            trtmp = objs(:, allids==utrk(j));  % objects that are part of track j
+            trtmp(6,:) = k;  % renumber track id
+            objs_out1(:,nc:(nc+size(trtmp,2))-1) = trtmp; % keep these
+            k = k+1;
+            nc = nc + size(trtmp,2);
+        end
+        if (mod(j,100)==0)
+            waitbar(j/length(utrk), progbar, progtitle);
+        end
     end
-    if (mod(j,100)==0)
-        waitbar(j/length(utrk), progbar, progtitle);
-    end
+    close(progbar)
+    nc = nc-1;
+    fs = sprintf('Keeping %d out of %d tracks', k-1, length(utrk)); disp(fs);
+    objs_out1 = objs_out1(:,1:nc);  % "re-sizing" the array
+    % Recalculate...
+    allids = objs_out1(6,:);
+    utrk = unique(allids);  % all the unique track ids
+else
+    % do nothing
+    objs_out1 = objs;
 end
-close(progbar)
-fs = sprintf('Keeping %d out of %d tracks', k-1, length(utrk)); disp(fs);
-objs_out1 = objs_out1(:,1:nc);  % "re-sizing" the array
-
-% Recalculate...
-allids = objs_out1(6,:);
-utrk = unique(allids);  % all the unique track ids
 
 
 % --------------------------------------------------------------------
@@ -172,7 +180,26 @@ for j = utrk
     end
 end
 close(progbar)
+nc = nc-1;
 fs = sprintf('Keeping %d out of %d tracks', k-1, length(utrk)); disp(fs);
 objs_out = objs_out(:,1:nc);  % "re-sizing" the array
 
+
+if dispopt
+    % Display information about tracks found
+    fs = sprintf('%d unique tracks.', length(unique(objs_out(6,:))));
+    disp(fs)
+    for j=unique(objs_out(6,:))
+        objs_j = objs_out(:,objs_out(6,:)==j);  % track j
+        frj = objs_j(5,:);
+        x = objs_j(1,:);  % x positions of this track
+        y = objs_j(2,:);  % y positions of this track
+        stdj = sqrt(var(x) + var(y));  % standard deviation of this track's position
+        %frj = objs(5,find(objs(6,:)==j));
+        fs = sprintf('   Track %d: frames %d:%d (%d frames), std. %.1f pixels',...
+            j, min(frj), max(frj), length(frj), stdj);
+        % Note that some frames between min and max may not be good
+        disp(fs)
+    end
+end
 

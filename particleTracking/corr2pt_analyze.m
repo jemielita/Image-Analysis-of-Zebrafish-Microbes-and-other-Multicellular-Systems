@@ -3,7 +3,7 @@
 % Plot, analyze the 2-point correlation output of corr2pt.m
 % Input:  Rbins, taubins -- same bins as input to corr2pt.m
 %         Dpar, Dperp -- output of corr2pt.m
-% Output:  slopes of D ~ tau, for parallel and perpendicular correlations.
+$ Output:  slopes of D ~ tau, for parallel and perpendicular correlations.
 % Also, displays slope of log-log fit
 % 
 % Raghuveer Parthasarathy
