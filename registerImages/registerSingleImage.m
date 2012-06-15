@@ -127,7 +127,6 @@ end
 
 
 for regNum = 2:totalNumRegions
-    %Overlapping the regions
     %Overlapping regions
     %This is potentially slow (however we need to be as quick as possible with this type of thing).
     %After we know this code works, we'll come back and write quicker code.
