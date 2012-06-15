@@ -164,6 +164,7 @@ hxyRegTable = uitable('Parent', fGui,...
    'RowName', rnames, 'Units', 'Normalized', 'Position', [ 0.50 0.02 0.23 0.19-offset],...
    'ColumnEditable', true);
 set(hxyRegTable, 'CellEditCallback', @manualRegisterImage_Callback);
+set(hxyRegTable, 'Visible', 'off');
 
 hMenuAlternateRegions = uibuttongroup('Parent', fGui, 'Units', 'Normalized',...
     'Position', [ 0.76 0.02 0.05 0.1]);
@@ -174,7 +175,7 @@ hReg1 = uicontrol('Parent', hMenuAlternateRegions,'Style', 'Radio', 'String', 'E
 hReg1 = uicontrol('Parent', hMenuAlternateRegions,'Style', 'Radio', 'String', 'Both','Units', 'Normalized',...
     'Position', [0.1 0.70 0.9 0.25]);
 set(hMenuAlternateRegions, 'SelectionChangeFcn', @alternateRegions_Callback);
-
+set(hMenuAlternateRegions, 'Visible', 'off');
 
 %%%%%%Create the displayed control panels
 
@@ -326,8 +327,11 @@ hContrast = imcontrast(imageRegion);
         fprintf(2, 'Done!\n');
     end
 
+
     function saveImage_Callback(hObject, eventdata)
-        [filename, pathname, fIndex] = uiputfile('.tif', 'Save the displayed scan.');
+
+        [filename, pathname, fIndex] = uiputfile('.tif', 'Save the displayed scan.',...
+            [param.directoryName filesep 'temp.tif']);
         if isequal(filename,0) || isequal(pathname,0)
             disp('User pressed cancel-image will not be saved')
         else
@@ -340,6 +344,7 @@ hContrast = imcontrast(imageRegion);
         
             imwrite(im, strcat(pathname,filename), 'tiff');
         end
+        
               
     end
 
@@ -349,7 +354,7 @@ hContrast = imcontrast(imageRegion);
        %your choice...currently this will only be used to create a script
        %for cropping images.
        
-       [fileName, saveDir]  = uiputfile('*.mat', 'Select a location to save the param.mat file');
+       [fileName, saveDir]  = uiputfile('*.mat', 'Select a location to save the param.mat file', [param.directoryName filesep 'param.mat']);
        if(fileName==0)
            return
        end
@@ -426,7 +431,7 @@ hContrast = imcontrast(imageRegion);
         colorNum = int16(colorNum);
         
         imBig = zeros(param.regionExtent.regImSize{colorNum}(1), param.regionExtent.regImSize{colorNum}(2));
-        for zStackN=zMin:zMax
+        for zStackN=zMin:zMax-5
             imOut = getRegisteredImage(scanNum, color, zStackN, imBig, data, param);
             index = find(imOut>imBig);
             imBig(index) = imOut(index);
@@ -770,9 +775,19 @@ hContrast = imcontrast(imageRegion);
     function getImageArray_Callback(hObject, eventdata)
         if(strcmp(get(hMenuRegisterManual, 'Checked'), 'on'))
             set(hMenuRegisterManual, 'Checked', 'off');
+
+            set(hxyRegTable, 'Visible', 'off');
+            set(hMenuAlternateRegions, 'Visible', 'off');
+            
         else
             set(hMenuRegisterManual, 'Checked', 'on');
             getIndividualRegions();
+            
+            set(hxyRegTable, 'Visible', 'on');
+            set(hMenuAlternateRegions, 'Visible', 'on');
+            
+            
+            
         end
             
     end
