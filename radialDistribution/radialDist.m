@@ -24,8 +24,8 @@ im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
 filename = [param.dataSaveDirectory filesep 'radialDist' filesep 'rd.mat'];
 save(filename, 'xArr', 'yArr', 'lineExt');
 for lineSet =1:length(lineSpace)-1
-    clear radRegion
-   %For each set of lines, preallocate enough memory for the  entire z
+    clear radRegionc
+   %For each set of lines, preallocate enough memory for the entire z
    %stack.
     theseLines = lineSpace(lineSet):lineSpace(lineSet+1)-1;
     disp(strcat('Calculating the radial distribution for the lines: ', num2Str(theseLines)));

@@ -24,8 +24,8 @@ if nargin==0
 end
 
 %Where we'll save all the marker regions.
-saveDir = 'C:\jemielita\confocal_control\fish2\';
-saveDir = pathN;
+saveDir = 'C:\jemielita\markers_fish3\';
+%saveDir = pathN;
 
 saveFile = saveDir;
 
@@ -50,23 +50,22 @@ segIm = imshow(im(:,:,1),[]);
 
 imT = im;
 
-
 %What fraction of the Otsu threshold to use.
 threshScale = 1;
 threshOffset = 0;
 %hLine = imline(origAxes);
 %pos = wait(hLine);
 
-maxN = 61;
+maxN = 50;
 
 polyZ = cell(maxN,1);
 hPoly = '';
-topIndex = 61;
+topIndex = 50;
 bottomIndex = 1;
 
 title(segAxes, ['Top: ', num2str(topIndex)]);
 
-fN = [saveDir 'OP_Scan', sprintf('%03d', 1), '.mat'];
+fN = [saveDir 'OP_Scan', sprintf('%03d', 120), '.mat'];
 %Load the already thresholded images if we can.
 try
     imT = load(fN);
@@ -322,7 +321,6 @@ hImC = imcontrast(hIm);
                 eval(evalC);
                 
                 disp('saving done!');
-                
                 
                 %Load in a new set of images
                 nextIm = str2num(imPath(end-6:end-4));

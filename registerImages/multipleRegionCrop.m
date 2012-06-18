@@ -64,6 +64,9 @@ maxColor = numColor;
 colorType = [param.color];
 colorNum = 1;
 
+%%%%%%% projection type
+projectionType = 'none';
+
 %%%number of regions
 totalNumRegions = length(unique([param.expData.Scan.region]));
 
@@ -128,7 +131,6 @@ hMenuDenoise = uimenu(hMenuDisplay, 'Label', 'Denoise!', 'Callback', @denoiseIm_
 set(hMenuDenoise, 'Checked', 'off');
 hMenuMIP = uimenu(hMenuDisplay, 'Label', 'Maximum intensity projection', 'Callback', @mip_Callback);
         
-
 hMenuRegister = uimenu('Label', 'Registration');
 hMenuRegisterManual = uimenu(hMenuRegister, 'Label', 'Manually register images',...
     'Callback', @getImageArray_Callback);
@@ -170,9 +172,9 @@ hMenuAlternateRegions = uibuttongroup('Parent', fGui, 'Units', 'Normalized',...
     'Position', [ 0.76 0.02 0.05 0.1]);
 hReg1 = uicontrol('Parent', hMenuAlternateRegions,'Style', 'Radio', 'String', 'Odd','Units', 'Normalized',...
     'Position', [0.1 0.05 0.9 0.25]);
-hReg1 = uicontrol('Parent', hMenuAlternateRegions,'Style', 'Radio', 'String', 'Even','Units', 'Normalized',...
+hReg2 = uicontrol('Parent', hMenuAlternateRegions,'Style', 'Radio', 'String', 'Even','Units', 'Normalized',...
     'Position', [0.1 0.40 0.9 0.25]);
-hReg1 = uicontrol('Parent', hMenuAlternateRegions,'Style', 'Radio', 'String', 'Both','Units', 'Normalized',...
+hReg3 = uicontrol('Parent', hMenuAlternateRegions,'Style', 'Radio', 'String', 'Both','Units', 'Normalized',...
     'Position', [0.1 0.70 0.9 0.25]);
 set(hMenuAlternateRegions, 'SelectionChangeFcn', @alternateRegions_Callback);
 set(hMenuAlternateRegions, 'Visible', 'off');
@@ -219,6 +221,20 @@ hColorTextEdit = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Positi
 hColorSlider = uicontrol('Parent', hManipPanel,'Units', 'Normalized', 'Position', [0.3 0.86-dist 0.65 0.1],...
     'Style', 'slider', 'Min', minColor, 'Max', maxColor, 'SliderStep', [1 1], 'Value', 1,...
     'Callback', @colorSlider_Callback);
+
+%Button group to select one of several projection types
+hMenuProjectionType = uibuttongroup('Parent', fGui, 'Units', 'Normalized','Title', 'Projection',...
+    'Position', [ 0.005 0.02 0.04 0.2-offset]);
+hProj3 = uicontrol('Parent', hMenuProjectionType,'Style', 'Radio', 'String', 'none','Units', 'Normalized',...
+    'Position', [0.1 0.70 0.9 0.25]);
+hProj1 = uicontrol('Parent', hMenuProjectionType,'Style', 'Radio', 'String', '','Units', 'Normalized',...
+    'Position', [0.1 0.05 0.9 0.25]);
+hProj2 = uicontrol('Parent', hMenuProjectionType,'Style', 'Radio', 'String', 'mip','Units', 'Normalized',...
+    'Position', [0.1 0.40 0.9 0.25]);
+
+set(hMenuProjectionType, 'SelectionChangeFcn', @projectionType_Callback);
+
+
 
 %Create a data table where the user can give the upper and upper bound (in
 %terms of the z level) for different regions.
@@ -438,8 +454,7 @@ hContrast = imcontrast(imageRegion);
             fprintf('.');
         end
         fprintf('\n');
-        set(hIm, 'CData', imBig);
-        
+        set(hIm, 'CData', imBig); 
     end
 
     function denoiseIm_Callback(hObject, eventdata)
@@ -1074,6 +1089,16 @@ hContrast = imcontrast(imageRegion);
         zLast = zNum;
     end
 
+    function projectionType_Callback(hObject, eventdata)
+        
+         switch get(eventdata.NewValue, 'String')
+             case 'none'
+                 projectionType = 'none';
+             case 'mip'
+                 projectionType = 'mip';
+         end
+         
+    end
 
 %Callbacks for the polygon outlining of the gut
 
@@ -1290,15 +1315,28 @@ hContrast = imcontrast(imageRegion);
 %Function to get a desired image for either display or for saving
     function varargout = getRegisteredImage(scanNum, color, zNum, im, data, param )
 
-        im = registerSingleImage(scanNum,color, zNum,im, data,param);
-        %Optionally denoise image
-        if strcmp(get(hMenuDenoise, 'Checked'),'on')
-            im = denoiseImage(im);
+        %Check to see if we're going to be showing a projection instead
+        switch projectionType
+            case 'none'
+                im = registerSingleImage(scanNum,color, zNum,im, data,param);
+                %Optionally denoise image
+                if strcmp(get(hMenuDenoise, 'Checked'),'on')
+                    im = denoiseImage(im);
+                end
+                %Get rid of really bright pixels. WARNING: if the image is bright
+                %to begin with this will mess things up. This approach is somewhat
+                %crude. What we should really be doing is in nicer fashion.
+                im(im(:)>50000) = 0;
+
+
+                
+            case 'mip'
+                %'true'-> autoload the maximum intensity projection if it
+                %has already been calculated.
+                im = selectProjection(param, 'mip', 'true', scanNum,color, zNum);
+                
+                
         end
-        %Get rid of really bright pixels. WARNING: if the image is bright
-        %to begin with this will mess things up. This approach is somewhat
-        %crude. What we should really be doing is in nicer fashion.
-        im(im(:)>50000) = 0;
         
         %If a single crop region (not region specific crop boxes) for the
         %whole image has been selected, then crop down to this size.
@@ -1308,6 +1346,12 @@ hContrast = imcontrast(imageRegion);
             end
         end
         
+        %If we're manually registering things then also update the cell
+        %structure that contains the individual regions
+        if strcmp(get(hMenuRegisterManual, 'Checked'),'on')
+            getIndividualRegions();
+        end
+        
         switch nargout
             case 0
                 set(hIm, 'CData', im);
@@ -1315,16 +1359,10 @@ hContrast = imcontrast(imageRegion);
                 %Used for saving potentially modified images to a new
                 %folder
                 varargout{1} = im;
-                
         end
         
         
-        %If we're manually registering things then also update the cell
-        %structure that contains the individual regions
-        if strcmp(get(hMenuRegisterManual, 'Checked'),'on')
-            getIndividualRegions();
-        end
-    end    
+    end
 
 end
 
@@ -1340,41 +1378,41 @@ totalNumRegions = length(unique([param.expData.Scan.region]));
 sizeOverlap = zeros(totalNumRegions);
 
 for regNum =1:totalNumRegions
-        im(:) = 0;
-        imCropRect(:) = 0;
+    im(:) = 0;
+    imCropRect(:) = 0;
+    
+    %Get the range of pixels that we will read from and read out to.
+    xOutI = param.regionExtent.XY(regNum,1);
+    xOutF = param.regionExtent.XY(regNum,3);
+    
+    yOutI = param.regionExtent.XY(regNum,2);
+    yOutF = param.regionExtent.XY(regNum,4);
+    
+    im(xOutI:xOutF, yOutI:yOutF) = 1;
+    
+    cropXY = param.regionExtent.crop.XY;
+    
+    cropXY = round(cropXY); %Won't be necessary in a bit-will be written into GUI.
+    for cropNum=1:totalNumRegions
+        xOutI = cropXY(cropNum,1);
+        xOutF = xOutI + cropXY(cropNum,3);
+        yOutI = cropXY(cropNum,2);
+        yOutF = yOutI + cropXY(cropNum,4);
         
-        %Get the range of pixels that we will read from and read out to.
-        xOutI = param.regionExtent.XY(regNum,1);
-        xOutF = param.regionExtent.XY(regNum,3);
+        imCropRect(xOutI:xOutF, yOutI:yOutF) = 1;
         
-        yOutI = param.regionExtent.XY(regNum,2);
-        yOutF = param.regionExtent.XY(regNum,4);
+        imshow(imCropRect);
         
-        im(xOutI:xOutF, yOutI:yOutF) = 1;
-        
-        cropXY = param.regionExtent.crop.XY;
-        
-        cropXY = round(cropXY); %Won't be necessary in a bit-will be written into GUI.
-        for cropNum=1:totalNumRegions
-           xOutI = cropXY(cropNum,1);
-           xOutF = xOutI + cropXY(cropNum,3);
-           yOutI = cropXY(cropNum,2);
-           yOutF = yOutI + cropXY(cropNum,4);
-           
-           imCropRect(xOutI:xOutF, yOutI:yOutF) = 1;
-           
-           imshow(imCropRect);
-           
-        end
-        
-        %Find the size of the overlap between these two regions. We will
-        %use the cropping rectangle that has the largest overlap between
-        %the region image and the cropping rectangle to crop that region. 
-        %Somewhat convoluted, but it makes it unnecessary for the user to
-        %keep track of some number on each rectangle.
-        imOverlap = imCropRect.*im;
-        sizeOverlap(cropNum,RegNum) = sum(imOverlap);
-        
+    end
+    
+    %Find the size of the overlap between these two regions. We will
+    %use the cropping rectangle that has the largest overlap between
+    %the region image and the cropping rectangle to crop that region.
+    %Somewhat convoluted, but it makes it unnecessary for the user to
+    %keep track of some number on each rectangle.
+    imOverlap = imCropRect.*im;
+    sizeOverlap(cropNum,RegNum) = sum(imOverlap);
+    
 end
 
 %[cropIndex, temp]  = find(sizeOverlap

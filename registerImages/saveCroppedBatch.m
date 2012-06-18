@@ -28,6 +28,7 @@ totalNumColors = size(param.color,2);
 
 loadType = 'wholeStack'; %This is a slightly faster way to do it than loading in each images individually
 allImages = [];
+
 %Create a new directory structure if necessary
 if(~strcmp(cropDir, param.directoryName))
     for nS=1:totalNumScans
@@ -35,7 +36,10 @@ if(~strcmp(cropDir, param.directoryName))
             for nC = 1:totalNumColors
                 dirName = [cropDir filesep 'Scans' filesep 'scan_', num2str(nS), filesep ...
                     'region_', num2str(nR), filesep param.color{nC}];
-                mkdir(dirName);
+                if(~isdir(dirName))
+                    mkdir(dirName);
+                end
+                
             end
         end
     end
@@ -98,8 +102,7 @@ for nS=1:totalNumScans
             yInI = thisRegion(nR,6);
             yInF = yOutF - yOutI +yInI;
             
-            switch loadType
-                
+            switch loadType  
                 case 'individual'
                     %Load in each image one after another and then save
                     tic;
@@ -119,7 +122,6 @@ for nS=1:totalNumScans
     fprintf(2, '\n');
 end
 
-
 %Saving the new range of pixel locations
 for nC = 1:totalNumColors
     
@@ -135,7 +137,6 @@ for nC = 1:totalNumColors
     end
 end
 
-
 %Note: currently not updating the experimentData.txt file!!!!
 %Also save the full param structure so that we can use this to load in the
 %appropriate variables after cropping the images.
@@ -147,7 +148,6 @@ param.directoryName = cropDir;
 
 save([cropDir filesep 'gutOutline', filesep 'param.mat'], 'param');
 save([cropDir filesep 'ExperimentData.mat'], 'parameters', 'timeData', 'param');
-
 
     function [] = saveIndividualImages()
         

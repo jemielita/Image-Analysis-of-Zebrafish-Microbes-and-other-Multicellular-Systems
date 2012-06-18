@@ -34,6 +34,12 @@ gaussImY = imfilter(im, gaussGradKernel);
 gradImage = sqrt(double(gaussImY).^2 + double(gaussImX).^2);
 %And the orientation
 
-thetaImage = atan(double(gaussImY./gaussImX));
+thetaImage = atan(double(gaussImX./gaussImY));
+
+%thetaImage will contain NaN at places where gaussImX and gaussImY are 0
+%Replace these with 0's-these are places where there is no preferred
+%orientation
+thetaImage(isnan(thetaImage)) = 0;
+
 
 end

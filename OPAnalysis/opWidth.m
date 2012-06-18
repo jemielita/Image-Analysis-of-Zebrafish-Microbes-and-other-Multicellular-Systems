@@ -145,6 +145,13 @@ endpts = [meanX + t(1)*dirVect'; meanX + t(2)*dirVect'];
 if(strcmp(plotData, 'true'))
     plot3(endpts(:,1), endpts(:,2), endpts(:,3), 'k-'); 
 end
+% b = 0;
+% 
+% pause(2);
+% close all
+% 
+% return
+
 
 %Parameterizing curve in terms of arc length
 t = cumsum(sqrt([0,diff(endpts(:,1)')].^2 + [0,diff(endpts(:,2)')].^2+...
@@ -203,7 +210,7 @@ for i=1:size(gridV,1)
 end
 
 % plot3(planePt(:,1), planePt(:,2), planePt(:,3))
-b = 0;
+
 
 %[xgrid,ygrid] = meshgrid(linspace(min(X(:,1)),max(X(:,1)),1000), ...
 %   linspace(min(X(:,2)),max(X(:,2)),1000));

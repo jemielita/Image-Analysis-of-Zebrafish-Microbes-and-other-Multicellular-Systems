@@ -14,8 +14,8 @@ kernelSize = ceil(7*kernelSigma);
 %figure; imshow(localMax);
 
 %Then clean up edges beyond the hysteresis threshold
-highThresh = 1.25*graythresh(localMax);
-lowThresh = (0.6)*highThresh;
+highThresh = graythresh(localMax);
+lowThresh = (0.3)*highThresh;
 hIm = hysThreshold(localMax, highThresh, lowThresh);
 
 
