@@ -18,23 +18,20 @@ sList = [1 4 10];
 numScans = 3;
 
 for nSt=1:numScans
-nS = sList(nSt);
+    nS = sList(nSt);
     disp(['Calculating mip for scan ', num2str(nS)]);
     for nC=1:numColor
         imVar.color =param.color{nC};
         imVar.zNum = '';%Won't need this for mip
         imVar.scanNum = nS;
- 
+        
         mip{nC} = selectProjection(param, 'mip',1, imVar);
-  
-
-       fprintf(2, '\n'); 
+        fprintf(2, '\n');
     end
     %Then save the result
     saveName = [param.dataSaveDirectory, filesep, 'FluoroScan_', num2str(nS),'.mat'];
     save(saveName, 'mip');
 end
-
 
 
 end

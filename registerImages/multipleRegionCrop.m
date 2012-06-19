@@ -1115,36 +1115,40 @@ hContrast = imcontrast(imageRegion);
     end
 
     function smoothPoly_Callback(hObject, eventdata)
-       if(isfield(param.regionExtent, 'poly'));
-           %Only smooth the polygon if it exists.
-           poly = param.regionExtent.poly;
-           
-           %Parameterizing curve in terms of arc length
-           t = cumsum(sqrt([0,diff(poly(:,1)')].^2 + [0,diff(poly(:,2)')].^2));
-           %Find x and y positions as a function of arc length
-           polyFit(:,1) = spline(t, poly(:,1), t);
-           polyFit(:,2) = spline(t, poly(:,2), t);
-           
-           %Interpolate curve to make it less jaggedy, arbitrarily we'll
-           %set the number of points to be 50.
-           stepSize = (max(t)-min(t))/100.0;
-           
-           polyT(:,2) = interp1(t, polyFit(:,2),min(t):stepSize:max(t),'spline', 'extrap');
-           polyT(:,1) = interp1(t, polyFit(:,1),min(t):stepSize:max(t), 'spline', 'extrap');
-           
-           %Redefining poly
-           poly = cat(2, polyT(:,1), polyT(:,2));
-           
-           param.regionExtent.poly = poly;
-           %Redrawing the polygon
-           hApi = iptgetapi(hPoly);
-           hApi.setPosition(poly);
-           
-           %Saving the resulting polygon
-           myhandles.param = param;
-           
-           guidata(fGui, myhandles);
-       end
+        
+        if(~isempty(hPoly))
+            hApi = iptgetapi(hPoly);
+            param.regionExtent.poly = hApi.getPosition();
+
+            %Only smooth the polygon if it exists.
+            poly = param.regionExtent.poly;
+            
+            %Parameterizing curve in terms of arc length
+            t = cumsum(sqrt([0,diff(poly(:,1)')].^2 + [0,diff(poly(:,2)')].^2));
+            %Find x and y positions as a function of arc length
+            polyFit(:,1) = spline(t, poly(:,1), t);
+            polyFit(:,2) = spline(t, poly(:,2), t);
+            
+            %Interpolate curve to make it less jaggedy, arbitrarily we'll
+            %set the number of points to be 50.
+            stepSize = (max(t)-min(t))/100.0;
+            
+            polyT(:,2) = interp1(t, polyFit(:,2),min(t):stepSize:max(t),'spline', 'extrap');
+            polyT(:,1) = interp1(t, polyFit(:,1),min(t):stepSize:max(t), 'spline', 'extrap');
+            
+            %Redefining poly
+            poly = cat(2, polyT(:,1), polyT(:,2));
+            
+            param.regionExtent.poly = poly;
+            %Redrawing the polygon
+            hApi = iptgetapi(hPoly);
+            hApi.setPosition(poly);
+            
+            %Saving the resulting polygon
+            myhandles.param = param;
+            
+            guidata(fGui, myhandles);
+        end
         
     end
 
@@ -1167,6 +1171,7 @@ hContrast = imcontrast(imageRegion);
         %Save the result to the param file associated with the data.
         saveFile = [param.dataSaveDirectory filesep 'param.mat'];
         save(saveFile, 'param');
+        disp(['Gut outline saved to the file: ', saveFile]);
     end
 
 
