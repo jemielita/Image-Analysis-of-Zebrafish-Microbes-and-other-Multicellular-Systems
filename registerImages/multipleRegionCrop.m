@@ -575,7 +575,6 @@ hContrast = imcontrast(imageRegion);
 
     function cropImages_Callback(hObject, eventdata)
 
-        
         %Only crop images in xy if hApi.getPosition exists.
         
         if(isfield(hApi, 'getPosition'))
