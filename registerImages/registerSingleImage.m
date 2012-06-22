@@ -112,33 +112,14 @@ for regNum=1:totalNumRegions
     yInF = yOutF - yOutI +yInI;
     
     if(imNum(regNum)~=-1)
+        imFileName = ...
+            strcat(scanDir,  'region_', num2str(regNum),filesep,...
+            colorType, filesep,'pco', num2str(imNum(regNum)),'.tif');
         
-        %To deal with two different ways of loading in our data-necessary
-        %in order to interface somewha efficiently with Hyugens software.
-        if(isfield(param, 'directoryStructType'))
-            loadType = param.directoryStructType;
-        else
-            loadType  = 'fullDirectory';
-        end
-            
-        switch loadType
-            
-            case 'fullDirectory'
-                
-                imFileName = ...
-                    strcat(scanDir,  'region_', num2str(regNum),filesep,...
-                    colorType, filesep,'pco', num2str(imNum(regNum)),'.tif');
-                
-                im(xOutI:xOutF,yOutI:yOutF) = imread(imFileName,...
-                    'PixelRegion', {[xInI xInF], [yInI yInF]}) + ...
-                    im(xOutI:xOutF,yOutI:yOutF);
-            case 'flatDirectory'
-                imFileName = [param.directoryName '_S', num2str(nScan),'nR', num2str(regNum),'_', colorType, '.tif'];
-                im(xOutI:xOutF, yOutI:yOutF) = imread(imFileName,...
-                    'PixelRegion', {[xInI xInF], [yInI yInF]},...
-                    'Index', imNum(regNum)+1) + ...
-                    im(xOutI:xOutF,yOutI:yOutF);
-        end
+        im(xOutI:xOutF,yOutI:yOutF) = imread(imFileName,...
+            'PixelRegion', {[xInI xInF], [yInI yInF]}) + ...
+            im(xOutI:xOutF,yOutI:yOutF);  
+    end
     
 end
 

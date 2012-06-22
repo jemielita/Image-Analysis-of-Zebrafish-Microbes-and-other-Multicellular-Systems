@@ -150,6 +150,8 @@ for colorNum =1:numColor
     %Also store the size of the registered image
     param.regionExtent.regImSize{colorNum}(1) = max(regLoc(:,1) +regLoc(:,3)-1);
     param.regionExtent.regImSize{colorNum}(2) = max(regLoc(:,2) +regLoc(:,4)-1);
+    
+    
 end
 
 
