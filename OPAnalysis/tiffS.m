@@ -12,7 +12,7 @@ if nargin==1
 end
 
 if nargin==0
-    [imLoc, pathN] = uigetfile('.tif', 'Select the image stack to load in.');
+    [imLoc, pathN] = uigetfile('.TIF', 'Select the image stack to load in.');
     imPath = [pathN imLoc];
     imL  = imfinfo(imPath, 'tif');
     
@@ -24,8 +24,10 @@ if nargin==0
 end
 
 %Where we'll save all the marker regions.
-saveDir = 'C:\jemielita\markers_fish3\';
+saveDir = '~/Documents/opercle/confocal_20min_fish3/';
 %saveDir = pathN;
+imPathBase = '/Volumes/pat/80_percent_103111/80_percent_lapse_real__w1Yoko GFP_s4_t';
+nextIm = 1;
 
 saveFile = saveDir;
 
@@ -65,7 +67,7 @@ bottomIndex = 1;
 
 title(segAxes, ['Top: ', num2str(topIndex)]);
 
-fN = [saveDir 'OP_Scan', sprintf('%03d', 120), '.mat'];
+fN = [saveDir 'OP_Scan', sprintf('%03d', 1), '.mat'];
 %Load the already thresholded images if we can.
 try
     imT = load(fN);
@@ -323,10 +325,14 @@ hImC = imcontrast(hIm);
                 disp('saving done!');
                 
                 %Load in a new set of images
-                nextIm = str2num(imPath(end-6:end-4));
+            %    nextIm = str2num(imPath(end-5:end-4));
+              %  nextIm = nextIm +7;
      %        nextIm = str2num(imPath(end-11:end-9));
-                nextIm = nextIm+1;
-                 imPathNew = [imPath(1:end-7), sprintf('%03d',nextIm), imPath(end-3:end)];
+                nextIm = nextIm+7;
+              %  nextIm = 8;
+   % imPathNew = [imPath(1:end-6), num2str(nextIm), '.TIF'];
+   imPathNew = [imPathBase num2str(nextIm) '.TIF'];
+                %                 imPathNew = [imPath(1:end-7), sprintf('%03d',nextIm), imPath(end-3:end)];
 %imPathNew = [imPath(1:end-12), sprintf('%03d', nextIm), imPath(end-8:end)];
 disp(imPathNew);
 %                 [imLoc, pathN] = uigetfile('.tif', 'Select the image stack to load in.',imPathNew);

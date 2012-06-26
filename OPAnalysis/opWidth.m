@@ -22,7 +22,7 @@
 
 function [convexPt, linePt, perimVal] = opWidth(imT,scanNum, microscope)
 
-plotData = 'false';
+plotData = 'true';
 
 convexPt = [];
 linePt = [];
@@ -124,14 +124,6 @@ switch microscope
 end
 X = cat(2, x,y,z);
 
-%Get the principal components
-[coeff,score,roots] = princomp(X);
-%We'll find a plane normal to the principal axis
-basis = coeff(:,2:3);
-
-normal = coeff(:,1); %The principal axis.
-
-[n,p] = size(X);
 meanX = mean(X,1);
 Xfit = repmat(meanX,n,1) + score(:,1:2)*coeff(:,1:2)';
 residuals = X - Xfit;
@@ -145,12 +137,12 @@ endpts = [meanX + t(1)*dirVect'; meanX + t(2)*dirVect'];
 if(strcmp(plotData, 'true'))
     plot3(endpts(:,1), endpts(:,2), endpts(:,3), 'k-'); 
 end
-% b = 0;
-% 
-% pause(2);
-% close all
-% 
-% return
+b = 0;
+
+pause(2);
+close all
+
+return
 
 
 %Parameterizing curve in terms of arc length
