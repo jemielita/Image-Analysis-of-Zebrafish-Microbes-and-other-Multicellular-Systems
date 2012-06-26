@@ -1,4 +1,4 @@
-%Calculate the maximum and minimum opercle widthe of a variety of averaging
+%Calculate the maximum and minimum opercle width of a variety of averaging
 %windows.
 
 
@@ -6,7 +6,7 @@ function perimVal = opVariableAverage(path, minS, maxS)
 maxW = 20;minW = 2;
 wVal = 2:2:20;
 
-perimVal = cell(maxS-minS+1, maxW-minW+1);
+perimVal = cell(maxS-minS+1, length(wVal));
 
 for nS = minS:maxS
     
