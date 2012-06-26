@@ -26,7 +26,7 @@ totalNumRegions = length(unique([param.expData.Scan.region]));
 totalNumScans = param.expData.totalNumberScans;
 totalNumColors = size(param.color,2);
 
-loadType = 'wholeStack'; %This is a slightly faster way to do it than loading in each images individually
+loadType = 'individual'; %This is a slightly faster way to do it than loading in each images individually
 allImages = [];
 
 %Create a new directory structure if necessary
@@ -78,7 +78,7 @@ for nS=1:totalNumScans
             %a reasonable assumption.
             
             %Same code as in registerSingleImage.m
-            %The the different regionExtent for different
+            %The different regionExtent for different
             %colors-necessary if there was a glitch in image
             %acquisition that made the two colors offset...should be a
             %rare bug but we have seen it.
@@ -105,15 +105,12 @@ for nS=1:totalNumScans
             switch loadType  
                 case 'individual'
                     %Load in each image one after another and then save
-                    tic;
                     saveIndividualImages();
-                    toc
                 case 'wholeStack'
                     %Allocate memory for this image stack if necessary
-                    tic;
                     saveWholeStack(); 
-                    toc
             end
+            
             
         end
 

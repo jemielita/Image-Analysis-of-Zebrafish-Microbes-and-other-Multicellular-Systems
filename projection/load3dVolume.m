@@ -41,7 +41,7 @@ for nZ = 1:totalZ
     try
         im(:,:,nZ)= imread(imFileName{1},'PixelRegion', {[xInI xInF], [yInI yInF]});
     catch
-        disp('This image doesnt exist-fix up your code!!!!');
+        disp('This image doesn't exist-fix up your code!!!!');
     end
 end
 

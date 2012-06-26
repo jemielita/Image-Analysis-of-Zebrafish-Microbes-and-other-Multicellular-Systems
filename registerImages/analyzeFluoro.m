@@ -23,12 +23,12 @@
 %        change any elements of param.
 
 
-function [data, param] = analyzeFluoro(data,param, type)
-
+function param = analyzeFluoro(param, type)
+data = '';
 %For each scan and color calculate all the desired features of the image.
 
 %Preallocate memory for the registered image, and the output images.
-im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
+im = zeros(param.regionExtent.regImSize{1}(1), param.regionExtent.regImSize{1}(2));
 
 switch lower(type)
     case 'mip'
@@ -46,15 +46,15 @@ end
 %Create the mask that will be used to outline only the gut
 [temp, imMask] = roifill(im, param.regionExtent.poly(:,1), param.regionExtent.poly(:,2));
 
-if strcmp(data,'bpass stack')
-    prompt = {'Pixel size of noise: ','Pixel size of object: '};
-    dlg_title = 'Filter Options'; num_lines = 1;
-    def = {'1','100'};
-    answer = inputdlg(prompt,dlg_title,num_lines,def);
-    global Glnoise Globject;
-    Glnoise = str2double(answer(1));
-    Globject = str2double(answer(2));
-end
+% if strcmp(data,'bpass stack')
+%     prompt = {'Pixel size of noise: ','Pixel size of object: '};
+%     dlg_title = 'Filter Options'; num_lines = 1;
+%     def = {'1','100'};
+%     answer = inputdlg(prompt,dlg_title,num_lines,def);
+%     global Glnoise Globject;
+%     Glnoise = str2double(answer(1));
+%     Globject = str2double(answer(2));
+% end
 
 for nScan=1:param.totalNumberScans
     %Going through each scan
@@ -87,15 +87,16 @@ for nScan=1:param.totalNumberScans
             %Apply the mask that outlines only the gut
             %Remove background intensity. In the red channel to background
             %pixel intenisty is ~ 109, while in the green it's 105
-            switch nColor
-                case 1
-                    im = im-105;
-
-                case 2
-                    im = im-109;                  
-            end
-            index = find(im<0);
-            im(index) = 0;%Suppress all negative values
+%             switch nColor
+%                 case 1
+%                     im = im-105;
+% 
+%                 case 2
+%                     im = im-109;                  
+%             end
+%             
+%             index = find(im<0);
+%             im(index) = 0;%Suppress all negative values
                 
             im(~imMask) = 0;
             %Calculate the desired features about this image
