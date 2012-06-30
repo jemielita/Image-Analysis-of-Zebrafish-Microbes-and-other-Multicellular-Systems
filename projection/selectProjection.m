@@ -64,15 +64,24 @@ im = calculateProjection(type);
             yInI = param.regionExtent.XY{colorNum}(nR,6);
             yInF = yOutF - yOutI +yInI;
             
-            im = load3dVolume(param,imVar,nR);
             fprintf(2, '.');
-            
+
             switch projType
                 case 'mip'
+                    %Use a different data type for maximum inten.
+                    %projections and total inten. projections. The latter
+                    %will need more memory than the former, since the
+                    %greatest intensity any pixel will have is the pixel
+                    %range of our camera: 16 bit.
+                    im = load3dVolume(param, imVar, nR);
                     mipR = max(im,[],3); %Get the maximum intensity projection for this region
                 case 'total'
+                    im = load3dVolume(param, imVar, nR, '32bit');
                     mipR = sum(im,3);
             end
+            
+            mipR = double(mipR);
+            
             
             imTot(xOutI:xOutF, yOutI:yOutF) = mipR + imTot(xOutI:xOutF, yOutI:yOutF);
         end

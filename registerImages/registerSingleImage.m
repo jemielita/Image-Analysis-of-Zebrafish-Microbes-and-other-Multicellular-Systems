@@ -142,6 +142,7 @@ for regNum=1:totalNumRegions
     
 end
 
+end
 
 for regNum = 2:totalNumRegions
     %Overlapping regions

@@ -22,7 +22,7 @@
 
 function [convexPt, linePt, perimVal] = opWidth(imT,scanNum, microscope)
 
-plotData = 'true';
+plotData = 'false';
 
 convexPt = [];
 linePt = [];
@@ -146,11 +146,12 @@ endpts = [meanX + t(1)*dirVect'; meanX + t(2)*dirVect'];
 if(strcmp(plotData, 'true'))
     plot3(endpts(:,1), endpts(:,2), endpts(:,3), 'k-'); 
 end
-b = 0;
-
-pause;
-
-return
+% b = 0;
+% 
+% pause;
+% close all
+% 
+% return
 
 
 %Parameterizing curve in terms of arc length

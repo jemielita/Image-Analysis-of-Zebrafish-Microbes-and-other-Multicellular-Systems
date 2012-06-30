@@ -24,7 +24,7 @@ if nargin==0
 end
 
 %Where we'll save all the marker regions.
-saveDir = 'C:\jemielita\mef2ca_sp7_mutants\segmented\fish14t30';
+saveDir = 'C:\jemielita\markers_fish3\';
 %saveDir = pathN;
 
 saveFile = saveDir;
@@ -64,8 +64,7 @@ bottomIndex = 1;
 
 title(segAxes, ['Top: ', num2str(topIndex)]);
 
-fn = [savedir 'OP_Scan30.mat'];
-%fN = [saveDir 'OP_Scan', sprintf('%03d', 120), '.mat'];
+fN = [saveDir 'OP_Scan', sprintf('%03d', 120), '.mat'];
 %Load the already thresholded images if we can.
 try
     imT = load(fN);

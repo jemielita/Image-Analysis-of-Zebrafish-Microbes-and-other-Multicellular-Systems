@@ -1337,8 +1337,9 @@ hContrast = imcontrast(imageRegion);
             case 'mip'
                 %'true'-> autoload the maximum intensity projection if it
                 %has already been calculated.
+                fprintf(1,'Calculating the maximum intensity projection for this scan number...');
                 im = selectProjection(param, 'mip', 'true', scanNum,color, zNum);
-                
+                fprintf(1, 'done!\n');
                 
         end
         
