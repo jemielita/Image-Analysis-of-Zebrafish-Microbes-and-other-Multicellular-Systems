@@ -166,6 +166,7 @@ hxyRegTable = uitable('Parent', fGui,...
    'RowName', rnames, 'Units', 'Normalized', 'Position', [ 0.50 0.02 0.23 0.19-offset],...
    'ColumnEditable', true);
 set(hxyRegTable, 'CellEditCallback', @manualRegisterImage_Callback);
+set(hxyRegTable, 'Visible', 'off');
 
 hMenuAlternateRegions = uibuttongroup('Parent', fGui, 'Units', 'Normalized',...
     'Position', [ 0.76 0.02 0.05 0.1]);
@@ -176,7 +177,7 @@ hReg2 = uicontrol('Parent', hMenuAlternateRegions,'Style', 'Radio', 'String', 'E
 hReg3 = uicontrol('Parent', hMenuAlternateRegions,'Style', 'Radio', 'String', 'Both','Units', 'Normalized',...
     'Position', [0.1 0.70 0.9 0.25]);
 set(hMenuAlternateRegions, 'SelectionChangeFcn', @alternateRegions_Callback);
-
+set(hMenuAlternateRegions, 'Visible', 'off');
 
 %%%%%%Create the displayed control panels
 
@@ -342,8 +343,11 @@ hContrast = imcontrast(imageRegion);
         fprintf(2, 'Done!\n');
     end
 
+
     function saveImage_Callback(hObject, eventdata)
-        [filename, pathname, fIndex] = uiputfile('.tif', 'Save the displayed scan.');
+
+        [filename, pathname, fIndex] = uiputfile('.tif', 'Save the displayed scan.',...
+            [param.directoryName filesep 'temp.tif']);
         if isequal(filename,0) || isequal(pathname,0)
             disp('User pressed cancel-image will not be saved')
         else
@@ -356,6 +360,7 @@ hContrast = imcontrast(imageRegion);
         
             imwrite(im, strcat(pathname,filename), 'tiff');
         end
+        
               
     end
 
@@ -365,7 +370,7 @@ hContrast = imcontrast(imageRegion);
        %your choice...currently this will only be used to create a script
        %for cropping images.
        
-       [fileName, saveDir]  = uiputfile('*.mat', 'Select a location to save the param.mat file');
+       [fileName, saveDir]  = uiputfile('*.mat', 'Select a location to save the param.mat file', [param.directoryName filesep 'param.mat']);
        if(fileName==0)
            return
        end
@@ -442,7 +447,7 @@ hContrast = imcontrast(imageRegion);
         colorNum = int16(colorNum);
         
         imBig = zeros(param.regionExtent.regImSize{colorNum}(1), param.regionExtent.regImSize{colorNum}(2));
-        for zStackN=zMin:zMax
+        for zStackN=zMin:zMax-5
             imOut = getRegisteredImage(scanNum, color, zStackN, imBig, data, param);
             index = find(imOut>imBig);
             imBig(index) = imOut(index);
@@ -570,7 +575,6 @@ hContrast = imcontrast(imageRegion);
 
     function cropImages_Callback(hObject, eventdata)
 
-        
         %Only crop images in xy if hApi.getPosition exists.
         
         if(isfield(hApi, 'getPosition'))
@@ -785,9 +789,19 @@ hContrast = imcontrast(imageRegion);
     function getImageArray_Callback(hObject, eventdata)
         if(strcmp(get(hMenuRegisterManual, 'Checked'), 'on'))
             set(hMenuRegisterManual, 'Checked', 'off');
+
+            set(hxyRegTable, 'Visible', 'off');
+            set(hMenuAlternateRegions, 'Visible', 'off');
+            
         else
             set(hMenuRegisterManual, 'Checked', 'on');
             getIndividualRegions();
+            
+            set(hxyRegTable, 'Visible', 'on');
+            set(hMenuAlternateRegions, 'Visible', 'on');
+            
+            
+            
         end
             
     end
@@ -1100,36 +1114,40 @@ hContrast = imcontrast(imageRegion);
     end
 
     function smoothPoly_Callback(hObject, eventdata)
-       if(isfield(param.regionExtent, 'poly'));
-           %Only smooth the polygon if it exists.
-           poly = param.regionExtent.poly;
-           
-           %Parameterizing curve in terms of arc length
-           t = cumsum(sqrt([0,diff(poly(:,1)')].^2 + [0,diff(poly(:,2)')].^2));
-           %Find x and y positions as a function of arc length
-           polyFit(:,1) = spline(t, poly(:,1), t);
-           polyFit(:,2) = spline(t, poly(:,2), t);
-           
-           %Interpolate curve to make it less jaggedy, arbitrarily we'll
-           %set the number of points to be 50.
-           stepSize = (max(t)-min(t))/100.0;
-           
-           polyT(:,2) = interp1(t, polyFit(:,2),min(t):stepSize:max(t),'spline', 'extrap');
-           polyT(:,1) = interp1(t, polyFit(:,1),min(t):stepSize:max(t), 'spline', 'extrap');
-           
-           %Redefining poly
-           poly = cat(2, polyT(:,1), polyT(:,2));
-           
-           param.regionExtent.poly = poly;
-           %Redrawing the polygon
-           hApi = iptgetapi(hPoly);
-           hApi.setPosition(poly);
-           
-           %Saving the resulting polygon
-           myhandles.param = param;
-           
-           guidata(fGui, myhandles);
-       end
+        
+        if(~isempty(hPoly))
+            hApi = iptgetapi(hPoly);
+            param.regionExtent.poly = hApi.getPosition();
+
+            %Only smooth the polygon if it exists.
+            poly = param.regionExtent.poly;
+            
+            %Parameterizing curve in terms of arc length
+            t = cumsum(sqrt([0,diff(poly(:,1)')].^2 + [0,diff(poly(:,2)')].^2));
+            %Find x and y positions as a function of arc length
+            polyFit(:,1) = spline(t, poly(:,1), t);
+            polyFit(:,2) = spline(t, poly(:,2), t);
+            
+            %Interpolate curve to make it less jaggedy, arbitrarily we'll
+            %set the number of points to be 50.
+            stepSize = (max(t)-min(t))/100.0;
+            
+            polyT(:,2) = interp1(t, polyFit(:,2),min(t):stepSize:max(t),'spline', 'extrap');
+            polyT(:,1) = interp1(t, polyFit(:,1),min(t):stepSize:max(t), 'spline', 'extrap');
+            
+            %Redefining poly
+            poly = cat(2, polyT(:,1), polyT(:,2));
+            
+            param.regionExtent.poly = poly;
+            %Redrawing the polygon
+            hApi = iptgetapi(hPoly);
+            hApi.setPosition(poly);
+            
+            %Saving the resulting polygon
+            myhandles.param = param;
+            
+            guidata(fGui, myhandles);
+        end
         
     end
 
@@ -1152,6 +1170,7 @@ hContrast = imcontrast(imageRegion);
         %Save the result to the param file associated with the data.
         saveFile = [param.dataSaveDirectory filesep 'param.mat'];
         save(saveFile, 'param');
+        disp(['Gut outline saved to the file: ', saveFile]);
     end
 
 
@@ -1318,8 +1337,9 @@ hContrast = imcontrast(imageRegion);
             case 'mip'
                 %'true'-> autoload the maximum intensity projection if it
                 %has already been calculated.
+                fprintf(1,'Calculating the maximum intensity projection for this scan number...');
                 im = selectProjection(param, 'mip', 'true', scanNum,color, zNum);
-                
+                fprintf(1, 'done!\n');
                 
         end
         

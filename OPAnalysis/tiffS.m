@@ -31,7 +31,6 @@ nextIm = 1;
 
 saveFile = saveDir;
 
-
 im = mat2gray(im);
 
 h_fig = figure;

@@ -41,7 +41,6 @@ yR = sum(xy,2);
 yMin = find(yR,1,'first');
 yMax = find(yR, 1, 'last');
 
-
 zR = sum(imT,1);
 zR = squeeze(zR);
 zR = sum(zR,1);
@@ -88,7 +87,8 @@ indP = find(imPerim ==1);
 
 switch microscope
     case 'confocal'
-        xp = 0.3636*xp; yp = 0.3636*yp;
+        %        xp = 0.3636*xp; yp = 0.3636*yp;
+        xp = 0.2830*xp; yp = 0.2830*yp;
     case 'lightsheet'
         xp = 0.1625*xp; yp = 0.1625*yp;
 end
@@ -114,8 +114,9 @@ ind = find(imT==1);
 switch microscope
     case 'confocal'
         %For the Confocal Data
-        x = 0.3636*x;
-        y = 0.3636*y;
+        %x = 0.3636*x;
+        %y = 0.3636*y;
+        x = 0.283*x; y= 0.283*y;
     case 'lightsheet'
         %For the Light sheet data
         x = 0.1625*x;
@@ -137,12 +138,21 @@ endpts = [meanX + t(1)*dirVect'; meanX + t(2)*dirVect'];
 if(strcmp(plotData, 'true'))
     plot3(endpts(:,1), endpts(:,2), endpts(:,3), 'k-'); 
 end
+<<<<<<< TREE
 b = 0;
 
 pause(2);
 close all
 
 return
+=======
+% b = 0;
+% 
+% pause;
+% close all
+% 
+% return
+>>>>>>> MERGE-SOURCE
 
 
 %Parameterizing curve in terms of arc length

@@ -82,14 +82,13 @@ end
 minZ = min([param.expData.Scan.zBegin]);
 maxZ = max([param.expData.Scan.zEnd]);
 
-%Probably not appropriate, but let's round minZ and maxZ to the nearest
+%Probably not appropriate (or necessary), but let's round minZ and maxZ to the nearest
 %micron (to deal with a problem with previous data collection-we didnt'
 %require that all scans were taken at the same planes).
 minZ = 10*round(minZ/10);
 maxZ = 10*round(maxZ/10);
 
 stepZ = unique([param.expData.Scan.stepSize]);
-
 if(length(stepZ)~=1)
    disp('This code assumes the step size was the same for all scans. It isnt!')
    return;
@@ -113,7 +112,7 @@ for regNum=1:totalNumRegions
     imArray{regNum} = 10*round(imArray{regNum}/10);
     
     %Again a little bit sketchy-force all z heights to be in even steps of
-    %microns-this is do deal with the step size being 2 microns for the
+    %microns-this is to deal with the step size being 2 microns for the
     %long term scan.
     imArray{regNum} = imArray{regNum} + mod(imArray{regNum},2);
 end
@@ -127,6 +126,24 @@ for regNum=1:totalNumRegions
         overlapReg(find(posArray==arr(zIndex)),regNum) = zIndex-1;
         %-1 to deal w/ images syntax (starts at pco0.tif, because Rick was a CS major);
         %Also only go up to length(arr)-1 for the same reason.
+        
+        %Check to make sure that this image exists. We'll only check in the
+        %first scan directory, for the first color. There's no reason why
+        %ths should change from scan to scan
+        fileName = [param.directoryName filesep 'Scans' filesep 'scan_1',...
+            filesep, 'region_',num2str(regNum), filesep, param.color{1} filesep,...
+            'pco', num2str(zIndex-1), '.tif'];
+        
+        try
+            isFile = fileattrib(fileName);
+            if(isFile==0)
+                overlapReg(find(posArray==arr(zIndex)),regNum) = -1;
+            end
+        catch 
+            %If it's not a file then set this location to be -1
+            overlapReg(find(posArray==arr(zIndex)),regNum) = -1;
+        end
+        
     end
 end
 
