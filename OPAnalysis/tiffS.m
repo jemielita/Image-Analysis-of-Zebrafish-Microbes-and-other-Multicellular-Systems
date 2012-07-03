@@ -26,7 +26,7 @@ end
 %Where we'll save all the marker regions.
 saveDir = '~/Documents/opercle/confocal_20min_fish3/';
 %saveDir = pathN;
-imPathBase = '/Volumes/pat/80_percent_103111/80_percent_lapse_real__w1Yoko GFP_s4_t';
+imPathBase = '/Volumes/pat/80_percent_103111/80_percent_lapse_real__w1Yoko GFP_s3_t';
 nextIm = 1;
 
 saveFile = saveDir;
