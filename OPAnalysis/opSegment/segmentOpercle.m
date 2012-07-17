@@ -1,8 +1,13 @@
-%Function to cycle through a series of tiff images
-
+%Function to cycle through a series of tiff images of opercles and properly
+%segment them. 
+%
+%Image stacks must have the following format in order to be recognized by
+%the program:
+% (baseName)(number)(.TIF)
+% ex: 'sp7_mef2ca_lapse_w1Yoko GFP_s14_t1.TIF'
+%number must be written without any leading zeros (e.g.  12 not 012)
+%
 function [] = segmentOpercle(varargin)
-
-
 
 if nargin==1
     im = mat2gray(varargin{1});
@@ -10,42 +15,89 @@ if nargin==1
 end
 
 if nargin==0
-    [imLoc, pathN] = uigetfile('.TIF', 'Select the image stack to load in.');
+    [imLoc, pathN] = uigetfile('.TIF', 'Select the first image to load in.');
     imPath = [pathN imLoc];
-    imL  = imfinfo(imPath, 'tif');
     
+    %Get string base of these images, and the first scan number
+    thisIm = regexp(imLoc, '\d+(?=.TIF)');
+    
+    baseIm = imLoc(1:thisIm-1);
+    thisIm = imLoc(thisIm:end-4);
+    thisIm = str2num(thisIm);
+    minIm = thisIm;
+    
+    [imLocEnd, pathNEnd] = uigetfile('.TIF', 'Select the last image in this stack.');
+    imPathEnd = [pathNEnd imLocEnd];
+    
+    imEnd = regexp(imLocEnd, '\d+(?=.TIF)');
+    
+    maxIm = imLocEnd(imEnd:end-4);
+    maxIm = str2num(maxIm);
+    
+    saveDir = uigetdir(pathN, 'Select directory to save segmented opercles.');
+    saveBase = inputdlg('Base name for saved opercles', '', 1, {baseIm});
+    
+    imL  = imfinfo(imPath, 'tif');
     im = zeros(imL(1).Height, imL(1).Width, size(imL,1));
     
-    for i=1:size(imL,1)
-        im(:,:,i) = imread(imPath, i);
+    %Number of images in this stack
+    minN = 1;
+    maxN = size(imL,1);
+    index = minN;
+    
+    %Load in first image stack
+    allIm = 1:maxN;
+    for i=1:maxN;
+        im(:,:,i) = imread(imPath, 'Index', i);
     end
+    
 end
-
-%Where we'll save all the marker regions.
-saveDir = '~/Documents/opercle/confocal_20min_fish3/';
-%saveDir = pathN;
-imPathBase = '/Volumes/pat/80_percent_103111/80_percent_lapse_real__w1Yoko GFP_s3_t';
-nextIm = 1;
-
-saveFile = saveDir;
 
 im = mat2gray(im);
 
 h_fig = figure;
+
 set(h_fig,'KeyPressFcn',{@key_Callback,h_fig});
 set(h_fig, 'WindowScrollWheelFcn', {@mouse_Callback, h_fig});
 
-minN = 1;
-maxN = size(im,3);
-index = 1;
+%Before segmenting opercles find an appropriate cropping window for this
+%entire time series
+isCropped ='false';
+hImCrop = imshow(sum(im,3),[]);
+hImC = imcontrast(hImCrop);
+[~, hCropRect] = imcrop(h_fig);
+hCropRect = round(hCropRect);
+%Make sure hCropRect is inside figure window
+if(hCropRect(1)<1)
+    hCropRect(1) = 1;
+end
+if(hCropRect(2)<1)
+    hCropRect(2) = 1;
+end
+if(hCropRect(3)+hCropRect(1)>size(im,1))
+    hCropRect(3) = size(im,1)-hCropRect(1);
+end
 
+
+if(hCropRect(4)+hCropRect(2)>size(im,2))
+    hCropRect(4) = size(im,2)-hCropRect(2);
+end
+%Recrop using the adjusted cropping rectangle
+imC = imcrop(im(:,:,1), hCropRect);
+
+isCropped = 'true';
+%Reallocate memory in variable im to only store as much as is needed for the cropped
+%region
+im = zeros(size(imC,1), size(imC,2), maxN);
+loadImage();
+
+%Now onto the actual image segmentation
 origAxes = subplot(1,2,1);
 hIm = imshow(im(:,:,1),[]);
 origT = title(index);
 
 segAxes = subplot(1,2,2);
 segIm = imshow(im(:,:,1),[]);
-
 
 imT = im;
 
@@ -72,24 +124,25 @@ try
 catch
     imT = roughSegment(im);
 end
-%Only keep the regions that intersect the line that we drew through the
-%center of the opercle.
-% 
-% xx = pos(1,1) + (1:1000)*(pos(2,1)-pos(1,1))/1000;
-% yy = pos(1,2) + (1:1000)*(pos(2,2)-pos(1,2))/1000;
 
-b = 0;
-
-hImC = imcontrast(hIm);
     function mouse_Callback(varargin)
-       counter = varargin{2}.VerticalScrollCount;
-       
-       if(counter==-1)
-           zUp();
-       elseif(counter==1)
-           zDown();
-       end
-       
+        counter = varargin{2}.VerticalScrollCount;
+        switch isCropped
+            case 'true'
+                if(counter==-1)
+                    zUp();
+                elseif(counter==1)
+                    zDown();
+                end
+            case 'false'
+                if(counter==-1)
+                    zUpCrop();
+                elseif(counter==1)
+                    zDownCrop();
+                end
+                
+                
+        end
        
      
     end
@@ -173,6 +226,26 @@ hImC = imcontrast(hIm);
         
         
     end
+
+
+    function zUpCrop()      
+        %When cropping the images just scan through the stack
+        if(thisIm~=maxIm)
+            thisIm = thisIm+1;
+            loadImage();
+            set(hImCrop, 'CData', sum(im,3));
+            
+        end
+    end
+    function zDownCrop()
+        %When cropping the images just scan through the stack
+       if(thisIm~=minIm)
+           thisIm = thisIm-1;
+           loadImage();
+           set(hImCrop, 'CData', sum(im,3));
+           
+       end
+    end
     function imOut = onlyOP(imIn, xx, yy)
         xx = round(xx);yy = round(yy);
         
@@ -201,6 +274,17 @@ hImC = imcontrast(hIm);
     function key_Callback(varargin)
 
         val = varargin{1,2}.Key;
+        switch isCropped
+            case 'true'
+                key_segmentCallback(val);
+            case 'false'
+                key_cropCallback(val);
+        end
+
+    end
+
+    function key_segmentCallback(val)
+
 
         switch val
             
@@ -475,17 +559,60 @@ disp(imPathNew);
                 end
                 
                 
-        end
-        
-        
-
+        end 
     end
 
+    function key_cropCallback(val)
+       switch val
+           case 'uparrow'
+               zUpCrop();
+           case 'downarrow'
+               zDownCrop();
+           case 'leftarrow'
+               if(thisIm~=minIm)
+                   thisIm = thisIm-1;
+                   loadImage();
+                   set(hImCrop, 'CData', max(im,3));
+               end
+           case 'rightarrow'
+               if(thisIm~=maxIm)
+                  thisIm = thisIm+1;
+                  loadImage();
+                  set(hImCrop, 'CData', max(im,3));
+               end
+               
+               
+       end
+    end
 
     function outIm = segmentIm(im)
        
-       outIm =imT(:,:,index);
+       outIm = imT(:,:,index);
         
+    end
+    
+    function loadImage()
+        %Load in a new image stack
+        imPath = [pathN baseIm num2str(thisIm) '.TIF'];
+        switch isCropped
+            case 'false'
+                for i=1:maxN
+                    im(:,:,i) = imread(imPath, 'Index', i);
+                end
+                
+            case 'true'
+                xMin = hCropRect(1);
+                yMin = hCropRect(2);
+                xMax = xMin + hCropRect(3);
+                yMax = yMin + hCropRect(4);
+            for i=1:maxN
+                im(:,:,i) = imread(imPath, 'Index', i, ...
+                    'PixelRegion', {[yMin, yMax],[xMin, xMax]});
+            end
+            
+        end
+            
+        im = mat2gray(im);
     end
 
 

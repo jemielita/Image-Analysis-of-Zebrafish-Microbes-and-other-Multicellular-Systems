@@ -471,8 +471,6 @@ disp(imPathNew);
                     fn = [saveFile outM '.mat'];
                     evalC = ['save(' ,'''' , fn , ''' ,' ,' ''imT'' )'];
                     eval(evalC);
-                    b = 0;
-                    
                     
                 end
                 
