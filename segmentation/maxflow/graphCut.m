@@ -9,7 +9,7 @@
 %
 %Written by: Matthew Jemielita, July 13, 2012
 
-function [] = graphCut(varargin)
+function varargout = graphCut(varargin)
 
 %Before doing anything with more complicated images, let's use a simple
 %test image
@@ -23,36 +23,42 @@ im(50:60, 50:60) = im(50:60,50:60)+1;
 end
 
 if(nargin==1)
-   im = varargin{1};
-   im = mat2gray(im);
-   [height, width] = size(im);
+    im = varargin{1};
+    
+    figure; imshow(im,[]);
+    
+    %Put down a boundary outside the opercle
+    hPolyOut = impoly(gca, 'Closed', true);
+    posOut = wait(hPolyOut);
+    maskSink = ~poly2mask(posOut(:,1), posOut(:,2), size(im,1), size(im,2));
+    
+    %Put a marker inside the opercle
+    hPolyIn = impoly(gca, 'Closed', true);
+    posIn = wait(hPolyIn);
+    maskSource = poly2mask(posIn(:,1), posIn(:,2), size(im,1), size(im,2));
+    
 end
-N = height*width;
+
+if(nargin==3)
+    im = varargin{1};
+    maskSource = varargin{2};
+    maskSink = varargin{3};
+end
+
 %Construct a graph
+im = mat2gray(im);
+[height, width] = size(im);
+N = height*width;
+
 E = edges4connected(height,width);
 
-V = assignBoundaryPenalty(E,im,0.1);
+V = assignBoundaryPenalty(E,im,0.1, 'undirected');
 
 A = sparse(E(:,1),E(:,2),V,N,N,4*N);
-
-%Note: need to set the weights in a slightly different, more adjustable
-%way, in order to fully exploit the underlying algorithm.
 
 %Set terminal weights.
 %Note: this will in the future we a user-chosen region, or  predict based
 %on previous images in the time seris.
-
-figure; imshow(im,[]);
-
-%Put down a boundary outside the opercle
-hPolyOut = impoly(gca, 'Closed', true);
-posOut = wait(hPolyOut);
-maskSink = ~poly2mask(posOut(:,1), posOut(:,2), size(im,1), size(im,2));
-
-%Put a marker inside the opercle
-hPolyIn = impoly(gca, 'Closed', true);
-posIn = wait(hPolyIn);
-maskSource = poly2mask(posIn(:,1), posIn(:,2), size(im,1), size(im,2));
 
 %Use inside marker to estimate the background intensity inside the opercle
 %(should do this slightly different in the future)
@@ -69,14 +75,18 @@ isSink = find(maskSink==1);
 %declared to be in the sink/source. This should guarantee that that
 %particular link is cut.
 K = 1+max(V(:));
-%Need to find an optimal value for lambda, currently just using value from
-%the paper
-lambda = 0.2;
+%Need to find an optimal value for lambda. For opercles it seems like a
+%rather low value is appropriate
+lambda = 0.1;
 T = setRegionPenalty(isSource, isSink, sourceHist, sinkHist,im,K,lambda);
 
-[~, labels] = maxflow(A,T);
+[flow, labels] = maxflow(A,T);
 labels = reshape(labels, [height width]);
-figure;  imshow(4*double(labels)+3*im+maskSource,[]);
+%figure;  imshow(4*double(labels)+3*im+maskSource,[]);
+
+if(nargout==1)
+    varargout{1} = labels;
+end
 
 end
 
@@ -164,12 +174,22 @@ T = sparse([1:numElIm, 1:numElIm], [1*ones(numElIm,1); 2*ones(numElIm,1)],...
 end
 
 
-function V = assignBoundaryPenalty(E,im, bkgNoise)
+function V = assignBoundaryPenalty(E,im, bkgNoise, weightType)
 
 %Harsh penalty for difference in pixel difference > bkgNoise, but very small if
 %pixel difference < bkgNoise. Need to measure this noise.
-V = exp(-(1./bkgNoise^2)*(im(E(:,1))-im(E(:,2)) ).^2  );
 
+%For a directed graph
+
+switch weightType
+    
+    case 'directed'
+        intenDiff = im(E(:,1))-im(E(:,2));
+        V = ones(size(intenDiff,1),1);
+        V(intenDiff>0) = exp(-(1./bkgNoise^2)*(im(E(intenDiff>0,1))-im(E(intenDiff>0,2)) ).^2  );
+    case 'undirected'
+        V = exp(-(1./bkgNoise^2)*(im(E(:,1))-im(E(:,2)) ).^2  );
+end
 
 
 end
