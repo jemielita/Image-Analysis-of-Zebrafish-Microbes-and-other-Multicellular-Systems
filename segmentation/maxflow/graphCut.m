@@ -39,10 +39,30 @@ if(nargin==1)
     
 end
 
-if(nargin==3)
+if(nargin>=3)
     im = varargin{1};
     maskSource = varargin{2};
     maskSink = varargin{3};
+    
+    %Use inside marker to estimate the background intensity inside the opercle
+    %(should do this slightly different in the future)
+    isSource = find(maskSource==1);
+    isSink = find(maskSink==1);
+
+end
+
+if(nargin==3)    
+   
+    %Based on pixel intensities inside and outside regions of interest, get a
+    %probability distribution for a given pixel's intensity to be in the source
+    %or sink.
+    [sourceHist, sinkHist] = regionIntensityEstimation(im, isSource, isSink);
+
+end
+if(nargin==4)
+    intenEst = varargin{4};
+    sinkHist = intenEst{1,:};
+    sourceHist = intenEst{2,:};
 end
 
 %Construct a graph
@@ -59,16 +79,6 @@ A = sparse(E(:,1),E(:,2),V,N,N,4*N);
 %Set terminal weights.
 %Note: this will in the future we a user-chosen region, or  predict based
 %on previous images in the time seris.
-
-%Use inside marker to estimate the background intensity inside the opercle
-%(should do this slightly different in the future)
-isSource = find(maskSource==1);
-isSink = find(maskSink==1);
-
-%Based on pixel intensities inside and outside regions of interest, get a
-%probability distribution for a given pixel's intensity to be in the source
-%or sink.
-[sourceHist, sinkHist] = regionIntensityEstimation(im, isSource, isSink);
 
 %1+maximum cost for any intensity pixel-pixel link on the image.
 %Used to assign the cost of a pixel to be in the source/sink when we've

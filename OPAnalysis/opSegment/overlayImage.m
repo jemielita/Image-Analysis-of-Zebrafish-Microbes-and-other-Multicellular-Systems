@@ -3,7 +3,7 @@
 %Function makes regions in mask show up as slightly more red than the rest
 %of the image.
 
-function im = overlayIm(varargin)
+function im = overlayImage(varargin)
 
 if nargin==2
     imIn = varargin{1};
@@ -42,7 +42,6 @@ if nargin==4
     mask1(mask2>0) = 0;
     mask1(mask3>0) = 0;
  
-    mask2(mask1>0)
     im(:,:,1) = im(:,:,1) + 0.1*mask1;
     im(:,:,3) = im(:,:,3)  + 0.1*mask3;
     im(:,:,2) = im(:,:,2) + 0.1*mask2;
