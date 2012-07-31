@@ -1,3 +1,5 @@
+% curveMask 
+
 function mask = curveMask(BW,line,param, type)
 
 xx = line(:,1);
@@ -42,8 +44,7 @@ for i=2:length(xx)-1
         else
             mask(:,:,mComp) = thisMask + mask(:,:,mComp);
             break
-        end
-        
+        end      
     end
         
 end
@@ -53,7 +54,6 @@ fprintf(2,'done!\n');
 while(~any(mask(:,:,end)>0))
     mask(:,:,end) = [];
 end
-
 
 end
 
