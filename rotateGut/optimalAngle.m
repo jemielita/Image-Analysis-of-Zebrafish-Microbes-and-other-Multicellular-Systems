@@ -20,7 +20,7 @@ ind = find(mask==1);
 [x,y] = ind2sub(size(mask), ind);
 X = cat(1,x',y');
 
-[~, angle] = minBoundingBox(X);
+[~, angle,~, ~] = minBoundingBox(X);
 
 %mlj: note the code below could be run *much* faster if only the points on
 %the perim are rotated.

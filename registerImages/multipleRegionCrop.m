@@ -1212,9 +1212,24 @@ hContrast = imcontrast(imageRegion);
         param.centerLine = hLine.getPosition();
         myhandles.param = param;
         guidata(fGui, myhandles);
-
-        saveFile = [param.dataSaveDirectory filesep 'param.mat'];
-        save(saveFile, 'param');
+        
+        if(isfield(param, 'dataSaveDirectory'))
+            saveFile = [param.dataSaveDirectory filesep 'param.mat'];
+            save(saveFile, 'param');
+        else
+            prompt = ['No data save directory chosen! Choose a directory to save data from:  '...
+                param.directoryName];
+            folderName = uigetdir(pwd, prompt);
+            if(folderName ==0)
+                disp('No directory chosen-not saving param file');
+                return
+            else
+                param.dataSaveDirectory = folderName;
+                saveFile = [param.dataSaveDirectory filesep 'param.mat'];
+                save(saveFile, 'param');
+            end
+        end
+        
     end
     function loadGutCenter_Callback(hObject, eventdata)
         if(isfield(param, 'centerLine'))

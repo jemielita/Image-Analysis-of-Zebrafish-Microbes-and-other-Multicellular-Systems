@@ -15,7 +15,7 @@
 %
 % OUTPUT: cutVal: cell array of size n x 4, where n is the number of
 % different regions in the optimal cut. cutVal{i,1} = position along
-% the line given by param.centerLine where the optimal cut. cutVal{i,2} =
+% the line given by param.centerLine where the optimal cut is located. cutVal{i,2} =
 % which regions are included in this particular region.
 % cutVal{i,3} = angle to rotate the original image by to get the optimal
 % image stack size.
@@ -89,6 +89,7 @@ while(isEndGut ==false)
     cutVal{cutIndex, 4} = rotImSize;
     temp = cutPoint;
       
+    fprintf(1, '\n');
     disp(['cut Found: ', num2str(cutPoint)]);
     %Estimate for where the next cut should be
     %minus one  to use w/ getOrthVect
@@ -185,7 +186,7 @@ end
             end
 
             its = its+1;
-            
+            fprintf(1, '.');
         end
         
       

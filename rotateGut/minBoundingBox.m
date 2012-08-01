@@ -1,13 +1,13 @@
-function [bb, angle] = minBoundingBox(X)
+function [bb, theta,height, width] = minBoundingBox(X)
 % compute the minimum bounding box of a set of 2D points
-%   Use:   [boundingBox, angle] = minBoundingBox(point_matrix)
+%   Use:   [boundingBox, theta] = minBoundingBox(point_matrix)
 %
 % Input:  2xn matrix containing the [x,y] coordinates of n points
 %         *** there must be at least 3 points which are not collinear
 % output: bb: 2x4 matrix containing the coordinates of the bounding box corners
-%         angle: angle in degrees that the 2D set of points needs to be rotated by in
+%         theta: theta in degrees that the 2D set of points needs to be rotated by in
 %         order to get the minimal bounding box
-% Example : generate a random set of point in a randomly rotated rectangle
+% Example : generate a random set of point in a randomly rotated recttheta
 %     n = 50000;
 %     t = pi*rand(1);
 %     X = [cos(t) -sin(t) ; sin(t) cos(t)]*[7 0; 0 2]*rand(2,n);
@@ -26,19 +26,19 @@ function [bb, angle] = minBoundingBox(X)
 k = convhull(X(1,:),X(2,:));
 CH = X(:,k);
 
-% compute the angle to test, which are the angle of the CH edges as:
+% compute the theta to test, which are the theta of the CH edges as:
 %   "one side of the bounding box contains an edge of the convex hull"
 E = diff(CH,1,2);           % CH edges
-T = atan2(E(2,:),E(1,:));   % angle of CH edges (used for rotation)
-T = unique(mod(T,pi/2));    % reduced to the unique set of first quadrant angles
+T = atan2(E(2,:),E(1,:));   % theta of CH edges (used for rotation)
+T = unique(mod(T,pi/2))-(pi/4); % reduced to the unique set of theta between +-45 degrees.
 
 % create rotation matrix which contains
-% the 2x2 rotation matrices for *all* angles in T
+% the 2x2 rotation matrices for *all* thetas in T
 % R is a 2n*2 matrix
-R = cos( reshape(repmat(T,2,2),2*length(T),2) ... % duplicate angles in T
-       + repmat([0 -pi ; pi 0]/2,length(T),1));   % shift angle to convert sine in cosine
+R = cos( reshape(repmat(T,2,2),2*length(T),2) ... % duplicate thetas in T
+       + repmat([0 -pi ; pi 0]/2,length(T),1));   % shift theta to convert sine in cosine
 
-% rotate CH by all angles
+% rotate CH by all thetas
 RCH = R*CH;
 
 % compute border size  [w1;h1;w2;h2;....;wn;hn]
@@ -46,8 +46,8 @@ RCH = R*CH;
 bsize = max(RCH,[],2) - min(RCH,[],2);
 area  = prod(reshape(bsize,2,length(bsize)/2));
 
-% find minimal area, thus the index of the angle in T 
-[a,i] = min(area);
+% find minimal area, thus the index of the theta in T 
+[~,i] = min(area);
 
 % compute the bound (min and max) on the rotated frame
 Rf    = R(2*i+[-1 0],:);   % rotated frame
@@ -62,8 +62,14 @@ bb(:,1) = bmin(1)*Rf(:,1) + bmin(2)*Rf(:,2);
 bb(:,2) = bmin(1)*Rf(:,1) + bmax(2)*Rf(:,2);
 bb(:,3) = bmax(1)*Rf(:,1) + bmax(2)*Rf(:,2);
 
-angle = T(i);
-angle = rad2deg(angle);
-angle = 90-angle;
+
+%Get angle to rotate mask by
+theta = T(i);
+theta = rad2deg(theta);
+
+theta = -theta;
+%Get height and width of the bounding box
+width = bsize(2*i); width = round(width);
+height = bsize(2*i-1);height = round(height);
 
 end
