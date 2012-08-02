@@ -48,7 +48,6 @@ for numDir = 1:length(scanLoc)
         param.regionExtent.regImSize(2));
     mask = curveMask(BW, param.centerLine, param,'rectangle');
     param.mask = mask;
-  
     
     %% Saving the parameters created.
     %Location that the results of the data will be saved to

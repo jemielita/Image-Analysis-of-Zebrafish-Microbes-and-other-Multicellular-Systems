@@ -1,4 +1,5 @@
-% curveMask 
+%curveMask: For a given mask, and  line that runs down the center of it,
+%calculate 
 
 function mask = curveMask(BW,line,param, type)
 
@@ -39,8 +40,7 @@ for i=2:length(xx)-1
                 continue %Continue comparing masks if you're not at the end of the array of masks.
             else
                 mask(:,:,mComp+1) = thisMask; %Enlarge the array storing the masks.
-            end
-            
+            end            
         else
             mask(:,:,mComp) = thisMask + mask(:,:,mComp);
             break

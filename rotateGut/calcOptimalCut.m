@@ -5,7 +5,7 @@
 % once. As a result we need to divide the gut up into smaller chunks when
 % doing analysis.
 %
-% USAGE: cutVal = calcOptimalCut(param)
+% USAGE: cutVal = calcOptimalCut(lengthOverlap, param)
 %
 % INPUT: param: parameter file associated with a particular fish.
 %        This function requires two values in param to be set that aren't
@@ -14,9 +14,10 @@
 %        2) param.centerLine-gives the approximate center of the gut
 %
 % OUTPUT: cutVal: cell array of size n x 4, where n is the number of
-% different regions in the optimal cut. cutVal{i,1} = position along
-% the line given by param.centerLine where the optimal cut is located. cutVal{i,2} =
-% which regions are included in this particular region.
+% different regions in the optimal cut. cutVal{i,1} = [pos_init, pos_final] 
+% final and initial position along the line given by param.centerLine 
+% where the optimal cut is located.
+% cutVal{i,2} = which regions are included in this particular region.
 % cutVal{i,3} = angle to rotate the original image by to get the optimal
 % image stack size.
 % cutVal{i,4}(1,2) = size of rotated (pre-cropped) mask
@@ -24,7 +25,7 @@
 %
 % AUTHOR: Matthew Jemielita, July 27, 2012
 
-function cutVal = calcOptimalCut(param)
+function cutVal = calcOptimalCut(lengthOverlap, param)
 
 %Get mask of gut
 height = param.regionExtent.regImSize{1}(1);
@@ -83,7 +84,8 @@ while(isEndGut ==false)
     [cutPoint,angle,indReg,rotImSize] ...
         = findCut(lastPoint, maxPoint, thisPoint);
     
-    cutVal{cutIndex, 1} = lastPoint;%Beginning of the region
+    cutVal{cutIndex, 1}(1) = lastPoint;%Beginning of the region
+    
     cutVal{cutIndex, 2} = indReg;
     cutVal{cutIndex, 3} = angle;
     cutVal{cutIndex, 4} = rotImSize;
@@ -93,8 +95,11 @@ while(isEndGut ==false)
     disp(['cut Found: ', num2str(cutPoint)]);
     %Estimate for where the next cut should be
     %minus one  to use w/ getOrthVect
-    thisPoint = min(maxPoint-1, thisPoint+cutPoint);
-    lastPoint = temp;
+    %Include offset so that regions overlap (allowing us to do correlations
+    %between points).
+    thisPoint = min(maxPoint-1, 2*cutPoint-thisPoint-lengthOverlap);
+    lastPoint = cutPoint-lengthOverlap; 
+    cutVal{cutIndex,1}(2) = cutPoint;
     
     %If we're close enough don't make a new region-need to do this in a
     %better way.
@@ -102,6 +107,9 @@ while(isEndGut ==false)
         disp('calcOptimalGut: Gut cut into the optimal sized lengths.');
         cutPoint = maxPoint;
         isEndGut =true;
+        
+        %Set the end of this region to be the end of the gut.
+        cutVal{cutIndex,1}(2) = maxPoint;
         
     end
         

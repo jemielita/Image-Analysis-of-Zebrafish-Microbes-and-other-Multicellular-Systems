@@ -148,15 +148,16 @@ im = zeros(finalHeight, finalWidth, finalDepth, dataType);
 
 %Crop down the mask to the size of the cut region
 maxCut = size(param.cutVal,1);
-
-if(cutNumber==maxCut)
-    finalPoint = size(param.centerLine,1)-1;
-    cutPosInit = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle',finalPoint);
-else
-    lastCut{1} = param.cutVal{cutNumber+1,:};
-    cutPosInit = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle',lastCut{1});
-end
-cutPosFinal = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle', thisCut{1});
+% 
+% if(cutNumber==maxCut)
+%     finalPoint = size(param.centerLine,1)-1;
+%     cutPosInit = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle',finalPoint);
+% else
+%     lastCut{1} = param.cutVal{cutNumber+1,:};
+%     cutPosInit = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle',lastCut{1});
+% end
+cutPosInit = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle', thisCut{1}(2));
+cutPosFinal = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle', thisCut{1}(1));
 
 pos = [cutPosFinal(1:2,:); cutPosInit(2,:); cutPosInit(1,:)];
 
@@ -250,11 +251,9 @@ for nZ=minZ:maxZ
     imRotate(:) = 0;
     imRotate(rI) = imOrig(oI);
 
-
-    im(:,:,nZ) = imRotate(xMin:xMax,yMin:yMax);
+    im(:,:,nZ-minZ+1) = imRotate(xMin:xMax,yMin:yMax);
     
-    nZ
-    %fprintf(1, '.');
+    fprintf(1, '.');
 end
 
 end
