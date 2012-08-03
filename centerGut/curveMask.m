@@ -16,6 +16,7 @@ catch err
 end
 
 fprintf(2,'Creating Masks ');
+
 for i=2:length(xx)-1
     fprintf(2, '.');
     %Find the orthogonal vector using Gram-Schmidt orthogonalization

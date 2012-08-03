@@ -49,28 +49,44 @@ poly = param.regionExtent.poly;
 gutMask = poly2mask(poly(:,1), poly(:,2), param.regionExtent.regImSize{1}(1),...
     param.regionExtent.regImSize{1}(2));
 
-cutPosInit = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle', cutVal{cutNum,1}(2));
-cutPosFinal = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle', cutVal{cutNum,1}(1));
-
-pos = [cutPosFinal(1:2,:); cutPosInit(2,:); cutPosInit(1,:)];
-
-cutMask = poly2mask(pos(:,1), pos(:,2), height, width);
-cutMask = cutMask.*gutMask;
-
 %Rotate the  mask
 xMin =cutVal{cutNum, 4}(5); xMax = cutVal{cutNum,4}(6);
 yMin = cutVal{cutNum,4}(3); yMax = cutVal{cutNum,4}(4);
 
 theta = cutVal{cutNum,3};
 
-cutMask = imrotate(cutMask,theta);
-cutMask = cutMask(xMin:xMax,yMin:yMax);
+gutMask = imrotate(gutMask,theta);
+gutMask = gutMask(xMin:xMax,yMin:yMax);
+
+initPos = 2; finalPos = size(rotCenterLine,1)-1;
+cutPosInit = getOrthVect(rotCenterLine(:,1), rotCenterLine(:,2), 'rectangle', finalPos);
+cutPosFinal = getOrthVect(rotCenterLine(:,1), rotCenterLine(:,2), 'rectangle', initPos);
+
+pos = [cutPosFinal(1:2,:); cutPosInit(2,:); cutPosInit(1,:)];
+
+cutMask = poly2mask(pos(:,1), pos(:,2), size(gutMask,1), size(gutMask,2));
+cutMask = cutMask.*gutMask;
+
 
 rotMask = curveMask(cutMask, rotCenterLine, param,'rectangle');
+% 
+% 
+% figure; imshow(sum(rotMask,3))
+% hold on
+% plot(rotCenterLine(:,1), rotCenterLine(:,2), '*');
+% maxIm = max(imStack,[],3);
 
 
-
-maxIm = max(imStack,[],3);
+%% Set all points outside the gut mask to be NaN
+outsideMask = ~cutMask;
+fprintf(1, 'Setting region outside gut to NaN.');
+for i=1:size(imStack,3)
+    temp = imStack(:,:,i);
+    temp(outsideMask) = NaN;
+    imStack(:,:,i) = temp;
+    fprintf(1, '.');
+end
+fprintf(1, '\n');
 
 end
 
@@ -79,11 +95,14 @@ function rotCenterLine = getRotatedLine(centerLine, cutVal, cutNum)
 %Cut down the size of the center line
 centerLine = centerLine(cutVal{cutNum,1}(1):cutVal{cutNum,1}(2),:);
 
-theta = deg2rad(cutVal{cutNum,3});
+theta = -deg2rad(cutVal{cutNum,3});
 rotMat = [cos(theta), -sin(theta); sin(theta), cos(theta)];
 
 rotCenterLine = rotMat*centerLine';
 
 rotCenterLine = rotCenterLine';
 
+
+rotCenterLine(:,1) = rotCenterLine(:,1) -cutVal{cutNum,4}(3);
+rotCenterLine(:,2) = rotCenterLine(:,2) - cutVal{cutNum,4}(5);
 end
