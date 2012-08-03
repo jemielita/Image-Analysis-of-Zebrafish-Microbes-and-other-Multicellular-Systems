@@ -68,6 +68,10 @@ cutMask = cutMask(xMin:xMax,yMin:yMax);
 
 rotMask = curveMask(cutMask, rotCenterLine, param,'rectangle');
 
+
+
+maxIm = max(imStack,[],3);
+
 end
 
 function rotCenterLine = getRotatedLine(centerLine, cutVal, cutNum)
