@@ -17,7 +17,6 @@ maxS = size(imSeg,1);
 minS = 1;
 numBoxes = 50;
 
-
 %% Get the cropped image of the region of interest
 currentIm = imcrop(imSeg{thisIm,5}, imSeg{thisIm,2});
 %Get intensity distribution for all points in current image
@@ -68,8 +67,13 @@ if((thisIm==minS && isempty(imSeg{thisIm+1,5}) ) || ...
     
     
     
-    bayesIntenProbVal(1,:) = probInten(1,:).*probIntenBkg;
-    bayesIntenProbVal(2,:) = probInten(1,:).*probIntenObj;
+    %bayesIntenProbVal(1,:) = probInten(1,:).*probIntenBkg;
+    %bayesIntenProbVal(2,:) = probInten(1,:).*probIntenObj;
+    
+    %Dropping out probInten so that low pixel values get assigned to bkg
+    %appropriately.
+    bayesIntenProbVal(1,:) = probIntenBkg;
+    bayesIntenProbVal(2,:) = probIntenObj;
     
     
     %Normalizing prob. dist.
