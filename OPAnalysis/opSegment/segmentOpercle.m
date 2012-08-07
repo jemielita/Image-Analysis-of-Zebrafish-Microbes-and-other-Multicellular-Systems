@@ -266,13 +266,13 @@ hRect = imrect(hAxes(1));
                     for i=1:size(imSeg,2);
                         thisCell{i} = segIm{N,i};
                     end
-                    save([saveDir filesep saveBase fprintf('%03d', N) '.mat'],...
+                    save([saveDir filesep saveBase{1} fprintf('%03d', N) '.mat'],...
                         'thisCell');
                 end
                 
             case 2
                 %Save all segmented regions to one mat file
-                save([saveDir filesep saveBase 'ALL.mat'], 'imSeg');
+                save([saveDir filesep saveBase{1} 'ALL.mat'], 'imSeg');
             case 3
                 %Save this segmented frame-usefull for backing up work
                 %while we're segmenting
@@ -280,7 +280,7 @@ hRect = imrect(hAxes(1));
                 for i=1:size(imSeg,2);
                     thisCell{i} = imSeg{thisIm,i};
                 end
-                save([saveDir filesep saveBase sprintf('%03d', thisIm), '.mat'],...
+                save([saveDir filesep saveBase{1} sprintf('%03d', thisIm), '.mat'],...
                     'thisCell');
                 
             otherwise
@@ -384,6 +384,50 @@ hRect = imrect(hAxes(1));
                 imSeg{thisIm,4} = [];                               
         end 
     end
+    function drawLine(regionType)
+        hLine = imfreehand(hAxes(2), 'Closed', false);
+        
+        hApi = iptgetapi(hLine);
+        posInit = hApi.getPosition();
+        
+        %Spline interpolating these points to smooth out the curve before
+        %dilating it.
+        t = cumsum(sqrt([0,diff(posInit(:,1)')].^2 + [0,diff(posInit(:,2)')].^2));
+        %Find x and y positions as a function of arc length
+        polyFit(:,1) = spline(t, posInit(:,1), t);
+        polyFit(:,2) = spline(t, posInit(:,2), t);
+        
+        %Interpolate curve to make it less jaggedy, arbitrarily we'll
+        %set the number of points to be 50.
+        stepSize = 1;
+        
+        poly(:,2) = interp1(t, polyFit(:,2),min(t):stepSize:max(t),'spline', 'extrap');
+        poly(:,1) = interp1(t, polyFit(:,1),min(t):stepSize:max(t), 'spline', 'extrap');
+        
+%         %Redefining poly
+%         poly = cat(2, polyT(:,1), polyT(:,2));
+        poly = round(poly);
+        
+        ind = sub2ind([size(im,1), size(im,2)], poly(:,2), poly(:,1));
+        
+        mask = zeros(size(im,1), size(im,2));
+        mask(ind) = 1;
+        lineWidth= 3;
+        
+        se = strel('disk', lineWidth);
+        
+        mask = imdilate(mask, se);
+        
+        switch regionType
+            case 'opercle'
+                isOpercle = isOpercle + mask;
+            case 'background'
+                isBackground = isBackground + mask;
+        end   
+                
+        delete(hLine);
+    end
+
 
     function key_cropCallback(val)
        switch val
