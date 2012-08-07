@@ -58,11 +58,31 @@ if(nargin==3)
     %or sink.
     [sourceHist, sinkHist] = regionIntensityEstimation(im, isSource, isSink);
 
+    %Weights for segmentation
+    lambda = 0.1;
+    bkgNoise = 0.1;
+    
 end
 if(nargin==4)
     intenEst = varargin{4};
     sinkHist = intenEst{1,:};
     sourceHist = intenEst{2,:};
+    
+    %Weights for segmentation
+    lambda = 0.1;
+    bkgNoise = 0.1;
+end
+
+if(nargin==6)
+    intenEst = varargin{4};
+    sinkHist = intenEst{1,:};
+    sourceHist = intenEst{2,:};
+    
+    %Weights for segmentation
+    lambda = varargin{5};
+    bkgNoise = varargin{6};
+    
+   
 end
 
 %Construct a graph
@@ -72,7 +92,7 @@ N = height*width;
 
 E = edges4connected(height,width);
 
-V = assignBoundaryPenalty(E,im,0.1, 'undirected');
+V = assignBoundaryPenalty(E,im,bkgNoise, 'undirected');
 
 A = sparse(E(:,1),E(:,2),V,N,N,4*N);
 
@@ -87,7 +107,7 @@ A = sparse(E(:,1),E(:,2),V,N,N,4*N);
 K = 1+max(V(:));
 %Need to find an optimal value for lambda. For opercles it seems like a
 %rather low value is appropriate
-lambda = 0.1;
+
 T = setRegionPenalty(isSource, isSink, sourceHist, sinkHist,im,K,lambda);
 
 [flow, labels] = maxflow(A,T);
@@ -182,7 +202,6 @@ T = sparse([1:numElIm, 1:numElIm], [1*ones(numElIm,1); 2*ones(numElIm,1)],...
     [sourceCost; sinkCost]);
 
 end
-
 
 function V = assignBoundaryPenalty(E,im, bkgNoise, weightType)
 

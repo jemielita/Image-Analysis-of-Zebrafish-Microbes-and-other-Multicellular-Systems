@@ -21,10 +21,8 @@ if nargin==1
 end
 
 if nargin==0
-    imLoc = 'sp7_mef2ca_lapse_w1Yoko GFP_s14_t1.TIF';
-    pathN = 'F:\Jemielita\For_Matt_070512\mutant_fish14_060112\';
- 
-%    [imLoc, pathN] = uigetfile('.TIF', 'Select the first image to load in.');
+
+    [imLoc, pathN] = uigetfile('.TIF', 'Select the first image to load in.');
     imPath = [pathN imLoc];
     
     %Get string base of these images, and the first scan number
@@ -35,11 +33,8 @@ if nargin==0
     thisIm = str2num(thisIm);
     minIm = thisIm;
    
-    imLocEnd = 'sp7_mef2ca_lapse_w1Yoko GFP_s14_t50.TIF';
-    pathNEnd = 'F:\Jemielita\For_Matt_070512\mutant_fish14_060112\';
-    
- %   [imLocEnd, pathNEnd] = uigetfile('.TIF', 'Select the last image in this stack.', ...
-  %      imPath);
+       [imLocEnd, pathNEnd] = uigetfile('.TIF', 'Select the last image in this stack.', ...
+          imPath);
     imPathEnd = [pathNEnd imLocEnd];
     
     imEnd = regexp(imLocEnd, '\d+(?=.TIF)');
@@ -47,13 +42,9 @@ if nargin==0
     maxIm = imLocEnd(imEnd:end-4);
     maxIm = str2num(maxIm);
     
-   % saveDir = uigetdir(pathN, 'Select directory to save segmented opercles.');
-    %saveBase = inputdlg('Base name for saved opercles', '', 1, {baseIm});
-    
-    saveDir = 'F:\temp';
-    saveBase = 'sp7_mef2ca_lapse_w1Yoko GFP_s14_t';
-    
-    
+    saveDir = uigetdir(pathN, 'Select directory to save segmented opercles.');
+    saveBase = inputdlg('Base name for saved opercles', '', 1, {baseIm});
+   
     imL  = imfinfo(imPath, 'tif');
     im = zeros(imL(1).Height, imL(1).Width, size(imL,1));
     
@@ -65,20 +56,73 @@ if nargin==0
     maxN = size(imL,1);
     index = minN;
     
-        
     %%%%%%%%%% Masks used to mark the opercle and the background
     isOpercle = zeros(size(im,1), size(im,2));
     isBackground = zeros(size(im,1), size(im,2));
     
+    %See if we've already done some segmention on this region and load the
+    %region
+    loadSeg = inputdlg('Load previously segmented opercles: (1) no, (2) individually, (3) group',...
+        '', 1, {'1'});
+    loadSeg = str2num(loadSeg{1});
     
-    %Create cell array that will contain the segmented region. Code will be
-    %built so that we can in the future do 3D segmentation instead of 2D
-    %segmentation.
-    %imSeg{i,1} = segmented image (2D or 3D);
-    %imSeg{i,2} = cropping rectangle
-    %imSeg{i,3} = image index of points inside opercle
-    %imSeg{i,4} = image index of points outside opercle
-    imSeg = cell(maxIm-minIm+1, 5);
+    switch loadSeg
+        case 1
+            
+            %Create cell array that will contain the segmented region. Code will be
+            %built so that we can in the future do 3D segmentation instead of 2D
+            %segmentation.
+            %imSeg{i,1} = segmented image (2D or 3D);
+            %imSeg{i,2} = cropping rectangle
+            %imSeg{i,3} = image index of points inside opercle
+            %imSeg{i,4} = image index of points outside opercle
+            %imSeg{i,5} = maximum intensity projection of the opercle at this time
+            %point
+            %imSeg{i,6} = structure tha contains all the region properties that we
+            %want to calculate for the opercle.
+            imSeg = cell(maxIm-minIm+1, 6);
+        case 2
+            imSeg = cell(maxIm-minIm+1,6);
+           
+           segDir = dir(saveDir);
+           
+           for i=1:size(segDir,1)
+              name = segDir(i).name;
+              
+              %See if this particular file shares a name root with saveBase
+              
+              isFile = regexp(name, saveBase);
+              if(isFile==1)
+                  
+                  imNum = regexp(name, '\d+(?=.mat)', 'match');
+                  if(isempty(imNum))
+                      continue%Cheap way to avoid potential ALL.mat entries
+                  end
+                  
+                  imNum = str2num(imNum{1});
+                  
+                  thisCell = load([saveDir filesep name]);
+                  thisCell = thisCell.thisCell;
+                  
+                  for j=1:size(thisCell,2)
+                     imSeg{imNum,j} = thisCell{j}; 
+                      
+                  end
+                  
+              else 
+                  continue
+              end
+           end
+                      
+       case 3
+              allLoc = [saveDir filesep saveBase 'ALL.mat'];
+              imSeg = load(allLoc, 'imSeg');
+              imSeg = imSeg.imSeg;
+       otherwise
+           disp('Load segmentation error: Input must be either 1, 2, or 3!');
+           return;
+   end
+           
     imMIP = [];
     
     %Load in first image stack
@@ -95,9 +139,49 @@ h_fig = figure('Name', '2D time series segmentation', 'Menubar', 'none', 'Tag', 
 set(h_fig,'KeyPressFcn',{@key_Callback,h_fig});
 set(h_fig, 'WindowScrollWheelFcn', {@mouse_Callback, h_fig});
 
-displayMIP = false;
-hMenuFile = uimenu('Label', 'Display');
-hMIP = uimenu(hMenuFile, 'Label', 'Display MIP', 'Callback', @displayMIP_Callback, 'Checked', 'off');
+
+autoSave = true;
+hMenuFile = uimenu('Label', 'File');
+hSaveAll = uimenu(hMenuFile, 'Label', 'Save all data', 'Callback', @saveData_Callback);
+hSaveAuto = uimenu(hMenuFile, 'Label', 'Auto save', 'Checked', 'on', 'Callback', @saveDataAuto_Callback);
+
+
+displayMIP = true;
+hMenuDisp = uimenu('Label', 'Display');
+hMIP = uimenu(hMenuDisp, 'Label', 'Display MIP', 'Callback', @displayMIP_Callback, 'Checked', 'off');
+displayFeatures = true;
+hDisplayFeatures = uimenu(hMenuDisp, 'Label', 'Display region Features', ...
+    'Callback', @displayRegFeatures_Callback, 'Checked', 'on');
+
+%Sliders for controlling segementation parameters
+
+hManipPanel = uipanel('Parent', h_fig, 'Units', 'Normalized', ...
+    'Position', [0.01 0.05 0.1 0.95], 'Title', 'Segmentation Parameters');
+
+lMin = 0; lMax = 1;
+lStepSmall = 0.05; lStepBig = 0.1;
+lambda = 0.5;
+hLText = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Position', [0.01 0.95 0.3 0.05],...
+    'Style', 'text', 'String', 'Lambda');
+hLTextEdit = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Position', [0.32 0.97 0.65 0.03],...
+    'Style', 'edit', 'Tag', 'lambdaEdit', 'String', lambda, 'Callback', @lambda_Callback);
+
+bkgCutoff = 0.1;
+hBkgText = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Position', [0.01 0.85 0.3 0.05],...
+    'Style', 'text', 'String', 'Bkg. cutoff');
+hBkgTextEdit = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Position', [0.32 0.87 0.65 0.03],...
+    'Style', 'edit', 'Tag', 'lambdaEdit', 'String', bkgCutoff, 'Callback', @hBkgText_Callback);
+
+objCutoff = 0.9;
+hObjText = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Position', [0.01 0.75 0.3 0.05],...
+    'Style', 'text', 'String', 'Obj. cutoff');
+hObjTextEdit = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Position', [0.32 0.77 0.65 0.03],...
+    'Style', 'edit', 'Tag', 'lambdaEdit', 'String', objCutoff, 'Callback', @hObjText_Callback);
+
+%Structure to hold all segementation variables
+segParam.lambda = lambda;
+segParam.objCutoff = objCutoff;
+segParam.bkgCutoff = bkgCutoff;
 
 %Create figure window for original and segmented images
 hAxes(1) = subplot(1,2,1);
@@ -110,43 +194,13 @@ hSegImage = imshow(imMIP,[]);
 %This will be useful if we ever deal with zooming in a decent way
 linkaxes(hAxes, 'xy');
 
-%Parameters used for doing course segmentation
-%What fraction of the Otsu threshold to use.
-threshScale = 1;
-threshOffset = 0;
-%hLine = imline(origAxes);
-%pos = wait(hLine);
-
-
-%How much we will dilate the line we draw to mark the opercle and the
-%background
-lineWidth = 3;
-
-% Polygon used to outline opercle-need to tweak a little bit with current
-% segmentation scheme
-polyZ = cell(maxN,1);
-hPoly = '';
-topIndex = maxN;
-bottomIndex = 1;
-
-title(hAxes(2), ['Top: ', num2str(topIndex)]);
-
-fN = [saveDir 'OP_Scan', sprintf('%03d', 1), '.mat'];
-%Load the already thresholded images if we can.
-try
-    imSeg{thisIm,1} = load(fN);
-    imSeg{thisIm,1} = imSeg.imSeg;
-catch
-    imSeg{thisIm,1} = roughSegment(im);
-end
-
-
-
-
 %Create a cropping rectangle around the opercle, to limit the region that
 %we do any segmentation.
 hRect = imrect(hAxes(1));
 
+
+%%%%%% Callback funtions for various buttons on the screen and generic
+%%%%%% mouse and keyboard callbacks
     function mouse_Callback(varargin)
         counter = varargin{2}.VerticalScrollCount;
         if(counter==-1)
@@ -156,16 +210,210 @@ hRect = imrect(hAxes(1));
         end
        
     end
-    function imOut = roughSegment(imIn)
-        %As a first pass let's see if a simple thresholding does the trick
-        thresh = graythresh(imIn);
-        imOut = imIn>threshScale*thresh + threshOffset;
-        imOut = double(imOut);
+
+    function lambda_Callback(hObject, eventdata)
+        lambda = get(hLTextEdit, 'String');
+        lambda = str2num(lambda);
         
-        %imSeg = cleanup3dMarkers(imSeg);
+        segParam.lambda = lambda;
         
-        imOut = bwlabeln(imOut>0);
     end
+
+    function hBkgText_Callback(varargin, eventdata)
+        bkgCutoff = get(hBkgTextEdit, 'String');
+        bkgCutoff = str2num(bkgCutoff);
+        
+        segParam.bkgCutoff = bkgCutoff;
+        
+        
+    end
+
+    function hObjText_Callback(varargin, eventdata)
+        objCutoff = get(hobjTextEdit, 'String');
+        objCutoff = str2num(objCutoff);
+        
+        segParam.objCutoff = objCutoff;
+        
+    end
+
+    function saveData_Callback(hObject, eventdata)
+        saveType = inputdlg('Save segmented regions individually (1) or combined (2)', '', 1,{'2'});
+        saveType = str2num(saveType{1});
+        saveSegmentation(saveType);
+    end
+
+    function saveDataAuto_Callback(~,~)       
+        isCheck = get(hSaveAuto, 'Checked');
+        if(strcmp(isCheck, 'off'))
+            set(hSaveAuto, 'Checked', 'on');
+            autoSave = true;
+            %Save the current image segmentation
+            saveSegmentation(3);
+        else
+            set(hMIP, 'Checked', 'off');
+            autoSave = false;
+        end
+   
+    end
+        
+    function saveSegmentation(saveType)
+        fprintf(1, 'Saving data...');
+        switch saveType
+            case 1
+                %Save all segmented regions, each in its own mat file
+                for N=minIm:maxIm
+                    fprintf(1, '.');
+                    for i=1:size(imSeg,2);
+                        thisCell{i} = segIm{N,i};
+                    end
+                    save([saveDir filesep saveBase fprintf('%03d', N) '.mat'],...
+                        'thisCell');
+                end
+                
+            case 2
+                %Save all segmented regions to one mat file
+                save([saveDir filesep saveBase 'ALL.mat'], 'imSeg');
+            case 3
+                %Save this segmented frame-usefull for backing up work
+                %while we're segmenting
+                fprintf(1, '.');
+                for i=1:size(imSeg,2);
+                    thisCell{i} = imSeg{thisIm,i};
+                end
+                save([saveDir filesep saveBase sprintf('%03d', thisIm), '.mat'],...
+                    'thisCell');
+                
+            otherwise
+                disp('Erorr saving: Input must be either 1,2, or 3!');
+        end
+        fprintf(1, 'done!\n');
+        
+    end
+    function key_Callback(varargin)
+        
+        val = varargin{1,2}.Key;
+        
+        key_segmentCallback(val);
+        %
+        %         switch isGlobalCropped
+        %             case 'true'
+        %                 key_segmentCallback(val);
+        %             case 'false'
+        %                 key_cropCallback(val);
+        %         end
+        
+    end
+
+    function key_segmentCallback(val)
+
+        switch val
+            
+            %%%%%% Keys used to move through z stacks and scans %%%%%%%%
+            case 'downarrow'
+                zDown();
+                
+            case 'uparrow'
+                zUp();
+                
+            case 'leftarrow'
+                if(thisIm~=minIm)
+                    imSeg = saveRectLoc(imSeg, hRect, thisIm);
+                    thisIm = thisIm-1;
+                    [isOpercle, isBackground,im,imOrig, imMIP] = loadImage(isOpercle, isBackground);
+                    
+                    loadRectLoc(hRect,thisIm);
+                    %segmentImage('initial');
+                    
+                    displayNewImage();  
+                    updateSegImage(imMIP, im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index, displayMIP,displayFeatures);
+
+                end
+                
+            case 'rightarrow'
+                if(thisIm~=maxIm)
+                    imSeg = saveRectLoc(imSeg, hRect, thisIm);
+                    thisIm = thisIm+1;
+                    [isOpercle, isBackground,im, imOrig, imMIP] = loadImage(isOpercle, isBackground);
+                    
+                    loadRectLoc(hRect, thisIm);
+                    
+                    displayNewImage();
+                    updateSegImage(imMIP, im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index, displayMIP,displayFeatures);
+
+                end
+
+                %%%%%% Keys used by the user to select regions inside %%%%
+                %%%%%% and outside the opercle                        %%%%
+            case 'o'
+      
+                %Will now instead be used to draw where the opercle is
+                drawLine('opercle');
+                updateSegImage(imMIP, im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index,displayMIP,displayFeatures);
+            case 'b'
+                %Add a line to show where the background is
+                drawLine('background');
+                updateSegImage(imMIP, im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index, displayMIP,displayFeatures);
+           
+            case 's'                
+                imSeg = segmentImage(imMIP, imSeg, thisIm, isOpercle, isBackground,hRect, '2d', segParam);
+                
+                %Calculate properties of the segmented regions
+                imSeg = calcRegProps(imSeg, thisIm);
+                updateSegImage(imMIP , im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index,displayMIP,displayFeatures);
+       
+                if(autoSave==true)
+                    saveSegmentation(3);
+                end
+                                
+            case 'f' 
+                %Filter the image stack-used for testing what filters we
+                %should be using
+                [im, imMIP] = filterImage(imOrig,hRect);
+                
+                displayNewImage();
+                updateSegImage(imMIP, im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index,displayMIP,displayFeatures);
+                
+            case 'delete'
+                %Remove opercle and background mask
+                isOpercle(:) = 0;
+                isBackground(:) = 0;
+                updateSegImage(imMIP, im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index,displayMIP,displayFeatures);
+                
+                %Update imSeg
+                imSeg{thisIm,3} = [];
+                imSeg{thisIm,4} = [];                               
+        end 
+    end
+
+    function key_cropCallback(val)
+       switch val
+           case 'uparrow'
+               zUpCrop();
+           case 'downarrow'
+               zDownCrop();
+           case 'leftarrow'
+               if(thisIm~=minIm)
+                   thisIm = thisIm-1;
+                   [isOpercle, isBackground,im,imOrig, imMIP] = loadImage(isOpercle, isBackground);
+                   set(hImCrop, 'CData', max(im,3));
+                   
+                   updateSegImage(imMIP , im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index, displayMIP,displayFeatures);
+
+               end
+           case 'rightarrow'
+               if(thisIm~=maxIm)
+                  thisIm = thisIm+1;
+                  [isOpercle, isBackground,im, imOrig, imMIP]  = loadImage(isOpercle, isBackground);
+                  set(hImCrop, 'CData', max(im,3));
+
+                  updateSegImage(imMIP ,im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage, index, displayMIP,displayFeatures);
+
+               end
+               
+               
+       end
+    end
+
     function zDown
         
         %Don't scan through z-stack if we're only looking at a 2d
@@ -286,277 +534,20 @@ hRect = imrect(hAxes(1));
         
     end
     
-    function key_Callback(varargin)
-
-        val = varargin{1,2}.Key;
+    function displayRegFeatures_Callback(hObject, eventdata)
         
-        key_segmentCallback(val);
-%         
-%         switch isGlobalCropped
-%             case 'true'
-%                 key_segmentCallback(val);
-%             case 'false'
-%                 key_cropCallback(val);
-%         end
-
-    end
-
-    function key_segmentCallback(val)
-
-        switch val
+        isCheck = get(hDisplayFeatures, 'Checked');
+        if(strcmp(isCheck, 'off'))
+            set(hDisplayFeatures, 'Checked', 'on');
+            displayFeatures = true;
             
-            %%%%%% Keys used to move through z stacks and scans %%%%%%%%
-            case 'downarrow'
-                zDown();
-                
-            case 'uparrow'
-                zUp();
-                
-            case 'leftarrow'
-                if(thisIm~=minIm)
-                    imSeg = saveRectLoc(imSeg, hRect, thisIm);
-                    thisIm = thisIm-1;
-                    [isOpercle, isBackground,im,imOrig, imMIP] = loadImage(isOpercle, isBackground);
-                    
-                    loadRectLoc(hRect,thisIm);
-                    %segmentImage('initial');
-                    
-                    displayNewImage();  
-                    updateSegImage(imMIP, im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index, displayMIP);
+        else
+            set(hDisplayFeatures, 'Checked', 'off');
+            displayFeatures = false;
+        end
+        updateSegImage(imMIP , im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index,displayMIP,displayFeatures);
 
-                end
-                
-            case 'rightarrow'
-                if(thisIm~=maxIm)
-                    imSeg = saveRectLoc(imSeg, hRect, thisIm);
-                    thisIm = thisIm+1;
-                    [isOpercle, isBackground,im, imOrig, imMIP] = loadImage(isOpercle, isBackground);
-                    
-                    loadRectLoc(hRect, thisIm);
-                    
-                    displayNewImage();
-                    updateSegImage(imMIP, im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index, displayMIP);
-
-                end
-
-                %%%%%% Keys used by the user to select regions inside %%%%
-                %%%%%% and outside the opercle                        %%%%
-            case 'o'
-                
-                %                 %Change the threshold for Otsu
-                %                 threshScale = input('New Threshold');
-                %
-                %Will now instead be used to draw where the opercle is
-                drawLine('opercle');
-                updateSegImage(imMIP, im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index,displayMIP);
-            case 'b'
-                %Add a line to show where the background is
-                drawLine('background');
-                updateSegImage(imMIP, im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index, displayMIP);
-                
-            case '1'
-                %Delete current polygon and load in the one from the
-                %previous index instead. Useful when the fish has shifted.
-                delete(hPoly);
-                
-                hPoly = impoly(hAxes(2), polyZ{index-1}, 'Closed', true);
-                
-            case '2'
-                %Delete current polygon and load in the one from the
-                %previous index instead. Useful when the fish has shifted.
-                delete(hPoly);
-                
-                hPoly = impoly(hAxes(2), polyZ{index+1}, 'Closed', true);
-                
-                %For now we won't use these because I want to use the 'b'
-                %key to set the background and because we're focusing on 2d
-                %segmentation here.
-%             case 't'
-%                 topIndex = index;
-%                 title(hAxes(2), ['Bottom: ', num2str(bottomIndex), '   Top: ', num2str(topIndex)]);
-%                 
-%             case 'b'
-%                 bottomIndex = index;
-%                 title(hAxes(2), ['Bottom: ', num2str(bottomIndex), '   Top: ', num2str(topIndex)]);
-%                 
-            case 'p'
-                polyZ = cell(maxN,1);
-                
-                delete(hPoly)
-                
-                hPoly = impoly(hAxes(2),'Closed', true);
-                position = wait(hPoly);
-                polyZ{index} = position;
-                
-            case 's'                
-                imSeg = segmentImage(imMIP, imSeg, thisIm, isOpercle, isBackground,hRect, '2d');
-                
-%                 for i=1:maxN
-%                     if(~isempty(polyZ{i}))
-%                         mask = poly2mask(polyZ{i}(:,1), polyZ{i}(:,2), imL(2).Height, imL(1).Width);
-%                         imSeg(:,:,i) = imSeg(:,:,i).*mask;
-%                     end
-%                 end
-%                 imSeg = imSeg>0;
-%                 
-%                 %Force the opercle to be the only region segmented.
-%                 %Remove all regions above and equal to this one
-%                 for iT = topIndex:size(imSeg,3)
-%                     imSeg(:,:,iT) = zeros(size(imSeg(:,:,iT)));
-%                 end
-%                 
-%                 for iT = 1:bottomIndex;
-%                     imSeg(:,:,iT) = zeros(size(imSeg(:,:,iT)));
-%                 end
-                
-                updateSegImage(imMIP , im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index,displayMIP);
-                
-       
-            case 'l'
-                threshOffset = input('Offset for threshold');
-            case 'c'
-                %Coursely segment the images
-                imSeg = roughSegment(im);
-                
-            case 'a'
-                %Set the top image to be maxN-so that all z-slices through
-                %the top are saved.
-                topIndex = maxN+1;
-                title(hAxes(2), ['Bottom: ', num2str(bottomIndex), '   Top: ', num2str(topIndex)]);
-                     
-                
-            case 'f' 
-                %Filter the image stack-used for testing what filters we
-                %should be using
-                [im, imMIP] = filterImage(imOrig);
-                
-                displayNewImage();
-                updateSegImage(imMIP, im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index,displayMIP);
-                
-                
-            case 'd'
-                %Save markers made for this image
-                b= 0;
-                
-                outM = imLoc(1:end-4);
-                fn = [saveFile outM '.mat'];
-                evalC = ['save(' ,'''' , fn , ''' ,' ,' ''imSeg'' )'];
-                eval(evalC);
-                b = 0;
-                
-                disp('saving done!');
-                
-                
-            case 'v'
-                
-                for vI=1:size(imL,1)
-                    set(hIm, 'CData', im(:,:,vI));
-                    set(origT, 'string', num2str(vI));
-                    
-                    temp = segmentImage(im(:,:,vI));
-                    imOut = overlayImage(im(:,:,vI), temp>0);
-                    
-                    set(hSegImage, 'CData', imOut);
-                    
-                    pause(0.5);
-                end
-                
-           
-            case '`'
-                thisIm = 47;
-                while(thisIm<145)
-                    thisIm = thisIm+1;
-                    %Segment all of these images!
-                    %(The results are somewhat rough after awhile anyway)
-                    %Load in a new set of images
-                    nextIm = str2num(imPath(end-11:end-9));
-                    nextIm = nextIm+1;
-                    imPathNew = [imPath(1:end-12), sprintf('%03d', nextIm), imPath(end-8:end)];
-                    
-                    %                 [imLoc, pathN] = uigetfile('.tif', 'Select the image stack to load in.',imPathNew);
-                    %                 imPath = [pathN imLoc];
-                    %                 imL  = imfinfo(imPath, 'tif');
-                    
-                    %Don't bother prompting the user-let's just wizz through
-                    %these.
-                    imPath  = imPathNew;
-                    im = zeros(imL(1).Height, imL(2).Width, size(imL,1));
-                    
-                    imLoc = imPath(end-18:end);
-                    
-                    for i=1:size(imL,1)
-                        im(:,:,i) = imread(imPath, i);
-                    end
-                    
-                    im = mat2gray(im);
-                    
-                    imSeg = im;
-                    
-                    set(hIm, 'CData', im(:,:,index));
-                    set(origT, 'string', num2str(index));
-                    
-                    temp = segmentImage(im(:,:,index));
-                    imOut = overlayImage(im(:,:,index), temp>0);
-                    
-                    set(hSegImage, 'CData', imOut);
-                    
-                    
-                    %Then segment the images
-                    posApi = iptgetapi(hLine);
-                    pos = posApi.getPosition();
-                    
-                    xx = pos(1,1) + (1:1000)*(pos(2,1)-pos(1,1))/1000;
-                    yy = pos(1,2) + (1:1000)*(pos(2,2)-pos(1,2))/1000;
-                    
-                    
-                    imSeg = roughSegment(imSeg);
-                    imSeg = onlyOP(imSeg, xx, yy);
-                    %Force the opercle to be the only region segmented.
-                    
-                    temp = segmentImage(im(:,:,index));
-                    imOut = overlayImage(im(:,:,index), temp>0);
-                    
-                    set(hSegImage, 'CData', imOut);
-                    
-                    %And save the result
-                    outM = imLoc(1:end-4);
-                    fn = [saveFile outM '.mat'];
-                    evalC = ['save(' ,'''' , fn , ''' ,' ,' ''imSeg'' )'];
-                    eval(evalC);
-                    b = 0;
-                                        
-                end
-                                
-        end 
-    end
-
-    function key_cropCallback(val)
-       switch val
-           case 'uparrow'
-               zUpCrop();
-           case 'downarrow'
-               zDownCrop();
-           case 'leftarrow'
-               if(thisIm~=minIm)
-                   thisIm = thisIm-1;
-                   [isOpercle, isBackground,im,imOrig, imMIP] = loadImage(isOpercle, isBackground);
-                   set(hImCrop, 'CData', max(im,3));
-                   
-                   updateSegImage(imMIP , im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index, displayMIP);
-
-               end
-           case 'rightarrow'
-               if(thisIm~=maxIm)
-                  thisIm = thisIm+1;
-                  [isOpercle, isBackground,im, imOrig, imMIP]  = loadImage(isOpercle, isBackground);
-                  set(hImCrop, 'CData', max(im,3));
-
-                  updateSegImage(imMIP ,im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage, index, displayMIP);
-
-               end
-               
-               
-       end
+        
     end
 
     function displayMIP_Callback(hObject, eventdata)
@@ -571,7 +562,9 @@ hRect = imrect(hAxes(1));
             displayMIP = false;
         end
         
-        updateSegImage(imMIP , im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index, displayMIP);
+        updateSegImage(imMIP , im, imSeg, thisIm, isOpercle, isBackground,...
+            typeSeg, hSegImage,index, displayMIP,displayFeatures);
+        displayNewImage();
 
     end
 
@@ -678,52 +671,9 @@ hRect = imrect(hAxes(1));
             hPos = iptgetapi(hRect);
             hPos.setPosition(imSeg{thisIm,2});
         end
-        
-        
+              
     end
       
-    function drawLine(regionType)
-        hLine = imfreehand(hAxes(2), 'Closed', false);
-        
-        hApi = iptgetapi(hLine);
-        posInit = hApi.getPosition();
-        
-        %Spline interpolating these points to smooth out the curve before
-        %dilating it.
-        t = cumsum(sqrt([0,diff(posInit(:,1)')].^2 + [0,diff(posInit(:,2)')].^2));
-        %Find x and y positions as a function of arc length
-        polyFit(:,1) = spline(t, posInit(:,1), t);
-        polyFit(:,2) = spline(t, posInit(:,2), t);
-        
-        %Interpolate curve to make it less jaggedy, arbitrarily we'll
-        %set the number of points to be 50.
-        stepSize = 1;
-        
-        poly(:,2) = interp1(t, polyFit(:,2),min(t):stepSize:max(t),'spline', 'extrap');
-        poly(:,1) = interp1(t, polyFit(:,1),min(t):stepSize:max(t), 'spline', 'extrap');
-        
-%         %Redefining poly
-%         poly = cat(2, polyT(:,1), polyT(:,2));
-        poly = round(poly);
-        
-        ind = sub2ind([size(im,1), size(im,2)], poly(:,2), poly(:,1));
-        
-        mask = zeros(size(im,1), size(im,2));
-        mask(ind) = 1;
-        se = strel('disk', lineWidth);
-        
-        mask = imdilate(mask, se);
-        
-        switch regionType
-            case 'opercle'
-                isOpercle = isOpercle + mask;
-            case 'background'
-                isBackground = isBackground + mask;
-        end   
-                
-        delete(hLine);
-    end
-
 
 end
 
@@ -732,11 +682,10 @@ end
         hPos = iptgetapi(hRect);
         imSeg{thisIm, 2} = round(hPos.getPosition());
     end
- function updateSegImage(imMIP, im, imSeg,thisIm, isOpercle, isBackground, typeSeg, hSegImage,index, displayMIP)
+ function updateSegImage(imMIP, im, imSeg,thisIm, isOpercle, isBackground, typeSeg, hSegImage,index, displayMIP,displayFeatures)
        
         switch typeSeg         
-            case '3d'
-                  
+            case '3d'                  
                 if(~isempty(imSeg{thisIm,1}))
                     %Load in either the 3D or 2D segmentation
                     if(length(size(imSeg{thisIm,1}))==3)
@@ -750,8 +699,6 @@ end
                 
                 imOut = overlayImage(imMIP, segMask>0, isOpercle, isBackground);
                 
-                
-
             case '2d'
                 if(isempty(imSeg{thisIm,1}))
                     imSeg{thisIm,1} = zeros(size(im,1), size(im,2));
@@ -761,15 +708,34 @@ end
                 imOut = overlayImage(imMIP, segMask>0, isOpercle, isBackground);
         end
 
+        
+        %Display results of the segmentation desired-useful for checking
+        %that the segmentation was done correctly.
+        if(displayFeatures==true)
+            imFeat = featuresMask(imSeg, thisIm);  
+            imFeat = imFeat>0;
+            
+            R = imOut(:,:,1); G = imOut(:,:,2); B = imOut(:,:,3);
+            
+            R(imFeat) = (255/255);
+            G(imFeat) = (104/255);
+            B(imFeat) = (31/255);
+            
+            imOut(:,:,1) = R; imOut(:,:,2) = G; imOut(:,:,3) = B;
+            
+            %Make the features of the opercle show up in orange
+        end
+            
         set(hSegImage, 'CData', imOut);
         
  end
- 
     
 %Important function: this is what we'll use to actually segment the image
 %for a given set of markers, etc.
  function imSeg = segmentImage(im, imSeg, thisIm, isOpercle, ...
-     isBackground, hRect, typeSeg, bkgVal)
+     isBackground, hRect, typeSeg, segParam)
+ 
+ fprintf(1, 'Segmenting opercle...');
        imSeg = saveRectLoc(imSeg, hRect, thisIm);
        
        
@@ -780,6 +746,55 @@ end
                 %Crop the image down to the mask
                 imC = imcrop(im, imSeg{thisIm,2});
                 
+                %Save the MIP to be used in estimating the probability of
+                %pixels being in background/foreground
+                imSeg{thisIm,5} = im;
+                
+
+                %Use the thresholds from the user for automatically setting
+                %markers
+                numP = length(imC(:));
+                [sortIm,ind] = sort(imC(:));
+                
+                autoObjInd = ind(round(segParam.objCutoff*numP):end);
+                
+                autoBkgInd = ind(1:round(segParam.bkgCutoff*numP));
+                
+                autoObj = zeros(size(imC));
+                autoBkg = zeros(size(imC));
+                autoObj(autoObjInd) = 1; 
+                autoBkg(autoBkgInd) = 1;
+                
+                %Morphological closure to remove gaps
+                se = strel('disk', 1);
+                autoObj = imclose(autoObj, se);
+                autoBkg = imclose(autoBkg, se);
+                %Remove single pixel regions
+                autoObj = bwmorph(autoObj, 'clean');
+                autoBkg = bwmorph(autoBkg, 'clean');
+
+                autoObjInd = find(autoObj==1);
+                autoBkgInd = find(autoBkgInd==1);
+                
+                %Update isOpercle and isBackground using automatically
+                %found markers
+                xInit = imSeg{thisIm,2}(1);
+                yInit = imSeg{thisIm,2}(2);
+                xFinal = xInit + imSeg{thisIm,2}(3);
+                yFinal = yInit + imSeg{thisIm,2}(4);
+                
+                isOpercle(yInit:yFinal, xInit:xFinal) = ...
+                    isOpercle(yInit:yFinal, xInit:xFinal) + autoObj;
+                isBackground(yInit:yFinal, xInit:xFinal) = ...
+                    isBackground(yInit:yFinal, xInit:xFinal) +autoBkg;
+                
+                
+                %Save current pixel location of all points inside and
+                %outside the opercle
+                
+                imSeg{thisIm,3} = find(isOpercle>0);
+                imSeg{thisIm,4} = find(isBackground>0);
+                
                 %Load in labels of regions inside the opercle/background
                 imO = imcrop(isOpercle, imSeg{thisIm,2});
                 imB = imcrop(isBackground, imSeg{thisIm,2});
@@ -787,16 +802,8 @@ end
                 imB(1:end,end-1:end) = 1;
                 imB(1:2, 1:end) = 1;
                 imB(end-1:end,1:end)= 1;
-                         
-                %Save the MIP to be used in estimating the probability of
-                %pixels being in background/foreground
-                imSeg{thisIm,5} = im;
                 
-                %Save current pixel location of all points inside and
-                %outside the opercle
-                imSeg{thisIm,3} = find(isOpercle==1);
-                imSeg{thisIm,4} = find(isBackground==1);
-                
+
                 %Estimate the probability of any given pixel being in the
                 %foreground/background
                 
@@ -805,15 +812,16 @@ end
                 %pixels being in the background in case the background is
                 %somewhat high in the cropped region
                 
-                
                 bkgVal(1) = mean(im(isBackground>0)); %mean of background noise
                 bkgVal(2) = std(im(isBackground>0)); %std deviation
                 bkgVal(3) = 0.1; %Number of standard deviations above mean to set high in probability distribution
                 
+                lambda = segParam.lambda;
+                bkgNoise = 0.01;
                 intenEst = estimateIntensityDist(imSeg, thisIm, bkgVal);
-                imGraph = graphCut(imC, imO, imB, intenEst);
+                imGraph = graphCut(imC, imO, imB, intenEst, lambda, bkgNoise);
                 
-             %   imGraph = ~imGraph; %Why isn't this coming out appropriately?
+               %imGraph = ~imGraph; %Why isn't this coming out appropriately?
                                 
                 %Remove regions with fewer than 100 pixels...need to set
                 %this further up in the code
@@ -823,31 +831,102 @@ end
                 %Remove regions stuck to the boundary of the image
                 imGraph = imclearborder(imGraph);
                 
-                %Update segmented opercle in cropped region of the image
-                xInit = imSeg{thisIm,2}(1);
-                yInit = imSeg{thisIm,2}(2);
-                xFinal = xInit + imSeg{thisIm,2}(3);
-                yFinal = yInit + imSeg{thisIm,2}(4);
-                
+                %Update segmented opercle in cropped region of the image                
                 imSeg{thisIm,1} = zeros(size(im,1), size(im,2));
                 imSeg{thisIm,1}(yInit:yFinal, xInit:xFinal) = imGraph;
                 
                 %Convert to logical
                 imSeg{thisIm,1} = imSeg{thisIm,1}>0;
 
-
             case '3d'
                 outIm = imSeg(:,:,index);
         
         end
+        
+        fprintf(1, 'done!\n');
  end
-    
+  
+ %Calculate properties of each of the regions of the segmented opercle
+ function imSeg = calcRegProps(imSeg, thisIm)
+ 
+ lIm = bwlabel(imSeg{thisIm,1});
+ 
+ regProp = regionprops(lIm, imSeg{thisIm,5}, 'Centroid','MeanIntensity',...
+     'Orientation','MajorAxisLength', 'MinorAxisLength', 'Area');
+ imSeg{thisIm,6} = regProp;
+ 
+ end
+ 
+ 
+ %Get a mask that shows the major axis and centroid for each of the regions
+ %calculated
+ function mask = featuresMask(imSeg, thisIm)
+ prop = imSeg{thisIm,6};
+ totNumReg = size(prop,1);
+ 
+ mask = zeros(size(imSeg{thisIm,1}));
+ thisFeat = zeros(size(imSeg{thisIm,1}));
+ 
+ 
+ for nR = 1:totNumReg
+     %Place a dot at the centroid of each region
+     thisFeat(:) = 0;
+     
+     centroid = prop(nR).Centroid;
+     centroid = round(centroid);
+     
+     thisFeat(centroid(2), centroid(1)) = 1;
+     thisFeat = bwmorph(thisFeat, 'thicken',2);
+     
+     mask = mask+thisFeat;
+     thisFeat(:) =0;
+     
+     
+     %Draw a line along the major axis of each region
+     mALength = prop(nR).MajorAxisLength; mALength = round(mALength);
+     
+     %Construct unrotated line
+     R = -round(mALength/2):round(mALength/2);
+     %Rotate the line
+     theta = -prop(nR).Orientation; theta = deg2rad(theta);
+     
+     mA = [];
+     mA(1,:) = R*cos(theta)+centroid(1);
+     mA(2,:) = R*sin(theta)+centroid(2);
+     
+     mA = round(mA);
+     %Draw this line on the mask
+     ind = sub2ind(size(thisFeat), mA(2,:), mA(1,:));
+     thisFeat(ind) = 1;
+     thisFeat = bwmorph(thisFeat, 'dilate', 1);
+     mask = mask+thisFeat;
+     
+ end 
+ 
+ end
+ 
  
  %Filter the 3d image
- function [im, imMIP] = filterImage(im)
+ function [im, imMIP] = filterImage(im,hRect)
  fprintf(1, 'Filtering image...');
- im = medfilt3(im);
  
+ %Only filtering the cropped region
+ hPos = iptgetapi(hRect);
+ cropR = round(hPos.getPosition());
+ 
+ for i=1:size(im,3)
+     imc(:,:,i) = imcrop(im(:,:,i), cropR);
+ end
+ imc = medfilt3(imc, [3 3 3]);
+ 
+ %Updating the image-so that the cropped region has been filtered
+ xInit = cropR(1);
+ yInit = cropR(2);
+ xFinal = xInit + cropR(3);
+ yFinal = yInit + cropR(4);
+ 
+ im(yInit:yFinal, xInit:xFinal,:) = imc;
+
  %Bilateral filter
  sigmaS = 5;
  sigmaR = 15;

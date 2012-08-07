@@ -40,17 +40,26 @@ if((thisIm==minS && isempty(imSeg{thisIm+1,5}) ) || ...
     %probability of being in the object or background
     currentIm = imSeg{thisIm,5};
     
-    isObjInd = find(imSeg{thisIm,3});
+    isObjInd = imSeg{thisIm,3};
     isObj = currentIm(isObjInd);
     
-    isBkgInd = find(imSeg{thisIm,4});
+    isBkgInd = imSeg{thisIm,4};
     isBkg = currentIm(isBkgInd);
         
     probIntenBkg = hist(isBkg, inten);
-    probIntenBkg(inten<bkgVal(1)+bkgVal(3)*bkgVal(2)) = max(probIntenBkg);
    
     probIntenObj = hist(isObj, inten);
+   
     
+    %Make it so that dim and bright pixels are respectively binned with the
+    %background and object-this ansatz won't work for some types of
+    %segmentation.
+    probIntenBkg(inten<bkgVal(1)+bkgVal(3)*bkgVal(2)) = max(probIntenBkg);
+
+    ind = find(probIntenObj==max(probIntenObj));
+    
+    probIntenObj(inten>inten(ind)) = max(probIntenObj);
+
     %If these probabilities are zero then set the probability to be
     %uniform for all intensity values.
     if(sum(probIntenBkg)==0)
@@ -66,7 +75,9 @@ if((thisIm==minS && isempty(imSeg{thisIm+1,5}) ) || ...
     probIntenObj = probIntenObj/sum(probIntenObj);
     
     
-    
+    %Set maximum cost to be associated with any region to be 1.
+    probIntenObj = (1/max(probIntenObj))*probIntenObj; 
+    probIntenBkg = (1/max(probIntenBkg))*probIntenBkg; 
     %bayesIntenProbVal(1,:) = probInten(1,:).*probIntenBkg;
     %bayesIntenProbVal(2,:) = probInten(1,:).*probIntenObj;
     
@@ -75,10 +86,12 @@ if((thisIm==minS && isempty(imSeg{thisIm+1,5}) ) || ...
     bayesIntenProbVal(1,:) = probIntenBkg;
     bayesIntenProbVal(2,:) = probIntenObj;
     
+    bayesIntenProb{1,:} = {bayesIntenProbVal(1,:), inten};
+    bayesIntenProb{2,:} = {bayesIntenProbVal(2,:), inten};
     
     %Normalizing prob. dist.
-    bayesIntenProb{1,:} = {bayesIntenProbVal(1,:)/sum(bayesIntenProbVal(1,:)), inten};
-    bayesIntenProb{2,:} = {bayesIntenProbVal(2,:)/sum(bayesIntenProbVal(2,:)), inten};
+   % bayesIntenProb{1,:} = {bayesIntenProbVal(1,:)/sum(bayesIntenProbVal(1,:)), inten};
+    %bayesIntenProb{2,:} = {bayesIntenProbVal(2,:)/sum(bayesIntenProbVal(2,:)), inten};
     
     return
 end
@@ -176,4 +189,27 @@ indObj = cell2mat(arrayfun(@(inten)(...
 %Normalizing prob. dist.
 bayesIntenProb{1,:} = {bayesIntenProbVal(1,:)/sum(bayesIntenProbVal(1,:)), inten};
 bayesIntenProb{2,:} = {bayesIntenProbVal(2,:)/sum(bayesIntenProbVal(2,:)), inten};
+
+%Doing a simpler calculation of the probability distribution-this stuff
+%above is nice, but the result will be biased by the size of the cropping
+%window etc..
+
+%Normalizing height of each distribution to each other (note: thiswi
+
+ind = find(probIntenObj(1,:)==max(probIntenObj(1,:)), 1,'last');
+probIntenObj(1,inten>inten(ind)) = max(probIntenObj(1,:));
+
+
+ind = find(probIntenBkg(1,:)==max(probIntenBkg(1,:)),1,'first');
+probIntenBkg(1,inten<inten(ind)) = max(probIntenBkg(1,:));
+
+
+%Set maximum cost to be associated with any region to be 1.
+probIntenObj(1,:) = (1/max(probIntenObj(1,:)))*probIntenObj(1,:);
+probIntenBkg(1,:) = (1/max(probIntenBkg(1,:)))*probIntenBkg(1,:);
+
+bayesIntenProb{1,:} = {probIntenBkg(1,:), inten};
+bayesIntenProb{2,:} = {probIntenObj(1,:), inten};
+
+
 end
