@@ -72,8 +72,7 @@ switch nargin
         else
             data = varargin{5}; %To deal with an unused data structure that should be culled.
         end
-        param = varargin{6};
-        
+        param = varargin{6};        
 end
 
 totalNumRegions = length(unique([param.expData.Scan.region]));
@@ -123,8 +122,7 @@ for regNum=1:totalNumRegions
             
         switch loadType
             
-            case 'fullDirectory'
-                
+            case 'fullDirectory'               
                 imFileName = ...
                     strcat(scanDir,  'region_', num2str(regNum),filesep,...
                     colorType, filesep,'pco', num2str(imNum(regNum)),'.tif');

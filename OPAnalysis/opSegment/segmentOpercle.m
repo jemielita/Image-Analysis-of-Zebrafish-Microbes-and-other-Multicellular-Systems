@@ -7,6 +7,7 @@
 % ex: 'sp7_mef2ca_lapse_w1Yoko GFP_s14_t1.TIF'
 %number must be written without any leading zeros (e.g.  12 not 012)
 %
+% When runing the program the user will be prompted for several 
 function [] = segmentOpercle(varargin)
 
 %Hard code in what type of segmentation we're doing: '2d' or '3d'
@@ -80,6 +81,7 @@ if nargin==0
             %point
             %imSeg{i,6} = structure tha contains all the region properties that we
             %want to calculate for the opercle.
+            
             imSeg = cell(maxIm-minIm+1, 6);
         case 2
             imSeg = cell(maxIm-minIm+1,6);
