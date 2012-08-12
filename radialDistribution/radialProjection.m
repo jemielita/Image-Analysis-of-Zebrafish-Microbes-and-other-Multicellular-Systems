@@ -1,21 +1,72 @@
-function radIm = radialDist2(imStack, line, mask, radIm)
+%radialProjection: Calculate a projection perpendicular to the center line
+%through the gut down the entire length of the gut. This will be used to
+%calculate the radial distribution of bacteria in the gut and also how the
+%size of bacterial clusters changes down the length of the gut.
+%
+%USAGE radIm =  radialProjection(imStack, line, mask)
+%      [radIm, origIndAll, rotIndAll, regWidth, regDepth] =
+%      radialProjection(imStack, line, mask)
+%       [radIm, ....]  = radialProjection(..., radIm, origIndAll,
+%       rotIndAll, regWidth, regDepth);
+%
+%INPUT imStack: large array that contains a particular region of the gut
+%      line: line through the center of the gut. The radial projection
+%      will be done at at each point along this gut, with a depth equal to
+%      the distance between points on this line. Note: because of this
+%      indexing the first entry in this line won't be used (maybe want to
+%      change this in the future)
+%      mask: label matrix contains all the differen regions that we are
+%      calculating the radial projections for.
+%OUTPUT radIm: cell array containing the radial projection at each point
+%       along the line
+%      origIndAll: (optional) cell array containing the indices of all the
+%      points in the original image that will be mapped onto the rotated
+%      image, for calculating the projection
+%      rotIndAll: (optional) cell array containing indices in the rotated
+%      frame
+%      regWidth: (optional) width of each of the regions
+%      regDepth: (optional) depth of each of the regions.
+% Note: origIndAll, rotIndAll, regWidth, and regDepth can be passed as
+% input arguments to radialProjection to speed the code up.
+%
+% AUTHOR: Matthew Jemielita, August 12, 2012
+
+function varargout = radialProjection(imStack, line, mask,varargin)
 %Initialize arrays that we'll use for calculating the radial distribution.
-
-minL = 2;
-maxL = size(line,1);
-
-
-%mlj: preallocating array slightly increases speed, but not by much (~1-2
-%seconds)
-%radIm = cell(maxL-minL+1,1);
-
 maxZ = size(imStack,3);
-[radIm, origIndAll, rotIndAll] = getRegionIndices(line, mask, maxZ);
+
+if nargin==3
+   if nargout == 5
+    [radIm, origIndAll, rotIndAll,regWidth, regDepth] = getRegionIndices(line, mask, maxZ);
     
-radIm = getRegionMean(radIm, imStack, origIndAll, rotIndAll);
+    radIm = getRegionMean(radIm, imStack, origIndAll, rotIndAll,regWidth, regDepth);
+   end
+elseif nargin==8
+    radIm = varargin{1};
+    origIndAll = varargin{2};
+    rotIndAll = varargin{3};
+    regWidth = varargin{4};
+    regDepth = varargin{5};
+    %All arrays have been preallocated and indices calculated
+    radIm = getRegionMean(radIm, imStack, origIndAll, rotIndAll,regWidth, regDepth);
+else
+    disp('Radial Projection must be called with either 3 or 6 inputs!');
+    return
 end
 
-function [radIm, origIndAll, rotIndAll] = getRegionIndices(line, mask, maxZ)
+if nargout ==1
+    varargout{1} = radIm;
+elseif nargout ==5
+    varargout{1} = radIm;
+    varargout{2} = origIndAll;
+    varargout{3} = rotIndAll;
+    varargout{4} = regWidth;
+    varargout{5} = regDepth;
+end
+
+end
+
+function [radIm, origIndAll, rotIndAll,regWidth, regDepth] = getRegionIndices(line, mask, maxZ)
 minL = 2;
 maxL = size(line,1);
 
@@ -77,30 +128,33 @@ parfor nL = minL:maxL
     origIndAll{nL} = repmat(rotMask(rotInd), [1 length(zList)]) + origOffset;
    
     %Preallocating memory for radIm
-    radIm{nL} = zeros(size(rotMask,1), size(rotMask,2));
+    radIm{nL} = zeros(size(rotMask,1), maxZ-minZ+1);
+    
+    regWidth{nL} = size(rotMask,1);
+    regDepth{nL} = size(rotMask,2);
     
 end
 fprintf(1, 'done!\n');
 
 end
 
-function radIm = getRegionMean(radIm, imStack,origIndAll, rotIndAll)
+function radIm = getRegionMean(radIm, imStack,origIndAll, rotIndAll,regWidth, regDepth)
 minL = 2;
 maxL = length(radIm);
 
 %Depth in z of our array
 minZ = 1;maxZ = size(imStack,3);
 fprintf(1, 'Calculating radial projection of masks.');
-parfor nL = minL:maxL
+for nL = minL:maxL
     %mlj: NOTE: we're reallocating every single time...very inefficient!!
-    thisRegion = NaN*zeros(size(radIm{nL},1),size(radIm{nL},2), maxZ-minZ+1);
+    thisRegion = NaN*zeros(regWidth{nL}, maxZ-minZ+1,regDepth{nL});
     thisRegion(rotIndAll{nL}(:)) = imStack(origIndAll{nL}(:));
     
     radIm{nL} = squeeze(nanmean(thisRegion,2));
     
     fprintf(1, '.');
-
 end
+
 fprintf(1, 'done!\n');
 
 end
