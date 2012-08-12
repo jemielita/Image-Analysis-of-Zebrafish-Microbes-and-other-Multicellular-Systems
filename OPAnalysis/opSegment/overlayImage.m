@@ -39,10 +39,10 @@ if nargin==4
     
     %Regions that are in mask2 are blue (even if mask1 is also in that
     %region)
-    mask1(mask2>0) = 0;
-    mask1(mask3>0) = 0;
+   % mask1(mask2>0) = 0;
+    %mask1(mask3>0) = 0;
  
-    im(:,:,1) = im(:,:,1) + 0.1*mask1;
+    im(:,:,1) = im(:,:,1) + 0.3*mask1;
     im(:,:,3) = im(:,:,3)  + 0.1*mask3;
     im(:,:,2) = im(:,:,2) + 0.1*mask2;
     im = mat2gray(im);

@@ -8,6 +8,7 @@
 
 function [origIndex, rotIndex] = rotationIndex(mask, angle)
 
+%Uniquelly label each point in the original image
 ind = find(mask~=0);
 mask(ind) = ind;
 

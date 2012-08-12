@@ -9,6 +9,7 @@ if(~isdir(dirName))
     disp(strcat('Making the directory: ', dirName)); 
     mkdir(param.dataSaveDirectory, 'radialDist');
 end
+
 %Going through each of these arrays and averaging them across the boxes.
 %Note: need to test this code on a good test image.
 
@@ -17,12 +18,15 @@ end
 lineSpace = 1:3:length(xArr);
 lineSpace(end+1) = length(xArr)-1;
 
+
+%mlj: note: this should be passed in.
 %Allocate space for the image that we'll be working with
 im = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
 
 %Save the line that we're calculating this on
 filename = [param.dataSaveDirectory filesep 'radialDist' filesep 'rd.mat'];
 save(filename, 'xArr', 'yArr', 'lineExt');
+
 for lineSet =1:length(lineSpace)-1
     clear radRegionc
    %For each set of lines, preallocate enough memory for the entire z
@@ -30,6 +34,7 @@ for lineSet =1:length(lineSpace)-1
     theseLines = lineSpace(lineSet):lineSpace(lineSet+1)-1;
     disp(strcat('Calculating the radial distribution for the lines: ', num2Str(theseLines)));
     radRegion = cell(length(theseLines),1); 
+    
     for i = 1:length(radRegion)
         lineNum = theseLines(i);
         %Allocate enough memory for the entire width of the line, plus the
@@ -94,14 +99,13 @@ end
 function [xArr, yArr, lineExt] = radialDistInit(line, mask, param, averageBox, averageBoxType)
 
 minL = 2;
-maxL = 75;
+maxL = size(line,1)-1;
 
 %Use cell arrays, because the size of the gut at any point may be different
 xArr = cell(maxL-minL, 1);
 yArr = cell(maxL-minL, 1);
 
 aveVal = cell(maxL-minL,1);
-
 
 for i=minL:maxL
     fprintf(1,'.');
@@ -240,8 +244,7 @@ end
         %Replicate this array for points perpendicular to the line above. The line
         %will be replicated in step sizes of one pixel for a distance equal to
         %averageBox.
-        
-        
+         
         orthVectX = xVal-xx(lineNum);
         orthVectY = yVal -yy(lineNum);
         

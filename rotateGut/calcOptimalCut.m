@@ -197,7 +197,6 @@ end
             fprintf(1, '.');
         end
         
-      
         cutPoint = thisPoint;
     end
 

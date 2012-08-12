@@ -30,12 +30,17 @@ function regFeatures = analyzeGutSingleRegion(param, cutNum,analysisType,...
     scanNum, colorList)
 
 %Load in this region
-imStack = load3dVolume(
-totNumSteps = length(analysisType)
+imVar.color = '488nm';
+imVar.zNum = '';
+imVar.scanNum = scanNum;
+
+[imStack, centerLine, gutMask] = constructRotRegion(cutNum, scanNum, '488nm', param); 
+
+totNumSteps = length(analysisType);
 regFeatures = cell(totNumSteps,1);
 
 for stepNum = 1:totNumSteps
-   regFeatures{stepNum} = analysisStep(
+  % regFeatures{stepNum} = analysisStep(
     
     
 end
