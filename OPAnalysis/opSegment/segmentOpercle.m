@@ -814,7 +814,6 @@ end
                 imB(1:end,end-1:end) = 1;
                 imB(1:2, 1:end) = 1;
                 imB(end-1:end,1:end)= 1;
-                
 
                 %Estimate the probability of any given pixel being in the
                 %foreground/background
@@ -831,10 +830,13 @@ end
                 lambda = segParam.lambda;
                 bkgNoise = 0.01;
                 intenEst = estimateIntensityDist(imSeg, thisIm, bkgVal);
-                imGraph = graphCut(imC, imO, imB, intenEst, lambda, bkgNoise);
+               
+                %Make the opercle and background regions binary masks.
+                imO = imO>0;
+                imB = imB>0;
                 
-               %imGraph = ~imGraph; %Why isn't this coming out appropriately?
-                                
+                imGraph = graphCut(imC, imO, imB, intenEst, lambda, bkgNoise);
+                                                
                 %Remove regions with fewer than 100 pixels...need to set
                 %this further up in the code
                 minPixelNum = 100;
