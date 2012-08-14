@@ -94,7 +94,6 @@ if(length(stepZ)~=1)
    return;
 end
 
-
 posArray = minZ:stepZ:maxZ+stepZ;
 
 %Construct a cell array of all the positions in the z-direction that images

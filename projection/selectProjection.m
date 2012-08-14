@@ -18,6 +18,7 @@ if(nargin==6)
     imVar.zNum = varargin{6};
 end
 
+
 im = calculateProjection(type);
 
 
@@ -30,21 +31,27 @@ im = calculateProjection(type);
         if(strcmp(autoLoad, 'true'))
             if(isfield(param, 'dataSaveDirectory'))
                 try
-                    inputFile = load([param.dataSaveDirectory filesep 'FluoroScan_', num2str(imVar.scanNum), '.mat']);
+                  imTot = imread([param.dataSaveDirectory filesep...
+                         'FluoroScan_', num2str(imVar.scanNum), '_', imVar.color,'.tiff']);
                     
-                    switch projType
-                        case 'mip'     
-                            mip = inputFile.mip;
-                            imTot = mip{colorNum};
-                        case 'total'
-                            total = inputFile.total;
-                            imTot = total{colorNum};
-                    end
-                    
+%                     %See if the entry has already been loaded
+%                     inputFile = load([param.dataSaveDirectory filesep...
+%                         'FluoroScan_', num2str(imVar.scanNum), '_', imVar.color,'.tiff']);
+%                     
+%                     switch projType
+%                         case 'mip'     
+%                             mip = inputFile.mip;
+%                             imTot = mip{colorNum};
+%                         case 'total'
+%                             total = inputFile.total;
+%                             imTot = total{colorNum};
+%                     end
+%                     
                     return
                     
                 catch
-                    disp('Couldnt load projection...calculing it instead.');
+                    fprintf(1,'Calculating the maximum intensity projection for this scan number...');
+
                 end
             end
         end
