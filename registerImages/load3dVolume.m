@@ -23,6 +23,7 @@
 %        support for uint16, uint32, and double. Default is double.
 %
 % OUTPUT: imStack: 3d volume containing the entire desired 3d image stack.
+%        
 %
 % AUTHOR: Matthew Jemielita, Written: June 14, 2012. Modified: July 31, 2012
 
@@ -100,12 +101,11 @@ for nZ = 1:totalZ
     end
 end
 
-
 end
 
 
 %Load in all images in one particular cut of the gut
-function im = loadCutRegion(param, imVar, cutNumber, dataType)
+function im  = loadCutRegion(param, imVar, cutNumber, dataType)
 
 thisCut = cell(4,1);
 thisCut{1} = param.cutVal{cutNumber,1};
@@ -254,6 +254,8 @@ for nZ=minZ:maxZ
     im(:,:,nZ-minZ+1) = imRotate(xMin:xMax,yMin:yMax);
     
     fprintf(1, '.');
+    
+
 end
 
 end

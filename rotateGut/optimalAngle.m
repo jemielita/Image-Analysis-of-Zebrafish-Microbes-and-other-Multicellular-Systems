@@ -15,7 +15,7 @@
 function [height, width, angle, rotImSize] = optimalAngle(mask)
 
 %Get points on the surface of the mask
-mask = bwperim(mask);
+%mask = bwperim(mask);
 ind = find(mask==1);
 [x,y] = ind2sub(size(mask), ind);
 X = cat(1,x',y');
@@ -42,11 +42,5 @@ rotImSize(3) = minX;
 rotImSize(4) = maxX;
 rotImSize(5) = minY;
 rotImSize(6) = maxY;
-
-% 
-% rotMat = [cos(angle), -sin(angle); sin(angle), cos(angle)];
-% 
-% rotVal = rotMat*X;
-
 
 end

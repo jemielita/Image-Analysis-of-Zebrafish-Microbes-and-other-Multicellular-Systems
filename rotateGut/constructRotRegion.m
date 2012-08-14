@@ -69,13 +69,6 @@ cutMask = cutMask.*gutMask;
 
 
 rotMask = curveMask(cutMask, rotCenterLine, param,'rectangle');
-% 
-% 
-% figure; imshow(sum(rotMask,3))
-% hold on
-% plot(rotCenterLine(:,1), rotCenterLine(:,2), '*');
-% maxIm = max(imStack,[],3);
-
 
 %% Set all points outside the gut mask to be NaN
 outsideMask = ~cutMask;

@@ -93,7 +93,7 @@ if nargin==0
               
               %See if this particular file shares a name root with saveBase
               
-              isFile = regexp(name, saveBase);
+              isFile = regexp(name, saveBase{1});
               if(isFile==1)
                   
                   imNum = regexp(name, '\d+(?=.mat)', 'match');
@@ -117,7 +117,7 @@ if nargin==0
            end
                       
        case 3
-              allLoc = [saveDir filesep saveBase 'ALL.mat'];
+              allLoc = [saveDir filesep saveBase{1} 'ALL.mat'];
               imSeg = load(allLoc, 'imSeg');
               imSeg = imSeg.imSeg;
        otherwise
@@ -198,7 +198,7 @@ linkaxes(hAxes, 'xy');
 
 %Create a cropping rectangle around the opercle, to limit the region that
 %we do any segmentation.
-hRect = imrect(hAxes(1));
+hRect = imrect(hAxes(1),[200 200 100 100]);
 
 
 %%%%%% Callback funtions for various buttons on the screen and generic
@@ -231,7 +231,7 @@ hRect = imrect(hAxes(1));
     end
 
     function hObjText_Callback(varargin, eventdata)
-        objCutoff = get(hobjTextEdit, 'String');
+        objCutoff = get(hObjTextEdit, 'String');
         objCutoff = str2num(objCutoff);
         
         segParam.objCutoff = objCutoff;
@@ -366,7 +366,9 @@ hRect = imrect(hAxes(1));
                 if(autoSave==true)
                     saveSegmentation(3);
                 end
-                                
+
+                
+                               b = 0;
             case 'f' 
                 %Filter the image stack-used for testing what filters we
                 %should be using
@@ -470,21 +472,7 @@ hRect = imrect(hAxes(1));
         
         %The left arrow key was pressed
         if(index~=1)
-            if(~isempty(hPoly))
-                
-                %Get the position of the polygon for this level...we'll
-                %save this and use to to further remove extraneous
-                %regions from the segmented opercle.
-                posApi = iptgetapi(hPoly);
-                polyZ{index} = posApi.getPosition();
-                
-                delete(hPoly);
-                if(isempty(polyZ{index-1}))
-                    hPoly = impoly(hAxes(2), polyZ{index}, 'Closed', true);
-                else
-                    hPoly = impoly(hAxes(2), polyZ{index-1}, 'Closed', true);
-                end
-            end
+
             index = index-1;
          
             displayNewImage();
@@ -502,28 +490,7 @@ hRect = imrect(hAxes(1));
         end
         
         %The right arrow key was pressed
-        if(index==maxN &&~isempty(hPoly))
-            posApi = iptgetapi(hPoly);
-            polyZ{index} = posApi.getPosition();
-        end
-        if(index~=maxN)
-            
-            if(~isempty(hPoly))
-                
-                %Get the position of the polygon for the previous level...we'll
-                %save this and use to to further remove extraneous
-                %regions from the segmented opercle.
-                posApi = iptgetapi(hPoly);
-                polyZ{index} = posApi.getPosition();
-                
-                delete(hPoly)
-                if(isempty(polyZ{index+1}))
-                    hPoly = impoly(hAxes(2), polyZ{index}, 'Closed', true);
-                else
-                    hPoly = impoly(hAxes(2), polyZ{index+1}, 'Closed', true);
-                end
-            end
-            
+        if(index~=maxN)            
             index = index+1;
             displayNewImage();
                         
@@ -748,8 +715,7 @@ end
             case '2d'
                 if(isempty(imSeg{thisIm,1}))
                     imSeg{thisIm,1} = zeros(size(im,1), size(im,2));
-                end
-                
+                end                
                 segMask = imSeg{thisIm, 1};
                 imOut = overlayImage(imMIP, segMask>0, isOpercle, isBackground);
         end
@@ -877,6 +843,14 @@ end
                 %Remove regions stuck to the boundary of the image
                 imGraph = imclearborder(imGraph);
                 
+                %Remove holes in the segmented regions
+                bwHole = bwconncomp(~imGraph,4);
+                holeSize = cellfun(@length, bwHole.PixelIdxList);
+                ind = find(holeSize~=max(holeSize));
+                for i=1:length(ind)
+                    imGraph(bwHole.PixelIdxList{ind(i)}) = 1;
+                end
+                
                 %Update segmented opercle in cropped region of the image                
                 imSeg{thisIm,1} = zeros(size(im,1), size(im,2));
                 imSeg{thisIm,1}(yInit:yFinal, xInit:xFinal) = imGraph;
@@ -885,8 +859,7 @@ end
                 imSeg{thisIm,1} = imSeg{thisIm,1}>0;
 
             case '3d'
-                outIm = imSeg(:,:,index);
-        
+                outIm = imSeg(:,:,index);   
         end
         
         fprintf(1, 'done!\n');

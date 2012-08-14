@@ -26,20 +26,42 @@
 %
 %AUTHOR: Matthew Jemielita, August 3, 2012
 
-function regFeatures = analyzeGutSingleRegion(param, cutNum,analysisType,...
+function regFeatures = analyzeGutSingleRegion(param,cutNum,analysisType,...
     scanNum, colorList)
 
 %Load in this region
-imStack = load3dVolume(
-totNumSteps = length(analysisType)
+imVar.color = '488nm';
+imVar.zNum = '';
+imVar.scanNum = scanNum;
+
+[imStack, centerLine, gutMask] = constructRotRegion(cutNum, scanNum, '488nm', param); 
+
+totNumSteps = length(analysisType);
 regFeatures = cell(totNumSteps,1);
 
 for stepNum = 1:totNumSteps
-   regFeatures{stepNum} = analysisStep(
+    
+   regFeatures{stepNum} = ...
+   analysisStep(imStack, centerLine, gutMask, analysisType(i),regFeatures);
     
     
 end
 
 
+
+end
+
+%Large switch function that contains all the analysis functions that we've
+%worked on so far
+function regFeatures = analysisStep(imStack, centerLine, gutMask,...
+    analysisType, regFeatures)
+
+switch analysisType.name
+    case 'radialProjection'
+        %mlj: Need to build in support for preallocating arrays
+        regFeatures = radialProjection(imStack, centerLine, gutMask);
+    case 'linearIntensity'
+        regFeatures = intensityCurve(imStack, gutMask);
+end
 
 end
