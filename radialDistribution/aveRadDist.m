@@ -1,9 +1,8 @@
-function [] = aveRadDist(radialMask, radialIm, param, varargin)
+function [] = aveRadDist(radialMask, radialIm, ~, varargin)
 
 L = bwlabel(radialMask);
 props = regionprops(L);
 center = props.Centroid;
-
 
 %Get the maximum radius that we'll see for this data
 perim = bwperim(radialMask);
