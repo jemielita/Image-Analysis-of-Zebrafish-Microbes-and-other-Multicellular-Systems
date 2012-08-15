@@ -1,6 +1,6 @@
-function [] = aveRadDist(radialMask, radialIm, param, varargin)
+function [] = aveRadDist(radialMask, radialIm, ~, varargin)
 
-L = bwlabel(radialMask);
+L = logical(radialMask);
 props = regionprops(L);
 center = props.Centroid;
 

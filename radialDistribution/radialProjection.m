@@ -36,7 +36,7 @@ function varargout = radialProjection(imStack, line, mask,varargin)
 maxZ = size(imStack,3);
 
 if nargin==3
-   if nargout == 5
+   if (nargout == 5||nargout==1)
     [radIm, origIndAll, rotIndAll,regWidth, regDepth] = getRegionIndices(line, mask, maxZ);
     
     radIm = getRegionMean(radIm, imStack, origIndAll, rotIndAll,regWidth, regDepth);

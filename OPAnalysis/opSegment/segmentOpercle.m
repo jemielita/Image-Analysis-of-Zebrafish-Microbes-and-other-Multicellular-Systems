@@ -155,6 +155,18 @@ displayFeatures = true;
 hDisplayFeatures = uimenu(hMenuDisp, 'Label', 'Display region Features', ...
     'Callback', @displayRegFeatures_Callback, 'Checked', 'on');
 
+hMenuSegment = uimenu('Label', 'Segment');
+hAutoSeg = uimenu(hMenuSegment, 'Label', 'Auto segment the time series', ...
+    'Callback', @autoSeg_Callback);
+autoUpdateSeg = false;
+
+hUpdateSeg = uimenu(hMenuSegment, 'Label', 'Automatically update after placing masks',...
+    'Callback', @updateSeg_Callback, 'Checked', 'off');
+
+autoUpdateSegTime = false;
+hUpdateSegTime = uimenu(hMenuSegment, 'Label', 'Automatically update after going to a new time',...
+    'Callback', @updateSegTime_Callback, 'Checked', 'off');
+
 %Sliders for controlling segementation parameters
 
 hManipPanel = uipanel('Parent', h_fig, 'Units', 'Normalized', ...
@@ -326,9 +338,21 @@ hRect = imrect(hAxes(1),[200 200 100 100]);
                     loadRectLoc(hRect,thisIm);
                     %segmentImage('initial');
                     
-                    displayNewImage();  
-                    updateSegImage(imMIP, im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index, displayMIP,displayFeatures);
-
+                    displayNewImage();
+                    if(autoUpdateSeg ==true)
+                        
+                        imSeg = segmentImage(imMIP, imSeg, thisIm, isOpercle, isBackground,hRect, '2d', segParam);
+                        
+                        %Calculate properties of the segmented regions
+                        imSeg = calcRegProps(imSeg, thisIm);
+                        updateSegImage(imMIP , im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index,displayMIP,displayFeatures);
+                        
+                        if(autoSave==true)
+                            saveSegmentation(3);
+                        end
+                    else
+                        updateSegImage(imMIP, im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index,displayMIP,displayFeatures);
+                    end
                 end
                 
             case 'rightarrow'
@@ -340,23 +364,66 @@ hRect = imrect(hAxes(1),[200 200 100 100]);
                     loadRectLoc(hRect, thisIm);
                     
                     displayNewImage();
-                    updateSegImage(imMIP, im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index, displayMIP,displayFeatures);
-
+                    
+                    if(autoUpdateSeg ==true)
+                        
+                        imSeg = segmentImage(imMIP, imSeg, thisIm, isOpercle, isBackground,hRect, '2d', segParam);
+                        
+                        %Calculate properties of the segmented regions
+                        imSeg = calcRegProps(imSeg, thisIm);
+                        updateSegImage(imMIP , im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index,displayMIP,displayFeatures);
+                        
+                        if(autoSave==true)
+                            saveSegmentation(3);
+                        end
+                    else
+                        updateSegImage(imMIP, im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index,displayMIP,displayFeatures);
+                    end
+                    
+                    
                 end
 
                 %%%%%% Keys used by the user to select regions inside %%%%
                 %%%%%% and outside the opercle                        %%%%
             case 'o'
-      
+                
                 %Will now instead be used to draw where the opercle is
                 drawLine('opercle');
-                updateSegImage(imMIP, im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index,displayMIP,displayFeatures);
+                
+                if(autoUpdateSeg ==true)
+                    
+                    imSeg = segmentImage(imMIP, imSeg, thisIm, isOpercle, isBackground,hRect, '2d', segParam);
+                    
+                    %Calculate properties of the segmented regions
+                    imSeg = calcRegProps(imSeg, thisIm);
+                    updateSegImage(imMIP , im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index,displayMIP,displayFeatures);
+                    
+                    if(autoSave==true)
+                        saveSegmentation(3);
+                    end
+                else
+                    updateSegImage(imMIP, im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index,displayMIP,displayFeatures);
+                end
+                
             case 'b'
+                
                 %Add a line to show where the background is
                 drawLine('background');
-                updateSegImage(imMIP, im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index, displayMIP,displayFeatures);
-           
-            case 's'                
+                
+                if(autoUpdateSeg==true)
+                     imSeg = segmentImage(imMIP, imSeg, thisIm, isOpercle, isBackground,hRect, '2d', segParam);
+                    
+                    %Calculate properties of the segmented regions
+                    imSeg = calcRegProps(imSeg, thisIm);
+                    updateSegImage(imMIP , im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index,displayMIP,displayFeatures);
+                    
+                    if(autoSave==true)
+                        saveSegmentation(3);
+                    end
+                else
+                    updateSegImage(imMIP, im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index, displayMIP,displayFeatures);
+                end
+            case 's'
                 imSeg = segmentImage(imMIP, imSeg, thisIm, isOpercle, isBackground,hRect, '2d', segParam);
                 
                 %Calculate properties of the segmented regions
@@ -561,6 +628,78 @@ hRect = imrect(hAxes(1),[200 200 100 100]);
         updateSegImage(imMIP , im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index,displayMIP,displayFeatures);
 
         
+    end
+
+    function autoSeg_Callback(~,~)
+     %Automatically go through a time stack segmenting the opercle
+        segDir = inputdlg('Go forward (1) or backward (2) in time to automatically segment opercle');
+        segDir = segDir{1};
+        fprintf(1, 'Automatically segmenting time series');
+        origInd = thisIm;
+        switch segDir
+            case '1'
+                while(thisIm<=origInd+5)
+                    [isOpercle, isBackground,im, imOrig, imMIP] = loadImage(isOpercle, isBackground);
+
+                    imSeg = segmentImage(imMIP, imSeg, thisIm, isOpercle, isBackground,hRect, '2d', segParam);
+                    imSeg = calcRegProps(imSeg, thisIm);
+                    if(autoSave==true)
+                        saveSegmentation(3);
+                    end
+                    if(thisIm~=maxIm)
+                        thisIm = thisIm+1;
+                    end
+                    fprintf(1, '.');
+                end
+            case '2'
+                while(thisIm>=minIm)
+                    [isOpercle, isBackground,im, imOrig, imMIP] = loadImage(isOpercle, isBackground);
+
+                    imSeg = segmentImage(imMIP, imSeg, thisIm, isOpercle, isBackground,hRect, '2d', segParam);
+                    imSeg = calcRegProps(imSeg, thisIm);
+                    if(autoSave==true)
+                        saveSegmentation(3);
+                    end
+                    
+                    if(thisIm~=minIm)
+                        thisIm = thisIm-1;
+                    end
+                    fprintf(1, '.');
+                end
+                
+        end
+        thisIm = origInd;
+        updateSegImage(imMIP , im, imSeg, thisIm, isOpercle, isBackground, typeSeg, hSegImage,index,displayMIP,displayFeatures);
+
+        fprintf(1, 'done!\n');
+        
+        
+    end
+
+
+    function updateSeg_Callback(~,~)
+        
+        isCheck = get(hUpdateSeg, 'Checked');
+        if(strcmp(isCheck, 'off'))
+            set(hUpdateSeg, 'Checked', 'on');
+            autoUpdateSeg = true;
+            
+        else
+            set(hUpdateSeg, 'Checked', 'off');
+            autoUpdateSeg = false;
+        end
+    end
+    function updateSegTime_Callback(~,~)
+        
+        isCheck = get(hUpdateSegTime, 'Checked');
+        if(strcmp(isCheck, 'off'))
+            set(hUpdateSegTime, 'Checked', 'on');
+            autoUpdateSegTime = true;
+            
+        else
+            set(hUpdateSegTime, 'Checked', 'off');
+            autoUpdateSegTime = false;
+        end
     end
 
     function displayMIP_Callback(hObject, eventdata)

@@ -122,6 +122,7 @@ uimenu(hMenuOutline, 'Label', 'Draw center of gut', 'Separator', 'on', ...
 uimenu(hMenuOutline, 'Label', 'Load center of gut', 'Callback', @loadGutCenter_Callback);
 uimenu(hMenuOutline, 'Label', 'Smooth line', 'Callback', @smoothGutCenter_Callback);
 uimenu(hMenuOutline, 'Label', 'Save line', 'Callback', @saveGutCenter_Callback);
+uimenu(hMenuOutline, 'Label', 'Clear center of gut line', 'Callback', @clearGutCenter_Callback);
 
 hMenuDisplay = uimenu('Label', 'Display');
 hMenuContrast = uimenu(hMenuDisplay, 'Label', 'Adjust image contrast', 'Callback', @adjustContrast_Callback);
@@ -796,7 +797,7 @@ hContrast = imcontrast(imageRegion);
         else
             set(hMenuRegisterManual, 'Checked', 'on');
             getIndividualRegions();
-            manualRegisterImage_Callback('','');
+           % manualRegisterImage_Callback('','');
             set(hxyRegTable, 'Visible', 'on');
             set(hMenuAlternateRegions, 'Visible', 'on');
             
@@ -1235,6 +1236,16 @@ hContrast = imcontrast(imageRegion);
         end
         
     end
+
+    function clearGutCenter_Callback(~,~)
+       %Delete any lines places on the iamge
+        hLine = findobj('Tag', 'gutCenter');
+        if(ishandle(hLine))
+            delete(hLine);
+        end
+       
+    end
+
     function loadGutCenter_Callback(hObject, eventdata)
         if(isfield(param, 'centerLine'))
             hLine = findobj('Tag', 'gutCenter');

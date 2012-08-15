@@ -42,8 +42,7 @@ regFeatures = cell(totNumSteps,1);
 for stepNum = 1:totNumSteps
     
    regFeatures{stepNum} = ...
-   analysisStep(imStack, centerLine, gutMask, analysisType(i),regFeatures);
-    
+   analysisStep(imStack, centerLine, gutMask, analysisType(i),regFeatures);   
     
 end
 
