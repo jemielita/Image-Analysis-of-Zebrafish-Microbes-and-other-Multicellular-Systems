@@ -14,11 +14,10 @@ end
 numColor = length(param.color);
 numScans = param.expData.totalNumberScans;
 
-sList = [1 4 10];
-numScans = 3;
+saveType  = 'tiff';
 
-for nSt=1:numScans
-    nS = sList(nSt);
+for nS=1:numScans
+   
     disp(['Calculating mip for scan ', num2str(nS)]);
     for nC=1:numColor
         imVar.color =param.color{nC};
@@ -28,9 +27,23 @@ for nSt=1:numScans
         mip{nC} = selectProjection(param, 'mip',1, imVar);
         fprintf(2, '\n');
     end
-    %Then save the result
-    saveName = [param.dataSaveDirectory, filesep, 'FluoroScan_', num2str(nS),'.mat'];
-    save(saveName, 'mip');
+    
+    switch saveType
+        case 'mat'
+        %Save the projection as a .mat file
+        saveName = [param.dataSaveDirectory, filesep, 'FluoroScan_', num2str(nS),'.mat'];
+        save(saveName, 'mip');
+        
+        case 'tiff'
+          for nC=1:numColor
+              color =param.color{nC};
+              saveName = [param.dataSaveDirectory, filesep,...
+                  'FluoroScan_', num2str(nS),'_', color, '.tiff'];
+              imwrite(uint16(mip{nC}), saveName);
+          end
+          
+    end
+
 end
 
 

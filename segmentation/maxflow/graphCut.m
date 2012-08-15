@@ -48,7 +48,6 @@ if(nargin>=3)
     %(should do this slightly different in the future)
     isSource = find(maskSource==1);
     isSink = find(maskSink==1);
-
 end
 
 if(nargin==3)    

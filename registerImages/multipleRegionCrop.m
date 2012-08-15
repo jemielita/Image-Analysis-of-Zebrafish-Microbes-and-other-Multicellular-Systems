@@ -358,7 +358,7 @@ hContrast = imcontrast(imageRegion);
             im = denoiseImage(im);
         end
         
-            imwrite(im, strcat(pathname,filename), 'tiff');
+            imwrite(uint16(im), strcat(pathname,filename), 'tiff');
         end
         
               
@@ -796,7 +796,7 @@ hContrast = imcontrast(imageRegion);
         else
             set(hMenuRegisterManual, 'Checked', 'on');
             getIndividualRegions();
-            
+            manualRegisterImage_Callback('','');
             set(hxyRegTable, 'Visible', 'on');
             set(hMenuAlternateRegions, 'Visible', 'on');
             
@@ -936,10 +936,6 @@ hContrast = imcontrast(imageRegion);
                 im = zeros(param.regionExtent.regImSize{i+1});
                 %hIm = imshow(im,[],'Parent', imageRegion);
                
-                hContrast = findobj('Tag', 'imcontrast');
-                if(~isempty(hContrast))
-                    delete(hContrast);
-                end
                 set(hIm, 'CData', im);
                 set(imageRegion, 'YLim', [1 param.regionExtent.regImSize{i+1}(1)]);
                 set(imageRegion, 'XLim', [1 param.regionExtent.regImSize{i+1}(2)]);
@@ -1006,6 +1002,14 @@ hContrast = imcontrast(imageRegion);
             outlineRegions();
         end
          
+        %Update image contrast
+                        hContrast = findobj('Tag', 'imcontrast');
+                if(~isempty(hContrast))
+                    delete(hContrast);
+                    hContrat = imcontrast(imageRegion);
+                
+                end
+                
 
     end
     function colorSlider_Callback(hObject, eventData)
@@ -1352,7 +1356,7 @@ hContrast = imcontrast(imageRegion);
             case 'mip'
                 %'true'-> autoload the maximum intensity projection if it
                 %has already been calculated.
-                fprintf(1,'Calculating the maximum intensity projection for this scan number...');
+                param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
                 im = selectProjection(param, 'mip', 'true', scanNum,color, zNum);
                 fprintf(1, 'done!\n');
                 

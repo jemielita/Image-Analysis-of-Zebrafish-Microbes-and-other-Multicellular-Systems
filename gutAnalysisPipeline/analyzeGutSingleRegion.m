@@ -34,6 +34,7 @@ imVar.color = '488nm';
 imVar.zNum = '';
 imVar.scanNum = scanNum;
 
+
 [imStack, centerLine, gutMask] = constructRotRegion(cutNum, scanNum, '488nm', param); 
 
 totNumSteps = length(analysisType);
@@ -42,8 +43,8 @@ regFeatures = cell(totNumSteps,1);
 for stepNum = 1:totNumSteps
     
    regFeatures{stepNum} = ...
-   analysisStep(imStack, centerLine, gutMask, analysisType(i),regFeatures);
-    
+   analysisStep(imStack, centerLine, gutMask, analysisType(i),regFeatures,...
+   stepNum);  
     
 end
 
@@ -54,14 +55,45 @@ end
 %Large switch function that contains all the analysis functions that we've
 %worked on so far
 function regFeatures = analysisStep(imStack, centerLine, gutMask,...
-    analysisType, regFeatures)
+    analysisType, regFeatures, stepNum)
 
 switch analysisType.name
     case 'radialProjection'
         %mlj: Need to build in support for preallocating arrays
         regFeatures = radialProjection(imStack, centerLine, gutMask);
+        
     case 'linearIntensity'
         regFeatures = intensityCurve(imStack, gutMask);
+    
+    case 'radialDistribution'
+        %Find the point in this analysis chain where we calculate the
+        %radial projections
+        
+        %Use previously calculated radial projections
+        ind = analysisType.param.father;
+        if(~strcmp(analysisType(ind).name, 'radialProjection'))
+            fprintf(2, 'radialDistribution error: Pointer to radial projections is incorrect!');
+            error = 1;
+            return
+        else
+           regFeatures = radDistAll(regFeatures{ind}, centerLine, ...
+               analysisType(stepNum).param);
+        end
 end
+
+
+%mlj: need to deal with saving the results appropriately.
+
+end
+
+function intenR = radDistAll(radIm, centerLine, analParam)
+radBin = analParam.binSize;
+
+ind = 1:length(radIm);
+
+%Calculating the radial distribution for each of these regions.
+intenR = arrayfun(@(x) radDist(radIm(x), centerPoint(x,:), radBin), ind,...
+    'UniformOutput', false);
+%mlj: should we make the end result a matrix?
 
 end

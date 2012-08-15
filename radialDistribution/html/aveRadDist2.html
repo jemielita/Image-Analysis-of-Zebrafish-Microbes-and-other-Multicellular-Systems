@@ -1,0 +1,281 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   
+      <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      -->
+      <title>aveRadDist2</title>
+      <meta name="generator" content="MATLAB 7.7">
+      <meta name="date" content="2012-08-15">
+      <meta name="m-file" content="aveRadDist2"><style type="text/css">
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+   <body>
+      <div class="content"><pre class="codeinput"><span class="comment">% radDist: Calculate the average pixel intensity as a function of the</span>
+<span class="comment">% distance from the center of the radial projection.</span>
+<span class="comment">% The center of the radial projection is given by the point on the user</span>
+<span class="comment">% drawn center of the gut and the location of the median pixel intensity in</span>
+<span class="comment">% the other direction</span>
+<span class="comment">%</span>
+<span class="comment">% USAGE intenR = aveRadDist(radialIm, centerPoint, radBin)</span>
+<span class="comment">%</span>
+<span class="comment">% INPUT radialIm: 2D image of the radial projection of the gut at a certain</span>
+<span class="comment">%          point</span>
+<span class="comment">%       centerPoint: location of the center of the gut line</span>
+<span class="comment">%          ex. If we load in projection radIM{2} then we also need to load</span>
+<span class="comment">%          in centerLine{2}</span>
+<span class="comment">%       radBin: The binning size in microns</span>
+<span class="comment">% OUTPUT intenR: nx2 array where the first column is the radius and the</span>
+<span class="comment">%         second column is the average intensity at that radius. More</span>
+<span class="comment">%         properties of the radial distribution may be added over time.</span>
+<span class="comment">%</span>
+<span class="comment">% AUTHOR Matthew Jemielita, August 14, 2012</span>
+
+<span class="keyword">function</span> intenR = radDist(radialIm, centerPoint, radBin, varargin)
+
+center(1) = 50; <span class="comment">%This is going to come as an input from centerLine-our line that we drew through the center of the gut</span>
+center(2) = 50; <span class="comment">%This should be some prescribed midpoint of the radial projection, either the center of mass or the geometric mean of the data</span>
+
+
+<span class="comment">%Find the maximum distance of all these points to the center-this is the</span>
+<span class="comment">%maximum radius we'll find</span>
+
+
+<span class="comment">%Get the maximum radius that we'll see for this data</span>
+perim = bwperim(radialIm&gt;0);
+[x, y] = find(perim==1);
+
+dist = sqrt((x-center(1)).^2 + (y-center(2)).^2);
+maxRadius = max(dist); maxRadius = floor(maxRadius);
+
+<span class="comment">%Get the coordinates for all points on the circle.</span>
+numPoints = 2*2*pi*sum(1:maxRadius); <span class="comment">%The extra two is for padding</span>
+numPoints = ceil(numPoints);
+
+x = NaN*zeros(numPoints, 1); y = NaN*zeros(numPoints,1);
+allTheta = NaN*zeros(numPoints, 1);
+n= 1;<span class="comment">%counter</span>
+
+
+<span class="keyword">for</span> radius = 1:maxRadius
+   <span class="comment">%Appropriate dTheta to use at this radius so that at every given radius</span>
+   <span class="comment">%we're sampling at points 1 pixel apart.</span>
+
+   perim = 2*pi*radius;
+   numTheta = round(perim);
+   dTheta = 2*pi/numTheta;
+
+   <span class="keyword">for</span> tn=1:numTheta
+       theta = dTheta*tn;
+       <span class="comment">%We really should pre-allocate, but I doubt this will take all that</span>
+       <span class="comment">%long either way.</span>
+       x(n) = center(1) + radius*cos(theta);
+       y(n) = center(2) + radius*sin(theta);
+
+       allTheta(n) = theta;
+       n = n+1;
+
+   <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+<span class="comment">%Unpad the arrays</span>
+index = find(isnan(x));
+x(index) = [];
+y(index) = [];
+allTheta(index) = [];
+<span class="comment">%Remove indices that shot past the boundaries of the region</span>
+dist = sqrt( (x-center(1)).^2 + (y-center(2)).^2);
+index = find(dist&gt;maxRadius);
+x(index) = []; y(index) = []; allTheta(index) = [];
+dist(index) = [];
+<span class="comment">%Interpolate at these points</span>
+z = interp2(radialIm, x, y);
+
+<span class="comment">%Unpack these values to give the intensity as a function of radius</span>
+
+
+<span class="comment">%Bin these intensities appropriately</span>
+<span class="comment">%Convert distance to microns</span>
+dist = 0.1625*dist;
+dist = dist-mod(dist, radBin);
+
+radius = unique(dist);
+<span class="comment">%For all given radii find the positions in the interpolated image that have</span>
+<span class="comment">%that distance to the center of the region. For all those points calculate</span>
+<span class="comment">%the mean pixel intensity.</span>
+intenR = arrayfun(@(r)nanmean(z(find(dist==r))), radius, <span class="string">'UniformOutput'</span>, false);
+intenR = cell2mat(intenR);
+
+intenR = cat(2, radius, intenR);
+<span class="keyword">end</span>
+</pre><pre class="codeoutput">Input argument "radialIm" is undefined.
+
+Error in ==&gt; aveRadDist2 at 32
+perim = bwperim(radialIm&gt;0);
+</pre><p class="footer"><br>
+            Published with MATLAB&reg; 7.7<br></p>
+      </div>
+      <!--
+##### SOURCE BEGIN #####
+% radDist: Calculate the average pixel intensity as a function of the
+% distance from the center of the radial projection.
+% The center of the radial projection is given by the point on the user
+% drawn center of the gut and the location of the median pixel intensity in
+% the other direction
+%
+% USAGE intenR = aveRadDist(radialIm, centerPoint, radBin)
+%
+% INPUT radialIm: 2D image of the radial projection of the gut at a certain
+%          point
+%       centerPoint: location of the center of the gut line
+%          ex. If we load in projection radIM{2} then we also need to load
+%          in centerLine{2}
+%       radBin: The binning size in microns
+% OUTPUT intenR: nx2 array where the first column is the radius and the
+%         second column is the average intensity at that radius. More
+%         properties of the radial distribution may be added over time.
+%
+% AUTHOR Matthew Jemielita, August 14, 2012
+
+function intenR = radDist(radialIm, centerPoint, radBin, varargin)
+
+center(1) = 50; %This is going to come as an input from centerLine-our line that we drew through the center of the gut
+center(2) = 50; %This should be some prescribed midpoint of the radial projection, either the center of mass or the geometric mean of the data
+
+
+%Find the maximum distance of all these points to the center-this is the
+%maximum radius we'll find
+
+
+%Get the maximum radius that we'll see for this data
+perim = bwperim(radialIm>0);
+[x, y] = find(perim==1);
+
+dist = sqrt((x-center(1)).^2 + (y-center(2)).^2);
+maxRadius = max(dist); maxRadius = floor(maxRadius);
+
+%Get the coordinates for all points on the circle.
+numPoints = 2*2*pi*sum(1:maxRadius); %The extra two is for padding
+numPoints = ceil(numPoints);
+
+x = NaN*zeros(numPoints, 1); y = NaN*zeros(numPoints,1);
+allTheta = NaN*zeros(numPoints, 1);
+n= 1;%counter
+
+
+for radius = 1:maxRadius
+   %Appropriate dTheta to use at this radius so that at every given radius
+   %we're sampling at points 1 pixel apart.
+   
+   perim = 2*pi*radius;
+   numTheta = round(perim);
+   dTheta = 2*pi/numTheta;
+   
+   for tn=1:numTheta
+       theta = dTheta*tn;
+       %We really should pre-allocate, but I doubt this will take all that
+       %long either way.
+       x(n) = center(1) + radius*cos(theta);
+       y(n) = center(2) + radius*sin(theta);
+       
+       allTheta(n) = theta;
+       n = n+1;
+       
+   end
+end
+
+%Unpad the arrays
+index = find(isnan(x));
+x(index) = [];
+y(index) = [];
+allTheta(index) = [];
+%Remove indices that shot past the boundaries of the region
+dist = sqrt( (x-center(1)).^2 + (y-center(2)).^2);
+index = find(dist>maxRadius);
+x(index) = []; y(index) = []; allTheta(index) = [];
+dist(index) = [];
+%Interpolate at these points 
+z = interp2(radialIm, x, y);
+
+%Unpack these values to give the intensity as a function of radius
+
+
+%Bin these intensities appropriately
+%Convert distance to microns
+dist = 0.1625*dist;
+dist = dist-mod(dist, radBin);
+
+radius = unique(dist);
+%For all given radii find the positions in the interpolated image that have
+%that distance to the center of the region. For all those points calculate
+%the mean pixel intensity.
+intenR = arrayfun(@(r)nanmean(z(find(dist==r))), radius, 'UniformOutput', false);
+intenR = cell2mat(intenR);
+
+intenR = cat(2, radius, intenR);
+end
+
+
+##### SOURCE END #####
+-->
+   </body>
+</html>
