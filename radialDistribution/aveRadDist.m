@@ -4,7 +4,6 @@ L = logical(radialMask);
 props = regionprops(L);
 center = props.Centroid;
 
-
 %Get the maximum radius that we'll see for this data
 perim = bwperim(radialMask);
 [x, y] = find(perim==1);

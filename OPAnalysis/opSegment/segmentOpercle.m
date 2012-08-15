@@ -79,7 +79,7 @@ if nargin==0
             %imSeg{i,4} = image index of points outside opercle
             %imSeg{i,5} = maximum intensity projection of the opercle at this time
             %point
-            %imSeg{i,6} = structure tha contains all the region properties that we
+            %imSeg{i,6} = structure that contains all the region properties that we
             %want to calculate for the opercle.
             
             imSeg = cell(maxIm-minIm+1, 6);
