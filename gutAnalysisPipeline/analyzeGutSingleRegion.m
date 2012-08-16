@@ -34,7 +34,6 @@ imVar.color = '488nm';
 imVar.zNum = '';
 imVar.scanNum = scanNum;
 
-
 [imStack, centerLine, gutMask] = constructRotRegion(cutNum, scanNum, '488nm', param); 
 
 totNumSteps = length(analysisType);
@@ -43,7 +42,7 @@ regFeatures = cell(totNumSteps,1);
 for stepNum = 1:totNumSteps
     
    regFeatures{stepNum} = ...
-   analysisStep(imStack, centerLine, gutMask, analysisType(stepNum),regFeatures,...
+   analysisStep(imStack, centerLine, gutMask, analysisType,regFeatures,...
    stepNum);  
 
     
@@ -58,7 +57,7 @@ end
 function regFeatures = analysisStep(imStack, centerLine, gutMask,...
     analysisType, regFeatures, stepNum)
 
-switch analysisType.name
+switch analysisType(stepNum).name
     case 'radialProjection'
         %mlj: Need to build in support for preallocating arrays
         regFeatures = radialProjection(imStack, centerLine, gutMask);
@@ -71,7 +70,7 @@ switch analysisType.name
         %radial projections
         
         %Use previously calculated radial projections
-        ind = analysisType.param.father;
+        ind = analysisType(stepNum).param.father;
         if(~strcmp(analysisType(ind).name, 'radialProjection'))
             fprintf(2, 'radialDistribution error: Pointer to radial projections is incorrect!');
             error = 1;
@@ -93,7 +92,7 @@ radBin = analParam.binSize;
 ind = 1:length(radIm);
 
 %Calculating the radial distribution for each of these regions.
-intenR = arrayfun(@(x) radDist(radIm(x), centerPoint(x,:), radBin), ind,...
+intenR = arrayfun(@(x) radDist(radIm{x}, centerLine(x,:), radBin), ind,...
     'UniformOutput', false);
 %mlj: should we make the end result a matrix?
 

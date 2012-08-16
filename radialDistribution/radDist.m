@@ -17,16 +17,29 @@
 %         properties of the radial distribution may be added over time.
 %
 % AUTHOR Matthew Jemielita, August 14, 2012
+%
+%NOTE: Not respecting axis ratio!!!-this should now be fixed. Worth
+%checking again.
 
 
-%NOTE: Not respecting axis ratio!!!
+function intenR = radDist(radialIm, radBin, varargin)
 
+%mlj: We should be more careful with how we propagate empty
+%arrays-currently they arise from the beginning and ending masks in the
+%line down the gut.
+if(isempty(radialIm))
+    intenR = [];
+    return
+end
 
-function intenR = radDist(radialIm, centerPoint, radBin, varargin)
-
-center(1) = 50; %This is going to come as an input from centerLine-our line that we drew through the center of the gut
-center(2) = 50; %This should be some prescribed midpoint of the radial projection, either the center of mass or the geometric mean of the data
-
+center(1) = round(size(radialIm,1)/2);
+%Along the z-axis find the point point that has the median pixel
+%intensity-the sum of pixel intensties in all rows below this line is equal
+%to the pixel intensities above this line.
+zProj = nansum(radialIm,1);
+zProj = zProj/sum(zProj(:));
+zProj = cumsum(zProj);
+center(2) = find(abs(zProj-0.5)==min(abs(zProj-0.5)), 1, 'first');
 
 %Find the maximum distance of all these points to the center-this is the
 %maximum radius we'll find
@@ -34,16 +47,16 @@ center(2) = 50; %This should be some prescribed midpoint of the radial projectio
 
 %Get the maximum radius that we'll see for this data
 perim = bwperim(radialIm>0);
-[x, y] = find(perim==1);
-
-dist = sqrt((x-center(1)).^2 + (y-center(2)).^2);
+[x, z] = find(perim==1);
+%Note
+dist = sqrt((x-center(1)).^2 + (z-center(2)).^2);
 maxRadius = max(dist); maxRadius = floor(maxRadius);
 
 %Get the coordinates for all points on the circle.
 numPoints = 2*2*pi*sum(1:maxRadius); %The extra two is for padding
 numPoints = ceil(numPoints);
 
-x = NaN*zeros(numPoints, 1); y = NaN*zeros(numPoints,1);
+x = NaN*zeros(numPoints, 1); z = NaN*zeros(numPoints,1);
 allTheta = NaN*zeros(numPoints, 1);
 n= 1;%counter
 
@@ -61,7 +74,7 @@ for radius = 1:maxRadius
        %We really should pre-allocate, but I doubt this will take all that
        %long either way.
        x(n) = center(1) + radius*cos(theta);
-       y(n) = center(2) + radius*sin(theta);
+       z(n) = center(2) + radius*sin(theta);
        
        allTheta(n) = theta;
        n = n+1;
@@ -72,31 +85,37 @@ end
 %Unpad the arrays
 index = find(isnan(x));
 x(index) = [];
-y(index) = [];
+z(index) = [];
 allTheta(index) = [];
 %Remove indices that shot past the boundaries of the region
-dist = sqrt( (x-center(1)).^2 + (y-center(2)).^2);
+dist = sqrt( (x-center(1)).^2 + (z-center(2)).^2);
 index = find(dist>maxRadius);
-x(index) = []; y(index) = []; allTheta(index) = [];
+x(index) = []; z(index) = []; allTheta(index) = [];
 dist(index) = [];
 %Interpolate at these points 
-z = interp2(radialIm, x, y);
+imVal = interp2(radialIm, z, x);
 
 %Unpack these values to give the intensity as a function of radius
 
-
 %Bin these intensities appropriately
-%Convert distance to microns
-dist = 0.1625*dist;
+%Convert distance to microns in the x direction the spacing is 0.1625
+%microns per pixel. In the z direction it's 1 micron per pixel (comes from
+%how we've 
+%
+dist = sqrt( (0.1625*(x-center(1))).^2 + (z-center(2)).^2);
+
 dist = dist-mod(dist, radBin);
 
 radius = unique(dist);
 %For all given radii find the positions in the interpolated image that have
 %that distance to the center of the region. For all those points calculate
 %the mean pixel intensity.
-intenR = arrayfun(@(r)nanmean(z(find(dist==r))), radius, 'UniformOutput', false);
+intenR = arrayfun(@(r)nanmean(imVal(dist==r)), radius, 'UniformOutput', false);
 intenR = cell2mat(intenR);
 
+%Remove trailing elements
+ind = isnan(intenR);
+radius(ind) =[]; intenR(ind) = [];
 intenR = cat(2, radius, intenR);
 end
 
