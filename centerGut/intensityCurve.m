@@ -24,12 +24,13 @@ allReg = unique(regionMask(:));
 intenL = zeros(max(allReg),2);
 
 for numMask = 1:totalNumMask
-    fprintf(1, ['Getting intensity for mask: ', num2str(numMask), '\n']);
     %Get regions in this particular mask.
+    
     regNum = unique(regionMask(:,:,numMask));
     regNum(regNum==0) = [];
     
     rMaskBig = repmat(regionMask(:,:,numMask), [1 1 size(im,3)]);
+    fprintf(1, ['Getting intensity for mask: ', num2str(numMask), '\n']);
     inten = regionprops(rMaskBig, im,'MeanIntensity', 'MaxIntensity');
 
     
