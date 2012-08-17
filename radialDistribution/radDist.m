@@ -37,6 +37,11 @@ center(1) = round(size(radialIm,1)/2);
 %intensity-the sum of pixel intensties in all rows below this line is equal
 %to the pixel intensities above this line.
 zProj = nansum(radialIm,1);
+if(sum(zProj(:))==0)
+    %This mask is blank for some reason-probably towards the end of the gut
+    intenR = [];
+    return
+end
 zProj = zProj/sum(zProj(:));
 zProj = cumsum(zProj);
 center(2) = find(abs(zProj-0.5)==min(abs(zProj-0.5)), 1, 'first');

@@ -73,7 +73,7 @@ maxArraySize = 2560*2160*200;
 %Find optimal cut using a binary search
 lastPoint = 2;
  
-maxPoint = size(centerLine,1);
+maxPoint = size(centerLine,1)-1;
 
 cutIndex = 1;
 isEndGut=false;
@@ -92,7 +92,7 @@ while(isEndGut ==false)
     temp = cutPoint;
       
     fprintf(1, '\n');
-    disp(['cut Found: ', num2str(cutPoint)]);
+    disp(['Cut found: ', num2str(cutPoint)]);
     %Estimate for where the next cut should be
     %minus one  to use w/ getOrthVect
     %Include offset so that regions overlap (allowing us to do correlations

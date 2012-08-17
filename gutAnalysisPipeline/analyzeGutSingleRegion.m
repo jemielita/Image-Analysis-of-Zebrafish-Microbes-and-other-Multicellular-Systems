@@ -29,28 +29,57 @@
 function regFeatures = analyzeGutSingleRegion(param,cutNum,analysisType,...
     scanNum, colorList)
 
+%% Loading in parameters for analyzing this scan
 %Load in this region
-imVar.color = '488nm';
+imVar.color = colorList;
 imVar.zNum = '';
 imVar.scanNum = scanNum;
 
-[imStack, centerLine, gutMask] = constructRotRegion(cutNum, scanNum, '488nm', param); 
-
 totNumSteps = length(analysisType);
-regFeatures = cell(totNumSteps,1);
 
+regFeatures = cell(totNumSteps,length(colorList));
+
+%Repeating analysis for each color.
+%mlj: Should switch things up a bit to make it easier to do 2-color
+%analysis on large data stacks. But this can wait for now.
+for colorNum =1:length(colorList)
+    color = colorList{colorNum};
+    %% Loading in image stack
+    [imStack, centerLine, gutMask] = constructRotRegion(cutNum, scanNum, color, param);
+
+    %Just for testing the code structure
+%     gutMask = '';
+%     imStack = '';
+%     
+ 
+    totNumSteps = length(analysisType);
+    
+    %% Doing all the analysis steps
+    
+    for stepNum = 1:totNumSteps
+        regFeatures{stepNum, colorNum} = ...
+            analysisStep(imStack, centerLine, gutMask, analysisType,regFeatures,...
+            stepNum);      
+    end
+    
+    
+end
+
+
+%% Discard entries in regFeatures
+% Remove entries that we don't want to keep
 for stepNum = 1:totNumSteps
-    
-   regFeatures{stepNum} = ...
-   analysisStep(imStack, centerLine, gutMask, analysisType,regFeatures,...
-   stepNum);  
-
-    
+    for colorNum =1:length(colorList)
+        
+        if(analysisType(stepNum).return==false)
+            regFeatures{stepNum,colorNum} = [];
+        end
+    end
 end
 
 
-
 end
+
 
 %Large switch function that contains all the analysis functions that we've
 %worked on so far
@@ -79,6 +108,9 @@ switch analysisType(stepNum).name
            regFeatures = radDistAll(regFeatures{ind}, centerLine, ...
                analysisType(stepNum).param);
         end
+        
+    case 'test'
+        regFeatures = 1:length(centerLine);
 end
 
 
@@ -92,7 +124,7 @@ radBin = analParam.binSize;
 ind = 1:length(radIm);
 
 %Calculating the radial distribution for each of these regions.
-intenR = arrayfun(@(x) radDist(radIm{x}, centerLine(x,:), radBin), ind,...
+intenR = arrayfun(@(x) radDist(radIm{x},  radBin), ind,...
     'UniformOutput', false);
 %mlj: should we make the end result a matrix?
 

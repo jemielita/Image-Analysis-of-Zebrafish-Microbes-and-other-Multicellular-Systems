@@ -46,8 +46,7 @@ height = param.regionExtent.regImSize{1}(1);
 width = param.regionExtent.regImSize{1}(2);
 
 poly = param.regionExtent.poly;
-gutMask = poly2mask(poly(:,1), poly(:,2), param.regionExtent.regImSize{1}(1),...
-    param.regionExtent.regImSize{1}(2));
+gutMask = poly2mask(poly(:,1), poly(:,2), height,width);
 
 %Rotate the  mask
 xMin =cutVal{cutNum, 4}(5); xMax = cutVal{cutNum,4}(6);

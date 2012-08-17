@@ -165,7 +165,6 @@ cutMask = poly2mask(pos(:,1), pos(:,2), height, width);
 cutMask = cutMask.*gutMask;
 
 
-
 %Load in the entire volume
 baseDir = [param.directoryName filesep 'Scans' filesep];
 %Going through each scan
@@ -204,8 +203,7 @@ for nZ=minZ:maxZ
        imFileName = ...
            strcat(scanDir,  'region_', num2str(regNum),filesep,...
            param.color(colorNum), filesep,'pco', num2str(imNum),'.tif');
-       try
-       
+       try       
            thisIm = imread(imFileName{1},'PixelRegion', {[xInI xInF], [yInI yInF]});
            
            %Cast loaded image to the appropriate data type
@@ -223,7 +221,7 @@ for nZ=minZ:maxZ
            disp('This image doesnt exist-fix up your code!!!!');
        end
          
-    end
+    end   
     
     imNum = param.regionExtent.Z(nZ, indReg);
     %Deal with overlapping regions
