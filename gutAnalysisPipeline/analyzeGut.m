@@ -1,10 +1,8 @@
-% AnalyzeGutScan: Run a variety of different analysis procedures on a series of
+% analyzeGutScan: Run a variety of different analysis procedures on a series of
 % images of zebrafish gut. This program is written so that it should be
 % possible to easily add in different analysis protocols later in time.
 %
 %
-
-
 
 function regFeatAll = analyzeGut(analysisType, scanParam, param)
 
