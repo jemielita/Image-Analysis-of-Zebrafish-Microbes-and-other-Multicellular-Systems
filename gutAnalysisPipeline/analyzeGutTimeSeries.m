@@ -19,8 +19,8 @@ saveDir = scanParam.dataSaveDirectory;
 
 %Integer list of which scans to analyze- don't want to just do a range in
 %case we want to do only a subset of scans.
-scanList = scanParam.scanList;
 
+scanParam = getFinishedScanList(scanParam);
 
 %% Save meta-data
 %Including analysis parameters and the current version of the code
@@ -33,9 +33,21 @@ if(error ==1)
 end
 %% Start the analysis of individual scans
 
-%analysis step
-%saving step
-
+for thisScan=1:length(scanParam.scanList)
+  %Set this particular scan number-only thing that changes from one scan to
+  %the next-I don't see any reason why we should change what we analyze
+  %from one scan to the enxt
+  scanParam.scanNum = scanList(thisScan);
+  
+%  regFeatures = analyzeGut(analysisType, scanParam, param);
+  
+ % error = saveAnalysis(regFeatures, scanParam);
+  
+  updateFinishedScanList(scanParam, error);
+  
+  
+    
+end
 
 %% Analysis/graphing of the entire data set
 
@@ -59,5 +71,57 @@ end
 function error = checkInputs(analysisType, scanParam, param)
 %write!
 
+error = 0;
+end
+
+function scanParam = setScanParameters(sN, param, analysisType)
+scanParam.scanNum = sN;
+scan
+end
+
+function error = saveAnalysis(regFeatures, scanParam)
+try
+    fileName = [scanParam.dataSaveDirectory, filesep, 'Analysis_Scan', ...
+        num2str(scanParam.scanNum), '.mat'];
+    save(fileName, 'regFeatures');
+    error = 0;
+catch
+    fprintf(2, ['Error in saving Scan: ', num2str(scanParam.scanNum)]);
+    error = 1;
+end
+
+end
+
+function updateFinishedScanList(scanParam, error)
+fileName = [scanParam.dataSaveDirectory, filesep, 'scanlist_LOCK.mat'];
+scanList = load(fileName);
+scanList = scanList.scanList;
+
+%Remove the completed scan from the list
+scanList = setdiff(scanList, scanParam.scanNum);
+save(fileName, 'scanList');
+
+
+end
+
+
+function scanParam = getFinishedScanList(scanParam)
+
+fileName = [scanParam.dataSaveDirectory, filesep, 'scanlist_LOCK.mat'];
+
+try
+    fprintf(1, 'Trying to load in list of previously analyzed scan...');
+    scanList = load(fileName, 'scanList');
+    scanList = scanList.scanList;
+    scanParam.scanList = scanList;
+catch
+    fprintf(1, 'unsuccessful!\n Saving current scan list.');
+    
+    scanList = scanParam.scanList;
+    save(fileName, 'scanList');
+
+
+end
+fprintf(1, '\n');
 
 end

@@ -17,14 +17,14 @@ currentDir = pwd;
 
 cd(codeDirectory);
 
-[~, revisionUpdated] = system('bzr diff');
+[status, revisionUpdated] = system('bzr diff');
 
 if(~isempty(revisionUpdated))
    fprintf(2, 'Code has been changed since the last commit! \n Please committ code. ');  
    error = 1;
 end
 
-[~, currentLog] = system('bzr log -r-1');
+[status, currentLog] = system('bzr log -r-1');
 
 save([saveLogDirectory filesep 'codeLog.mat'],'currentLog')
 
