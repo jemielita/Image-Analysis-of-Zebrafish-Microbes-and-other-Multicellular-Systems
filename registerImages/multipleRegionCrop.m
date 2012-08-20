@@ -1067,21 +1067,49 @@ hContrast = imcontrast(imageRegion);
         
         %If we're drawing a different outline & center of gut  on the gut
         %at different time points, get the new outline.
-        multipleOutline = get(hMultipleOutline, 'Checked', 'on');
+        multipleOutline = get(hMultipleOutline, 'Checked');
        
         switch multipleOutline
             case 'off'
                 %Do nothing
             case 'on'
-                scanNum = get(hScanSlider, 'Value');
-                scanNum = int16(scanNumPrev);
-                
+                %Save previous outline
                 hApi = iptgetapi(hPoly);
-                param.regionExtent.poly{scanNumPrev} = hApi.getPosition();
+                param.regionExtent.polyAll{scanNumPrev} = hApi.getPosition();
                 hLine = findobj('Tag', 'gutCenter');
-                hLine = iptgetapi(hLine);
-                
-                param.centerLine{scanNumPrev} = hLine.getPosition();
+                if(~isempty(hLine)&& ishandle(hLine))
+                    hLine = iptgetapi(hLine);
+                    param.centerLineAll{scanNumPrev} = hLine.getPosition();
+                end      
+                %Load in new outline
+                if(isfield(param, 'centerLineAll'))
+                    
+                    obj = findobj('Tag', 'gutCenter');
+                    delete(obj);
+                    
+                    try
+                        line = param.centerLineAll{scanNum};
+                    catch
+                        line = param.centerLineAll{scanNumPrev};
+                        param.centerLineAll{scanNum} = param.centerLineAll{scanNumPrev};
+                    end
+                    
+                    h = impoly(imageRegion, line, 'Closed', false);
+                    set(h, 'Tag', 'gutCenter');
+                    
+                end
+                if(isfield(param.regionExtent, 'polyAll'))
+                    try
+                        poly = param.regionExtent.polyAll{scanNum};
+                        hApi = iptgetapi(hPoly);
+                        hApi.setPosition(poly);
+                    catch
+                        %If no gut outline exists at this time set the gut
+                        %outline at ths time point to equal to previous one
+                        param.regionExtent.polyAll{scanNum} =...
+                            param.regionExtent.polyAll{scanNumPrev};
+                    end
+                end
                 
         end
         
@@ -1152,12 +1180,13 @@ hContrast = imcontrast(imageRegion);
     function createFreeHandPoly_Callback(hObject, eventdata)
         %Start drawing the boundaries!
         hPoly = impoly(imageRegion);   
+        set(hPoly, 'Tag', 'gutOutline');
         
     end
 
 
     function loadPoly_Callback(hObject, eventdata)
-        multipleOutline = get(hMultipleOutline, 'Checked', 'on');
+        multipleOutline = get(hMultipleOutline, 'Checked');
         
         switch multipleOutline
             case 'off'
@@ -1165,8 +1194,9 @@ hContrast = imcontrast(imageRegion);
             case 'on'
                 scanNum = get(hScanSlider, 'Value');
                 scanNum = int16(scanNum);
-                hPoly = impoly(imageRegion, param.regionExtent.poly{scanNum});
+                hPoly = impoly(imageRegion, param.regionExtent.polyAll{scanNum});
         end
+        set(hPoly, 'Tag', 'gutOutline');
         
     end
 
@@ -1178,7 +1208,7 @@ hContrast = imcontrast(imageRegion);
             
             poly = splineSmoothPolygon(poly);
             
-            multipleOutline = get(hMultipleOutline, 'Checked', 'on');
+            multipleOutline = get(hMultipleOutline, 'Checked');
             
             switch multipleOutline
                 case 'off'
@@ -1186,7 +1216,7 @@ hContrast = imcontrast(imageRegion);
                 case 'on'
                     scanNum = get(hScanSlider, 'Value');
                     scanNum = int16(scanNum);
-                    param.regionExtent.poly{scanNum} = poly;
+                    param.regionExtent.polyAll{scanNum} = poly;
             end
             
             %Redrawing the polygon
@@ -1225,7 +1255,8 @@ hContrast = imcontrast(imageRegion);
 
 
     function clearPoly_Callback(hObject, eventdata)
-       delete(hPoly); %Delete the displayed polygon. 
+      obj = findobj('Tag', 'gutOutline'); %Delete the displayed polygon. 
+      delete(obj);
     end
         
     function drawGutCenter_Callback(hObject, eventdata)
@@ -1236,17 +1267,17 @@ hContrast = imcontrast(imageRegion);
         
         hLine = findobj('Tag', 'gutCenter');
         hLine = iptgetapi(hLine);
-        multipleOutline = get(hMultipleOutline, 'Checked', 'on');
-            
-            switch multipleOutline
-                case 'off'
-                    param.centerLine = hLine.getPosition();
-                case 'on'
-                    scanNum = get(hScanSlider, 'Value');
-                    scanNum = int16(scanNum);
-                    param.centerLine = hLine.getPosition();
-            end
-           
+        multipleOutline = get(hMultipleOutline, 'Checked');
+        
+        switch multipleOutline
+            case 'off'
+                param.centerLine = hLine.getPosition();
+            case 'on'
+                scanNum = get(hScanSlider, 'Value');
+                scanNum = int16(scanNum);
+                param.centerLineAll{scanNum} = hLine.getPosition();
+        end
+        
         myhandles.param = param;
         guidata(fGui, myhandles);
                
@@ -1254,12 +1285,11 @@ hContrast = imcontrast(imageRegion);
 
     function smoothGutCenter_Callback(hObject, eventdata)
         hLine = findobj('Tag', 'gutCenter');
-        delete(hLine);
        
         line = hLine.getPosition();
         line = getCenterLine(line, 5, param);
         
-        multipleOutline = get(hMultipleOutline, 'Checked', 'on');
+        multipleOutline = get(hMultipleOutline, 'Checked');
         
         switch multipleOutline
             case 'off'
@@ -1267,7 +1297,7 @@ hContrast = imcontrast(imageRegion);
             case 'on'
                 scanNum = get(hScanSlider, 'Value');
                 scanNum = int16(scanNum);
-                param.centerLine{scanNum} = line;
+                param.centerLineAll{scanNum} = line;
         end
 
         h = impoly(imageRegion, line, 'Closed', false);
@@ -1289,7 +1319,7 @@ hContrast = imcontrast(imageRegion);
             case 'on'
                 scanNum = get(hScanSlider, 'Value');
                 scanNum = int16(scanNum);
-                param.centerLine{scanNum} = line;
+                param.centerLineAll{scanNum} = line;
         end
 
         
@@ -1325,7 +1355,7 @@ hContrast = imcontrast(imageRegion);
     end
 
     function smoothAll_Callback(hObject, eventdata)
-        multipleOutline = get(hMultipleOutline, 'Checked', 'on');
+        multipleOutline = get(hMultipleOutline, 'Checked');
         if(strcmp(multipleOutline, 'off'))
             fprintf(2, 'smoothAll_Callback: Must be assigning multiple outlines!');
             return
@@ -1335,27 +1365,46 @@ hContrast = imcontrast(imageRegion);
         %outlines and gut centers. If an outline/center hasn't been filled,
         %then set it equal to the last filled one.
         
+        %Update current position of curves
+        scanNum = get(hScanSlider, 'Value');
+        scanNum = int16(scanNum);
+         hLine = findobj('Tag', 'gutCenter');
+        hApi = iptgetapi(hLine);
+        param.centerLineAll{scanNum} = hApi.getPosition();
+        
+        hOutline = findobj('Tag', 'gutOutline');
+        hApi = iptgetapi(hOutline);
+        param.regionExtent.polyAll{scanNum} = ...
+            hApi.getPosition();
 
         allLine = cell(maxScan-minScan+1, 1);
         allOutline = cell(maxScan-minScan+1,1);
         lastFilled = [];
         
         for nS = minScan:maxScan
+            %Update the center line
             try
-                allLine{nS} = param.centerLine{nS};
-                allOutline{nS} = param.regionExtent.poly{nS};
-                lastFilled = nS;
-                
+                allLine{nS} = param.centerLineAll{nS};
+            catch
+                 if(~isempty(lastFilled))
+                   allLine{nS} = allLine{lastFilled};
+                else
+                    allLine{nS} = [];                    
+                 end
+            end
+            
+            %Update the gut outline
+            try
+                allOutline{nS} = param.regionExtent.polyAll{nS};
             catch
                 if(~isempty(lastFilled))
-                   allLine{nS} = allLine{lastFilled};
-                   allOutline{nS} = allOutline{nS};
+                    allOutline{nS} = allOutline{lastFilled};
                 else
-                    allLine{nS} = [];
                     allOutline{nS} = [];
-                    
                 end
-            end    
+            end
+            lastFilled = nS;
+            
         end
         
         allLine = cellfun(@(allLine) splineSmoothPolygon(allLine), allLine,...
@@ -1365,8 +1414,17 @@ hContrast = imcontrast(imageRegion);
         
         
         %Updating the entries
-        param.centerLine = allLine;
-        paramregionExtent.poly = allOutline;
+        param.centerLineAll = allLine;
+        param.regionExtent.polyAll = allOutline;
+              
+        %Updating the displayed outline/center of gut
+        hLine = findobj('Tag', 'gutCenter');
+        hApi = iptgetapi(hLine);
+        hApi.setPosition(allLine{scanNum});
+        
+        hOutline = findobj('Tag', 'gutOutline');
+        hApi = iptgetapi(hOutline);
+        hApi.setPosition(allOutline{scanNum});
         
         myhandles.param = param;
         guidata(fGui, myhandles);
@@ -1378,7 +1436,7 @@ hContrast = imcontrast(imageRegion);
             hLine = findobj('Tag', 'gutCenter');
             delete(hLine);
             
-            multipleOutline = get(hMultipleOutline, 'Checked', 'on');
+            multipleOutline = get(hMultipleOutline, 'Checked');
             
             switch multipleOutline
                 case 'off'
@@ -1386,7 +1444,7 @@ hContrast = imcontrast(imageRegion);
                 case 'on'
                     scanNum = get(hScanSlider, 'Value');
                     scanNum = int16(scanNum);
-                    line = param.centerLine{scanNum};
+                    line = param.centerLineAll{scanNum};
             end
             
             h = impoly(imageRegion, line, 'Closed', false);
@@ -1704,8 +1762,6 @@ end
 %For a given polygon, smooth out the polygon using spline interpolation
 
 function poly = splineSmoothPolygon(poly)
-%Only smooth the polygon if it exists.
-poly = param.regionExtent.poly;
 
 %Parameterizing curve in terms of arc length
 t = cumsum(sqrt([0,diff(poly(:,1)')].^2 + [0,diff(poly(:,2)')].^2));
