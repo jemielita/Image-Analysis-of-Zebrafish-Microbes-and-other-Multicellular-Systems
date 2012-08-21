@@ -34,7 +34,8 @@ switch loadType
     case 'single'
         regionNumber = varargin{1};
     case 'multiple'
-        cutNumber = varargin{1};
+        cutNumber = varargin{1}(1);
+        scanNum = varargin{1}(2);
 end
 
 if nargin==6
@@ -51,7 +52,7 @@ switch loadType
     case 'single'
         imStack = loadSingleRegion(param, imVar, regionNumber, dataType);
     case 'multiple'
-        imStack = loadCutRegion(param, imVar, cutNumber, dataType);
+        imStack = loadCutRegion(param, imVar, cutNumber, scanNum,dataType);
 end
 
 end
@@ -105,7 +106,7 @@ end
 
 
 %Load in all images in one particular cut of the gut
-function im  = loadCutRegion(param, imVar, cutNumber, dataType)
+function im  = loadCutRegion(param, imVar, cutNumber, scanNum,dataType)
 
 thisCut = cell(4,1);
 thisCut{1} = param.cutVal{cutNumber,1};
@@ -113,7 +114,7 @@ thisCut{2} = param.cutVal{cutNumber,2};
 thisCut{3} = param.cutVal{cutNumber,3};
 thisCut{4} = param.cutVal{cutNumber,4};
 
-centerLine = param.centerLine;
+centerLine = param.centerLineAll{scanNum};
 
 colorNum = find(strcmp(param.color, imVar.color));
 indReg = find(thisCut{2}==1);
@@ -129,8 +130,8 @@ finalDepth = maxZ-minZ+1;
 %Get mask of gut
 height = param.regionExtent.regImSize{1}(1);
 width = param.regionExtent.regImSize{1}(2);
-polyX = param.regionExtent.poly(:,1);
-polyY = param.regionExtent.poly(:,2);
+polyX = param.regionExtent.polyAll{scanNum}(:,1);
+polyY = param.regionExtent.polyAll{scanNum}(:,2);
 gutMask = poly2mask(polyX, polyY, height, width);
 
 imOrig = zeros(height, width, dataType);

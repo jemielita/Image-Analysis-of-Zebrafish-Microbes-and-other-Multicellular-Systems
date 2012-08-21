@@ -31,13 +31,8 @@ imVar.scanNum = scanNum;
 loadType = 'multiple'; %To return optimal cut.
 
 %Loading in images as double.
-imStack = load3dVolume(param, imVar, loadType, cutNum);
+%imStack = load3dVolume(param, imVar, loadType, [cutNum,scanNum]);
 fprintf(1,'...done!\n');
-
-%% Calculate rotated center line
-centerLine = param.centerLine;
-
-rotCenterLine = getRotatedLine(centerLine, cutVal, cutNum);
 
 %% Calculate rotated masks
 
@@ -45,7 +40,7 @@ rotCenterLine = getRotatedLine(centerLine, cutVal, cutNum);
 height = param.regionExtent.regImSize{1}(1);
 width = param.regionExtent.regImSize{1}(2);
 
-poly = param.regionExtent.poly;
+poly = param.regionExtent.polyAll{scanNum};
 gutMask = poly2mask(poly(:,1), poly(:,2), height,width);
 
 %Rotate the  mask
@@ -54,8 +49,15 @@ yMin = cutVal{cutNum,4}(3); yMax = cutVal{cutNum,4}(4);
 
 theta = cutVal{cutNum,3};
 
-gutMask = imrotate(gutMask,theta);
-gutMask = gutMask(xMin:xMax,yMin:yMax);
+gutMaskRot = imrotate(gutMask,theta);
+
+%% Calculate rotated center line
+centerLine = param.centerLineAll{scanNum};
+
+rotCenterLine = getRotatedLine(centerLine, cutVal, cutNum,height,width,gutMask,gutMaskRot);
+
+%Rescale the rotated gut mask
+gutMask = gutMaskRot(xMin:xMax,yMin:yMax);
 
 initPos = 2; finalPos = size(rotCenterLine,1)-1;
 cutPosInit = getOrthVect(rotCenterLine(:,1), rotCenterLine(:,2), 'rectangle', finalPos);
@@ -66,7 +68,7 @@ pos = [cutPosFinal(1:2,:); cutPosInit(2,:); cutPosInit(1,:)];
 cutMask = poly2mask(pos(:,1), pos(:,2), size(gutMask,1), size(gutMask,2));
 cutMask = cutMask.*gutMask;
 
-
+%% Get rotated mask
 rotMask = curveMask(cutMask, rotCenterLine, param,'rectangle');
 
 %% Set all points outside the gut mask to be NaN
@@ -82,7 +84,7 @@ fprintf(1, '\n');
 
 end
 
-function rotCenterLine = getRotatedLine(centerLine, cutVal, cutNum)
+function rotCenterLine = getRotatedLine(centerLine, cutVal, cutNum,height, width,gutMask,gutMaskRot)
 
 %Cut down the size of the center line
 centerLine = centerLine(cutVal{cutNum,1}(1):cutVal{cutNum,1}(2),:);
@@ -90,11 +92,28 @@ centerLine = centerLine(cutVal{cutNum,1}(1):cutVal{cutNum,1}(2),:);
 theta = -deg2rad(cutVal{cutNum,3});
 rotMat = [cos(theta), -sin(theta); sin(theta), cos(theta)];
 
-rotCenterLine = rotMat*centerLine';
+%Rotate about the center of the image
+centerLineO(:,1)= centerLine(:,1)-(width/2);
+centerLineO(:,2) = centerLine(:,2)-(height/2);
+
+rotCenterLine = rotMat*centerLineO';
 
 rotCenterLine = rotCenterLine';
 
+rotCenterLine(:,1) = rotCenterLine(:,1)+(width/2);
+rotCenterLine(:,2) = rotCenterLine(:,2)+ (height/2);
 
+
+%When using the imrotate command the image size is potentially changed. In
+%order find out what the correct offset on the rotated center line is find
+%the difference in centroid location between the rotated and unrotated
+%image.
+cOrig = regionprops(gutMask, 'Centroid');
+cRot = regionprops(gutMaskRot,'Centroid');
+rotCenterLine(:,1) = rotCenterLine(:,1) + cRot.Centroid(1)-cOrig.Centroid(1);
+rotCenterLine(:,2) = rotCenterLine(:,2) + cRot.Centroid(2)-cOrig.Centroid(2);
+
+%Then deal with the resizing we're going to do on the rotated image.
 rotCenterLine(:,1) = rotCenterLine(:,1) -cutVal{cutNum,4}(3);
 rotCenterLine(:,2) = rotCenterLine(:,2) - cutVal{cutNum,4}(5);
 end

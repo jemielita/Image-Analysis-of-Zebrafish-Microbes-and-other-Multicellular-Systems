@@ -41,7 +41,7 @@ for thisScan=1:length(scanParam.scanList)
   
   %Different optimal cut for each time point, because we have a different
   %gut outline.
-  param.cutVal = calcOptimalCut(10,param);
+  param.cutVal = calcOptimalCut(10,param,scanParam.scanNum);
   
   regFeatures = analyzeGut(analysisType, scanParam, param);
   

@@ -34,9 +34,6 @@ polyX = param.regionExtent.polyAll{scanNum}(:,1);
 polyY = param.regionExtent.polyAll{scanNum}(:,2);
 mask = poly2mask(polyX, polyY, height, width);
 
-%Get angle
-%angle = rotateGutAngle(mask);
-
 centerLine = param.centerLineAll{scanNum};
 
 %Get a test image 
