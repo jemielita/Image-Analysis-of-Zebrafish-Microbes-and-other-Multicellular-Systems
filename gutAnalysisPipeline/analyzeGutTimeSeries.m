@@ -37,11 +37,15 @@ for thisScan=1:length(scanParam.scanList)
   %Set this particular scan number-only thing that changes from one scan to
   %the next-I don't see any reason why we should change what we analyze
   %from one scan to the enxt
-  scanParam.scanNum = scanList(thisScan);
+  scanParam.scanNum = scanParam.scanList(thisScan);
   
-%  regFeatures = analyzeGut(analysisType, scanParam, param);
+  %Different optimal cut for each time point, because we have a different
+  %gut outline.
+  param.cutVal = calcOptimalCut(10,param);
   
- % error = saveAnalysis(regFeatures, scanParam);
+  regFeatures = analyzeGut(analysisType, scanParam, param);
+  
+  error = saveAnalysis(regFeatures, scanParam);
   
   updateFinishedScanList(scanParam, error);
   

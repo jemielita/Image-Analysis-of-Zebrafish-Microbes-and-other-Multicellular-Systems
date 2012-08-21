@@ -25,19 +25,19 @@
 %
 % AUTHOR: Matthew Jemielita, July 27, 2012
 
-function cutVal = calcOptimalCut(lengthOverlap, param)
+function cutVal = calcOptimalCut(lengthOverlap, param,scanNum)
 
 %Get mask of gut
 height = param.regionExtent.regImSize{1}(1);
 width = param.regionExtent.regImSize{1}(2);
-polyX = param.regionExtent.poly(:,1);
-polyY = param.regionExtent.poly(:,2);
+polyX = param.regionExtent.polyAll{scanNum}(:,1);
+polyY = param.regionExtent.polyAll{scanNum}(:,2);
 mask = poly2mask(polyX, polyY, height, width);
 
 %Get angle
 %angle = rotateGutAngle(mask);
 
-centerLine = param.centerLine;
+centerLine = param.centerLineAll{scanNum};
 
 %Get a test image 
 imOrig = ones(height, width);

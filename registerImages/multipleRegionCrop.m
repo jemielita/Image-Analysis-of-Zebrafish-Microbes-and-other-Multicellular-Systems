@@ -1073,9 +1073,12 @@ hContrast = imcontrast(imageRegion);
             case 'off'
                 %Do nothing
             case 'on'
-                %Save previous outline
-                hApi = iptgetapi(hPoly);
-                param.regionExtent.polyAll{scanNumPrev} = hApi.getPosition();
+                h = findobj('Tag', 'gutOutline');
+                if(~isempty(h) &&ishandle(h))
+                    %Save previous outline
+                    hApi = iptgetapi(h);
+                    param.regionExtent.polyAll{scanNumPrev} = hApi.getPosition();
+                end
                 hLine = findobj('Tag', 'gutCenter');
                 if(~isempty(hLine)&& ishandle(hLine))
                     hLine = iptgetapi(hLine);
@@ -1312,7 +1315,8 @@ hContrast = imcontrast(imageRegion);
         hLine = iptgetapi(hLine);
         
         line = hLine.getPosition();
-        
+        multipleOutline = get(hMultipleOutline, 'Checked');
+
         switch multipleOutline
             case 'off'
                 param.centerLine =line;
@@ -1392,6 +1396,9 @@ hContrast = imcontrast(imageRegion);
                     allLine{nS} = [];                    
                  end
             end
+            if(isempty(allLine{nS}))
+                allLine{nS} = allLine{lastFilled};
+            end
             
             %Update the gut outline
             try
@@ -1403,6 +1410,10 @@ hContrast = imcontrast(imageRegion);
                     allOutline{nS} = [];
                 end
             end
+            if(isempty(allOutline{nS}))
+                allOutline{nS} = allOutline{lastFilled};
+            end
+            
             lastFilled = nS;
             
         end
