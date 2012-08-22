@@ -1,18 +1,18 @@
 %optimalAngle: calculate the angle to rotate a mask so that a rectangle
 %bounding the mask has as small an area as possible.
 %
-%USAGE [height, width, angle, rotImSize] = optimalAngle(mask)
+%USAGE [height, width, theta, rotImSize] = optimalAngle(mask)
 %
 %INPUT mask: binary n x m  mask
 %
 %OUTPUT height and width: height and width of the bounding rectangle
-%       angle: angle that the original mask needs to be rotated by to get
+%       theta: angle that the original mask needs to be rotated by to get
 %       the optimal rotation.
 %       rotImSize (1,2): size of rotated (pre-cropped) mask
 %       rotImSize (3:6): xMin, xMax, yMin, yMax for cropped rotated mask
 %AUTHOR Matthew Jemielita, July 30, 2012
 
-function [height, width, angle, rotImSize] = optimalAngle(mask)
+function [height, width,theta, rotImSize] = optimalAngle(mask)
 
 %Get points on the surface of the mask
 %mask = bwperim(mask);
@@ -20,12 +20,12 @@ ind = find(mask==1);
 [x,y] = ind2sub(size(mask), ind);
 X = cat(1,x',y');
 
-[~, angle,~, ~] = minBoundingBox(X);
+[~, theta,~, ~] = minBoundingBox(X);
 
 %mlj: note the code below could be run *much* faster if only the points on
 %the perim are rotated.
 %Rotate mask
-maskRotate = imrotate(mask, angle);
+maskRotate = imrotate(mask, theta);
 
 %Crop down image
 ind = find(maskRotate==1);

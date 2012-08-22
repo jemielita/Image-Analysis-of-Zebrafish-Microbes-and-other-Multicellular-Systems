@@ -7,7 +7,7 @@ function [bb, theta,height, width] = minBoundingBox(X)
 % output: bb: 2x4 matrix containing the coordinates of the bounding box corners
 %         theta: theta in degrees that the 2D set of points needs to be rotated by in
 %         order to get the minimal bounding box
-% Example : generate a random set of point in a randomly rotated recttheta
+% Example : generate a random set of point in a randomly rotated rect
 %     n = 50000;
 %     t = pi*rand(1);
 %     X = [cos(t) -sin(t) ; sin(t) cos(t)]*[7 0; 0 2]*rand(2,n);
@@ -29,9 +29,12 @@ CH = X(:,k);
 % compute the theta to test, which are the theta of the CH edges as:
 %   "one side of the bounding box contains an edge of the convex hull"
 E = diff(CH,1,2);           % CH edges
-T = atan2(E(2,:),E(1,:));   % theta of CH edges (used for rotation)
-T = unique(mod(T,pi/2))-(pi/4); % reduced to the unique set of theta between +-45 degrees.
 
+%Don't be fancy, just try a variety of rotation angles
+%T = atan2(E(2,:),E(1,:));   % theta of CH edges (used for rotation)
+%T = unique(mod(T,pi/2))-(pi/4); % reduced to the unique set of theta between +-45 degrees.
+
+T = -(pi/4):0.05:(pi/4);
 % create rotation matrix which contains
 % the 2x2 rotation matrices for *all* thetas in T
 % R is a 2n*2 matrix

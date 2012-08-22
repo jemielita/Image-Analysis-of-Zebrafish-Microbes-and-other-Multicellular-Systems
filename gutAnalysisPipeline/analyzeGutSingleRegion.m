@@ -111,6 +111,9 @@ switch analysisType(stepNum).name
         
     case 'test'
         regFeatures = 1:length(centerLine);
+    case 'projection'
+        %Get a particular projection of this region.
+        
 end
 
 

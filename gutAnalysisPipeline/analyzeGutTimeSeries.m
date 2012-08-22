@@ -93,7 +93,6 @@ catch
     fprintf(2, ['Error in saving Scan: ', num2str(scanParam.scanNum)]);
     error = 1;
 end
-
 end
 
 function updateFinishedScanList(scanParam, error)

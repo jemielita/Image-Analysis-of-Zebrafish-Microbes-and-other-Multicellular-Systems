@@ -70,21 +70,21 @@ maxArraySize = 2560*2160*200;
 %Find optimal cut using a binary search
 lastPoint = 2;
  
-maxPoint = size(centerLine,1)-1;
 
 cutIndex = 1;
 isEndGut=false;
-
+maxPoint = size(centerLine,1)-1;
 thisPoint = round((maxPoint-lastPoint)/2);
+
 while(isEndGut ==false)
-    
-    [cutPoint,angle,indReg,rotImSize] ...
+
+    [cutPoint,theta,indReg,rotImSize] ...
         = findCut(lastPoint, maxPoint, thisPoint);
     
     cutVal{cutIndex, 1}(1) = lastPoint;%Beginning of the region
     
     cutVal{cutIndex, 2} = indReg;
-    cutVal{cutIndex, 3} = angle;
+    cutVal{cutIndex, 3} = theta;
     cutVal{cutIndex, 4} = rotImSize;
     temp = cutPoint;
       
@@ -108,8 +108,7 @@ while(isEndGut ==false)
         %Set the end of this region to be the end of the gut.
         cutVal{cutIndex,1}(2) = maxPoint;
         
-    end
-        
+    end       
     cutIndex = cutIndex+1;
      
     if(cutIndex>numRegions)
@@ -119,7 +118,7 @@ while(isEndGut ==false)
 end
 
 
-    function [cutPoint, angle,indReg, rotImSize] = findCut(lastPoint, maxPoint,thisPoint)      
+    function [cutPoint, theta,indReg, rotImSize] = findCut(lastPoint, maxPoint,thisPoint)      
        
         lastPos = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle',lastPoint);
                 
@@ -143,7 +142,7 @@ end
             
             %Find the optimal angle to rotate this mask to minimize the area of the
             %minimal confining rectangle of the outline of the gut.
-            [xRange, yRange, angle, rotImSize] = optimalAngle(thisMask);
+            [xRange, yRange, theta, rotImSize] = optimalAngle(thisMask);
             
             %See which regions overlap with this mask
             whichRegions = cellfun(@(regionMask)ismember(2, regionMask(:)+thisMask(:)), regionMask);

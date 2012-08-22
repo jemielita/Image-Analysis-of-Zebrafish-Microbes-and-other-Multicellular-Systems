@@ -31,7 +31,7 @@ imVar.scanNum = scanNum;
 loadType = 'multiple'; %To return optimal cut.
 
 %Loading in images as double.
-%imStack = load3dVolume(param, imVar, loadType, [cutNum,scanNum]);
+imStack = load3dVolume(param, imVar, loadType, [cutNum,scanNum]);
 fprintf(1,'...done!\n');
 
 %% Calculate rotated masks
