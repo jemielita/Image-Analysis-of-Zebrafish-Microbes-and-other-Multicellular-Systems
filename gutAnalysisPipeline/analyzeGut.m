@@ -28,7 +28,7 @@ end
 %Find number of saved analysis steps
 analInd = find([analysisType.return]==true);
 totNumSteps = length(analInd);
-lineLength = size(param.centerLine,1);
+lineLength = size(param.centerLineAll{scanParam.scanNum},1);
 regFeatAll = cell(totNumColor,totNumSteps, lineLength);
 
 

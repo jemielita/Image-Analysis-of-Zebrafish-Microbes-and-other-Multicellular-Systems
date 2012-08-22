@@ -71,7 +71,6 @@ catch
 end
 end
 
-    
 function error = checkInputs(analysisType, scanParam, param)
 %write!
 
@@ -87,7 +86,7 @@ function error = saveAnalysis(regFeatures, scanParam)
 try
     fileName = [scanParam.dataSaveDirectory, filesep, 'Analysis_Scan', ...
         num2str(scanParam.scanNum), '.mat'];
-    save(fileName, 'regFeatures');
+    save(fileName, 'regFeatures', '-v7.3');
     error = 0;
 catch
     fprintf(2, ['Error in saving Scan: ', num2str(scanParam.scanNum)]);
@@ -107,7 +106,6 @@ save(fileName, 'scanList');
 
 
 end
-
 
 function scanParam = getFinishedScanList(scanParam)
 

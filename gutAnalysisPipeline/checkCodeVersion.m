@@ -20,7 +20,7 @@ cd(codeDirectory);
 [status, revisionUpdated] = system('bzr diff');
 
 if(~isempty(revisionUpdated))
-   fprintf(2, 'Code has been changed since the last commit! \n Please committ code. ');  
+   fprintf(2, 'Code has been changed since the last commit! \n Please committ code. \n');  
    error = 1;
 end
 
