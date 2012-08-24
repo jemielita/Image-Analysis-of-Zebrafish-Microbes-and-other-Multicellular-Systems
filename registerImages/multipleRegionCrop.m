@@ -875,30 +875,47 @@ hContrast = imcontrast(imageRegion);
         scanDir = [baseDir, 'scan_', num2str(scanNum), filesep];
         
         numColor = length(param.color);
-        for colorNum=1:numColor
+        
+        %Filling the input image with zeros, to be safe.
+        imC = zeros(size(im,1),size(im,2),2);
+        imC(:) = 0;
+        
+        imC = uint16(imC); %To match the input type of the images.
+        
+        for cN=1:numColor
             
             for regNum=1:totalNumRegions
                 
                 %Get the range of pixels that we will read from and read out to.
-                xOutI = param.regionExtent.XY{colorNum}(regNum,1);
-                xOutF = param.regionExtent.XY{colorNum}(regNum,3)+xOutI-1;
+                xOutI = param.regionExtent.XY{cN}(regNum,1);
+                xOutF = param.regionExtent.XY{cN}(regNum,3)+xOutI-1;
                 
-                yOutI = param.regionExtent.XY{colorNum}(regNum,2);
-                yOutF = param.regionExtent.XY{colorNum}(regNum,4)+yOutI -1;
+                yOutI = param.regionExtent.XY{cN}(regNum,2);
+                yOutF = param.regionExtent.XY{cN}(regNum,4)+yOutI -1;
                 
-                xInI = param.regionExtent.XY{colorNum}(regNum,5);
+                xInI = param.regionExtent.XY{cN}(regNum,5);
                 xInF = xOutF - xOutI +xInI;
                 
-                yInI = param.regionExtent.XY{colorNum}(regNum,6);
+                yInI = param.regionExtent.XY{cN}(regNum,6);
                 yInF = yOutF - yOutI +yInI;
                 
                 if(imNum(regNum)~=-1)
                     imFileName = ...
                         strcat(scanDir,  'region_', num2str(regNum),filesep,...
                         color, filesep,'pco', num2str(imNum(regNum)),'.tif');
-                    whichC = mod(regNum, 2)+1;
-                    imArray{colorNum,regNum} = imread(imFileName,...
+                    imArray{cN,regNum} = imread(imFileName,...
                         'PixelRegion', {[xInI xInF], [yInI yInF]});
+                    
+                else
+                    imArray{cN,regNum} = zeros(xInF-xInI+1, yInF-yInI+1);
+                end
+                
+                %Also update imC
+                if(imNum(regNum)~=-1)
+                    whichC = mod(regNum, 2)+1;
+                    imC(xOutI:xOutF,yOutI:yOutF,whichC) = ...
+                        imArray{cN,regNum} + ...
+                        imC(xOutI:xOutF,yOutI:yOutF,whichC);
                     
                 end
                 
@@ -911,15 +928,27 @@ hContrast = imcontrast(imageRegion);
     end
 
     function alternateRegions_Callback(hObject, eventdata)
-
-         switch get(eventdata.NewValue, 'String')
-             case 'Even'
-                 set(hIm, 'CData', imC(:,:,1));
-             case 'Odd'
-                 set(hIm, 'CData', imC(:,:,2));
-             case 'Both'
-                 set(hIm, 'CData', imC(:,:,1)+imC(:,:,2));
-         end
+        %Update image contrast
+        hContrast = findobj('Tag', 'imcontrast');
+        conPos = get(hContrast, 'Position');
+        
+        if(~isempty(hContrast))
+            delete(hContrast);
+        end
+        
+        switch get(eventdata.NewValue, 'String')
+            case 'Even'
+                set(hIm, 'CData', imC(:,:,1));
+            case 'Odd'
+                set(hIm, 'CData', imC(:,:,2));
+            case 'Both'
+                set(hIm, 'CData', imC(:,:,1)+imC(:,:,2));
+        end
+        
+          hContrast = imcontrast(imageRegion);
+          hContrast = findobj('Tag', 'imcontrast');
+          set(hContrast, 'Position', conPos);
+           
     end
 
     function manualRegisterImage_Callback(hObject, eventdata)
@@ -929,25 +958,28 @@ hContrast = imcontrast(imageRegion);
         
         numColor = length(param.color);
         
-        for i=0:numColor-1
-            param.regionExtent.XY{i+1}(:, 1:2) = tableData(1:end-1,2*i+1:2*i+2);
+        for j=0:numColor-1
+            param.regionExtent.XY{j+1}(:, 1:2) = tableData(1:end-1,2*j+1:2*j+2);
         end
         totalNumRegions = length(unique([param.expData.Scan.region]));
 
         %If we've changed the size of the image, then redefine image
         
-        for i=0:numColor-1
-            if(sum(param.regionExtent.regImSize{i+1}~=tableData(end,2*i+1:2*i+2))~=0)
-                param.regionExtent.regImSize{i+1}= tableData(end,2*i+1:2*i+2);
-                im = zeros(param.regionExtent.regImSize{i+1});
+        for j=0:numColor-1
+            if(sum(param.regionExtent.regImSize{j+1}~=tableData(end,2*j+1:2*j+2))~=0)
+                
+                hContrast = findobj('Tag', 'imcontrast');
+                conPos = get(hContrast, 'Position');
+                param.regionExtent.regImSize{j+1}= tableData(end,2*j+1:2*j+2);
+                im = zeros(param.regionExtent.regImSize{j+1});
                 %hIm = imshow(im,[],'Parent', imageRegion);
                
                 set(hIm, 'CData', im);
-                set(imageRegion, 'YLim', [1 param.regionExtent.regImSize{i+1}(1)]);
-                set(imageRegion, 'XLim', [1 param.regionExtent.regImSize{i+1}(2)]);
+                set(imageRegion, 'YLim', [1 param.regionExtent.regImSize{j+1}(1)]);
+                set(imageRegion, 'XLim', [1 param.regionExtent.regImSize{j+1}(2)]);
                 if(~isempty(hContrast))
                     hContrast = imcontrast(imageRegion);
-
+                    set(hContrast, 'Position', conPos);
                 end
             end
         end
@@ -958,7 +990,7 @@ hContrast = imcontrast(imageRegion);
         %Load in the associated images
         
         %Filling the input image with zeros, to be safe.
-        imC = zeros(size(im,1),size(im,2),3);
+        imC = zeros(size(im,1),size(im,2),2);
         imC(:) = 0;
         
         imC = uint16(imC); %To match the input type of the images.
@@ -991,7 +1023,7 @@ hContrast = imcontrast(imageRegion);
             if(imNum(regNum)~=-1)
                 whichC = mod(regNum, 2)+1;
                 imC(xOutI:xOutF,yOutI:yOutF,whichC) = ...
-                    imArray{thisColor,regNum}(xInI:xInF,yInI:yInF) + ...
+                    imArray{thisColor,regNum} + ...
                     imC(xOutI:xOutF,yOutI:yOutF,whichC);
                 
             end
@@ -1007,16 +1039,17 @@ hContrast = imcontrast(imageRegion);
             delete(hRect);
             outlineRegions();
         end
-         
+        
         %Update image contrast
-                        hContrast = findobj('Tag', 'imcontrast');
-                if(~isempty(hContrast))
-                    delete(hContrast);
-                    hContrat = imcontrast(imageRegion);
-                
-                end
-                
-
+        hContrast = findobj('Tag', 'imcontrast');
+        conPos = get(hContrast, 'Position');
+        if(~isempty(hContrast))
+            delete(hContrast);
+            hContrast = imcontrast(imageRegion);
+            set(hContrast, 'Position', conPos);
+        end
+        
+        
     end
     function colorSlider_Callback(hObject, eventData)
         colorNum = get(hColorSlider, 'Value');
@@ -1078,30 +1111,7 @@ hContrast = imcontrast(imageRegion);
                     %Save previous outline
                     hApi = iptgetapi(h);
                     param.regionExtent.polyAll{scanNumPrev} = hApi.getPosition();
-                end
-                hLine = findobj('Tag', 'gutCenter');
-                if(~isempty(hLine)&& ishandle(hLine))
-                    hLine = iptgetapi(hLine);
-                    param.centerLineAll{scanNumPrev} = hLine.getPosition();
-                end      
-                %Load in new outline
-                if(isfield(param, 'centerLineAll'))
                     
-                    obj = findobj('Tag', 'gutCenter');
-                    delete(obj);
-                    
-                    try
-                        line = param.centerLineAll{scanNum};
-                    catch
-                        line = param.centerLineAll{scanNumPrev};
-                        param.centerLineAll{scanNum} = param.centerLineAll{scanNumPrev};
-                    end
-                    
-                    h = impoly(imageRegion, line, 'Closed', false);
-                    set(h, 'Tag', 'gutCenter');
-                    
-                end
-                if(isfield(param.regionExtent, 'polyAll'))
                     try
                         poly = param.regionExtent.polyAll{scanNum};
                         hApi = iptgetapi(hPoly);
@@ -1112,7 +1122,24 @@ hContrast = imcontrast(imageRegion);
                         param.regionExtent.polyAll{scanNum} =...
                             param.regionExtent.polyAll{scanNumPrev};
                     end
+                
                 end
+                
+                hLine = findobj('Tag', 'gutCenter');
+                if(~isempty(hLine)&& ishandle(hLine))
+                    hLine = iptgetapi(hLine);
+                    param.centerLineAll{scanNumPrev} = hLine.getPosition();
+                    
+                    try
+                        line = param.centerLineAll{scanNum};
+                        hLine.setPosition(line);
+                    catch
+                        line = param.centerLineAll{scanNumPrev};
+                        param.centerLineAll{scanNum} = param.centerLineAll{scanNumPrev};
+                    end
+                    
+                    
+                end    
                 
         end
         
@@ -1184,6 +1211,8 @@ hContrast = imcontrast(imageRegion);
         %Start drawing the boundaries!
         hPoly = impoly(imageRegion);   
         set(hPoly, 'Tag', 'gutOutline');
+        hPoly = iptgetapi(hPoly);
+        hPoly.setColor([0 1 0]);
         
     end
 
@@ -1200,6 +1229,8 @@ hContrast = imcontrast(imageRegion);
                 hPoly = impoly(imageRegion, param.regionExtent.polyAll{scanNum});
         end
         set(hPoly, 'Tag', 'gutOutline');
+        hPoly = iptgetapi(hPoly);
+        hPoly.setColor([0 1 0]);
         
     end
 
@@ -1256,7 +1287,6 @@ hContrast = imcontrast(imageRegion);
         disp(['Gut outline saved to the file: ', saveFile]);
     end
 
-
     function clearPoly_Callback(hObject, eventdata)
       obj = findobj('Tag', 'gutOutline'); %Delete the displayed polygon. 
       delete(obj);
@@ -1270,6 +1300,8 @@ hContrast = imcontrast(imageRegion);
         
         hLine = findobj('Tag', 'gutCenter');
         hLine = iptgetapi(hLine);
+        hLine.setColor([1 0 0]);
+        
         multipleOutline = get(hMultipleOutline, 'Checked');
         
         switch multipleOutline
@@ -1460,6 +1492,11 @@ hContrast = imcontrast(imageRegion);
             
             h = impoly(imageRegion, line, 'Closed', false);
             set(h, 'Tag', 'gutCenter');
+            
+            hLine = iptgetapi(h);
+            hLine.setColor([1 0 0]);
+            
+        
         end
         
     end

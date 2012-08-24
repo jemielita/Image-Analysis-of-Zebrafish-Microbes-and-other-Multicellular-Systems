@@ -31,6 +31,7 @@ if(error ==1)
     fprintf(2, 'Problem saving meta-data from analysis!');
     return
 end
+
 %% Start the analysis of individual scans
 
 for thisScan=1:length(scanParam.scanList)
@@ -48,9 +49,9 @@ for thisScan=1:length(scanParam.scanList)
   error = saveAnalysis(regFeatures, scanParam);
   
   updateFinishedScanList(scanParam, error);
-  
-  
-    
+
+  %Convert the image stack if desired
+  error = convertImageFormat(scanParam, param);
 end
 
 %% Analysis/graphing of the entire data set
@@ -69,6 +70,7 @@ catch
     error = 1;
     
 end
+
 end
 
 function error = checkInputs(analysisType, scanParam, param)
@@ -126,4 +128,26 @@ catch
 end
 fprintf(1, '\n');
 
+end
+
+function error = convertImageFormat(scanParam, param)
+
+if(isfield(scanParam, 'convertToPNG') && scanParam.convertToPNG==true)
+    currentDir = pwd;
+    cd(param.directoryName);
+    fileName = rdir('**\*.tif');
+    
+    for i=1:length(fileName)
+        inFileName = fileName(1).name;
+        
+        im = imread(fileName(1).name);
+        outFileName = [inFileName(1:end-3), 'png'];
+        
+        imwrite(im, outFileName);
+        delete(inFileName);
+        
+    end
+    
+end
+    
 end

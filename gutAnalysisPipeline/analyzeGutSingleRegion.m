@@ -46,12 +46,6 @@ for colorNum =1:length(colorList)
     color = colorList{colorNum};
     %% Loading in image stack
     [imStack, centerLine, gutMask] = constructRotRegion(cutNum, scanNum, color, param);
-
-    %Just for testing the code structure
-%     gutMask = '';
-%     imStack = '';
-%     
- 
     totNumSteps = length(analysisType);
     
     %% Doing all the analysis steps
