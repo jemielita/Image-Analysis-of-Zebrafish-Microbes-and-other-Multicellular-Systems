@@ -47,16 +47,12 @@ for thisScan=1:length(scanParam.scanList)
   regFeatures = analyzeGut(analysisType, scanParam, param);
   
   error = saveAnalysis(regFeatures, scanParam);
-  
-<<<<<<< TREE
-  updateFinishedScanList(scanParam, analysisType, param, error); 
-    
-=======
+
   updateFinishedScanList(scanParam, error);
 
   %Convert the image stack if desired
   error = convertImageFormat(scanParam, param);
->>>>>>> MERGE-SOURCE
+
 end
 
 %% Analysis/graphing of the entire data set
