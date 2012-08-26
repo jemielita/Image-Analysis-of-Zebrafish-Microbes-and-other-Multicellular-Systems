@@ -22,7 +22,7 @@ outFile = [inFile(1:end-4), '.png'];
 imwrite(im, outFile);
 
 delete(inFile);
-
+fprintf(1, '.');
 end
 
 end
