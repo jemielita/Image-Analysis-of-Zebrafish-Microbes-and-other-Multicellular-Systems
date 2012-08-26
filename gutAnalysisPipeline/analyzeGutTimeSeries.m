@@ -47,11 +47,12 @@ for thisScan=1:length(scanParam.scanList)
   regFeatures = analyzeGut(analysisType, scanParam, param);
   
   error = saveAnalysis(regFeatures, scanParam);
-  
+
   updateFinishedScanList(scanParam, error);
 
   %Convert the image stack if desired
   error = convertImageFormat(scanParam, param);
+
 end
 
 %% Analysis/graphing of the entire data set
@@ -85,15 +86,11 @@ scan
 end
 
 function error = saveAnalysis(regFeatures, scanParam)
-try
+
     fileName = [scanParam.dataSaveDirectory, filesep, 'Analysis_Scan', ...
         num2str(scanParam.scanNum), '.mat'];
     save(fileName, 'regFeatures', '-v7.3');
     error = 0;
-catch
-    fprintf(2, ['Error in saving Scan: ', num2str(scanParam.scanNum)]);
-    error = 1;
-end
 
 end
 
