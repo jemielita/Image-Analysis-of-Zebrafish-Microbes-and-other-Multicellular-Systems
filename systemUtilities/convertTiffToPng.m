@@ -9,11 +9,15 @@
 %
 % AUTHOR: Matthew Jemielita, 8/22/2012
 
-function [] = convertTiffToPng(thisDir)
+function [] = convertTiffToPng(thisDir, isWindows)
 currentDir = pwd;
 cd(thisDir);
-allFile = rdir('**\*.tif');
 
+if(isWindows==1)
+    allFile = rdir('**\*.tif');
+else
+    allFile = rdir('**/*.tif');
+end
 for i=1:length(allFile)
 inFile = allFile(i).name;
 im = imread(inFile);
