@@ -61,11 +61,11 @@ end
 for nS=1:totalNumScans
     mess = ['Cropping scan ', num2str(nS)];
     fprintf(2, mess);
-    
+
     for nR = 1:totalNumRegions
 
         for nC = 1:totalNumColors
-            
+
             outputDirName = [cropDir filesep 'Scans' filesep 'scan_', num2str(nS), filesep ...
                 'region_', num2str(nR), filesep param.color{nC}];
             inputDirName =  [param.directoryName filesep 'Scans' filesep 'scan_', num2str(nS), filesep ...
@@ -84,6 +84,9 @@ for nS=1:totalNumScans
             %rare bug but we have seen it.
             if(length(param.regionExtent.XY)==1)
                 thisRegion = param.regionExtent.XY;
+                if(iscell(thisRegion))
+                    thisRegion = thisRegion{1};
+                end
             elseif(length(param.regionExtent.XY)==totalNumColors)
                 thisRegion = param.regionExtent.XY{nC};
             else
@@ -102,6 +105,8 @@ for nS=1:totalNumScans
             yInI = thisRegion(nR,6);
             yInF = yOutF - yOutI +yInI;
             
+          
+            
             switch loadType  
                 case 'individual'
                     %Load in each image one after another and then save
@@ -114,8 +119,7 @@ for nS=1:totalNumScans
             
         end
 
-    end
-    
+    end   
     fprintf(2, '\n');
 end
 

@@ -27,7 +27,7 @@ if nargin==0
     imPath = [pathN imLoc];
     
     %Get string base of these images, and the first scan number
-    thisIm = regexp(imLoc, '\d+(?=.TIF)');
+    thisIm = regexp(imLoc, '\d+(?=.tif)');
     
     baseIm = imLoc(1:thisIm-1);
     thisIm = imLoc(thisIm:end-4);
@@ -38,7 +38,7 @@ if nargin==0
           imPath);
     imPathEnd = [pathNEnd imLocEnd];
     
-    imEnd = regexp(imLocEnd, '\d+(?=.TIF)');
+    imEnd = regexp(imLocEnd, '\d+(?=.tif)');
     
     maxIm = imLocEnd(imEnd:end-4);
     maxIm = str2num(maxIm);
