@@ -62,6 +62,7 @@ for nS=1:totalNumScans
     mess = ['Cropping scan ', num2str(nS)];
     fprintf(2, mess);
 
+   
     for nR = 1:totalNumRegions
 
         for nC = 1:totalNumColors
@@ -155,6 +156,12 @@ save([cropDir filesep 'ExperimentData.mat'], 'parameters', 'timeData', 'param');
         for nI = 1:totalNumIm
             fN = [inputDirName, filesep, 'pco', num2str(nI-1), '.tif'];
             %Loading in this image
+            info = imfinfo(fN);
+            
+            %For now, only crop if not the maximum size-this is a cheap way
+            %to get around us accidentally starting this code at the center
+            %of a scan.
+            
             imI = imread(fN,...
                 'PixelRegion', {[xInI xInF], [yInI yInF]});
             %Saving this image to the new location, in either a
@@ -170,6 +177,7 @@ save([cropDir filesep 'ExperimentData.mat'], 'parameters', 'timeData', 'param');
                         delete(fN);%If we're overwriting the original file, then delete the .tiff file and replace it with a .png
                     end
             end
+            
             fprintf(2, '.');
         end
         
