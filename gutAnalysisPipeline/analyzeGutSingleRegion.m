@@ -59,9 +59,7 @@ for colorNum =1:length(colorList)
     
 end
 
-
 %% Discard entries in regFeatures
-% Remove entries that we don't want to keep
 for stepNum = 1:totNumSteps
     for colorNum =1:length(colorList)
         
@@ -86,7 +84,7 @@ switch analysisType(stepNum).name
         regFeatures = radialProjection(imStack, centerLine, gutMask);
         
     case 'linearIntensity'
-        regFeatures = intensityCurve(imStack, gutMask);
+        regFeatures = intensityCurve(imStack, gutMask,centerLine);
     
     case 'radialDistribution'
         %Find the point in this analysis chain where we calculate the

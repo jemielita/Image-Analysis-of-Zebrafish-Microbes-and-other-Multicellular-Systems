@@ -42,6 +42,9 @@ for thisScan=1:length(scanParam.scanList)
   
   %Different optimal cut for each time point, because we have a different
   %gut outline.
+  
+  param = resampleCenterLine(param, scanParam);
+  
   param.cutVal = calcOptimalCut(10,param,scanParam.scanNum);
   
   regFeatures = analyzeGut(analysisType, scanParam, param);
@@ -94,6 +97,27 @@ function error = saveAnalysis(regFeatures, scanParam)
 
 end
 
+function param = resampleCenterLine(param, scanParam)
+poly = param.centerLineAll{scanParam.scanNum};
+
+%Resample the center line at the desired spacing
+stepSize = scanParam.stepSize/0.1625;
+
+%Parameterizing curve in terms of arc length
+t = cumsum(sqrt([0,diff(poly(:,1)')].^2 + [0,diff(poly(:,2)')].^2));
+%Find x and y positions as a function of arc length
+polyFit(:,1) = spline(t, poly(:,1), t);
+polyFit(:,2) = spline(t, poly(:,2), t);
+
+polyT(:,2) = interp1(t, polyFit(:,2),min(t):stepSize:max(t),'spline', 'extrap');
+polyT(:,1) = interp1(t, polyFit(:,1),min(t):stepSize:max(t), 'spline', 'extrap');
+
+%Redefining poly
+poly = cat(2, polyT(:,1), polyT(:,2));
+
+param.centerLineAll{scanParam.scanNum} = poly;
+
+end
 function updateFinishedScanList(scanParam, error)
 fileName = [scanParam.dataSaveDirectory, filesep, 'scanlist_LOCK.mat'];
 scanList = load(fileName);

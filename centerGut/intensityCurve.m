@@ -14,14 +14,14 @@
 %
 % AUTHOR: Matthew Jemielita, revised August 3, 2012
 
-function intenL = intensityCurve(im,regionMask)
+function intenL = intensityCurve(im,regionMask,centerLine)
 totalNumMask = size(regionMask,3);
 
 %Duplicate the mask.
 regionMask =uint16(regionMask);
 
 allReg = unique(regionMask(:));
-intenL = zeros(max(allReg),2);
+intenL = zeros(length(centerLine),2);
 
 for numMask = 1:totalNumMask
     %Get regions in this particular mask.
