@@ -149,6 +149,7 @@ im = zeros(finalHeight, finalWidth, finalDepth, dataType);
 
 %Crop down the mask to the size of the cut region
 maxCut = size(param.cutVal,1);
+
 % 
 % if(cutNumber==maxCut)
 %     finalPoint = size(param.centerLine,1)-1;
@@ -174,6 +175,15 @@ scanDir = [baseDir, 'scan_', num2str(imVar.scanNum), filesep];
 %Find the indices to map the original image points onto the rotated image
 theta = thisCut{3};
 [oI, rI] = rotationIndex(cutMask, theta);
+[x,y] = ind2sub(size(imRotate), rI);
+
+%Remove indices beyond this range
+ind = [ find(x<xMin); find(x>xMax); find(y<yMin); find(y>yMax)];
+ind = unique(ind);
+x(ind) = []; y(ind) = []; oI(ind) = []; rI(ind) = [];
+x = x-xMin+1; y = y-yMin+1;
+finalI = sub2ind([finalHeight, finalWidth], x,y);
+
 
 for nZ=minZ:maxZ
     
@@ -205,19 +215,9 @@ for nZ=minZ:maxZ
            strcat(scanDir,  'region_', num2str(regNum),filesep,...
            param.color(colorNum), filesep,'pco', num2str(imNum),'.tif');
        try       
-           thisIm = imread(imFileName{1},'PixelRegion', {[xInI xInF], [yInI yInF]});
-           
-           %Cast loaded image to the appropriate data type
-           switch dataType
-               case 'double'
-                   thisIm = double(thisIm);
-               case 'uint16'
-                   thisIm = uint16(thisIm);
-               case 'uint32'
-                   thisIm = uint32(thisIm);
-           end          
-           imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) + thisIm;
-      
+                    
+           imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
+               double(imread(imFileName{1},'PixelRegion', {[xInI xInF], [yInI yInF]}));     
        catch
            disp('This image doesnt exist-fix up your code!!!!');
        end
@@ -243,18 +243,21 @@ for nZ=minZ:maxZ
         
     end
     
-    %Applying mask
-    imOrig = imOrig.*cutMask;
-
     %Rotating the image
-    imRotate(:) = 0;
-    imRotate(rI) = imOrig(oI);
+   %imRotate(:) = 0;
+    %imRotate(rI) = imOrig(oI);
 
-    im(:,:,nZ-minZ+1) = imRotate(xMin:xMax,yMin:yMax);
+  %  im(:,:,nZ-minZ+1) = imRotate(xMin:xMax,yMin:yMax);
     
+    im(finalI +finalHeight*finalWidth*(nZ-minZ)) = imOrig(oI);
+%     finalI = rI-xMin*yMin+1;
+%     finalI = finalI + (nZ-minZ)*size(im,1)*size(im,2);
+%     im
     fprintf(1, '.');
     
 
 end
+
+
 
 end

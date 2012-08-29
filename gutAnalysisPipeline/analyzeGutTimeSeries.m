@@ -32,6 +32,7 @@ if(error ==1)
     return
 end
 
+
 %% Start the analysis of individual scans
 
 for thisScan=1:length(scanParam.scanList)
@@ -59,7 +60,6 @@ for thisScan=1:length(scanParam.scanList)
 end
 
 %% Analysis/graphing of the entire data set
-
 
 
 end
