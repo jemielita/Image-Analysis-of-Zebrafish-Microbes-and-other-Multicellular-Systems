@@ -9,11 +9,11 @@
 %1. Calculate linear intensity down length of gut
 analysisType(1).name = 'linearIntensity';
 analysisType(1).return = true;
-% 
-% %2. Calculate radial projection at all points along the gut
-% analysisType(2).name = 'radialProjection';
-% analysisType(2).return = true;
-% 
+
+%2. Calculate radial projection at all points along the gut
+analysisType(2).name = 'radialProjection';
+analysisType(2).return = true;
+
 % %3. Calculate radial distribution 
 % analysisType(3).name = 'radialDistribution';
 % analysisType(3).return = true;

@@ -16,8 +16,6 @@ for cutNum=1:totNumCut
  regFeat{cutNum} = analyzeGutSingleRegion(param, cutNum, analysisType,...
      scanParam.scanNum, scanParam.color);
 end
-regFeat = load('regFeat.mat');
-regFeat = regFeat.regFeat;
 %% Unpack the results
 
 %Find number of saved analysis steps
@@ -26,7 +24,7 @@ totNumSteps = length(analInd);
 totNumColor = length(scanParam.color);
 
 lineLength = size(param.centerLineAll{scanParam.scanNum},1);
-regFeatAll = cell(totNumColor,totNumSteps, lineLength);
+regFeatAll = cell(totNumColor,totNumSteps);
 
 %% Save the results
 

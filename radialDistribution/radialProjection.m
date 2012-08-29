@@ -173,7 +173,7 @@ radIm = cell(maxL,1);
 minZ = 1;
 fprintf(1, 'Getting pixel information for radial distribution.');
 for nL = minL:maxL
-    
+
     fprintf(1, '.');
     xx = line(:,1);
     yy = line(:,2);
@@ -229,7 +229,7 @@ for nL = minL:maxL
     regWidth = size(rotMask,1);
     regDepth = size(rotMask,2);
    
-    thisRegion = NaN*zeros(regWidth, maxZ-minZ+1,regDepth);
+    thisRegion = NaN*zeros(regWidth, regDepth,maxZ-minZ+1);
     thisRegion(rotIndAll(:)) = imStack(origIndAll(:));
     
     radIm{nL} = squeeze(nanmean(thisRegion,2));

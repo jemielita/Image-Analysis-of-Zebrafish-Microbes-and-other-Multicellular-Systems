@@ -152,7 +152,7 @@ fprintf(1, '\n');
 end
 
 function error = convertImageFormat(scanParam, param)
-
+error = 0;
 if(isfield(scanParam, 'convertToPNG') && scanParam.convertToPNG==true)
     currentDir = pwd;
     cd(param.directoryName);

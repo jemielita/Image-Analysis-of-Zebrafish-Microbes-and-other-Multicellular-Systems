@@ -1,7 +1,7 @@
 %curveMask: For a given mask, and  line that runs down the center of it,
 %calculate 
 
-function mask = curveMask(BW,line,param, type)
+function mask = curveMask(BW,line,~, type)
 
 xx = line(:,1);
 yy = line(:,2);
@@ -16,7 +16,9 @@ catch err
 end
 
 fprintf(2,'Creating Masks ');
-
+count = 0;
+tic;
+lastMaskInd = 2;
 for i=2:length(xx)-1
     fprintf(2, '.');
     %Find the orthogonal vector using Gram-Schmidt orthogonalization
@@ -31,11 +33,19 @@ for i=2:length(xx)-1
     %See if this mask doesn't overlap with any of the previously found
     %masks. If it doesn't then add this mask to that array, if not put it
     %into a new array.
+   
+    maskInd = [setdiff(1:size(mask,3), lastMaskInd), lastMaskInd];
     
     for mComp=1:size(mask,3)
-        isOverlap = unique(thisMask.*mask(:,:,mComp)>0);
         
-        if(ismember(1, abs(isOverlap)))
+        %See if this region overlaps with regions in any of the array of
+        %masks. Compare with the mask array containing the previous array
+        %last-this is the most mask that it will overlap with.
+        thisInd = maskInd(mComp);
+       % thisInd = mComp;
+        isOverlap = sum(sum(thisMask.*mask(:,:,thisInd)>0));
+        count = count+1;
+        if(isOverlap~=0)
             %Regions overlap, skip this mask for now,
             if(mComp<size(mask,3))
                 continue %Continue comparing masks if you're not at the end of the array of masks.
@@ -43,13 +53,15 @@ for i=2:length(xx)-1
                 mask(:,:,mComp+1) = thisMask; %Enlarge the array storing the masks.
             end            
         else
-            mask(:,:,mComp) = thisMask + mask(:,:,mComp);
+            mask(:,:,thisInd) = thisMask + mask(:,:,thisInd);
+            lastMaskInd = thisInd;
             break
         end      
     end
+  
         
 end
-
+toc
 fprintf(2,'done!\n');
 %Remove any arrays in mask that don't contain regions.
 while(~any(mask(:,:,end)>0))
