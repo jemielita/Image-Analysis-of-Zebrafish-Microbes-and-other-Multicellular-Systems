@@ -1132,7 +1132,9 @@ hContrast = imcontrast(imageRegion);
                     
                     try
                         line = param.centerLineAll{scanNum};
-                        hLine.setPosition(line);
+                        if(~isempty(line))
+                            hLine.setPosition(line);
+                        end
                     catch
                         line = param.centerLineAll{scanNumPrev};
                         param.centerLineAll{scanNum} = param.centerLineAll{scanNumPrev};

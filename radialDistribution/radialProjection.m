@@ -166,8 +166,9 @@ end
 function  radIm = getOnlyRegionMean(imStack, line, mask, maxZ)
 
 minL = 2;
-maxL = size(line,1);
 
+maxL = size(line,1);
+radIm = cell(maxL,1);
 %Depth in z of our array
 minZ = 1;
 fprintf(1, 'Getting pixel information for radial distribution.');
@@ -200,7 +201,7 @@ for nL = minL:maxL
     minXo = min(x); maxXo = max(x);
     
     %Find pixel indices in the original, uncropped image-we will use this to
-    % pull the appropriate pixels when we want to do our averagin.
+    %pull the appropriate pixels when we want to do our averaging.
     ind = find(thisMask~=0);
     
     thisMask(:) = NaN;

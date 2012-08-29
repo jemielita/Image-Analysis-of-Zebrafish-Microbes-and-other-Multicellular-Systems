@@ -9,16 +9,16 @@
 %1. Calculate linear intensity down length of gut
 analysisType(1).name = 'linearIntensity';
 analysisType(1).return = true;
-
-%2. Calculate radial projection at all points along the gut
-analysisType(2).name = 'radialProjection';
-analysisType(2).return = true;
-
-%3. Calculate radial distribution 
-analysisType(3).name = 'radialDistribution';
-analysisType(3).return = true;
-analysisType(3).param.father = 2;
-analysisType(3).param.binSize = 2;
+% 
+% %2. Calculate radial projection at all points along the gut
+% analysisType(2).name = 'radialProjection';
+% analysisType(2).return = true;
+% 
+% %3. Calculate radial distribution 
+% analysisType(3).name = 'radialDistribution';
+% analysisType(3).return = true;
+% analysisType(3).param.father = 2;
+% analysisType(3).param.binSize = 2;
 
 
 %Scan parameters
@@ -28,7 +28,7 @@ analysisType(3).param.binSize = 2;
 scanParam.codeDir = 'C:\code\trunk';
 %Colors to analyze
 scanParam.color = {'488nm', '568nm'};
-scanParam.dataSaveDirectory = 'D:\Aeromonas_May10\fish1\gutOutline';
+scanParam.dataSaveDirectory = 'G:\Aeromonas_Aug8\fish4\gutOutline';
 %List of scans to analyze
 scanParam.scanList = 1:50;
-scanParam.stepSize = 10;
+scanParam.stepSize = 5;
