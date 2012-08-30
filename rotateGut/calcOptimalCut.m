@@ -27,6 +27,28 @@
 
 function cutVal = calcOptimalCut(lengthOverlap, param,scanNum)
 
+%See if the previous scan's outline is the same as this scans. If so, we
+%don't have to recalculate the cut value.
+
+if(scanNum>1 && isfield(param, 'cutValAll'))
+    %If we've stored up previous cut values, see if we can load one instead
+    %of recalculating it.
+    for i=1:scanNum-1
+       
+        
+       sameLine = isequal(param.centerLineAll{i}(:),param.centerLineAll{scanNum}(:));
+       sameOutline = isequal(...
+           param.regionExtent.polyAll{i}(:),param.regionExtent.polyAll{scanNum}(:));
+       
+       
+       if(sameLine==true && sameOutline==true && ~isempty(param.cutValAll{i}))
+           cutVal = param.cutValAll{i};
+           return;
+       end
+    end
+end
+
+
 %Get mask of gut
 height = param.regionExtent.regImSize{1}(1);
 width = param.regionExtent.regImSize{1}(2);
@@ -74,7 +96,16 @@ lastPoint = 2;
 cutIndex = 1;
 isEndGut=false;
 maxPoint = size(centerLine,1)-1;
-thisPoint = round((maxPoint-lastPoint)/2);
+
+%If we found a cut on the previous time point, use this as a guess where
+%the cut will be this time-the outlines don't change that much from point
+%to point.
+if(scanNum>2 && ~isempty(param.cutValAll{scanNum-1}))
+    thisPoint = param.cutValAll{scanNum-1}{1}(2);
+    thisPoint = min([thisPoint,maxPoint]); 
+else
+    thisPoint = round((maxPoint-lastPoint)/2);
+end
 
 while(isEndGut ==false)
 
@@ -89,7 +120,6 @@ while(isEndGut ==false)
     temp = cutPoint;
       
     fprintf(1, '\n');
-    disp(['Cut found: ', num2str(cutPoint)]);
     %Estimate for where the next cut should be
     %minus one  to use w/ getOrthVect
     %Include offset so that regions overlap (allowing us to do correlations
@@ -108,7 +138,9 @@ while(isEndGut ==false)
         %Set the end of this region to be the end of the gut.
         cutVal{cutIndex,1}(2) = maxPoint;
         
-    end       
+    end      
+    disp(['Cut found: ', num2str(cutVal{cutIndex,1}(2))]);
+
     cutIndex = cutIndex+1;
      
     if(cutIndex>numRegions)
@@ -177,8 +209,12 @@ end
 
             elseif(totMemory==maxArraySize||abs(thisPoint-maxPoint)<5)
                 isMaxSize = true;
+            elseif(abs((totMemory-maxArraySize)/maxArraySize -1)<0.2)
+                %If we're within 20 percent of the maximum size, return
+                %this as a good cut...We don't have to be super precise.
+                isMaxSize =true;
+                
             end
-            
             %If we're pretty close to the end then don't bother to make
             %a new region
             if(abs(thisPoint-maxPoint)<5)

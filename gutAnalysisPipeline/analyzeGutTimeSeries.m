@@ -32,31 +32,32 @@ if(error ==1)
     return
 end
 
-
 %% Start the analysis of individual scans
 
 for thisScan=1:length(scanParam.scanList)
-  %Set this particular scan number-only thing that changes from one scan to
-  %the next-I don't see any reason why we should change what we analyze
-  %from one scan to the enxt
-  scanParam.scanNum = scanParam.scanList(thisScan);
-  
-  %Different optimal cut for each time point, because we have a different
-  %gut outline.
-  
-  param = resampleCenterLine(param, scanParam);
-  
-  param.cutVal = calcOptimalCut(10,param,scanParam.scanNum);
-  
-  regFeatures = analyzeGut(analysisType, scanParam, param);
-  
-  error = saveAnalysis(regFeatures, scanParam);
-
-  updateFinishedScanList(scanParam, error);
-
-  %Convert the image stack if desired
-  error = convertImageFormat(scanParam, param);
-
+    
+    %Set this particular scan number-only thing that changes from one scan to
+    %the next-I don't see any reason why we should change what we analyze
+    %from one scan to the enxt
+    scanParam.scanNum = scanParam.scanList(thisScan);
+    
+    %Different optimal cut for each time point, because we have a different
+    %gut outline.
+    
+    param = resampleCenterLine(param, scanParam);
+    
+    param.cutVal = calcOptimalCut(10,param,scanParam.scanNum);
+    param.cutValAll{scanParam.scanNum} = param.cutVal;
+    
+    regFeatures = analyzeGut(analysisType, scanParam, param);
+    
+    error = saveAnalysis(regFeatures, scanParam);
+    
+    updateFinishedScanList(scanParam, error);
+    
+    %Convert the image stack if desired
+    error = convertImageFormat(scanParam, param);
+    
 end
 
 %% Analysis/graphing of the entire data set
