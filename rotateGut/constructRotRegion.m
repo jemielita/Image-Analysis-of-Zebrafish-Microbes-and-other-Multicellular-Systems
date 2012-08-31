@@ -8,8 +8,9 @@
 %       scanNum: scan number to load
 %       color: color to load (ex. '488nm', '568nm'
 %       param: structure with experimental parameters
-%       
-%OUTPUT: imStack: 3D stack containing rotated gut
+%       onlyMask (optional): only calculate the center line and gut mask if
+%       true
+%OUTPUT: imStack: (optional) 3D stack containing rotated gut
 %        rotCenterLine: points that pass through the center of the rotated
 %        gut
 %        rotMask: region masks that will be used to calculate the intensity
@@ -17,14 +18,24 @@
 %
 %AUTHOR: Matthew Jemielita, August 1, 2012
 
-function [imStack, rotCenterLine, rotMask] = constructRotRegion(cutNum,...
-scanNum, color, param)
+function varargout = constructRotRegion(cutNum,...
+scanNum, color, param,varargin )
 
-%Quality check inputs
-cutVal = param.cutVal;
+%% Quality check inputs
+
+%% Get gut mask and center line
+[rotMask, rotCenterLine] = getMaskAndLine(param, scanNum, cutNum);
+
+%If we're only calculating the masks, then return at this point
+if(nargin==5 && varargin{1} ==true)
+    varargout{1} = rotCenterLine;
+    varargout{2} = rotMask;
+    return
+end
 
 %% Load in image stack 
-fprintf(1, 'Loading in image stack...');
+
+fprintf(1, '\n Loading in image stack...');
 imVar.color = color;
 imVar.zNum = ''; 
 imVar.scanNum = scanNum;
@@ -34,8 +45,34 @@ loadType = 'multiple'; %To return optimal cut.
 imStack = load3dVolume(param, imVar, loadType, [cutNum,scanNum]);
 fprintf(1,'...done!\n');
 
-%% Calculate rotated masks
 
+%% Set all points outside the gut mask to be NaN
+outsideMask = ~cutMask;
+fprintf(1, 'Setting region outside gut to NaN.');
+for i=1:size(imStack,3)
+    temp = imStack(:,:,i);
+    temp(outsideMask) = NaN;
+    imStack(:,:,i) = temp;
+    fprintf(1, '.');
+end
+fprintf(1, '\n');
+
+
+if(nargout==3)
+    varargout{1} = imStack;
+    varargout{2} = rotCenterLine;
+    varargout{3} = rotMask;
+elseif(nargout==2)
+    varargout{1} = rotCenterLine;
+    varargout{2} = rotMask;
+end
+
+fprintf(1, '\n');
+end
+
+function [rotMask, rotCenterLine] = getMaskAndLine(param, scanNum,cutNum)
+%% Calculate rotated masks
+cutVal = param.cutVal;
 %Get mask of rotated gut
 height = param.regionExtent.regImSize{1}(1);
 width = param.regionExtent.regImSize{1}(2);
@@ -71,20 +108,10 @@ cutMask = cutMask.*gutMask;
 %% Get rotated mask
 rotMask = curveMask(cutMask, rotCenterLine, param,'rectangle');
 
-%% Set all points outside the gut mask to be NaN
-outsideMask = ~cutMask;
-fprintf(1, 'Setting region outside gut to NaN.');
-for i=1:size(imStack,3)
-    temp = imStack(:,:,i);
-    temp(outsideMask) = NaN;
-    imStack(:,:,i) = temp;
-    fprintf(1, '.');
-end
-fprintf(1, '\n');
-
 end
 
 function rotCenterLine = getRotatedLine(centerLine, cutVal, cutNum,height, width,gutMask,gutMaskRot)
+
 
 %Cut down the size of the center line
 centerLine = centerLine(cutVal{cutNum,1}(1):cutVal{cutNum,1}(2),:);

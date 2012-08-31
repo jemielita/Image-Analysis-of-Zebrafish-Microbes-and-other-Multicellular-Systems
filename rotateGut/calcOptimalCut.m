@@ -100,7 +100,8 @@ maxPoint = size(centerLine,1)-1;
 %If we found a cut on the previous time point, use this as a guess where
 %the cut will be this time-the outlines don't change that much from point
 %to point.
-if(scanNum>2 && ~isempty(param.cutValAll{scanNum-1}))
+if(scanNum>2 &&  isfield(param, 'cutValAll')&&...
+        ~isempty(param.cutValAll{scanNum-1}))
     thisPoint = param.cutValAll{scanNum-1}{1}(2);
     thisPoint = min([thisPoint,maxPoint]); 
 else

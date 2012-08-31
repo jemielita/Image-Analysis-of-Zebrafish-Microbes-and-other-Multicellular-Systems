@@ -15,10 +15,10 @@ analysisType(2).name = 'radialProjection';
 analysisType(2).return = true;
 
 % %3. Calculate radial distribution 
-% analysisType(3).name = 'radialDistribution';
-% analysisType(3).return = true;
-% analysisType(3).param.father = 2;
-% analysisType(3).param.binSize = 2;
+analysisType(3).name = 'radialDistribution';
+analysisType(3).return = true;
+analysisType(3).param.father = 2;
+analysisType(3).param.binSize = 2;
 
 
 %Scan parameters
@@ -32,3 +32,5 @@ scanParam.dataSaveDirectory = 'G:\Aeromonas_Aug8\fish4\gutOutline';
 %List of scans to analyze
 scanParam.scanList = 1:50;
 scanParam.stepSize = 5;
+scanParam.regOverlap = 10;
+

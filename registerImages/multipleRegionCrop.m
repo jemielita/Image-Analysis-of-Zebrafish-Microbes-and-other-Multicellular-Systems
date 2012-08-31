@@ -1226,13 +1226,20 @@ hContrast = imcontrast(imageRegion);
             case 'off'
                 hPoly = impoly(imageRegion, param.regionExtent.poly);
             case 'on'
+             
                 scanNum = get(hScanSlider, 'Value');
                 scanNum = int16(scanNum);
-                hPoly = impoly(imageRegion, param.regionExtent.polyAll{scanNum});
+                
+                if(isfield(param.regionExtent, 'polyAll')&&...
+                        ~isempty(param.regionExtent.polyAll{scanNum}))
+                    hPoly = impoly(imageRegion, param.regionExtent.polyAll{scanNum});
+                    set(hPoly, 'Tag', 'gutOutline');
+                    hPoly = iptgetapi(hPoly);
+                    hPoly.setColor([0 1 0]);
+                else
+                    disp('The gut has not been outlined yet!');
+                end               
         end
-        set(hPoly, 'Tag', 'gutOutline');
-        hPoly = iptgetapi(hPoly);
-        hPoly.setColor([0 1 0]);
         
     end
 
@@ -1451,6 +1458,10 @@ hContrast = imcontrast(imageRegion);
             lastFilled = nS;
             
         end
+        
+        %Remove double counted elements in allLine
+        allLine =cellfun(@(allLine) unique(allLine, 'rows'), allLine,...
+            'UniformOutput', false);
         
         allLine = cellfun(@(allLine) splineSmoothPolygon(allLine), allLine,...
             'UniformOutput', false);

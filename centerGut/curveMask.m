@@ -16,8 +16,7 @@ catch err
 end
 
 fprintf(2,'Creating Masks ');
-count = 0;
-tic;
+
 lastMaskInd = 2;
 for i=2:length(xx)-1
     fprintf(2, '.');
@@ -44,7 +43,7 @@ for i=2:length(xx)-1
         thisInd = maskInd(mComp);
        % thisInd = mComp;
         isOverlap = sum(sum(thisMask.*mask(:,:,thisInd)>0));
-        count = count+1;
+
         if(isOverlap~=0)
             %Regions overlap, skip this mask for now,
             if(mComp<size(mask,3))
@@ -61,7 +60,7 @@ for i=2:length(xx)-1
   
         
 end
-toc
+
 fprintf(2,'done!\n');
 %Remove any arrays in mask that don't contain regions.
 while(~any(mask(:,:,end)>0))

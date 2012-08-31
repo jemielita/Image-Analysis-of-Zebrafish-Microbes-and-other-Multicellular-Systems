@@ -19,7 +19,6 @@ saveDir = scanParam.dataSaveDirectory;
 
 %Integer list of which scans to analyze- don't want to just do a range in
 %case we want to do only a subset of scans.
-
 scanParam = getFinishedScanList(scanParam);
 
 %% Save meta-data
@@ -32,6 +31,10 @@ if(error ==1)
     return
 end
 
+%% Declaring variables
+centerLineAll = cell(3,1);
+gutMaskAll = cell(3,1);
+
 %% Start the analysis of individual scans
 
 for thisScan=1:length(scanParam.scanList)
@@ -41,15 +44,20 @@ for thisScan=1:length(scanParam.scanList)
     %from one scan to the enxt
     scanParam.scanNum = scanParam.scanList(thisScan);
     
+    fprintf(1, '\n');
+    fprintf(1, ['Analyzing scan: ', num2str(scanParam.scanNum)]);
+        
     %Different optimal cut for each time point, because we have a different
     %gut outline.
     
     param = resampleCenterLine(param, scanParam);
     
-    param.cutVal = calcOptimalCut(10,param,scanParam.scanNum);
+    [param, centerLineAll,gutMaskAll] = getScanMasks(scanParam,... 
+        param,centerLineAll, gutMaskAll,thisScan);
+        
     param.cutValAll{scanParam.scanNum} = param.cutVal;
     
-    regFeatures = analyzeGut(analysisType, scanParam, param);
+    regFeatures = analyzeGut(analysisType,scanParam,param,centerLineAll,gutMaskAll);
     
     error = saveAnalysis(regFeatures, scanParam);
     
@@ -64,7 +72,6 @@ end
 
 
 end
-
 
 function error = saveAnalysisSteps(analysisType, scanParam, param)
 try
@@ -119,6 +126,33 @@ poly = cat(2, polyT(:,1), polyT(:,2));
 param.centerLineAll{scanParam.scanNum} = poly;
 
 end
+
+function [param, centerLineAll, gutMaskAll] = getScanMasks(...
+    scanParam, param,centerLineAll, gutMaskAll,thisScan)
+param.cutVal = calcOptimalCut(scanParam.regOverlap,param,scanParam.scanNum);
+
+if(thisScan~=1)
+    lastScan = scanParam.scanList(thisScan-1);
+    scanNum = scanParam.scanNum;
+    sameLine = isequal(param.centerLineAll{lastScan}(:),param.centerLineAll{scanNum}(:));
+    sameOutline = isequal(...
+        param.regionExtent.polyAll{lastScan}(:),param.regionExtent.polyAll{scanNum}(:));
+    if(sameLine==true && sameOutline==true)
+       %If true, then the previously calculated gut mask is equal to this one
+       %and we don't have to recalculate it
+       return
+    end
+end
+
+numCuts = size(param.cutVal,1);
+for cN =1:numCuts
+    [centerLineAll{cN}, gutMaskAll{cN}] =...
+        constructRotRegion(cN, scanParam.scanNum, '', param, true);
+end
+
+
+end
+
 function updateFinishedScanList(scanParam, error)
 fileName = [scanParam.dataSaveDirectory, filesep, 'scanlist_LOCK.mat'];
 scanList = load(fileName);
@@ -157,8 +191,11 @@ error = 0;
 if(isfield(scanParam, 'convertToPNG') && scanParam.convertToPNG==true)
     currentDir = pwd;
     cd(param.directoryName);
-    fileName = rdir('**\*.tif');
     
+    searchStr = ['**', filesep, '*.tif'];
+    fileName = rdir(searchStr);
+    
+    fprintf(1, 'Converting images in this scan to pngs: ');
     for i=1:length(fileName)
         inFileName = fileName(1).name;
         
@@ -167,8 +204,9 @@ if(isfield(scanParam, 'convertToPNG') && scanParam.convertToPNG==true)
         
         imwrite(im, outFileName);
         delete(inFileName);
-        
+        fprintf(1, '.');
     end
+    fprintf(1, '\n');
     
 end
     

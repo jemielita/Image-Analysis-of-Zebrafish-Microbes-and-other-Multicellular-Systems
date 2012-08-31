@@ -104,7 +104,6 @@ end
 
 end
 
-
 %Load in all images in one particular cut of the gut
 function im  = loadCutRegion(param, imVar, cutNumber, scanNum,dataType)
 
@@ -150,14 +149,6 @@ im = zeros(finalHeight, finalWidth, finalDepth, dataType);
 %Crop down the mask to the size of the cut region
 maxCut = size(param.cutVal,1);
 
-% 
-% if(cutNumber==maxCut)
-%     finalPoint = size(param.centerLine,1)-1;
-%     cutPosInit = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle',finalPoint);
-% else
-%     lastCut{1} = param.cutVal{cutNumber+1,:};
-%     cutPosInit = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle',lastCut{1});
-% end
 cutPosInit = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle', thisCut{1}(2));
 cutPosFinal = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle', thisCut{1}(1));
 
@@ -237,24 +228,15 @@ for nZ=minZ:maxZ
         if(imNum(nR-1)>=0 &&imNum(nR)>=0)
             imOrig(param.regionExtent.overlapIndex{colorNum,thisReg} )= ...
                 0.5*imOrig(param.regionExtent.overlapIndex{colorNum,thisReg});
-            %    im(:) =1;
-            %   im(param.regionExtent.overlapIndex{regNum-1} ) = 0;
         end
         
     end
     
-    %Rotating the image
-   %imRotate(:) = 0;
-    %imRotate(rI) = imOrig(oI);
-
-  %  im(:,:,nZ-minZ+1) = imRotate(xMin:xMax,yMin:yMax);
-    
+    %Rotating the image by mapping to the appropriate pixels in the large
+    %image stack
     im(finalI +finalHeight*finalWidth*(nZ-minZ)) = imOrig(oI);
-%     finalI = rI-xMin*yMin+1;
-%     finalI = finalI + (nZ-minZ)*size(im,1)*size(im,2);
-%     im
-    fprintf(1, '.');
-    
+
+    fprintf(1, '.');   
 
 end
 

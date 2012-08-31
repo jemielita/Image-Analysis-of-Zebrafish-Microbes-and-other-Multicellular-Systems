@@ -22,7 +22,7 @@ regionMask =uint16(regionMask);
 
 allReg = unique(regionMask(:));
 intenL = zeros(length(centerLine),2);
-
+fprintf(1, '\n');
 for numMask = 1:totalNumMask
     %Get regions in this particular mask.
     
