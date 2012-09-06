@@ -97,18 +97,21 @@ colorNum =  find(strcmp(param.color, colorType));
     
 for regNum=1:totalNumRegions
     
+    height = param.regionExtent.XY{colorNum}(regNum,3);
+    width = param.regionExtent.XY{colorNum}(regNum,4);
+    
     %Get the range of pixels that we will read from and read out to.
     xOutI = param.regionExtent.XY{colorNum}(regNum,1);
-    xOutF = param.regionExtent.XY{colorNum}(regNum,3)+xOutI-1;
+    xOutF = xOutI+height-1;
     
     yOutI = param.regionExtent.XY{colorNum}(regNum,2);
-    yOutF = param.regionExtent.XY{colorNum}(regNum,4)+yOutI -1;
+    yOutF = yOutI+width -1;
     
     xInI = param.regionExtent.XY{colorNum}(regNum,5);
-    xInF = xOutF - xOutI +xInI;
+    xInF = xInI +height-1;
     
     yInI = param.regionExtent.XY{colorNum}(regNum,6);
-    yInF = yOutF - yOutI +yInI;
+    yInF = yInI +width-1;
     
     if(imNum(regNum)~=-1)
         

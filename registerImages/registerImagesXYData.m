@@ -109,6 +109,7 @@ numColor = length(param.color);
 regLoc = zeros(totalNumRegions,6);
 
 
+
 for colorNum =1:numColor
     for regNum=1:totalNumRegions
         
@@ -118,24 +119,21 @@ for colorNum =1:numColor
             param.regionExtent.XY{colorNum}(regNum,2));
         
         
-        %regLoc(regNum,3) = min(regLoc(regNum,1) + param.regionExtent.crop.XY(regNum,4),...
-        %   param.imSize(1));
-        %regLoc(regNum,4) = min(regLoc(regNum,2) + param.regionExtent.crop.XY(regNum,3),...
-        %    param.imSize(2));
-        
-        %  regLoc(regNum, 5) = param.regionExtent.XY(regNum,5) ...
-        %     + param.regionExtent.crop.XY(regNum,2) -param.regionExtent.XY(regNum,1);
-        % regLoc(regNum,6) = param.regionExtent.XY(regNum,6)...
-        %     + param.regionExtent.crop.XY(regNum,1) - param.regionExtent.XY(regNum,2);
         
         regLoc(regNum, 5) = max(1,...
             regLoc(regNum,1)-param.regionExtent.XY{colorNum}(regNum,1)+1);
         regLoc(regNum,6) = max(1,...
             regLoc(regNum,2) - param.regionExtent.XY{colorNum}(regNum,2)+1);
+
+        %Get the width and height of the original image in this region
+        ind = find([param.expData.Scan.region]==regNum, 1, 'first');
         
-        regLoc(regNum,3) = min(1+param.imSize(1)-regLoc(regNum,5), ...
+        imWidth = param.expData.Scan(ind).imSize(1);
+        imHeight = param.expData.Scan(ind).imSize(2);
+        
+        regLoc(regNum,3) = min(1+imWidth-regLoc(regNum,5), ...
             param.regionExtent.crop.XY(regNum,4));
-        regLoc(regNum,4) = min(1+param.imSize(2)- regLoc(regNum,6),...
+        regLoc(regNum,4) = min(1+imHeight- regLoc(regNum,6),...
             param.regionExtent.crop.XY(regNum,3));
         
     end

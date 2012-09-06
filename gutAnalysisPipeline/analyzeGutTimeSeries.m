@@ -32,8 +32,11 @@ if(error ==1)
 end
 
 %% Declaring variables
-centerLineAll = cell(3,1);
-gutMaskAll = cell(3,1);
+
+%We'll keep these from scan to scan, so that we can reuse the previous mask
+%if it's the same.
+centerLine = cell(3,1);
+gutMask = cell(3,1);
 
 %% Start the analysis of individual scans
 
@@ -52,12 +55,12 @@ for thisScan=1:length(scanParam.scanList)
     
     param = resampleCenterLine(param, scanParam);
     
-    [param, centerLineAll,gutMaskAll] = getScanMasks(scanParam,... 
-        param,centerLineAll, gutMaskAll,thisScan);
+    [param, centerLine,gutMask] = getScanMasks(scanParam,... 
+        param,centerLine, gutMask,thisScan);
         
     param.cutValAll{scanParam.scanNum} = param.cutVal;
     
-    regFeatures = analyzeGut(analysisType,scanParam,param,centerLineAll,gutMaskAll);
+    regFeatures = analyzeGut(analysisType,scanParam,param,centerLine,gutMask);
     
     error = saveAnalysis(regFeatures, scanParam);
     
@@ -127,8 +130,8 @@ param.centerLineAll{scanParam.scanNum} = poly;
 
 end
 
-function [param, centerLineAll, gutMaskAll] = getScanMasks(...
-    scanParam, param,centerLineAll, gutMaskAll,thisScan)
+function [param, centerLine, gutMask] = getScanMasks(...
+    scanParam, param,centerLine, gutMask,thisScan)
 param.cutVal = calcOptimalCut(scanParam.regOverlap,param,scanParam.scanNum);
 
 if(thisScan~=1)
@@ -144,9 +147,11 @@ if(thisScan~=1)
     end
 end
 
+
+%If the mask is different, then recalculate the mask
 numCuts = size(param.cutVal,1);
 for cN =1:numCuts
-    [centerLineAll{cN}, gutMaskAll{cN}] =...
+    [centerLine{cN}, gutMask{cN}] =...
         constructRotRegion(cN, scanParam.scanNum, '', param, true);
 end
 

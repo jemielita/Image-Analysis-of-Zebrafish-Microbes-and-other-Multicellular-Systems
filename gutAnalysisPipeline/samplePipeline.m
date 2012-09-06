@@ -5,7 +5,6 @@
 
 %Also need the param file
 
-
 %1. Calculate linear intensity down length of gut
 analysisType(1).name = 'linearIntensity';
 analysisType(1).return = true;
@@ -28,7 +27,7 @@ analysisType(3).param.binSize = 2;
 scanParam.codeDir = 'C:\code\trunk';
 %Colors to analyze
 scanParam.color = {'488nm', '568nm'};
-scanParam.dataSaveDirectory = 'G:\Aeromonas_Aug8\fish4\gutOutline';
+scanParam.dataSaveDirectory =  'D:\Aeromonas_May10\fish4';
 %List of scans to analyze
 scanParam.scanList = 1:50;
 scanParam.stepSize = 5;

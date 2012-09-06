@@ -5,7 +5,7 @@
 %
 
 function regFeatAll = analyzeGut(analysisType, scanParam, param,...
-    centerLineAll, gutMaskAll)
+    centerLine, gutMask)
 
 
 %Cell array that will contain all the results of our calculation
@@ -16,7 +16,7 @@ regFeat = cell(totNumCut,1);
 for cutNum=1:totNumCut
  regFeat{cutNum} = analyzeGutSingleRegion(param, cutNum, analysisType,...
      scanParam.scanNum, scanParam.color,...
-     centerLineAll{cutNum}, gutMaskAll{cutNum});
+     centerLine{cutNum}, gutMask{cutNum});
 end
 %% Unpack the results
 

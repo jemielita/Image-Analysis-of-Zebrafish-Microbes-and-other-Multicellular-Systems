@@ -9,7 +9,7 @@ function [] = calcProjections(param)
 param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
 if(~isdir(param.dataSaveDirectory))
     mkdir(param.dataSaveDirectory);
-end
+end 
 
 numColor = length(param.color);
 numScans = param.expData.totalNumberScans;

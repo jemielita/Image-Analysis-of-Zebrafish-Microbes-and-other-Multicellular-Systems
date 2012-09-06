@@ -43,4 +43,17 @@ for numMask = 1:totalNumMask
 end
 fprintf(1, 'All intensities found! \n');
 
+% 
+% allReg = unique(regionMask(:));
+% intenL = zeros(length(centerLine),2);
+% fprintf(1, '\n');
+% for nR = 1:length(allReg)
+%     thisRegion = regionMask(regionMask(:) ==allReg(nR));
+%     intenL(nR,1) = mean(thisRegion);
+%     intenL(nR,2) = max(thisRegion);
+% fprintf(1,'.');
+% end
+% 
+% fprintf(1, 'All intensities found! \n');
+
 end

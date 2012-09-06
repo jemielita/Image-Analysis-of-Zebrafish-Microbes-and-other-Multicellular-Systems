@@ -85,6 +85,8 @@ for stepNum = 1:totNumSteps
 end
 
 
+
+clear imStack
 end
 
 
