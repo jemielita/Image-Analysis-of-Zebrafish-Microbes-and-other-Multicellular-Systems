@@ -65,7 +65,10 @@ for colorNum =1:length(colorList)
     end
     
     %% Doing all the analysis steps
-    
+    if(size(imStack,1)~=size(gutMask,1) ||size(imStack,2)~=size(gutMask,2))
+       disp('Image stack dimensions do not match gut mask dimensions!');
+       
+    end
     for stepNum = 1:totNumSteps
         regFeatures{stepNum, colorNum} = ...
             analysisStep(imStack, centerLine, gutMask, analysisType,regFeatures,...

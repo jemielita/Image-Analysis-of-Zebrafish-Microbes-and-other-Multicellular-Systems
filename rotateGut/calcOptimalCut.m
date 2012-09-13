@@ -27,6 +27,7 @@
 
 function cutVal = calcOptimalCut(lengthOverlap, param,scanNum)
 
+displayProgress =false;
 %See if the previous scan's outline is the same as this scans. If so, we
 %don't have to recalculate the cut value.
 
@@ -91,7 +92,6 @@ maxArraySize = 2560*2160*200;
 
 %Find optimal cut using a binary search
 lastPoint = 2;
- 
 
 cutIndex = 1;
 isEndGut=false;
@@ -100,7 +100,7 @@ maxPoint = size(centerLine,1)-1;
 %If we found a cut on the previous time point, use this as a guess where
 %the cut will be this time-the outlines don't change that much from point
 %to point.
-if(scanNum>2 &&  isfield(param, 'cutValAll')&&...
+if(scanNum>1 &&  isfield(param, 'cutValAll')&&...
         ~isempty(param.cutValAll{scanNum-1}))
     thisPoint = param.cutValAll{scanNum-1}{1}(2);
     thisPoint = min([thisPoint,maxPoint]); 
@@ -108,10 +108,10 @@ else
     thisPoint = round((maxPoint-lastPoint)/2);
 end
 
-while(isEndGut ==false)
+while(isEndGut==false)
 
     [cutPoint,theta,indReg,rotImSize] ...
-        = findCut(lastPoint, maxPoint, thisPoint);
+        = findCut(lastPoint, maxPoint, thisPoint,displayProgress);
     
     cutVal{cutIndex, 1}(1) = lastPoint;%Beginning of the region
     
@@ -120,38 +120,45 @@ while(isEndGut ==false)
     cutVal{cutIndex, 4} = rotImSize;
     temp = cutPoint;
       
-    fprintf(1, '\n');
     %Estimate for where the next cut should be
     %minus one  to use w/ getOrthVect
     %Include offset so that regions overlap (allowing us to do correlations
     %between points).
-    thisPoint = min(maxPoint-1, 2*cutPoint-thisPoint-lengthOverlap);
+    thisPoint = min(maxPoint-1,cutPoint+thisPoint);
     lastPoint = cutPoint-lengthOverlap; 
     cutVal{cutIndex,1}(2) = cutPoint;
     
     %If we're close enough don't make a new region-need to do this in a
     %better way.
     if(abs(cutPoint-maxPoint)<5)
-        disp('calcOptimalGut: Gut cut into the optimal sized lengths.');
+        if(displayProgress==true)
+            disp('calcOptimalGut: Gut cut into the optimal sized lengths.');
+        end
         cutPoint = maxPoint;
-        isEndGut =true;
+        isEndGut = true;
         
         %Set the end of this region to be the end of the gut.
         cutVal{cutIndex,1}(2) = maxPoint;
         
-    end      
-    disp(['Cut found: ', num2str(cutVal{cutIndex,1}(2))]);
-
+    end
+    
+    if(displayProgress==true);
+        disp(['Cut found: ', num2str(cutVal{cutIndex,1}(2))]);
+    end
+    
     cutIndex = cutIndex+1;
      
     if(cutIndex>numRegions)
-        disp('Number of cut regions exceeds original number of images! Error.');
+        if(displayProgress==true);
+            disp('Number of cut regions exceeds original number of images! Error.');
+        end
+        
         return;
     end
 end
 
 
-    function [cutPoint, theta,indReg, rotImSize] = findCut(lastPoint, maxPoint,thisPoint)      
+    function [cutPoint, theta,indReg, rotImSize] = findCut(lastPoint, maxPoint,thisPoint,displayProgress)      
        
         lastPos = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle',lastPoint);
                 
@@ -164,7 +171,6 @@ end
         maxNumIts = 5;
         its = 0;
         while(isMaxSize==false)
-            
             thisPos = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle',thisPoint);          
             %note: we might need to play around with this for a bit
             %To get around feature that getOrthVect returns a box at thisPoint
@@ -175,7 +181,7 @@ end
             
             %Find the optimal angle to rotate this mask to minimize the area of the
             %minimal confining rectangle of the outline of the gut.
-            [xRange, yRange, theta, rotImSize] = optimalAngle(thisMask);
+            [xRange, yRange, ~, ~] = optimalAngle(thisMask, 'quick');
             
             %See which regions overlap with this mask
             whichRegions = cellfun(@(regionMask)ismember(2, regionMask(:)+thisMask(:)), regionMask);
@@ -213,7 +219,7 @@ end
             elseif(abs((totMemory-maxArraySize)/maxArraySize -1)<0.2)
                 %If we're within 20 percent of the maximum size, return
                 %this as a good cut...We don't have to be super precise.
-                isMaxSize =true;
+                isMaxSize = true;
                 
             end
             %If we're pretty close to the end then don't bother to make
@@ -223,13 +229,16 @@ end
             end
             
             if(its>=maxNumIts )
-                break
+                isMaxSize=true;
             end
 
             its = its+1;
-            fprintf(1, '.');
+            if(displayProgress==true)
+                fprintf(1, '.');
+            end
         end
-        
+       
+        [~, ~, theta, rotImSize] = optimalAngle(thisMask, 'slow');
         cutPoint = thisPoint;
     end
 

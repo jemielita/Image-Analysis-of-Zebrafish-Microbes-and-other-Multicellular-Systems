@@ -414,7 +414,7 @@ hContrast = imcontrast(imageRegion);
         
         disp(['Saving image stack in the directory ', dirName]);
         
-        imBig = zeros(param.regionExtent.regImSize(1), param.regionExtent.regImSize(2));
+        imBig = zeros(param.regionExtent.regImSize{1}(1), param.regionExtent.regImSize{1}(2));
         
         for scanNum = scanMin:scanMax
             scanDir = strcat(dirName, filesep, 'scan_', num2str(scanNum));
@@ -1488,7 +1488,7 @@ hContrast = imcontrast(imageRegion);
     end
 
     function loadGutCenter_Callback(hObject, eventdata)
-        if(isfield(param, 'centerLine'))
+        if(isfield(param, 'centerLineAll'))
             hLine = findobj('Tag', 'gutCenter');
             delete(hLine);
             

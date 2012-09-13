@@ -18,5 +18,4 @@ rotIndex = find(rotMask~=0);
 
 origIndex = rotMask(rotIndex);
 
-
 end

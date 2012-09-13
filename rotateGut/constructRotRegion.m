@@ -47,7 +47,7 @@ fprintf(1,'...done!\n');
 
 
 %% Set all points outside the gut mask to be NaN
-outsideMask = ~cutMask;
+outsideMask = ~rotMask;
 fprintf(1, 'Setting region outside gut to NaN.');
 for i=1:size(imStack,3)
     temp = imStack(:,:,i);
@@ -56,7 +56,6 @@ for i=1:size(imStack,3)
     fprintf(1, '.');
 end
 fprintf(1, '\n');
-
 
 if(nargout==3)
     varargout{1} = imStack;
@@ -72,7 +71,7 @@ end
 
 function [rotMask, rotCenterLine] = getMaskAndLine(param, scanNum,cutNum)
 %% Calculate rotated masks
-cutVal = param.cutVal;
+cutVal = param.cutValAll{scanNum};
 %Get mask of rotated gut
 height = param.regionExtent.regImSize{1}(1);
 width = param.regionExtent.regImSize{1}(2);

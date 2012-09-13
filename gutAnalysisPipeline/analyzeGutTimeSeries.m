@@ -38,23 +38,26 @@ end
 centerLine = cell(3,1);
 gutMask = cell(3,1);
 
+%% Construct all the masks at once
+%Get points on the center lines that are spaced at the distance given by
+%scanParam.stepSize
+
+param = resampleCenterLine(param, scanParam);
+
+createAllMasks(scanParam, param);
+
 %% Start the analysis of individual scans
 
 for thisScan=1:length(scanParam.scanList)
     
     %Set this particular scan number-only thing that changes from one scan to
     %the next-I don't see any reason why we should change what we analyze
-    %from one scan to the enxt
+    %from one scan to the next
     scanParam.scanNum = scanParam.scanList(thisScan);
     
     fprintf(1, '\n');
     fprintf(1, ['Analyzing scan: ', num2str(scanParam.scanNum)]);
-        
-    %Different optimal cut for each time point, because we have a different
-    %gut outline.
-    
-    param = resampleCenterLine(param, scanParam);
-    
+            
     [param, centerLine,gutMask] = getScanMasks(scanParam,... 
         param,centerLine, gutMask,thisScan);
         
@@ -67,7 +70,7 @@ for thisScan=1:length(scanParam.scanList)
     updateFinishedScanList(scanParam, error);
     
     %Convert the image stack if desired
-    error = convertImageFormat(scanParam, param);
+  % error = convertImageFormat(scanParam, param);
     
 end
 
@@ -109,52 +112,71 @@ function error = saveAnalysis(regFeatures, scanParam)
 end
 
 function param = resampleCenterLine(param, scanParam)
-poly = param.centerLineAll{scanParam.scanNum};
 
-%Resample the center line at the desired spacing
-stepSize = scanParam.stepSize/0.1625;
-
-%Parameterizing curve in terms of arc length
-t = cumsum(sqrt([0,diff(poly(:,1)')].^2 + [0,diff(poly(:,2)')].^2));
-%Find x and y positions as a function of arc length
-polyFit(:,1) = spline(t, poly(:,1), t);
-polyFit(:,2) = spline(t, poly(:,2), t);
-
-polyT(:,2) = interp1(t, polyFit(:,2),min(t):stepSize:max(t),'spline', 'extrap');
-polyT(:,1) = interp1(t, polyFit(:,1),min(t):stepSize:max(t), 'spline', 'extrap');
-
-%Redefining poly
-poly = cat(2, polyT(:,1), polyT(:,2));
-
-param.centerLineAll{scanParam.scanNum} = poly;
+for nS=1:size(param.centerLineAll,1)
+    clear polyT
+   
+    poly = param.centerLineAll{nS};
+    
+    %Resample the center line at the desired spacing
+    stepSize = scanParam.stepSize/0.1625;
+    
+    %Parameterizing curve in terms of arc length
+    t = cumsum(sqrt([0,diff(poly(:,1)')].^2 + [0,diff(poly(:,2)')].^2));
+    %Find x and y positions as a function of arc length
+    polyFit(:,1) = spline(t, poly(:,1), t);
+    polyFit(:,2) = spline(t, poly(:,2), t);
+    
+    polyT(:,2) = interp1(t, polyFit(:,2),min(t):stepSize:max(t),'spline', 'extrap');
+    polyT(:,1) = interp1(t, polyFit(:,1),min(t):stepSize:max(t), 'spline', 'extrap');
+    
+    %Redefining poly
+    poly = cat(2, polyT(:,1), polyT(:,2));
+    
+    param.centerLineAll{nS} = poly;
+end
 
 end
 
 function [param, centerLine, gutMask] = getScanMasks(...
     scanParam, param,centerLine, gutMask,thisScan)
-param.cutVal = calcOptimalCut(scanParam.regOverlap,param,scanParam.scanNum);
 
-if(thisScan~=1)
-    lastScan = scanParam.scanList(thisScan-1);
-    scanNum = scanParam.scanNum;
-    sameLine = isequal(param.centerLineAll{lastScan}(:),param.centerLineAll{scanNum}(:));
-    sameOutline = isequal(...
-        param.regionExtent.polyAll{lastScan}(:),param.regionExtent.polyAll{scanNum}(:));
-    if(sameLine==true && sameOutline==true)
-       %If true, then the previously calculated gut mask is equal to this one
-       %and we don't have to recalculate it
-       return
-    end
+%param.cutVal = calcOptimalCut(scanParam.regOverlap,param,scanParam.scanNum);
+cutVal = load([param.dataSaveDirectory filesep 'masks' filesep 'cutVal.mat'],'cutValAll');
+cutVal = cutVal.cutValAll;
+param.cutVal = cutVal{scanParam.scanNum};
+
+switch isdir([param.dataSaveDirectory filesep 'masks']);
+    case false
+        %If we didn't calculate all the masks at the beginning calculate
+        %this particular mask
+        if(thisScan~=1)
+            lastScan = scanParam.scanList(thisScan-1);
+            scanNum = scanParam.scanNum;
+            sameLine = isequal(param.centerLineAll{lastScan}(:),param.centerLineAll{scanNum}(:));
+            sameOutline = isequal(...
+                param.regionExtent.polyAll{lastScan}(:),param.regionExtent.polyAll{scanNum}(:));
+            if(sameLine==true && sameOutline==true)
+                %If true, then the previously calculated gut mask is equal to this one
+                %and we don't have to recalculate it
+                return
+            end
+        end
+        
+        %If the mask is different, then recalculate the mask
+        numCuts = size(param.cutVal,1);
+        for cN =1:numCuts
+            [centerLine{cN}, gutMask{cN}] =...
+                constructRotRegion(cN, scanParam.scanNum, '', param, true);
+        end
+        
+    case true 
+        %Load in the appropriate mask
+        thisMask = load([param.dataSaveDirectory filesep 'masks' filesep...
+            'mask_', num2str(scanParam.scanNum), '.mat']);
+        centerLine = thisMask.centerLine;
+        gutMask = thisMask.gutMask;
 end
-
-
-%If the mask is different, then recalculate the mask
-numCuts = size(param.cutVal,1);
-for cN =1:numCuts
-    [centerLine{cN}, gutMask{cN}] =...
-        constructRotRegion(cN, scanParam.scanNum, '', param, true);
-end
-
 
 end
 

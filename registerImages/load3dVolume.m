@@ -157,7 +157,6 @@ pos = [cutPosFinal(1:2,:); cutPosInit(2,:); cutPosInit(1,:)];
 cutMask = poly2mask(pos(:,1), pos(:,2), height, width);
 cutMask = cutMask.*gutMask;
 
-
 %Load in the entire volume
 baseDir = [param.directoryName filesep 'Scans' filesep];
 %Going through each scan
@@ -169,12 +168,11 @@ theta = thisCut{3};
 [x,y] = ind2sub(size(imRotate), rI);
 
 %Remove indices beyond this range
-ind = [ find(x<xMin); find(x>xMax); find(y<yMin); find(y>yMax)];
+ind = [find(x<xMin); find(x>xMax); find(y<yMin); find(y>yMax)];
 ind = unique(ind);
 x(ind) = []; y(ind) = []; oI(ind) = []; rI(ind) = [];
 x = x-xMin+1; y = y-yMin+1;
 finalI = sub2ind([finalHeight, finalWidth], x,y);
-
 
 for nZ=minZ:maxZ
     
@@ -184,7 +182,7 @@ for nZ=minZ:maxZ
        imNum = param.regionExtent.Z(nZ, regNum);
       
        if(imNum==-1)
-           %This region isn't at this particular z-plane
+           %This region doesn't exist at this particular z-plane
            continue
        end
            
@@ -205,8 +203,7 @@ for nZ=minZ:maxZ
        imFileName = ...
            strcat(scanDir,  'region_', num2str(regNum),filesep,...
            param.color(colorNum), filesep,'pco', num2str(imNum),'.tif');
-       try       
-                    
+       try                           
            imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
                double(imread(imFileName{1},'PixelRegion', {[xInI xInF], [yInI yInF]}));     
        catch

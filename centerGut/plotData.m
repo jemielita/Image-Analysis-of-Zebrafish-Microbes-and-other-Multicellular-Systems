@@ -1,4 +1,4 @@
-function [] = plotData(data, dataTitle)
+function [] = plotData(data, dataTitle,col)
 
 %Extracting color channels
 green = data{1};
@@ -28,7 +28,7 @@ scrsz = get(0,'ScreenSize');
 hFig = figure('Position',[1+500 scrsz(4)/2 - 300 scrsz(3)/2 scrsz(4)/2])
 
 hAxis = axes('Parent', hFig);
-set(hAxis, 'ZLim', [0 1500]);
+set(hAxis, 'ZLim', [0 15000]);
 hold on
 % cData = cool(timePoints);
 
@@ -38,7 +38,7 @@ cData = summer(ceil(2*timePoints));
 for i=1:timePoints
     len = length(green{i}(:,1));
     
-    p = plot3(1:len, i*10*ones(len,1), green{i}(:,1));
+    p = plot3(1:len, i*10*ones(len,1), green{i}(:,col));
     set(p, 'Color', cData(i,:));
     
 end
@@ -75,13 +75,13 @@ hAxisRed = axes('Parent', hFigRed);
 %set(hAxis, 'ZLim', [0 40000]);
 hold on
 cData = hot(2*timePoints);
-set(hAxisRed, 'ZLim', [0 1000]);
+set(hAxisRed, 'ZLim', [0 10000]);
 for i=1:timePoints
     
 
      len = length(red{i}(:,1));
     
-    p = plot3(1:len, i*10*ones(len,1), red{i}(:,1));
+    p = plot3(1:len, i*10*ones(len,1), red{i}(:,col));
     set(p, 'Color', cData(i,:));
     
 end

@@ -34,6 +34,7 @@ for i=2:length(xx)-1
     %into a new array.
    
     maskInd = [setdiff(1:size(mask,3), lastMaskInd), lastMaskInd];
+    maskInd = sort(maskInd);
     
     for mComp=1:size(mask,3)
         
