@@ -49,7 +49,7 @@ regFeatures = cell(totNumSteps,length(colorList));
 %mlj: Should switch things up a bit to make it easier to do 2-color
 %analysis on large data stacks. But this can wait for now.
 for colorNum =1:length(colorList)
-    
+    clear imStack
     color = colorList{colorNum};
     %% Loading in image stack
     if(nargin ==5)
@@ -62,6 +62,19 @@ for colorNum =1:length(colorList)
         imStack = load3dVolume(param, imVar, 'multiple', [cutNum, scanNum]);
         centerLine = varargin{1};
         gutMask = varargin{2};
+        
+        allMasks = sum(gutMask,3);
+        allMasks = allMasks==0;
+        fprintf(1, 'Setting pixels outside the mask to NaN');
+        for i=1:size(imStack,3)
+            temp = imStack(:,:,i);
+            temp(allMasks) = NaN;
+            imStack(:,:,i) = temp;
+            fprintf(1, '.');
+        end
+        clear temp
+        fprintf(1, '\n');
+        
     end
     
     %% Doing all the analysis steps
@@ -89,7 +102,7 @@ end
 
 
 
-clear imStack
+clear imStack centerLine gutMask
 end
 
 

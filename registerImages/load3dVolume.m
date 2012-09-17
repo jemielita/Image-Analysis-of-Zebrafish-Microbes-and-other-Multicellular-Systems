@@ -55,6 +55,11 @@ switch loadType
         imStack = loadCutRegion(param, imVar, cutNumber, scanNum,dataType);
 end
 
+
+%Deal with -1 put in to find regions  outside gut
+imStack(imStack==-1) = nan;
+imStack = imStack +1;
+
 end
 %Load in all images in a one region
 function im = loadSingleRegion(param, imVar, regNum, dataType)
@@ -68,7 +73,7 @@ totalZ = size(zList,1);
 %The array will be of type dataType (double, etc.) to make it possible to
 %more efficiently use memory if possible (e.g. we don't need double
 %precision if we're only calculating pixel intensity).
-im = zeros(param.regionExtent.XY{colorNum}(regNum,3),...
+im = nan*zeros(param.regionExtent.XY{colorNum}(regNum,3),...
     param.regionExtent.XY{colorNum}(regNum,4),totalZ, dataType);
 
 %Get the extent of this region
@@ -133,7 +138,7 @@ polyX = param.regionExtent.polyAll{scanNum}(:,1);
 polyY = param.regionExtent.polyAll{scanNum}(:,2);
 gutMask = poly2mask(polyX, polyY, height, width);
 
-imOrig = zeros(height, width, dataType);
+imOrig = nan*zeros(height, width, dataType);
 
 %Size of pre-cropped rotated image
 imRotate = zeros(thisCut{4}(1), thisCut{4}(2), dataType);
@@ -144,7 +149,7 @@ yMin = thisCut{4}(3); yMax = thisCut{4}(4);
 finalHeight = xMax-xMin+1;
 finalWidth = yMax-yMin+1;
 
-im = zeros(finalHeight, finalWidth, finalDepth, dataType);
+im = nan*zeros(finalHeight, finalWidth, finalDepth, dataType);
 
 %Crop down the mask to the size of the cut region
 maxCut = size(param.cutVal,1);
@@ -176,7 +181,7 @@ finalI = sub2ind([finalHeight, finalWidth], x,y);
 
 for nZ=minZ:maxZ
     
-    imOrig(:) = 0;
+    imOrig(:)=-1; %Can't use nan, because then we can't add up regions-deal with minus one at the end.
     for i = 1:length(indReg)
        regNum = indReg(i);
        imNum = param.regionExtent.Z(nZ, regNum);

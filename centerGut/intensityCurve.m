@@ -15,13 +15,17 @@
 % AUTHOR: Matthew Jemielita, revised August 3, 2012
 
 function intenL = intensityCurve(im,regionMask,centerLine)
-totalNumMask = size(regionMask,3);
 
+%hard coding in box dimensions for histogram
+boxDim = 100:100:4000;
+totalNumMask = size(regionMask,3);
+maxNumReg = 30; %Maximum number of regions to calculate properties of at the same time
 %Duplicate the mask.
 regionMask =uint16(regionMask);
 
 allReg = unique(regionMask(:));
-intenL = zeros(length(centerLine),2);
+intenL = zeros(length(centerLine),1 + length(boxDim));
+
 fprintf(1, '\n');
 for numMask = 1:totalNumMask
     %Get regions in this particular mask.
@@ -29,17 +33,59 @@ for numMask = 1:totalNumMask
     regNum = unique(regionMask(:,:,numMask));
     regNum(regNum==0) = [];
     
-    rMaskBig = repmat(regionMask(:,:,numMask), [1 1 size(im,3)]);
-    fprintf(1, ['Getting intensity for mask: ', num2str(numMask), '\n']);
-    inten = regionprops(rMaskBig, im,'MeanIntensity', 'MaxIntensity');
+    
+    %This is something of a cludge: we'll truncate down the number of
+    %regions that will be simultaneously analyzed with regionprops to 30-if
+    %this doesnt' work we'll use a catch statement to run through this code
+    %serially
+    
+    if(length(regNum)<maxNumReg)
+        rMaskBig = repmat(regionMask(:,:,numMask), [1 1 size(im,3)]);
+        fprintf(1, ['Getting intensity for mask: ', num2str(numMask), '\n']);
+        inten = regionprops(rMaskBig, im,'PixelValues');
+        
+        for i=1:length(regNum)
+            thisReg  = regNum(i);
+            intenL(thisReg,1) = nanmean(inten(thisReg).PixelValues);
+            intenL(thisReg,2:end) = hist(inten(thisReg).PixelValues,boxDim);
+            
+        end
+    else
+       fprintf(1, 'Number of regions is too great: subdividing regionmask');
+       
+       numCuts = ceil(length(regNum)/maxNumReg);
+       
+       for cN=1:numCuts
+           fprintf(1, ['Analyzing sub region: ', num2str(cN), ' ']);
+           minN=(cN-1)*30 +1; maxN = min([length(regNum),cN*30]);
+           subRegNum = regNum(minN:maxN);
+           
+           %Remove all other regions from this max
+           origReg = regionMask(:,:,numMask);
+           ind = find(ismember(origReg(:), setdiff(origReg(:),subRegNum)));
+           
+           subRegionMask = regionMask(:,:,numMask);
+           subRegionMask(ind) = NaN;
+           fprintf(1, '.');
+           rMaskBig = repmat(subRegionMask, [1 1 size(im,3)]);
+           fprintf(1, '.');
+           inten = regionprops(rMaskBig, im,'PixelValues');
+           fprintf(1, '.');
+           for i=1:length(subRegNum)
+               thisReg  = subRegNum(i);
+               intenL(thisReg,1) = nanmean(inten(thisReg).PixelValues);
+               intenL(thisReg,2:end) = hist(inten(thisReg).PixelValues,boxDim);
+               
+           end
+           fprintf(1, '.\n');
+           
+       end
+       
+        
+    end
+    
 
-    
-    meanInten = [inten(regNum).MeanIntensity];
-    maxInten = [inten(regNum).MaxIntensity];%.maxIntensity is empty where meanInten was NaN-annoying
-    
-    intenL(regNum, 1) = meanInten;
-    intenL(regNum,2) = maxInten;
-      
+       
 end
 fprintf(1, 'All intensities found! \n');
 
