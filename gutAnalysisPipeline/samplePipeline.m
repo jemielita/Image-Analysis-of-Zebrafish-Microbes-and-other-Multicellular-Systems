@@ -27,9 +27,13 @@ analysisType(3).param.binSize = 2;
 scanParam.codeDir = 'C:\code\trunk';
 %Colors to analyze
 scanParam.color = {'488nm', '568nm'};
-scanParam.dataSaveDirectory =  'F:\Aeromonas_May23_take2\fish5\gutOutline';
+scanParam.dataSaveDirectory =  'F:\Aeromonas_May23_take2\fish6\gutOutline';
 %List of scans to analyze
-scanParam.scanList = 1:50;
+scanParam.scanList = 1:39;
 scanParam.stepSize = 5;
 scanParam.regOverlap = 10;
 
+
+%For linear intensity
+scanParam.boxDim = 100:100:4000;
+scanParam.

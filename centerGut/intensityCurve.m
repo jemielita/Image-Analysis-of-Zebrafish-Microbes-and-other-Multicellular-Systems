@@ -87,6 +87,7 @@ for numMask = 1:totalNumMask
 
        
 end
+clear rMaskBig
 fprintf(1, 'All intensities found! \n');
 
 % 
