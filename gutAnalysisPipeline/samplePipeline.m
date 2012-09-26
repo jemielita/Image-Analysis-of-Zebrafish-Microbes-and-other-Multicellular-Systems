@@ -29,7 +29,8 @@ scanParam.codeDir = 'C:\code\trunk';
 scanParam.color = {'488nm', '568nm'};
 scanParam.dataSaveDirectory =  'F:\Aeromonas_May23_take2\fish6\gutOutline';
 %List of scans to analyze
-scanParam.scanList = 1:39;
+scanParam.scanList = 1:24;
+
 scanParam.stepSize = 5;
 scanParam.regOverlap = 10;
 
