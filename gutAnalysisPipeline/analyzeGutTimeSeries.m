@@ -49,7 +49,8 @@ createAllMasks(scanParam, param);
 %% Start the analysis of individual scans
 
 for thisScan=1:length(scanParam.scanList)
-    
+    centerLine = cell(3,1);
+    gutMask = cell(3,1);
     %Set this particular scan number-only thing that changes from one scan to
     %the next-I don't see any reason why we should change what we analyze
     %from one scan to the next
@@ -71,7 +72,7 @@ for thisScan=1:length(scanParam.scanList)
     
     %Convert the image stack if desired
   % error = convertImageFormat(scanParam, param);
-    
+    clear regFeatures centerLine gutMask
 end
 
 %% Analysis/graphing of the entire data set
