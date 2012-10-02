@@ -276,6 +276,7 @@ color = color{1};
 
 im = registerSingleImage(scanNum,color, zNum,im, data,param);
 im(im(:)>40000) = 0;
+
 hIm = imshow(im, [],'Parent', imageRegion);
 
 numColor = length(param.color);
@@ -287,7 +288,10 @@ apiScroll = iptgetapi(hScroll);
 
 initMag = apiScroll.findFitMag();
 apiScroll.setMagnification(initMag);
-
+pause(1);
+while(apiScroll.getMagnification()~=initMag)
+    pause(0.1);
+end
 initializeDisplay('Initial');%Function holding everything to enable display of new information
 %-necessary to make it easy to load in new scans.
 
