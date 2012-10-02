@@ -41,13 +41,15 @@ end
 if nargin==6
     dataType = varargin{6};
 elseif nargin==4
-    dataType = 'double';
+    dataType = 'uint16';
 else 
     disp('Number of inputs must be either 4 or 6!');
     return
 end
 
 %% Load in image stack
+
+
 switch loadType
     case 'single'
         imStack = loadSingleRegion(param, imVar, regionNumber, dataType);
@@ -60,7 +62,7 @@ end
 imStack(imStack==-1) = nan;
 imStack = imStack +1;
 
-end
+
 %Load in all images in a one region
 function im = loadSingleRegion(param, imVar, regNum, dataType)
 %Allocating a huge array for the entire image stack
@@ -138,6 +140,7 @@ polyX = param.regionExtent.polyAll{scanNum}(:,1);
 polyY = param.regionExtent.polyAll{scanNum}(:,2);
 gutMask = poly2mask(polyX, polyY, height, width);
 
+fprintf(1, 'imOrig');
 imOrig = nan*zeros(height, width, dataType);
 
 %Size of pre-cropped rotated image
@@ -151,6 +154,7 @@ finalWidth = yMax-yMin+1;
 
 im = nan*zeros(finalHeight, finalWidth, finalDepth, dataType);
 
+fprintf(1, 'im big');
 %Crop down the mask to the size of the cut region
 maxCut = size(param.cutVal,1);
 
@@ -179,8 +183,10 @@ x(ind) = []; y(ind) = []; oI(ind) = []; rI(ind) = [];
 x = x-xMin+1; y = y-yMin+1;
 finalI = sub2ind([finalHeight, finalWidth], x,y);
 
+
+
 for nZ=minZ:maxZ
-    
+    tic;
     imOrig(:)=-1; %Can't use nan, because then we can't add up regions-deal with minus one at the end.
     for i = 1:length(indReg)
        regNum = indReg(i);
@@ -210,7 +216,7 @@ for nZ=minZ:maxZ
            param.color(colorNum), filesep,'pco', num2str(imNum),'.tif');
        try                           
            imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
-               double(imread(imFileName{1},'PixelRegion', {[xInI xInF], [yInI yInF]}));     
+               uint16(imread(imFileName{1},'PixelRegion', {[xInI xInF], [yInI yInF]}));     
        catch
            disp('This image doesnt exist-fix up your code!!!!');
        end
@@ -239,9 +245,11 @@ for nZ=minZ:maxZ
     im(finalI +finalHeight*finalWidth*(nZ-minZ)) = imOrig(oI);
 
     fprintf(1, '.');   
-
+%toc
 end
 
 
+
+end
 
 end
