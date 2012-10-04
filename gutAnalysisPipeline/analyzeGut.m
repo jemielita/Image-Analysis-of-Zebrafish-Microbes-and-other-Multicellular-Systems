@@ -65,6 +65,9 @@ end
 
 
 
+
+
+clearvars -except regFeatAll;
 end
 
 

@@ -59,7 +59,9 @@ for colorNum =1:length(colorList)
         imVar.color = color;
         imVar.zNum = '';
         imVar.scanNum = scanNum;
+        fprintf(1, 'Loading image stack');
         imStack = load3dVolume(param, imVar, 'multiple', [cutNum, scanNum]);
+        fprintf(1, '\n');
         centerLine = varargin{1};
         gutMask = varargin{2};
         
