@@ -129,6 +129,7 @@ for regNum=1:totalNumRegions
         %Check to make sure that this image exists. We'll only check in the
         %first scan directory, for the first color. There's no reason why
         %ths should change from scan to scan
+
         fileName = [param.directoryName filesep 'Scans' filesep 'scan_1',...
             filesep, 'region_',num2str(regNum), filesep, param.color{1} filesep,...
             'pco', num2str(zIndex-1), '.tif'];

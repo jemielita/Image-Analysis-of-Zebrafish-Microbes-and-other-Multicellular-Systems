@@ -20,6 +20,10 @@
 %       Includes unused variable data. No longer necessary and code needs
 %       to be picked through to remove this way of calling the function.
 %
+%       im = registerSingleImage(imAll, color,param)
+%       Register preloaded images from different regions into one large
+%       image
+%
 %INPUT: nScan: integer giving the scan number for the image. Should be
 %       greater than 0 and not exceed the number of scans taken.
 %       
@@ -44,7 +48,16 @@ switch nargin
     
     case 0
         %Prompt the user for directories, etc...
-    
+    case 3
+        %Images have already been loaded-they just need to be stitched
+        %together now.
+        imAll = varargin{1};    
+        colorType = varargin{2};
+        param = varargin{3};
+        colorNum =  find(strcmp(param.color, colorType));
+
+        im = zeros(param.regionExtent.regImSize{colorNum}(1),...
+            param.regionExtent.regImSize{colorNum}(2));
     case 4
         nScan = varargin{1};
         colorType = varargin{2};
@@ -76,17 +89,6 @@ switch nargin
 end
 
 totalNumRegions = length(unique([param.expData.Scan.region]));
-%%Now loading in the images
-%Base directory for image location
-baseDir = [param.directoryName filesep 'Scans' filesep];
-%Going through each scan
-scanDir = [baseDir, 'scan_', num2str(nScan), filesep];
-%And each color (in the debugging phase, we'll restrict ourselves
-%to one color
-
-imNum = param.regionExtent.Z(zNum,:);
-%Load in the associated images
-
 %Filling the input image with zeros, to be safe.
 im(:) = 0;
 
@@ -94,71 +96,15 @@ im = uint16(im); %To match the input type of the images.
 
 %Find which color's regionExtent.XY to use
 colorNum =  find(strcmp(param.color, colorType));
-    
-for regNum=1:totalNumRegions
-    
-    height = param.regionExtent.XY{colorNum}(regNum,3);
-    width = param.regionExtent.XY{colorNum}(regNum,4);
-    
-    %Get the range of pixels that we will read from and read out to.
-    xOutI = param.regionExtent.XY{colorNum}(regNum,1);
-    xOutF = xOutI+height-1;
-    
-    yOutI = param.regionExtent.XY{colorNum}(regNum,2);
-    yOutF = yOutI+width -1;
-    
-    xInI = param.regionExtent.XY{colorNum}(regNum,5);
-    xInF = xInI +height-1;
-    
-    yInI = param.regionExtent.XY{colorNum}(regNum,6);
-    yInF = yInI +width-1;
-    
-    if(imNum(regNum)~=-1)
-        
-        %To deal with two different ways of loading in our data-necessary
-        %in order to interface somewha efficiently with Hyugens software.
-        if(isfield(param, 'directoryStructType'))
-            loadType = param.directoryStructType;
-        else
-            loadType  = 'fullDirectory';
-        end
-            
-        switch loadType
-            
-            case 'fullDirectory'               
-                imFileName = ...
-                    strcat(scanDir,  'region_', num2str(regNum),filesep,...
-                    colorType, filesep,'pco', num2str(imNum(regNum)),'.tif');
-                
-                im(xOutI:xOutF,yOutI:yOutF) = imread(imFileName,...
-                    'PixelRegion', {[xInI xInF], [yInI yInF]}) + ...
-                    im(xOutI:xOutF,yOutI:yOutF);
-            case 'flatDirectory'
-                imFileName = [param.directoryName '_S', num2str(nScan),'nR', num2str(regNum),'_', colorType, '.tif'];
-                im(xOutI:xOutF, yOutI:yOutF) = imread(imFileName,...
-                    'PixelRegion', {[xInI xInF], [yInI yInF]},...
-                    'Index', imNum(regNum)+1) + ...
-                    im(xOutI:xOutF,yOutI:yOutF);
-        end
-    
+
+
+
+if(nargin==3)
+    im = registerImages(imAll,im);
+else
+    im = loadRegisteredImages(im,nScan,colorType,param);
 end
 
-end
-
-for regNum = 2:totalNumRegions
-    %Overlapping regions
-    %This is potentially slow (however we need to be as quick as possible with this type of thing).
-    %After we know this code works, we'll come back and write quicker code.
-    
-    %Overlap for regNum>1
-    if(imNum(regNum-1)>=0 &&imNum(regNum)>=0)
-        im(param.regionExtent.overlapIndex{colorNum,regNum-1} )= ...
-            0.5*im(param.regionExtent.overlapIndex{colorNum,regNum-1});
-        %    im(:) =1;
-        %   im(param.regionExtent.overlapIndex{regNum-1} ) = 0;
-    end
-    
-end
 
 if exist('filterType','var') && strcmp(filterType,'bpass')
     prompt = {'Pixel size of noise: ','Pixel size of object: '};
@@ -182,4 +128,127 @@ elseif exist('filterType','var') && strcmp(filterType,'bpass stack')
 end
 
 
+
+    function im = loadRegisteredImages(im,nScan,colorType, param)
+        
+        %%Now loading in the images
+        %Base directory for image location
+        baseDir = [param.directoryName filesep 'Scans' filesep];
+        %Going through each scan
+        scanDir = [baseDir, 'scan_', num2str(nScan), filesep];
+        %And each color (in the debugging phase, we'll restrict ourselves
+        %to one color
+        
+        imNum = param.regionExtent.Z(zNum,:);
+        %Load in the associated images
+        
+        for regNum=1:totalNumRegions
+            
+            height = param.regionExtent.XY{colorNum}(regNum,3);
+            width = param.regionExtent.XY{colorNum}(regNum,4);
+            
+            %Get the range of pixels that we will read from and read out to.
+            xOutI = param.regionExtent.XY{colorNum}(regNum,1);
+            xOutF = xOutI+height-1;
+            
+            yOutI = param.regionExtent.XY{colorNum}(regNum,2);
+            yOutF = yOutI+width -1;
+            
+            xInI = param.regionExtent.XY{colorNum}(regNum,5);
+            xInF = xInI +height-1;
+            
+            yInI = param.regionExtent.XY{colorNum}(regNum,6);
+            yInF = yInI +width-1;
+            
+            if(imNum(regNum)~=-1)
+                
+                %To deal with two different ways of loading in our data-necessary
+                %in order to interface somewha efficiently with Hyugens software.
+                if(isfield(param, 'directoryStructType'))
+                    loadType = param.directoryStructType;
+                else
+                    loadType  = 'fullDirectory';
+                end
+                
+                switch loadType
+                    
+                    case 'fullDirectory'
+                        imFileName = ...
+                            strcat(scanDir,  'region_', num2str(regNum),filesep,...
+                            colorType, filesep,'pco', num2str(imNum(regNum)),'.tif');
+                        
+                        im(xOutI:xOutF,yOutI:yOutF) = imread(imFileName,...
+                            'PixelRegion', {[xInI xInF], [yInI yInF]}) + ...
+                            im(xOutI:xOutF,yOutI:yOutF);
+                    case 'flatDirectory'
+                        imFileName = [param.directoryName '_S', num2str(nScan),'nR', num2str(regNum),'_', colorType, '.tif'];
+                        im(xOutI:xOutF, yOutI:yOutF) = imread(imFileName,...
+                            'PixelRegion', {[xInI xInF], [yInI yInF]},...
+                            'Index', imNum(regNum)+1) + ...
+                            im(xOutI:xOutF,yOutI:yOutF);
+                end
+                
+            end
+            
+        end
+        
+        %Dealing with overlap regions
+        
+        for regNum = 2:totalNumRegions
+            %Overlapping regions
+            %This is potentially slow (however we need to be as quick as possible with this type of thing).
+            %After we know this code works, we'll come back and write quicker code.
+            
+            %Overlap for regNum>1
+            if(imNum(regNum-1)>=0 &&imNum(regNum)>=0)
+                im(param.regionExtent.overlapIndex{colorNum,regNum-1} )= ...
+                    0.5*im(param.regionExtent.overlapIndex{colorNum,regNum-1});
+                %    im(:) =1;
+                %   im(param.regionExtent.overlapIndex{regNum-1} ) = 0;
+            end
+            
+        end
+
+    end
+
+    function im = registerImages(imAll,im)
+                
+        for regNum=1:totalNumRegions
+            
+            height = param.regionExtent.XY{colorNum}(regNum,3);
+            width = param.regionExtent.XY{colorNum}(regNum,4);
+            
+            %Get the range of pixels that we will read from and read out to.
+            xOutI = param.regionExtent.XY{colorNum}(regNum,1);
+            xOutF = xOutI+height-1;
+            
+            yOutI = param.regionExtent.XY{colorNum}(regNum,2);
+            yOutF = yOutI+width -1;
+            
+            xInI = param.regionExtent.XY{colorNum}(regNum,5);
+            xInF = xInI +height-1;
+            
+            yInI = param.regionExtent.XY{colorNum}(regNum,6);
+            yInF = yInI +width-1;
+            
+            im(xOutI:xOutF, yOutI:yOutF) = imAll{colorNum,regNum}(xInI:xInF, yInI:yInF)+...
+                im(xOutI:xOutF, yOutI:yOutF);
+            
+        end
+        
+        for regNum = 2:totalNumRegions
+            %Overlapping regions
+            %This is potentially slow (however we need to be as quick as possible with this type of thing).
+            %After we know this code works, we'll come back and write quicker code.
+            
+            %Overlap for regNum>1
+            im(param.regionExtent.overlapIndex{colorNum,regNum-1} )= ...
+                0.5*im(param.regionExtent.overlapIndex{colorNum,regNum-1});
+            
+            
+        end
+        
+        
+        
+    end
 end

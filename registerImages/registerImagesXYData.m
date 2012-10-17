@@ -173,7 +173,8 @@ for regNum=1:totalNumRegions
     
     %mlj: temporarily changed from xBegin to zBegin-I think this is what's
     %causing the bug in the registration
-    regLoc(regNum,1) = param.expData.Scan(regionIndex).xBegin;
+    %mlj: negative sign important for aligning images
+    regLoc(regNum,1) = -param.expData.Scan(regionIndex).xBegin;
     regLoc(regNum,2) = param.expData.Scan(regionIndex).yBegin;
     
     %Convert micron range to pixels;

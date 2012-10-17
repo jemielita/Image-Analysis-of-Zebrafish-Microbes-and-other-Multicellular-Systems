@@ -109,6 +109,7 @@ uimenu(hMenuCrop, 'Label', 'Restore original image', 'Callback', @restoreImages_
 uimenu(hMenuCrop, 'Label', 'Save cropped region', 'Callback', @saveCropped_Callback);
 uimenu(hMenuCrop, 'Label', 'Single crop region', 'Separator', 'on', ...
     'Callback', @singleCrop_Callback);
+uimenu(hMenuCrop, 'Label', 'Quick z-crop', 'Callback', @quickZCrop_Callback, 'Separator', 'on');
 
 hMenuOutline = uimenu('Label', 'Outline region');
 hMultipleOutline = uimenu(hMenuOutline, 'Label', 'New outline/center for each time point', 'Checked', 'on', 'Separator', 'on',...
@@ -281,6 +282,10 @@ hIm = imshow(im, [],'Parent', imageRegion);
 
 numColor = length(param.color);
 imArray = cell(numColor,totalNumRegions); %Will be used for quickly registering the different regions of the image.
+imAll = cell(numColor, totalNumRegions); %Store entire z-stack in both colors-used for quickly cropping in the z-direction
+imZ = ''; %Handle to subplots used to crop in the z-direction on the image stacks.
+imZmip = '';%Handle to images in each of these subplots
+imZMask = ''; %Masks that will be used to crop the images in the z-direction differently at 
 imC = [];
 %Create a scroll panel
 hScroll = imscrollpanel(hImPanel, hIm);
@@ -662,6 +667,77 @@ hContrast = imcontrast(imageRegion);
         getRegisteredImage(scanNum, color, zNum, im, data, param);
 
         outlineRegions();
+    end
+
+
+    function quickZCrop_Callback(hObject, eventdata)
+       %Quickly crop image stacks in the z-direction
+       
+       
+       %Remove z-number and color button
+       set(imageRegion, 'HandleVisibility', 'on');
+       
+       set(hZText, 'Visible', 'off');
+       set(hZTextEdit, 'Visible', 'off');
+       set(hZSlider, 'Visible', 'off');
+       
+       set(hColorText, 'Visible', 'off');
+       set(hColorTextEdit, 'Visible', 'off');
+       set(hColorSlider, 'Visible', 'off');
+       
+       set(outlineRect(:), 'Visible', 'off');
+       set(hIm, 'Visible', 'off');
+       
+       
+       %Create 6 new axes in the image panel that we'll use to crop the
+       %images
+       
+       imZ{1,1} = axes('Parent', hImPanel, 'Position', [0 0  0.5 0.3], 'XTick', [], 'YTick', []);
+       imZ{1,2} = axes('Parent', hImPanel, 'Position', [0 0.33  0.5 0.3], 'XTick', [], 'YTick', []);
+       imZ{1,3} = axes('Parent', hImPanel, 'Position', [0 0.7  0.5 0.3], 'XTick', [], 'YTick', []);
+       
+       imZ{2,1} = axes('Parent', hImPanel, 'Position', [0.5 0  0.5 0.3], 'XTick', [], 'YTick', []);
+       imZ{2,2} = axes('Parent', hImPanel, 'Position', [0.5 0.33  0.5 0.3], 'XTick', [], 'YTick', []);
+       imZ{2,3} = axes('Parent', hImPanel, 'Position', [0.5 0.70  0.5 0.3], 'XTick', [], 'YTick', []);
+      
+       %Loading in entire image stack in both colors
+       totalNumColors = size(param.color,2);
+
+
+       imAll = cell(totalNumColors, totalNumRegions);
+       fprintf(1, 'Loading in all images');
+       for nC=1:totalNumColors
+           for nR=1:totalNumRegions
+               imVar.color = param.color{nC};
+               imVar.zNum = '';
+               imVar.scanNum = scanNum;
+               imAll{nC, nR} = load3dVolume(param, imVar, 'single', nR);
+               fprintf(1, '.');
+           end
+       end
+       fprintf(1,'Done!');
+
+       %Displaying the MIP for both colors
+        
+       for i=1:8
+           imAll{i} = max(imAll{i},[],3);
+       end
+       for nC=1:totalNumColors
+           for i=1:3
+               im = registerSingleImage(imAll, param.color{nC},param);
+
+               imZmip{nC,i} = imshow(im,[0,2000],'Parent', imZ{nC,i});
+
+           end
+       end 
+       
+       %Creating a mesh over the entire length of the gut-in each of these
+       %different regions the top and bottom z-height will be different and
+       %user adjustable
+       imGrid = zeros(size(im));
+       
+      
+        
     end
 
     function saveCropped_Callback(hObject, eventdata)
@@ -1845,3 +1921,6 @@ polyT(:,1) = interp1(t, polyFit(:,1),min(t):stepSize:max(t), 'spline', 'extrap')
 poly = cat(2, polyT(:,1), polyT(:,2));
 
 end
+
+
+%Functions for fast z-cropping of the time series
