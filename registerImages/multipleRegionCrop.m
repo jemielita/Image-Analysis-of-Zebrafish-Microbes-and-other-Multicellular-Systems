@@ -12,7 +12,7 @@ end
 
 multipleRegionCropGUI(param,data);
 
-%Not the most elegant way to extract information from the GUI, but it seems
+% %Not the most elegant way to extract information from the GUI, but it seems
 %to work.
 %If the third argument has been set to 'save Results', pause MATLAB until
 %the gui has been closed.
@@ -281,11 +281,32 @@ im(im(:)>40000) = 0;
 hIm = imshow(im, [],'Parent', imageRegion);
 
 numColor = length(param.color);
+
+%%% quick Z cropping variables
 imArray = cell(numColor,totalNumRegions); %Will be used for quickly registering the different regions of the image.
 imAll = cell(numColor, totalNumRegions); %Store entire z-stack in both colors-used for quickly cropping in the z-direction
-imZ = ''; %Handle to subplots used to crop in the z-direction on the image stacks.
+imZ = cell(numColor, 3); %Handle to subplots used to crop in the z-direction on the image stacks.
 imZmip = '';%Handle to images in each of these subplots
-imZMask = ''; %Masks that will be used to crop the images in the z-direction differently at 
+imZMask = ''; %Masks that will be used to crop the images in the z-direction differently at different points in the image
+
+%contains the different points the user has selected to change the cropping
+%height of the image
+%The structure of the variables is: zCropPos{1,:}: contains the information
+%for cropping above the gut in the z direction, while zCropPos{2,:} contains
+%info for cropping below the gut. zCrop{n,j} is a structure with the
+%following elements
+% zCrop{n,j}.handle = handle to line drawn showing where we clicked the
+% image
+% zCrop{n,j}.pos = pos in x,y where we drew the line
+% zCrop{n,j}.z = final z height to crop the image to.
+%This variable will be used to construct an interpolative z-crop along the
+%entire length of the gut...the hope is that this will reduce the number of
+%"clicks" necessary to crop the gut.
+zCropPos = cell(0,0);
+
+%%%
+
+
 imC = [];
 %Create a scroll panel
 hScroll = imscrollpanel(hImPanel, hIm);
@@ -674,7 +695,8 @@ hContrast = imcontrast(imageRegion);
        %Quickly crop image stacks in the z-direction
        
        
-       %Remove z-number and color button
+       %Remove z-number and color button-we don't want to have control of
+       %these while we do z-cropping
        set(imageRegion, 'HandleVisibility', 'on');
        
        set(hZText, 'Visible', 'off');
@@ -700,6 +722,16 @@ hContrast = imcontrast(imageRegion);
        imZ{2,2} = axes('Parent', hImPanel, 'Position', [0.5 0.33  0.5 0.3], 'XTick', [], 'YTick', []);
        imZ{2,3} = axes('Parent', hImPanel, 'Position', [0.5 0.70  0.5 0.3], 'XTick', [], 'YTick', []);
       
+       %Tags to the axes so that we can individually manipulate them
+       set(imZ{1,1}, 'Tag', 'quick11');
+       set(imZ{1,2}, 'Tag', 'quick12');
+       set(imZ{1,3}, 'Tag', 'quick13');
+       
+       set(imZ{2,1}, 'Tag', 'quick21');
+       set(imZ{2,2}, 'Tag', 'quick22');
+       set(imZ{2,3}, 'Tag', 'quick23');
+       
+
        %Loading in entire image stack in both colors
        totalNumColors = size(param.color,2);
 
@@ -719,24 +751,23 @@ hContrast = imcontrast(imageRegion);
 
        %Displaying the MIP for both colors
         
-       for i=1:8
-           imAll{i} = max(imAll{i},[],3);
+       for nC=1:totalNumColors
+           for nR=1:totalNumRegions
+           imAllmip{nC,nR} = max(imAll{nC,nR},[],3);
+           end
        end
        for nC=1:totalNumColors
            for i=1:3
-               im = registerSingleImage(imAll, param.color{nC},param);
+               im = registerSingleImage(imAllmip, param.color{nC},param);
 
                imZmip{nC,i} = imshow(im,[0,2000],'Parent', imZ{nC,i});
-
+               %set callbacks for each of these images
+               set(imZmip{nC,i}, 'ButtonDownFcn', @varZCrop_Callback);
+               set(imZmip{nC,i}, 'Tag', ['mip_',num2str(nC), '_', num2str(i)]);
+               
            end
-       end 
+       end
        
-       %Creating a mesh over the entire length of the gut-in each of these
-       %different regions the top and bottom z-height will be different and
-       %user adjustable
-       imGrid = zeros(size(im));
-       
-      
         
     end
 
@@ -1737,6 +1768,67 @@ hContrast = imcontrast(imageRegion);
         
     end
 
+%%% Functions for fast z-cropping of the time series
+function varZCrop_Callback(gcbo, eventdata, handles)
+
+    %Enable the mouse to allow us to scroll through this image
+    set(fGui, 'WindowScrollWheelFcn', {@mouse_Callback,gcbo});
+    
+    
+    %From the tag on the image find out which color and image we clicked on
+    tag = get(gcbo, 'Tag');
+    mipColor = str2num(tag(5));
+    zDepth = str2num(tag(7));
+    
+    
+    %Save the position in the figure that was clicked on
+    pos =  get(gca, 'Currentpoint'); pos = pos(1,1:2);
+    zCrop{mipColor, zDepth}.pos = pos;
+    
+   %Update the axes ticks to show where we put down a marker
+   minY = 1;
+   maxY = size(get(gcbo, 'CData'),1);
+   yArr = minY:1:maxY;
+   
+   zCrop{mipColor,zDepth}.handle =  line(pos(1)*ones(length(yArr),1),yArr);
+   set(zCrop{mipColor, zDepth}.handle, 'LineWidth', 0.1);
+   
+   %By default we'll set the max and min value to be the top and bottom of
+   %the image stack..we should be able to be more intelligent about this.
+   
+   if(zDepth==3)
+   zCrop{mipColor,zDepth}.z = 1;
+   elseif(zDepth==1)
+      zCrop{mipColor, zDepth}=1;
+   end
+
+end
+
+function mouse_Callback(varargin)
+counter = varargin{2}.VerticalScrollCount;
+
+%Find out which color and image we clicked on
+tag = get(varargin{3}, 'Tag');
+mipColor = str2num(tag(5));
+zDepth = str2num(tag(7));
+    
+    
+if(counter==-1)
+   zCropPos
+elseif(counter==1)
+    zDown();
+end
+
+end
+
+
+%Crop the image using the markers put down by the user
+function varZCrop
+zCropPos = cell(0,0);
+
+end
+
+
 end
 
 function param = calcCroppedRegion(param)
@@ -1923,4 +2015,3 @@ poly = cat(2, polyT(:,1), polyT(:,2));
 end
 
 
-%Functions for fast z-cropping of the time series
