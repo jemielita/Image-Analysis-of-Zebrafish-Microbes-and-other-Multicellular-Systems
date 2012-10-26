@@ -231,7 +231,7 @@ end
             yInI = param.regionExtent.XY{colorNum}(regNum,6);
             yInF = yInI +width-1;
             
-            im(xOutI:xOutF, yOutI:yOutF) = imAll{colorNum,regNum}(xInI:xInF, yInI:yInF)+...
+            im(xOutI:xOutF, yOutI:yOutF) = imAll{colorNum,regNum}+...
                 im(xOutI:xOutF, yOutI:yOutF);
             
         end

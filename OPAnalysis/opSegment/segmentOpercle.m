@@ -27,7 +27,7 @@ if nargin==0
     imPath = [pathN imLoc];
     
     %Get string base of these images, and the first scan number
-    thisIm = regexp(imLoc, '\d+(?=.TIF)');
+    thisIm = regexp(imLoc, '\d+(?=.tif)');
     
     baseIm = imLoc(1:thisIm-1);
     thisIm = imLoc(thisIm:end-4);
@@ -38,7 +38,7 @@ if nargin==0
           imPath);
     imPathEnd = [pathNEnd imLocEnd];
     
-    imEnd = regexp(imLocEnd, '\d+(?=.TIF)');
+    imEnd = regexp(imLocEnd, '\d+(?=.tif)');
     
     maxIm = imLocEnd(imEnd:end-4);
     maxIm = str2num(maxIm);
@@ -722,7 +722,7 @@ hRect = imrect(hAxes(1),[200 200 100 100]);
 
     function [isOpercle, isBackground,im,imOrig, imMIP] = loadImage(isOpercle, isBackground)
         %Load in a new image stack
-        imPath = [pathN baseIm num2str(thisIm) '.TIF'];
+        imPath = [pathN baseIm num2str(thisIm) '.tif'];
         switch isGlobalCropped
             case 'false'
                 for i=1:maxN
@@ -846,7 +846,7 @@ end
                         segMask = imSeg{thisIm,1};
                     end
                 else
-                    segMask = zeros(512,512);
+                    segMask = zeros(size(imMIP));
                 end  
                 
                 imOut = overlayImage(imMIP, segMask>0, isOpercle, isBackground);

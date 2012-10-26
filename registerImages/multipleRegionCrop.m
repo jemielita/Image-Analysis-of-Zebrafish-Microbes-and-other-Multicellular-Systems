@@ -109,7 +109,8 @@ uimenu(hMenuCrop, 'Label', 'Restore original image', 'Callback', @restoreImages_
 uimenu(hMenuCrop, 'Label', 'Save cropped region', 'Callback', @saveCropped_Callback);
 uimenu(hMenuCrop, 'Label', 'Single crop region', 'Separator', 'on', ...
     'Callback', @singleCrop_Callback);
-uimenu(hMenuCrop, 'Label', 'Quick z-crop', 'Callback', @quickZCrop_Callback, 'Separator', 'on');
+hQuickZ = uimenu(hMenuCrop, 'Label', 'Quick z-crop Initialize', 'Callback', @quickZCrop_Callback, 'Separator', 'on',...
+     'Checked', 'off');
 
 hMenuOutline = uimenu('Label', 'Outline region');
 hMultipleOutline = uimenu(hMenuOutline, 'Label', 'New outline/center for each time point', 'Checked', 'on', 'Separator', 'on',...
@@ -302,7 +303,7 @@ imZMask = ''; %Masks that will be used to crop the images in the z-direction dif
 %This variable will be used to construct an interpolative z-crop along the
 %entire length of the gut...the hope is that this will reduce the number of
 %"clicks" necessary to crop the gut.
-zCropPos = cell(0,0);
+zCrop = cell(0,0);
 
 %%%
 
@@ -692,7 +693,21 @@ hContrast = imcontrast(imageRegion);
 
 
     function quickZCrop_Callback(hObject, eventdata)
-       %Quickly crop image stacks in the z-direction
+       isChecked = get(hQuickZ, 'Checked')
+       switch isChecked
+           case 'off'
+               set(hQuickZ, 'Checked', 'on');
+           case 'on'
+               set(hQuickZ, 'Checked', 'off');
+       end
+       
+        
+        %Quickly crop image stacks in the z-direction
+       
+       
+       %Set mousecallback so that when you click on the different regions
+       %with the left or right mouse you change the z-level for that region
+       
        
        
        %Remove z-number and color button-we don't want to have control of
@@ -708,8 +723,7 @@ hContrast = imcontrast(imageRegion);
        set(hColorSlider, 'Visible', 'off');
        
        set(outlineRect(:), 'Visible', 'off');
-       set(hIm, 'Visible', 'off');
-       
+       set(hIm, 'Visible', 'off');       
        
        %Create 6 new axes in the image panel that we'll use to crop the
        %images
@@ -730,11 +744,9 @@ hContrast = imcontrast(imageRegion);
        set(imZ{2,1}, 'Tag', 'quick21');
        set(imZ{2,2}, 'Tag', 'quick22');
        set(imZ{2,3}, 'Tag', 'quick23');
-       
 
        %Loading in entire image stack in both colors
        totalNumColors = size(param.color,2);
-
 
        imAll = cell(totalNumColors, totalNumRegions);
        fprintf(1, 'Loading in all images');
@@ -756,19 +768,23 @@ hContrast = imcontrast(imageRegion);
            imAllmip{nC,nR} = max(imAll{nC,nR},[],3);
            end
        end
+       
        for nC=1:totalNumColors
            for i=1:3
                im = registerSingleImage(imAllmip, param.color{nC},param);
-
+               set(hIm, 'CData', im);
+               
                imZmip{nC,i} = imshow(im,[0,2000],'Parent', imZ{nC,i});
                %set callbacks for each of these images
                set(imZmip{nC,i}, 'ButtonDownFcn', @varZCrop_Callback);
+               
                set(imZmip{nC,i}, 'Tag', ['mip_',num2str(nC), '_', num2str(i)]);
                
            end
        end
        
-        
+       
+       
     end
 
     function saveCropped_Callback(hObject, eventdata)
@@ -901,7 +917,6 @@ hContrast = imcontrast(imageRegion);
        
        set(hRegTable, 'Data', param.regionExtent.crop.z);
     end
-
 
     function getImageArray_Callback(hObject, eventdata)
         if(strcmp(get(hMenuRegisterManual, 'Checked'), 'on'))
@@ -1162,6 +1177,7 @@ hContrast = imcontrast(imageRegion);
         
         
     end
+
     function colorSlider_Callback(hObject, eventData)
         colorNum = get(hColorSlider, 'Value');
         colorNum = ceil(colorNum);
@@ -1182,6 +1198,7 @@ hContrast = imcontrast(imageRegion);
     end
 
     function scanSlider_Callback(hObject, eventData)
+        
         scanTag = get(hObject, 'tag');
         
         switch scanTag
@@ -1199,9 +1216,33 @@ hContrast = imcontrast(imageRegion);
                 set(hScanSlider, 'Value',double(scanNum));
         end
         
+        
         colorNum = get(hColorSlider, 'Value');
         colorNum = ceil(colorNum);
         colorNum = int16(colorNum);
+        
+        %Check to see if we're doing a quick-Z crop. If so load in the
+        %entire 3D volume
+        if(strcmp(get(hQuickZ, 'Checked'), 'on'))
+            fprintf(1, 'Loading in all images');
+            totalNumColors = size(param.color,2);
+            for nC=1:totalNumColors
+                for nR=1:totalNumRegions
+                    imVar.color = param.color{nC};
+                    imVar.zNum = '';
+                    imVar.scanNum = scanNum;
+                    imAll{nC, nR} = load3dVolume(param, imVar, 'single', nR);
+                    fprintf(1, '.');
+                end
+            end
+            displayAllMIP();
+            
+            return;
+            
+        end
+       
+       
+        
         
         %Display the new image
         color = colorType(colorNum);
@@ -1259,7 +1300,6 @@ hContrast = imcontrast(imageRegion);
         scanNumPrev = scanNum;
         
     end
-
 
     function z_Callback(hObject, eventData)
         
@@ -1770,38 +1810,88 @@ hContrast = imcontrast(imageRegion);
 
 %%% Functions for fast z-cropping of the time series
 function varZCrop_Callback(gcbo, eventdata, handles)
-
-    %Enable the mouse to allow us to scroll through this image
-    set(fGui, 'WindowScrollWheelFcn', {@mouse_Callback,gcbo});
-    
-    
+       
     %From the tag on the image find out which color and image we clicked on
     tag = get(gcbo, 'Tag');
     mipColor = str2num(tag(5));
     zDepth = str2num(tag(7));
-    
+
+    %Find out how full our array is 
     
     %Save the position in the figure that was clicked on
     pos =  get(gca, 'Currentpoint'); pos = pos(1,1:2);
-    zCrop{mipColor, zDepth}.pos = pos;
-    
-   %Update the axes ticks to show where we put down a marker
-   minY = 1;
-   maxY = size(get(gcbo, 'CData'),1);
-   yArr = minY:1:maxY;
-   
-   zCrop{mipColor,zDepth}.handle =  line(pos(1)*ones(length(yArr),1),yArr);
-   set(zCrop{mipColor, zDepth}.handle, 'LineWidth', 0.1);
+    zCrop{end+1}.pos = pos;
    
    %By default we'll set the max and min value to be the top and bottom of
    %the image stack..we should be able to be more intelligent about this.
    
    if(zDepth==3)
-   zCrop{mipColor,zDepth}.z = 1;
+       zCrop{end}.z = 3;
    elseif(zDepth==1)
-      zCrop{mipColor, zDepth}=1;
+      zCrop{end}.z = 1;
+   elseif(zDepth==2)
+       zCrop{end}.z = 2;
    end
 
+   %Find which regions this point is in
+   overlap = zeros(totalNumRegions,2);
+   for nR=1:totalNumRegions
+       %x position
+       regOverlap(nR,1,1) = param.regionExtent.XY{colorNum}(nR,1);
+       regOverlap(nR,1,2) = regOverlap(nR,1,1)+param.regionExtent.XY{colorNum}(nR,3);
+       
+       %y position
+       regOverlap(nR,2,1) = param.regionExtent.XY{colorNum}(nR,2);
+       regOverlap(nR,2,2) = regOverlap(nR,2,1)+param.regionExtent.XY{colorNum}(nR,4);
+   
+       
+       %See if the position that we clicked on is in the range of one of
+       %these regions.
+       if(zCrop{end}.pos(2)>regOverlap(nR,1,1) &&...
+               zCrop{end}.pos(2)<regOverlap(nR,1,2))
+           overlap(nR,1) = 1;
+       end
+       
+       if(zCrop{end}.pos(1)>regOverlap(nR,2,1) &&...
+               zCrop{end}.pos(1)<regOverlap(nR,2,2))
+           overlap(nR,2) = 1;
+       end    
+   end
+   
+   %Save a list of all the regions that are in the region clicked on. If we
+   %clicked outside of all regions then don't update anything
+   
+   overlap = sum(overlap,2);
+   zCrop{end}.region = find(overlap==2, length(overlap));
+
+   if(length(find(overlap==2))>0)
+       %Update the axes ticks to show where we put down a marker
+       minY = 1;
+       maxY = size(get(gcbo, 'CData'),1);
+       yArr = minY:1:maxY;
+       
+       zCrop{end}.handle =  line(pos(1)*ones(length(yArr),1),yArr);
+       set(zCrop{end}.handle, 'LineWidth', 0.1);
+       
+       %Find the position in the different region where we clicked
+       %on the image
+       for j=1:length(find(overlap==2))
+           thisR = zCrop{end}.region(j,1);
+          zCrop{end}.region(j,2) = zCrop{end}.pos(2)-regOverlap(thisR,1,1);
+          zCrop{end}.region(j,3) = zCrop{end}.pos(1)-regOverlap(thisR,2,1);
+           
+       end
+       
+       
+   else
+       zCrop{end} = [];
+       return
+       
+   end
+
+    %Enable the mouse to allow us to scroll through this image
+    set(fGui, 'WindowScrollWheelFcn', {@mouse_Callback,gcbo});
+    
 end
 
 function mouse_Callback(varargin)
@@ -1809,24 +1899,110 @@ counter = varargin{2}.VerticalScrollCount;
 
 %Find out which color and image we clicked on
 tag = get(varargin{3}, 'Tag');
+tag
 mipColor = str2num(tag(5));
 zDepth = str2num(tag(7));
+
+thisR = zCrop{1,end};
+cropRange = param.regionExtent.crop.z;
+origCrop = param.regionExtentOrig.crop.z;
+
+for i=1:size(thisR.region,1)
+    nR = thisR.region(i,1);
+    %For each region increment the cropping range in z-if we clicked on the
+    %top image change the maximum z-depth, if we clicked on the bottom
+    %image change the minimum z-depth.
+
+    if(zDepth==3)
+        if(cropRange(nR,2)-counter<=origCrop(nR,2))
+            cropRange(nR,2) = cropRange(nR,2)-counter;
+        end
+    elseif(zDepth==1)
+        if(cropRange(nR,1)-counter>=origCrop(nR,1))
+            cropRange(nR,1) = cropRange(nR,1)-counter;
+        end
+    end
+        
     
-    
-if(counter==-1)
-   zCropPos
-elseif(counter==1)
-    zDown();
 end
 
+%Turn off any previous timers that we opened.
+prevTimer = timerfind('Tag', 'cropTimer');
+delete(prevTimer);
+
+T = timer('ExecutionMode', 'fixedDelay', 'Tag', 'cropTimer', ...
+    'TasksToExecute', 2,'TimerFcn', @updateZCrop, 'Period', 2);
+start(T);
+param.regionExtent.crop.z = cropRange;
+
+
+%Udate the z crop height table
+set(hRegTable, 'Data', param.regionExtent.crop.z);
+drawnow;
 end
 
+    function updateZCrop(~,~)
+        
+        %The timer automatically runs this function when first produced-we
+        %only want it to run after 1 sec.
+        thisTimer = timerfind('Tag', 'cropTimer');
+        if(get(thisTimer, 'TasksExecuted')<2)
+            return
+        end
+        displayAllMIP();
+             
+    end
+
+    function displayAllMIP()       
+        cropRange = param.regionExtent.crop.z;
+        origCrop = param.regionExtentOrig.crop.z;
+        
+        %Update the MIP for the quick z-cropping code
+        totalNumColors = 2;
+        for nC=1:totalNumColors
+            for i=1:3
+                
+                for nR=1:totalNumRegions
+                    %+1 to deal with Rick's stupid starting at 0 comp-sci thing
+                    minZ = param.regionExtent.Z(cropRange(nR,1),nR)+1;
+                    maxZ = param.regionExtent.Z(cropRange(nR,2),nR)+1;
+                    
+                    totalMinZ = param.regionExtent.Z(origCrop(nR,1),nR)+1;
+                    totalMaxZ = param.regionExtent.Z(origCrop(nR,2),nR)+1;
+                    
+                    
+                    switch i
+                        case 1
+                            if(totalMinZ==minZ)
+                                imAllmip{nC,nR} = zeros(size(imAll{nC,nR}),size(imAll{nC,nR},2),'uint16');
+                            else
+                                imAllmip{nC,nR} = max(imAll{nC,nR}(:,:,totalMinZ:minZ),[],3);
+                            end
+                        case 2
+                            imAllmip{nC,nR} = max(imAll{nC,nR}(:,:,minZ:maxZ),[],3);
+                        case 3
+                            if(totalMaxZ==maxZ)
+                                imAllmip{nC,nR} = zeros(size(imAll{nC,nR},1),size(imAll{nC,nR},2), 'uint16');
+                            else
+                                imAllmip{nC,nR} = max(imAll{nC,nR}(:,:,maxZ:totalMaxZ),[],3);
+                            end
+                    end
+                end
+                im = registerSingleImage(imAllmip, param.color{nC},param);
+                set(imZmip{nC,i}, 'CData', im);
+                
+                fprintf(1, '.');
+            end
+        end
+        fprintf(1, '\n');
+        
+    end
 
 %Crop the image using the markers put down by the user
-function varZCrop
-zCropPos = cell(0,0);
-
-end
+    function varZCrop
+        zCropPos = cell(0,0);
+        
+    end
 
 
 end
