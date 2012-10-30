@@ -146,6 +146,9 @@ set(hMenuRegisterManual, 'Checked', 'off');
 hMenuRegisterResize = uimenu(hMenuRegister, 'Label', 'Minimize total image size',...
     'Callback', @setMinImageSize_Callback);
 
+hMenuSeg = uimenu('Label', 'Segment');
+hMenuSeg = uimenu(hMenuSeg, 'Label', 'Remove surface cells', 'Callback', @segSurface_Callback, 'Checked', 'off');
+
 %Create a table that will contain the x and y location of each of the image
 %panels-we'll use this to manually adjust the location of each of the
 %images to fix our registration issues.
@@ -307,8 +310,9 @@ imZMask = ''; %Masks that will be used to crop the images in the z-direction dif
 %entire length of the gut...the hope is that this will reduce the number of
 %"clicks" necessary to crop the gut.
 zCrop = cell(0,0);
-
-%%%
+surfaceCell = cell(0,0); %Same structure as zCrop, but will be used to exclusively remove surface cells from the image series
+hThresh = ''; %Handle to the mask showing segmented/possible segmented regions
+threshIm = ''; %Array that will contain the masks for pixels that we're trying to remove from the image
 
 
 imC = [];
@@ -776,11 +780,9 @@ hContrast = imcontrast(imageRegion);
            
                %imZmip{nC,i} = imshow(im,[0,2000],'Parent', imZ{nC,i});
                %set callbacks for each of these images
-               set(hIm, 'ButtonDownFcn', @varZCrop_Callback);
+          %     set(hIm, 'ButtonDownFcn', @varZCrop_Callback);
                
                %set(imZmip{nC,i}, 'Tag', ['mip_',num2str(nC), '_', num2str(i)]);
-               
-       
        
        
     end
@@ -985,6 +987,154 @@ hContrast = imcontrast(imageRegion);
            outlineRegions();
        end
        
+    end
+
+
+
+%%% Functions for doing removal of surface cells
+    function segSurface_Callback(hObject, eventdata)
+         isChecked = get(hMenuSeg, 'Checked');
+
+       
+       
+        thisIm = get(hIm, 'CData');
+        threshIm = zeros(size(thisIm,1), size(thisIm,2),3);
+        threshIm(:,:,3) =thisIm>500;
+        threshIm = double(threshIm);
+        hold on
+        hThresh = imshow(threshIm, 'Parent', imageRegion);
+        
+        trans = 0.8;
+        set(hThresh, 'AlphaData', trans*threshIm(:,:,3));
+        
+        hold off
+        
+         switch isChecked
+           case 'off'
+               set(hMenuSeg, 'Checked', 'on');
+               
+               set(hThresh, 'ButtonDownFcn', @segSurfaceClick_Callback);
+
+           case 'on'
+               set(hMenuSeg, 'Checked', 'off');
+               if(ishandle(hThresh))
+                   set(hThresh, 'AlphaData', 0);
+                   return;
+               end
+               set(hThresh, 'ButtonDownFcn',  @iptaddcallback/callbackProcessor);
+         end
+       
+         
+    end
+
+
+    function segSurfaceClick_Callback(~, ~)
+        
+%         %Testing our code
+%         
+%         mip = imAllmip{1,2,1};
+%         ind = imAllmip{1,2,2};
+%         
+%         im = bwselect(mip>500, surfaceCell{scanNum,2}.region(3), surfaceCell{scanNum,2}.region(2));
+% 
+%         im = double(im).*double(ind);
+%         im(im~=0) = im(im~=0)+20;
+%         figure; imshow(im,[0 100]);
+%         
+%         finalIm= zeros(size(im,1),size(im,2),152);
+%         figure;
+%         for i=1:152
+%            temp = imAll{1,2}(:,:,i);
+%            temp(im>i) = 0;
+% %            imshow(temp,[0 1000]);
+% %            pause(0.5);
+%            finalIm(:,:,i) = temp;
+% %             imshow(finalIm,[0 1000]);
+% %             pause(0.5);
+%         end
+        
+        pos =  get(gca, 'Currentpoint'); pos = pos(1,1:2);
+        allInd = cellfun(@isempty, surfaceCell);
+       
+        if(isempty(allInd))
+            ind = 1;
+        elseif(size(allInd,1)~=scanNum)
+            ind = 1;
+        else
+            ind = find(allInd(scanNum,:)==1, 1,'first');
+            if(isempty(ind))
+                %Lengthen the cell array
+                ind = size(allInd,2) +1;
+            end
+        end
+        surfaceCell{scanNum,ind}.pos = pos;
+        
+        %Find which region in the image this overlaps with and set that to
+        %a different color
+        obj = bwselect(threshIm(:,:,3), pos(1), pos(2));
+        %Remove the object from the potential segmented region and add it
+        %to the to-be segmented regions
+        threshIm(:,:,3)= threshIm(:,:,3)- obj;
+        threshIm(:,:,1) = threshIm(:,:,1) + obj;
+        set(hThresh, 'CData', threshIm);
+        
+        %Find which regions this point is in
+        overlap = zeros(totalNumRegions,2);
+        for nR=1:totalNumRegions
+            %x position
+            regOverlap(nR,1,1) = param.regionExtent.XY{colorNum}(nR,1);
+            regOverlap(nR,1,2) = regOverlap(nR,1,1)+param.regionExtent.XY{colorNum}(nR,3);
+            
+            %y position
+            regOverlap(nR,2,1) = param.regionExtent.XY{colorNum}(nR,2);
+            regOverlap(nR,2,2) = regOverlap(nR,2,1)+param.regionExtent.XY{colorNum}(nR,4);
+            
+            
+            %See if the position that we clicked on is in the range of one of
+            %these regions.
+            if(surfaceCell{scanNum,ind}.pos(2)>regOverlap(nR,1,1) &&...
+                    surfaceCell{scanNum,ind}.pos(2)<regOverlap(nR,1,2))
+                overlap(nR,1) = 1;
+            end
+            
+            if(surfaceCell{scanNum,ind}.pos(1)>regOverlap(nR,2,1) &&...
+                    surfaceCell{scanNum,ind}.pos(1)<regOverlap(nR,2,2))
+                overlap(nR,2) = 1;
+            end
+        end
+        
+        %Save a list of all the regions that are in the region clicked on. If we
+        %clicked outside of all regions then don't update anything
+        
+        overlap = sum(overlap,2);
+        surfaceCell{scanNum,ind}.region = find(overlap==2, length(overlap));
+        
+        if(length(find(overlap==2))>0)
+            %Update the axes ticks to show where we put down a marker
+            minY = 1;
+            maxY = size(get(gcbo, 'CData'),1);
+            yArr = minY:1:maxY;
+            
+            
+            %Find the position in the different region where we clicked
+            %on the image
+            for j=1:length(find(overlap==2))
+                thisR = surfaceCell{scanNum,ind}.region(j,1);
+                surfaceCell{scanNum,ind}.region(j,2) = surfaceCell{scanNum,ind}.pos(2)-regOverlap(thisR,1,1);
+                surfaceCell{scanNum,ind}.region(j,3) = surfaceCell{scanNum,ind}.pos(1)-regOverlap(thisR,2,1);
+                
+            end
+            
+            
+        else
+            surfaceCell{scanNum,ind} = [];
+            return
+            
+        end
+        
+        
+        %Update the entry in param
+        param.surfaceCell = param.surfaceCell;
     end
 
     function getIndividualRegions()
@@ -1297,6 +1447,13 @@ hContrast = imcontrast(imageRegion);
         
         scanNumPrev = scanNum;
         
+        %If we're removing surface cells etc. then update this mask
+       if(strcmp(get(hMenuSeg, 'Checked'), 'on'))
+           threshIm(:,:,3) = get(hIm, 'CData')>500;
+           threshIm(:,:,1) = 0;
+           set(hThresh, 'CData', threshIm);
+           set(hThresh, 'AlphaData', 0.8*sum(threshIm,3));
+       end
     end
 
     function z_Callback(hObject, eventData)
