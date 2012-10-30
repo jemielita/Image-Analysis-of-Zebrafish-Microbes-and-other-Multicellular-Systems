@@ -286,6 +286,9 @@ numColor = length(param.color);
 %%% quick Z cropping variables
 imArray = cell(numColor,totalNumRegions); %Will be used for quickly registering the different regions of the image.
 imAll = cell(numColor, totalNumRegions); %Store entire z-stack in both colors-used for quickly cropping in the z-direction
+imAllmip = cell(numColor, totalNumRegions,2); %Store the mip for each region and the pixel location of the MIP pixel
+im = cell(totalNumRegions,1); %Store the index where the MIP pixel is located.
+
 imZ = cell(numColor, 3); %Handle to subplots used to crop in the z-direction on the image stacks.
 imZmip = '';%Handle to images in each of these subplots
 imZMask = ''; %Masks that will be used to crop the images in the z-direction differently at different points in the image
@@ -693,12 +696,13 @@ hContrast = imcontrast(imageRegion);
 
 
     function quickZCrop_Callback(hObject, eventdata)
-       isChecked = get(hQuickZ, 'Checked')
+       isChecked = get(hQuickZ, 'Checked');
        switch isChecked
            case 'off'
                set(hQuickZ, 'Checked', 'on');
            case 'on'
                set(hQuickZ, 'Checked', 'off');
+               return;
        end
        
         
@@ -707,8 +711,6 @@ hContrast = imcontrast(imageRegion);
        
        %Set mousecallback so that when you click on the different regions
        %with the left or right mouse you change the z-level for that region
-       
-       
        
        %Remove z-number and color button-we don't want to have control of
        %these while we do z-cropping
@@ -722,28 +724,28 @@ hContrast = imcontrast(imageRegion);
        set(hColorTextEdit, 'Visible', 'off');
        set(hColorSlider, 'Visible', 'off');
        
-       set(outlineRect(:), 'Visible', 'off');
-       set(hIm, 'Visible', 'off');       
+%        set(outlineRect(:), 'Visible', 'off');
+%        set(hIm, 'Visible', 'off');       
        
        %Create 6 new axes in the image panel that we'll use to crop the
        %images
-       
-       imZ{1,1} = axes('Parent', hImPanel, 'Position', [0 0  0.5 0.3], 'XTick', [], 'YTick', []);
-       imZ{1,2} = axes('Parent', hImPanel, 'Position', [0 0.33  0.5 0.3], 'XTick', [], 'YTick', []);
-       imZ{1,3} = axes('Parent', hImPanel, 'Position', [0 0.7  0.5 0.3], 'XTick', [], 'YTick', []);
-       
-       imZ{2,1} = axes('Parent', hImPanel, 'Position', [0.5 0  0.5 0.3], 'XTick', [], 'YTick', []);
-       imZ{2,2} = axes('Parent', hImPanel, 'Position', [0.5 0.33  0.5 0.3], 'XTick', [], 'YTick', []);
-       imZ{2,3} = axes('Parent', hImPanel, 'Position', [0.5 0.70  0.5 0.3], 'XTick', [], 'YTick', []);
+%        
+%        imZ{1,1} = axes('Parent', hImPanel, 'Position', [0 0  0.5 0.3], 'XTick', [], 'YTick', []);
+%        imZ{1,2} = axes('Parent', hImPanel, 'Position', [0 0.33  0.5 0.3], 'XTick', [], 'YTick', []);
+%        imZ{1,3} = axes('Parent', hImPanel, 'Position', [0 0.7  0.5 0.3], 'XTick', [], 'YTick', []);
+%        
+%        imZ{2,1} = axes('Parent', hImPanel, 'Position', [0.5 0  0.5 0.3], 'XTick', [], 'YTick', []);
+%        imZ{2,2} = axes('Parent', hImPanel, 'Position', [0.5 0.33  0.5 0.3], 'XTick', [], 'YTick', []);
+%        imZ{2,3} = axes('Parent', hImPanel, 'Position', [0.5 0.70  0.5 0.3], 'XTick', [], 'YTick', []);
       
        %Tags to the axes so that we can individually manipulate them
-       set(imZ{1,1}, 'Tag', 'quick11');
-       set(imZ{1,2}, 'Tag', 'quick12');
-       set(imZ{1,3}, 'Tag', 'quick13');
-       
-       set(imZ{2,1}, 'Tag', 'quick21');
-       set(imZ{2,2}, 'Tag', 'quick22');
-       set(imZ{2,3}, 'Tag', 'quick23');
+%        set(imZ{1,1}, 'Tag', 'quick11');
+%        set(imZ{1,2}, 'Tag', 'quick12');
+%        set(imZ{1,3}, 'Tag', 'quick13');
+%        
+%        set(imZ{2,1}, 'Tag', 'quick21');
+%        set(imZ{2,2}, 'Tag', 'quick22');
+%        set(imZ{2,3}, 'Tag', 'quick23');
 
        %Loading in entire image stack in both colors
        totalNumColors = size(param.color,2);
@@ -765,23 +767,19 @@ hContrast = imcontrast(imageRegion);
         
        for nC=1:totalNumColors
            for nR=1:totalNumRegions
-           imAllmip{nC,nR} = max(imAll{nC,nR},[],3);
+           [imAllmip{nC,nR,1}, imAllmip{nC,nR,2}] = max(imAll{nC,nR},[],3);
            end
        end
        
-       for nC=1:totalNumColors
-           for i=1:3
-               im = registerSingleImage(imAllmip, param.color{nC},param);
-               set(hIm, 'CData', im);
-               
-               imZmip{nC,i} = imshow(im,[0,2000],'Parent', imZ{nC,i});
+       im = registerSingleImage(imAllmip, param.color{1},param)+ registerSingleImage(imAllmip, param.color{2},param);
+       set(hIm, 'CData', im);
+           
+               %imZmip{nC,i} = imshow(im,[0,2000],'Parent', imZ{nC,i});
                %set callbacks for each of these images
-               set(imZmip{nC,i}, 'ButtonDownFcn', @varZCrop_Callback);
+               set(hIm, 'ButtonDownFcn', @varZCrop_Callback);
                
-               set(imZmip{nC,i}, 'Tag', ['mip_',num2str(nC), '_', num2str(i)]);
+               %set(imZmip{nC,i}, 'Tag', ['mip_',num2str(nC), '_', num2str(i)]);
                
-           end
-       end
        
        
        
@@ -1810,11 +1808,22 @@ hContrast = imcontrast(imageRegion);
 
 %%% Functions for fast z-cropping of the time series
 function varZCrop_Callback(gcbo, eventdata, handles)
-       
-    %From the tag on the image find out which color and image we clicked on
-    tag = get(gcbo, 'Tag');
-    mipColor = str2num(tag(5));
-    zDepth = str2num(tag(7));
+%     %Testing the smoothing function here
+%     for i=1:6
+%         pos(i,1:2) = round(zCrop{i}.region(2:3));
+%         pos(i,3) = imAllmip{1,3,2}(pos(i,1), pos(i,2));
+%     end
+%     imSize = size(imAllmip{1,3,2});
+%     xnodes = 1:50:imSize(1); ynodes = 1:50:imSize(2);
+%     g = gridfit(pos(:,1),pos(:,2),pos(:,3),xnodes,ynodes, 'Smoothness', 1);
+%     
+%     
+%     b = 0;
+    
+%     %From the tag on the image find out which color and image we clicked on
+%     tag = get(gcbo, 'Tag');
+%     mipColor = str2num(tag(5));
+%     zDepth = str2num(tag(7));
 
     %Find out how full our array is 
     
@@ -1825,13 +1834,13 @@ function varZCrop_Callback(gcbo, eventdata, handles)
    %By default we'll set the max and min value to be the top and bottom of
    %the image stack..we should be able to be more intelligent about this.
    
-   if(zDepth==3)
-       zCrop{end}.z = 3;
-   elseif(zDepth==1)
-      zCrop{end}.z = 1;
-   elseif(zDepth==2)
-       zCrop{end}.z = 2;
-   end
+%    if(zDepth==3)
+%        zCrop{end}.z = 3;
+%    elseif(zDepth==1)
+%       zCrop{end}.z = 1;
+%    elseif(zDepth==2)
+%        zCrop{end}.z = 2;
+%    end
 
    %Find which regions this point is in
    overlap = zeros(totalNumRegions,2);
@@ -1891,6 +1900,7 @@ function varZCrop_Callback(gcbo, eventdata, handles)
 
     %Enable the mouse to allow us to scroll through this image
     set(fGui, 'WindowScrollWheelFcn', {@mouse_Callback,gcbo});
+    
     
 end
 
