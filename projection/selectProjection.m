@@ -82,6 +82,7 @@ im = calculateProjection(type);
                     %range of our camera: 16 bit.
                     im = load3dVolume(param, imVar, 'single', nR);
                     mipR = max(im,[],3); %Get the maximum intensity projection for this region
+                    
                 case 'total'
                     im = load3dVolume(param, imVar, 'single', nR, 'dataType', '32bit');
                     mipR = sum(im,3);

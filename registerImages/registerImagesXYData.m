@@ -180,8 +180,9 @@ for regNum=1:totalNumRegions
     else
         regLoc(regNum,1) = -param.expData.Scan(regionIndex).xBegin;
     end
-    
-     regLoc(regNum,1) = param.expData.Scan(regionIndex).xBegin-20*0.1625*(param.expData.Scan(regionIndex).cropRegion(2));
+       regLoc(regNum,1) = param.expData.Scan(regionIndex).xBegin;
+       regLoc(regNum,1) = regLoc(regNum,1) +10*0.1625*(param.expData.Scan(regionIndex).cropRegion(1));
+  %   regLoc(regNum,1) = param.expData.Scan(regionIndex).xBegin
     regLoc(regNum,2) = param.expData.Scan(regionIndex).yBegin;
     
     %Convert micron range to pixels;

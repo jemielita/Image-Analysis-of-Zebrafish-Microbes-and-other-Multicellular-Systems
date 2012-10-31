@@ -16,6 +16,7 @@ numScans = param.expData.totalNumberScans;
 
 saveType  = 'tiff';
 
+numColor = 1;
 for nS=1:numScans
    
     disp(['Calculating mip for scan ', num2str(nS)]);

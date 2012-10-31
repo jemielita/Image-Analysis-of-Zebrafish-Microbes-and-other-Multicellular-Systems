@@ -765,7 +765,7 @@ hContrast = imcontrast(imageRegion);
                fprintf(1, '.');
            end
        end
-       fprintf(1,'Done!');
+       fprintf(1,'Done!\n');
 
        %Displaying the MIP for both colors
         
@@ -780,7 +780,7 @@ hContrast = imcontrast(imageRegion);
            
                %imZmip{nC,i} = imshow(im,[0,2000],'Parent', imZ{nC,i});
                %set callbacks for each of these images
-          %     set(hIm, 'ButtonDownFcn', @varZCrop_Callback);
+               set(hIm, 'ButtonDownFcn', @varZCrop_Callback);
                
                %set(imZmip{nC,i}, 'Tag', ['mip_',num2str(nC), '_', num2str(i)]);
        
@@ -1134,7 +1134,7 @@ hContrast = imcontrast(imageRegion);
         
         
         %Update the entry in param
-        param.surfaceCell = param.surfaceCell;
+        param.surfaceCell = surfaceCell;
     end
 
     function getIndividualRegions()
@@ -2107,6 +2107,7 @@ param.regionExtent.crop.z = cropRange;
 set(hRegTable, 'Data', param.regionExtent.crop.z);
 drawnow;
 end
+
 
     function updateZCrop(~,~)
         
