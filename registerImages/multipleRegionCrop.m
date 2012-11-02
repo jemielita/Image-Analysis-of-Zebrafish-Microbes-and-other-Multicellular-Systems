@@ -138,7 +138,9 @@ hMenuScroll = uimenu(hMenuDisplay, 'Label', 'Add scroll bar to image display', '
 hMenuDenoise = uimenu(hMenuDisplay, 'Label', 'Denoise!', 'Callback', @denoiseIm_Callback);
 set(hMenuDenoise, 'Checked', 'off');
 hMenuMIP = uimenu(hMenuDisplay, 'Label', 'Maximum intensity projection', 'Callback', @mip_Callback);
-        
+hMenuOverlapImages = uimenu(hMenuDisplay, 'Label', 'Overlap different colors', 'Callback', @overlapColors_Callback, 'Checked', 'off');
+
+
 hMenuRegister = uimenu('Label', 'Registration');
 hMenuRegisterManual = uimenu(hMenuRegister, 'Label', 'Manually register images',...
     'Callback', @getImageArray_Callback);
@@ -499,6 +501,15 @@ hContrast = imcontrast(imageRegion);
         end
         fprintf('\n');
         set(hIm, 'CData', imBig); 
+    end
+    function overlapColors_Callback(hObject, eventdata)
+        %Use a check mark to indicate whether we'll align or not
+        if strcmp(get(hMenuOverlapImages, 'Checked'),'on')
+            set(hMenuOverlapImages, 'Checked', 'off');
+        else
+            set(hMenuOverlapImages, 'Checked', 'on');
+        end
+ 
     end
 
     function denoiseIm_Callback(hObject, eventdata)
@@ -1929,12 +1940,23 @@ hContrast = imcontrast(imageRegion);
 
                 
             case 'mip'
-                %'true'-> autoload the maximum intensity projection if it
-                %has already been calculated.
+                 set(hIm, 'Visible', 'off');drawnow;
                 param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
-                im = selectProjection(param, 'mip', 'true', scanNum,color, zNum);
-                fprintf(1, 'done!\n');
-                
+                %If we're going to overlap the colors then load in all
+                %colors
+                if(strcmp(get(hMenuOverlapImages, 'Checked'), 'on'));
+                    im = selectProjection(param, 'mip', 'true', scanNum,param.color{1}, zNum);
+                    for nC=2:length(param.color)
+                        im = im+selectProjection(param, 'mip', 'true', scanNum,param.color{nC}, zNum);
+                    end
+                    
+                else
+                    %'true'-> autoload the maximum intensity projection if it
+                    %has already been calculated.
+                    param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
+                    im = selectProjection(param, 'mip', 'true', scanNum,color, zNum);
+                    fprintf(1, 'done!\n');
+                end
         end
         
         %If a single crop region (not region specific crop boxes) for the
@@ -1954,11 +1976,14 @@ hContrast = imcontrast(imageRegion);
         switch nargout
             case 0
                 set(hIm, 'CData', im);
+                
             case 1
                 %Used for saving potentially modified images to a new
                 %folder
                 varargout{1} = im;
         end
+        
+        set(hIm, 'Visible', 'on');
         
         
     end
