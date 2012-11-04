@@ -9,13 +9,14 @@ if(nargin==4)
     autoLoad = varargin{3};
     imVar = varargin{4};
 end
-if(nargin==6)
+if(nargin==7)
     param=varargin{1};
     type = varargin{2};
     autoLoad = varargin{3};
     imVar.scanNum = varargin{4};
     imVar.color = varargin{5};
     imVar.zNum = varargin{6};
+    recalcProj = varargin{7};
 end
 
 
@@ -29,7 +30,7 @@ im = calculateProjection(type);
         imTot = zeros(param.regionExtent.regImSize{colorNum});
         
         if(strcmp(autoLoad, 'true'))
-            if(isfield(param, 'dataSaveDirectory'))
+            if(isfield(param, 'dataSaveDirectory')&&recalcProj==false)
                 try
                   imTot = imread([param.dataSaveDirectory filesep...
                          'FluoroScan_', num2str(imVar.scanNum), '_', imVar.color,'.tiff']);

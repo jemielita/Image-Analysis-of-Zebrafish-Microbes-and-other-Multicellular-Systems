@@ -111,6 +111,9 @@ uimenu(hMenuCrop, 'Label', 'Single crop region', 'Separator', 'on', ...
     'Callback', @singleCrop_Callback);
 hQuickZ = uimenu(hMenuCrop, 'Label', 'Quick z-crop Initialize', 'Callback', @quickZCrop_Callback, 'Separator', 'on',...
      'Checked', 'off');
+hzCropBoxInit = uimenu(hMenuCrop, 'Label', 'Z-crop box initialize', 'Callback',  @cropBoxInit_Callback);
+zCropBox = cell(numScans,1);
+hzCropBox = uimenu(hMenuCrop, 'Label', 'Finalize z-crop box', 'Callback', @cropBoxMeas_Callback);
 
 hMenuOutline = uimenu('Label', 'Outline region');
 hMultipleOutline = uimenu(hMenuOutline, 'Label', 'New outline/center for each time point', 'Checked', 'on', 'Separator', 'on',...
@@ -798,6 +801,20 @@ hContrast = imcontrast(imageRegion);
        
     end
 
+
+    function cropBoxInit_Callback(hObject, eventdata)
+       zCropBoxHandle =imrect(imageRegion);
+       set(zCropBoxHandle, 'Tag', 'zCropBoxHandle');
+       
+    end
+    function cropBoxMeas_Callback(hObject, eventdata)
+        zCropBoxHandle = findobj('Tag', 'zCropBoxHandle');
+        apiTemp = iptgetapi(zCropBoxHandle);
+        zCropBox{scanNum}(end+1).pos = apiTemp.getPosition();
+        zCropBox{scanNum}(end).zHeight = int16(get(hZSlider, 'Value'));
+        delete(zCropBoxHandle);
+        param.regionExtent.zCropBox = zCropBox;
+    end
     function saveCropped_Callback(hObject, eventdata)
     %Function to save the cropped region. Either to a new directory,
     %or overwriting the previous images. This function will also save all
@@ -1030,9 +1047,11 @@ hContrast = imcontrast(imageRegion);
                set(hMenuSeg, 'Checked', 'off');
                if(ishandle(hThresh))
                    set(hThresh, 'AlphaData', 0);
-                   return;
+                  
                end
-               set(hThresh, 'ButtonDownFcn',  @iptaddcallback/callbackProcessor);
+              
+                set(hThresh, 'Visible', 'off');
+                drawnow;
          end
        
          
@@ -1444,7 +1463,7 @@ hContrast = imcontrast(imageRegion);
                     try
                         line = param.centerLineAll{scanNum};
                         if(~isempty(line))
-                            hLine.setPosition(line);
+                       hLine.setPosition(line);
                         end
                     catch
                         line = param.centerLineAll{scanNumPrev};
@@ -1460,7 +1479,7 @@ hContrast = imcontrast(imageRegion);
         
         %If we're removing surface cells etc. then update this mask
        if(strcmp(get(hMenuSeg, 'Checked'), 'on'))
-           threshIm(:,:,3) = get(hIm, 'CData')>500;
+           threshIm(:,:,3) = get(hIm, 'CData')>700;
            threshIm(:,:,1) = 0;
            set(hThresh, 'CData', threshIm);
            set(hThresh, 'AlphaData', 0.8*sum(threshIm,3));
@@ -1944,17 +1963,30 @@ hContrast = imcontrast(imageRegion);
                 param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
                 %If we're going to overlap the colors then load in all
                 %colors
+                
+                %If we've done some z-cropping then recalculate the
+                %projection.
+                if(length(zCropBox)<scanNum)
+                    recalcProj = false;
+                else
+                    if(~isempty(zCropBox{scanNum}))
+                        recalcProj = true;
+                    else
+                        recalcProj = false;
+                    end
+                end
+                
                 if(strcmp(get(hMenuOverlapImages, 'Checked'), 'on'));
-                    im = selectProjection(param, 'mip', 'true', scanNum,param.color{1}, zNum);
+                    im = selectProjection(param, 'mip', 'true', scanNum,param.color{1}, zNum,recalcProj);
                     for nC=2:length(param.color)
-                        im = im+selectProjection(param, 'mip', 'true', scanNum,param.color{nC}, zNum);
+                        im = im+selectProjection(param, 'mip', 'true', scanNum,param.color{nC}, zNum,recalcProj);
                     end
                     
                 else
                     %'true'-> autoload the maximum intensity projection if it
                     %has already been calculated.
                     param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
-                    im = selectProjection(param, 'mip', 'true', scanNum,color, zNum);
+                    im = selectProjection(param, 'mip', 'true', scanNum,color, zNum,recalcProj);
                     fprintf(1, 'done!\n');
                 end
         end

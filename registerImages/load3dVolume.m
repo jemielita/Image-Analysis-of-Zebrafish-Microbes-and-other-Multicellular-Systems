@@ -58,7 +58,7 @@ switch loadType
 end
 
 
-%Deal with -1 put in to find regions  outside gut
+%Deal with -1 put in to find regions outside gut
 imStack(imStack==-1) = nan;
 imStack = imStack +1;
 
@@ -109,6 +109,50 @@ for nZ = 1:totalZ
     end
 end
 
+
+%Load in mask showing variable maximum z-heights for different parts of the
+%gut-used to remove surface cells 
+if(isfield(param.regionExtent, 'zCropBox'))
+    zCrop = param.regionExtent.zCropBox{1};
+    
+    %Find the parts of these masks that lie within the region that we're
+    %loading in
+    zCropMask = zeros(size(im,1), size(im,2));
+    thisMask = zeros(size(zCropMask));
+        
+    for i=1:length(zCrop)
+        thisMask(:) = 0;
+        cXI = max(zCrop(i).pos(2)-xOutI,1);
+        cXF = min(zCrop(i).pos(4)+cXI, size(im,1));
+        
+        cYI = max(zCrop(i).pos(1)-yOutI, 1);
+        cYF = min(zCrop(i).pos(3) +cYI, size(im,2));
+        
+        cXI = round(cXI);cXF = round(cXF); cYI = round(cYI); cYF = round(cYF);
+        thisMask(cXI:cXF, cYI:cYF) = zCrop(i).zHeight;
+        zCropMask(thisMask~=0) = thisMask(thisMask~=0);
+        
+    end
+    
+    cropZ = unique(zCropMask(:));
+    cropZ(cropZ==0) = [];
+    
+    
+    for nZ=1:length(cropZ)
+        minZ = param.regionExtent.Z(cropZ(nZ),regNum);
+        if(minZ==-1)
+            return
+        end
+        for thisZ=minZ+1:size(im,3)
+            temp = im(:,:,thisZ);
+            temp(zCropMask==cropZ(nZ)) = nan;
+           im(:,:,thisZ) = temp;
+        end
+        
+        
+    end
+end
+
 end
 
 %Load in all images in one particular cut of the gut
@@ -140,7 +184,6 @@ polyX = param.regionExtent.polyAll{scanNum}(:,1);
 polyY = param.regionExtent.polyAll{scanNum}(:,2);
 gutMask = poly2mask(polyX, polyY, height, width);
 
-fprintf(1, 'imOrig');
 imOrig = nan*zeros(height, width, dataType);
 
 %Size of pre-cropped rotated image
@@ -184,7 +227,6 @@ x = x-xMin+1; y = y-yMin+1;
 finalI = sub2ind([finalHeight, finalWidth], x,y);
 
 
-
 for nZ=minZ:maxZ
     tic;
     imOrig(:)=-1; %Can't use nan, because then we can't add up regions-deal with minus one at the end.
@@ -221,7 +263,9 @@ for nZ=minZ:maxZ
            disp('This image doesnt exist-fix up your code!!!!');
        end
          
-    end   
+    end
+    
+    
     
     imNum = param.regionExtent.Z(nZ, indReg);
     %Deal with overlapping regions
@@ -246,6 +290,43 @@ for nZ=minZ:maxZ
 
     fprintf(1, '.');   
 %toc
+end
+
+
+%Load in mask showing variable maximum z-heights for different parts of the
+%gut-used to remove surface cells
+if(isfield(param.regionExtent, 'zCropBox'))
+    zCrop = param.regionExtent.zCropBox{scanNum};
+    
+    zCropMask = zeros(size(cutMask));
+    thisMask = zCropMask;
+    for i=1:length(zCrop)
+        thisMask(:) = 0;
+        cXI = zCrop(i).pos(2);
+        cXF = zCrop(i).pos(4)+cXI;
+        
+        cYI = zCrop(i).pos(1)-yOutI;
+        cYF = zCrop(i).pos(3) +cYI;
+        
+        cXI = round(cXI);cXF = round(cXF); cYI = round(cYI); cYF = round(cYF);
+        thisMask(cXI:cXF, cYI:cYF) = zCrop(i).zHeight;
+        zCropMask(thisMask~=0) = thisMask(thisMask~=0);
+        
+    end
+    
+    
+    %Removing points outside the mask region
+    zCropMask = zCropMask.*cutMask;
+    
+    %Get indices in the rotated
+    zCropInd = zCropMask(oI);
+    
+    for nZ=minZ:maxZ
+        ind = find(zCropInd==nZ);
+        for thisZ=nZ:maxZ
+            im(finalI(ind) +finalHeight*finalWidth*(nZ-minZ)) = 10000;
+        end
+    end
 end
 
 
