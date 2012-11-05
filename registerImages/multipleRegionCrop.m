@@ -116,11 +116,16 @@ uimenu(hMenuCrop, 'Label', 'Restore original image', 'Callback', @restoreImages_
 uimenu(hMenuCrop, 'Label', 'Save cropped region', 'Callback', @saveCropped_Callback);
 uimenu(hMenuCrop, 'Label', 'Single crop region', 'Separator', 'on', ...
     'Callback', @singleCrop_Callback);
-hQuickZ = uimenu(hMenuCrop, 'Label', 'Quick z-crop Initialize', 'Callback', @quickZCrop_Callback, 'Separator', 'on',...
+hQuickZ = uimenu(hMenuCrop, 'Label', 'Quick z-crop Initialize', 'Callback', @heightZCrop_Callback, 'Separator', 'on',...
      'Checked', 'off');
+<<<<<<< TREE
+%hQuickZ = uimenu(hMenuCrop, 'Label', 'Quick z-crop Initialize', 'Callback', @quickZCrop_Callback, 'Separator', 'on',...
+ %    'Checked', 'off');
+=======
 hzCropBoxInit = uimenu(hMenuCrop, 'Label', 'Z-crop box initialize', 'Callback',  @cropBoxInit_Callback);
 zCropBox = cell(numScans,1);
 hzCropBox = uimenu(hMenuCrop, 'Label', 'Finalize z-crop box', 'Callback', @cropBoxMeas_Callback);
+>>>>>>> MERGE-SOURCE
 
 hMenuOutline = uimenu('Label', 'Outline region');
 hMultipleOutline = uimenu(hMenuOutline, 'Label', 'New outline/center for each time point', 'Checked', 'on', 'Separator', 'on',...
@@ -809,6 +814,26 @@ hContrast = imcontrast(imageRegion);
        
     end
 
+%Crop the zebrafish gut in the z-direction. The user is prompted to put
+%down lines along the gut at different z-heights. Everything to the right
+%of that line will not be used in getting the volume of the gut. This
+%exploits the feature of most of our samples where the bulb is higher in
+%the z-direction than the other parts of the gut. For samples where this is
+%not the case we will have to use a different strategy.
+    function heightZCrop_Callback(hObject, eventdata)
+        isChecked = get(hQuickZ, 'Checked');
+        switch isChecked
+            case 'off'
+                set(hQuickZ, 'Checked', 'on');
+            case 'on'
+                set(hQuickZ, 'Checked', 'off');
+                return;
+        end
+        %Set the callback for when the image is clicked on.
+        set(hIm, 'ButtonDownFcn', @varZCrop_Callback);
+        
+    end
+
 
     function cropBoxInit_Callback(hObject, eventdata)
        zCropBoxHandle =imrect(imageRegion);
@@ -823,6 +848,7 @@ hContrast = imcontrast(imageRegion);
         delete(zCropBoxHandle);
         param.regionExtent.zCropBox = zCropBox;
     end
+
     function saveCropped_Callback(hObject, eventdata)
     %Function to save the cropped region. Either to a new directory,
     %or overwriting the previous images. This function will also save all
@@ -2189,10 +2215,13 @@ function varZCrop_Callback(gcbo, eventdata, handles)
        return
        
    end
-
-    %Enable the mouse to allow us to scroll through this image
-    set(fGui, 'WindowScrollWheelFcn', {@mouse_Callback,gcbo});
-    
+   
+   %Get the height in the z-direction where we put down this line
+   zCrop{end}.height = int16(get(hZSlider, 'Value'));
+   
+   %Enable the mouse to allow us to scroll through this image
+   set(fGui, 'WindowScrollWheelFcn', {@mouse_Callback,gcbo});
+   
     
 end
 
@@ -2253,10 +2282,10 @@ end
             return
         end
         displayAllMIP();
-             
+        
     end
 
-    function displayAllMIP()       
+    function displayAllMIP()
         cropRange = param.regionExtent.crop.z;
         origCrop = param.regionExtentOrig.crop.z;
         
@@ -2469,10 +2498,8 @@ function [data, param] = loadParameters()
                 numScans = sum([numScans{:}]);
                 param.expData.totalNumberScans = numScans;
 end
-    
 
 %For a given polygon, smooth out the polygon using spline interpolation
-
 function poly = splineSmoothPolygon(poly)
 
 %Parameterizing curve in terms of arc length
