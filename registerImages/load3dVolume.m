@@ -113,7 +113,7 @@ end
 %Load in mask showing variable maximum z-heights for different parts of the
 %gut-used to remove surface cells 
 if(isfield(param.regionExtent, 'zCropBox'))
-    zCrop = param.regionExtent.zCropBox{1};
+    zCrop = param.regionExtent.zCropBox{imVar.scanNum};
     
     %Find the parts of these masks that lie within the region that we're
     %loading in

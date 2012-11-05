@@ -64,6 +64,13 @@ maxColor = numColor;
 colorType = [param.color];
 colorNum = 1;
 
+
+
+%%%%%%%%%%%% variable that contains information about expected pixel
+%%%%%%%%%%%% intensity of background and different colors of bacteria
+bkgInten = zeros(numScans, numColor,2); %Calculate mean and std of background
+bacInten = cell(numScans, numColor);
+
 %%%%%%% projection type
 projectionType = 'none';
 
@@ -143,7 +150,6 @@ set(hMenuDenoise, 'Checked', 'off');
 hMenuMIP = uimenu(hMenuDisplay, 'Label', 'Maximum intensity projection', 'Callback', @mip_Callback);
 hMenuOverlapImages = uimenu(hMenuDisplay, 'Label', 'Overlap different colors', 'Callback', @overlapColors_Callback, 'Checked', 'off');
 
-
 hMenuRegister = uimenu('Label', 'Registration');
 hMenuRegisterManual = uimenu(hMenuRegister, 'Label', 'Manually register images',...
     'Callback', @getImageArray_Callback);
@@ -152,7 +158,9 @@ hMenuRegisterResize = uimenu(hMenuRegister, 'Label', 'Minimize total image size'
     'Callback', @setMinImageSize_Callback);
 
 hMenuSeg = uimenu('Label', 'Segment');
-hMenuSeg = uimenu(hMenuSeg, 'Label', 'Remove surface cells', 'Callback', @segSurface_Callback, 'Checked', 'off');
+hMenuSurf = uimenu(hMenuSeg, 'Label', 'Remove surface cells', 'Callback', @segSurface_Callback, 'Checked', 'off');
+hMenuBkg = uimenu(hMenuSeg, 'Label', 'Label background pixel intensity', 'Callback',@background_Callback,'Checked', 'off');
+hMenuBacteria = uimenu(hMenuSeg, 'Label', 'Identify single bacteria', 'Callback', @outlineBacteria_Callback, 'Checked', 'off');
 
 %Create a table that will contain the x and y location of each of the image
 %panels-we'll use this to manually adjust the location of each of the
@@ -1057,32 +1065,57 @@ hContrast = imcontrast(imageRegion);
          
     end
 
+    function background_Callback(hObject, eventdata)
+        if strcmp(get(hMenuBkg, 'Checked'),'on')
+            set(hMenuBkg, 'Checked', 'off');
+            hTemp = findobj('Tag', 'bkgRect');
+            delete(hTemp);
+        else
+            set(hMenuBkg, 'Checked', 'on');    
+            bkgRect = imrect(imageRegion);
+            set(bkgRect, 'Tag', 'bkgRect');
+            
+        end
+    end
+    function outlineBacteria_Callback(hObject, eventdata)
+         if strcmp(get(hMenuBacteria, 'Checked'),'on')
+            set(hMenuBacteria, 'Checked', 'off');
+            hTemp = findobj('Tag', 'bkgRect');
+            delete(hTemp);
+        else
+            set(hMenuBacteria, 'Checked', 'on');    
+            bacRect = imrect(imageRegion);
+            bacPos = wait(bacRect);
+            
+            answer = inputdlg('How many bacteria are in this box?', 'Bacteria count', ...
+                1, {'1'});
+            numBact = str2num(answer{1});
+            
+            delete(bacRect);
+            
+            scanNum = get(hScanSlider, 'Value');
+            scanNum = int16(scanNum);
+            
+            colorNum = get(hColorSlider, 'Value');
+            colorNum = ceil(colorNum);
+            colorNum = int16(colorNum);
+           
+            %Crop the image down
+            thisIm = get(hIm, 'CData');
+            thisIm = thisIm(bacPos(2):bacPos(2)+bacPos(4), bacPos(1):bacPos(1)+bacPos(3));
+            
+            bacInten{scanNum,colorNum}(end+1).rect = bacPos;
+            bacInten{scanNum,colorNum}(end).mean = mean(double(thisIm(thisIm>180)));
+            bacInten{scanNum,colorNum}(end).std = std(double(thisIm(thisIm>180)));
+            bacInten{scanNum,colorNum}(end).sum = sum(sum(thisIm(thisIm>180)))/numBact;
+
+         end
+        
+         
+    end
 
     function segSurfaceClick_Callback(~, ~)
-        
-%         %Testing our code
-%         
-%         mip = imAllmip{1,2,1};
-%         ind = imAllmip{1,2,2};
-%         
-%         im = bwselect(mip>500, surfaceCell{scanNum,2}.region(3), surfaceCell{scanNum,2}.region(2));
-% 
-%         im = double(im).*double(ind);
-%         im(im~=0) = im(im~=0)+20;
-%         figure; imshow(im,[0 100]);
-%         
-%         finalIm= zeros(size(im,1),size(im,2),152);
-%         figure;
-%         for i=1:152
-%            temp = imAll{1,2}(:,:,i);
-%            temp(im>i) = 0;
-% %            imshow(temp,[0 1000]);
-% %            pause(0.5);
-%            finalIm(:,:,i) = temp;
-% %             imshow(finalIm,[0 1000]);
-% %             pause(0.5);
-%         end
-        
+
         pos =  get(gca, 'Currentpoint'); pos = pos(1,1:2);
         allInd = cellfun(@isempty, surfaceCell);
        
@@ -1394,10 +1427,23 @@ hContrast = imcontrast(imageRegion);
                 set(hScanSlider, 'Value',double(scanNum));
         end
         
-        
         colorNum = get(hColorSlider, 'Value');
         colorNum = ceil(colorNum);
         colorNum = int16(colorNum);
+        
+        %%% See if we're calculating the background intensity of the gut,
+        %%% if so update the appropriate entry in param
+        bkgHandle = findobj('Tag', 'bkgRect');
+        if(~isempty(bkgHandle))
+            bkgHandle = iptgetapi(bkgHandle);
+            bkgPos = bkgHandle.getPosition();
+            allIm = get(hIm, 'CData');
+            allIm = allIm(bkgPos(2):bkgPos(2)+bkgPos(4), bkgPos(1):bkgPos(1)+bkgPos(3));
+            bkgInten(scanNum,colorNum,1) = mean(allIm(:));
+            bkgInten(scanNum, colorNum,2) = std(double(allIm(:)));
+            param.bkgInten = bkgInten;
+        end
+        
         
         %Check to see if we're doing a quick-Z crop. If so load in the
         %entire 3D volume
@@ -1419,7 +1465,7 @@ hContrast = imcontrast(imageRegion);
             
         end
        
-       
+           
         
         
         %Display the new image
@@ -1475,6 +1521,7 @@ hContrast = imcontrast(imageRegion);
                 
         end
         
+
         scanNumPrev = scanNum;
         
         %If we're removing surface cells etc. then update this mask
