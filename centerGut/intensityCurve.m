@@ -1,12 +1,15 @@
 %intensityCurve: Calculating mean and maximum pixel intensity for all
 %points in the 2d or 3d image contained within certain masks.
 %
-% USAGE intenL = intensityCurve(im, regionMask)
+% USAGE intenL = intensityCurve(im, regionMask,centerLine, boxDim)
 %
 % INPUT regionMask: n x m x p mask containing integers. n x m is the same
 % dimension as im and p is the number of different layers of region masks
 % (allowing us to calculate statistics for regions that are overlaping).
 %       im: n x m double image or image stack.
+%       centerLine: Line along with we are calculating the intensity
+%       boxDim: box widths to use for calculating histogram of intensities
+%       (optional. Default: 100:100:4000)
 % OUTPUT intenL: n x 2 array where n is the number of unique regions in
 % regionMask (excluding 0) and n(:,1) is the mean pixel intensity in
 % different regions and n(:,2) is the maximum pixel intensity. Other
@@ -14,10 +17,14 @@
 %
 % AUTHOR: Matthew Jemielita, revised August 3, 2012
 
-function intenL = intensityCurve(im,regionMask,centerLine)
+function intenL = intensityCurve(im,regionMask,centerLine,varargin)
 
-%hard coding in box dimensions for histogram
-boxDim = 100:100:4000;
+if(nargin==3)
+    %hard coding in box dimensions for histogram
+    boxDim = 100:100:4000;
+    else
+    boxDim = varargin{1};
+end
 totalNumMask = size(regionMask,3);
 maxNumReg = 30; %Maximum number of regions to calculate properties of at the same time
 %Duplicate the mask.

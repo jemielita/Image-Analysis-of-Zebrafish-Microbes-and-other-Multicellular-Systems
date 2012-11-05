@@ -1146,6 +1146,7 @@ hContrast = imcontrast(imageRegion);
             else
                 fprintf(2, 'Need to set camera background pixel intensity first!\n');
             end
+            param.bacInten = bacInten;
          end
         
          
