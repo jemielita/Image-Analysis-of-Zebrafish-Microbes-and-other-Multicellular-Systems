@@ -161,7 +161,7 @@ hMenuSeg = uimenu('Label', 'Segment');
 hMenuSurf = uimenu(hMenuSeg, 'Label', 'Remove surface cells', 'Callback', @segSurface_Callback, 'Checked', 'off');
 hMenuBkg = uimenu(hMenuSeg, 'Label', 'Label background pixel intensity', 'Callback',@background_Callback,'Checked', 'off');
 hMenuBacteria = uimenu(hMenuSeg, 'Label', 'Identify single bacteria', 'Callback', @outlineBacteria_Callback, 'Checked', 'off');
-
+hMenuCameraBkg = uimenu(hMenuSeg, 'Label', 'Identify camera background noise', 'Callback', @camBackground_Callback);
 %Create a table that will contain the x and y location of each of the image
 %panels-we'll use this to manually adjust the location of each of the
 %images to fix our registration issues.
@@ -1085,6 +1085,7 @@ hContrast = imcontrast(imageRegion);
         else
             set(hMenuBacteria, 'Checked', 'on');    
             bacRect = imrect(imageRegion);
+            set(bacRect, 'Tag', 'bkgRect');
             bacPos = wait(bacRect);
             
             answer = inputdlg('How many bacteria are in this box?', 'Bacteria count', ...
@@ -1100,18 +1101,48 @@ hContrast = imcontrast(imageRegion);
             colorNum = ceil(colorNum);
             colorNum = int16(colorNum);
            
-            %Crop the image down
-            thisIm = get(hIm, 'CData');
-            thisIm = thisIm(bacPos(2):bacPos(2)+bacPos(4), bacPos(1):bacPos(1)+bacPos(3));
+            %Load in this cropped region and calculate features of it
+            imVar.color = {param.color{colorNum}}; imVar.scanNum = scanNum;
+            thisIm = load3dVolume(param,imVar,'crop',bacPos);
             
-            bacInten{scanNum,colorNum}(end+1).rect = bacPos;
-            bacInten{scanNum,colorNum}(end).mean = mean(double(thisIm(thisIm>180)));
-            bacInten{scanNum,colorNum}(end).std = std(double(thisIm(thisIm>180)));
-            bacInten{scanNum,colorNum}(end).sum = sum(sum(thisIm(thisIm>180)))/numBact;
-
+            
+            %Set the cutoff for bacteria intensity at 1 standard deviation
+            %above camera mean background pixel intensity
+            
+            if(isfield(param, 'camBkg'))
+                cutoff = param.camBkg(colorNum).mean+param.camBkg(colorNum).std;
+                
+                bacInten{scanNum,colorNum}(end+1).rect = bacPos;
+                bacInten{scanNum,colorNum}(end).mean = mean(double(thisIm(thisIm>cutoff)));
+                bacInten{scanNum,colorNum}(end).std = std(double(thisIm(thisIm>cutoff)));
+                bacInten{scanNum,colorNum}(end).sum = sum(sum(thisIm(thisIm>cutoff)))/numBact;
+                [sum(sum(thisIm(thisIm>180)))/numBact,mean(double(thisIm(thisIm>cutoff)))]
+            else
+                fprintf(2, 'Need to set camera background pixel intensity first!\n');
+            end
          end
         
          
+    end
+
+    function camBackground_Callback(hObject, eventdata)
+        bkgRect = imrect(imageRegion);
+        bkgPos = wait(bkgRect);
+        
+        delete(bkgRect);
+        
+        scanNum = get(hScanSlider, 'Value');
+        scanNum = int16(scanNum);
+        imVar.scanNum = scanNum;
+        %Load in images of the background and its mean/std
+        for nC=1:length(param.color);
+            imVar.color = {param.color{nC}};
+            thisIm = load3dVolume(param, imVar, 'crop', bkgPos);
+            camBkg(nC).mean = mean(double(thisIm(:)));
+            camBkg(nC).std = std(double(thisIm(:)));
+            camBkg(nC).color = imVar.color;
+        end
+        param.camBkg = camBkg;
     end
 
     function segSurfaceClick_Callback(~, ~)
