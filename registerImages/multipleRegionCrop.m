@@ -118,14 +118,10 @@ uimenu(hMenuCrop, 'Label', 'Single crop region', 'Separator', 'on', ...
     'Callback', @singleCrop_Callback);
 hQuickZ = uimenu(hMenuCrop, 'Label', 'Quick z-crop Initialize', 'Callback', @heightZCrop_Callback, 'Separator', 'on',...
      'Checked', 'off');
-<<<<<<< TREE
-%hQuickZ = uimenu(hMenuCrop, 'Label', 'Quick z-crop Initialize', 'Callback', @quickZCrop_Callback, 'Separator', 'on',...
- %    'Checked', 'off');
-=======
+
 hzCropBoxInit = uimenu(hMenuCrop, 'Label', 'Z-crop box initialize', 'Callback',  @cropBoxInit_Callback);
 zCropBox = cell(numScans,1);
 hzCropBox = uimenu(hMenuCrop, 'Label', 'Finalize z-crop box', 'Callback', @cropBoxMeas_Callback);
->>>>>>> MERGE-SOURCE
 
 hMenuOutline = uimenu('Label', 'Outline region');
 hMultipleOutline = uimenu(hMenuOutline, 'Label', 'New outline/center for each time point', 'Checked', 'on', 'Separator', 'on',...
