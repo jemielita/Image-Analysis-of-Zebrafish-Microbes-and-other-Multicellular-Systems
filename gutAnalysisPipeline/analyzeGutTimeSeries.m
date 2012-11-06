@@ -21,15 +21,7 @@ saveDir = scanParam.dataSaveDirectory;
 %case we want to do only a subset of scans.
 scanParam = getFinishedScanList(scanParam);
 
-%% Save meta-data
-%Including analysis parameters and the current version of the code
 
-error = checkCodeVersion(scanParam.codeDir, scanParam.dataSaveDirectory);
-error = saveAnalysisSteps(analysisType, scanParam, param);
-if(error ==1)
-    fprintf(2, 'Problem saving meta-data from analysis!');
-    return
-end
 
 %% Declaring variables
 
@@ -45,7 +37,15 @@ gutMask = cell(3,1);
 param = resampleCenterLine(param, scanParam);
 
 createAllMasks(scanParam, param);
+%% Save meta-data
+%Including analysis parameters and the current version of the code
 
+error = checkCodeVersion(scanParam.codeDir, scanParam.dataSaveDirectory);
+error = saveAnalysisSteps(analysisType, scanParam, param);
+if(error ==1)
+    fprintf(2, 'Problem saving meta-data from analysis!');
+    return
+end
 %% Start the analysis of individual scans
 
 for thisScan=1:length(scanParam.scanList)

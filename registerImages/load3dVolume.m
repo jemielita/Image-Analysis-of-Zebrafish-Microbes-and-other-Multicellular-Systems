@@ -301,7 +301,7 @@ end
 
 end
 
-    function im  = loadCutRegion(param, imVar, cutNumber, scanNum,dataType)
+    function im  = loadCutRegion2(param, imVar, cutNumber, scanNum,dataType)
         
         thisCut = cell(4,1);
         thisCut{1} = param.cutVal{cutNumber,1};

@@ -68,7 +68,7 @@ colorNum = 1;
 
 %%%%%%%%%%%% variable that contains information about expected pixel
 %%%%%%%%%%%% intensity of background and different colors of bacteria
-bkgInten = zeros(numScans, numColor,2); %Calculate mean and std of background
+bkgInten = nan*zeros(numScans, numColor,2); %Calculate mean and std of background
 bacInten = cell(numScans, numColor);
 
 %%%%%%% projection type
@@ -159,10 +159,14 @@ hMenuRegisterResize = uimenu(hMenuRegister, 'Label', 'Minimize total image size'
     'Callback', @setMinImageSize_Callback);
 
 hMenuSeg = uimenu('Label', 'Segment');
-hMenuSurf = uimenu(hMenuSeg, 'Label', 'Remove surface cells', 'Callback', @segSurface_Callback, 'Checked', 'off');
+hMenuSurf = uimenu(hMenuSeg, 'Label', 'Remove surface cells', 'Callback', @segSurface_Callback, 'Checked', 'off', 'Visible', 'off');
 hMenuBkg = uimenu(hMenuSeg, 'Label', 'Label background pixel intensity', 'Callback',@background_Callback,'Checked', 'off');
 hMenuBacteria = uimenu(hMenuSeg, 'Label', 'Identify single bacteria', 'Callback', @outlineBacteria_Callback, 'Checked', 'off');
 hMenuCameraBkg = uimenu(hMenuSeg, 'Label', 'Identify camera background noise', 'Callback', @camBackground_Callback);
+
+hMenuEndGut = uimenu(hMenuSeg, 'Label', 'Label the end of the gut', 'Callback', @endGut_Callback, 'Checked', 'off');
+hMenuAutoFluorGut = uimenu(hMenuSeg, 'Label', 'Label beginning of autofluorescent region', 'Callback', @autoFluorGut_Callback, 'Checked', 'off');
+
 %Create a table that will contain the x and y location of each of the image
 %panels-we'll use this to manually adjust the location of each of the
 %images to fix our registration issues.
@@ -434,7 +438,8 @@ hContrast = imcontrast(imageRegion);
        end
        %Save the result to the param file associated with the data.
        saveFile = [saveDir fileName];
-
+       %Update param.dataSaveDirectory to where we are saving param
+       param.dataSaveDirectory = saveFile;
        save(saveFile, 'param');
        
        
@@ -1131,18 +1136,22 @@ hContrast = imcontrast(imageRegion);
             %Set the cutoff for bacteria intensity at 1 standard deviation
             %above camera mean background pixel intensity
             
-            if(isfield(param, 'camBkg'))
-                cutoff = param.camBkg(colorNum).mean+param.camBkg(colorNum).std;
-                
+            if(isfield(param, 'bkgInten'))
+                cutoff = param.bkgInten(colorNum,1)+param.bkgInten(colorNum,2);
+             
                 bacInten{scanNum,colorNum}(end+1).rect = bacPos;
                 bacInten{scanNum,colorNum}(end).mean = mean(double(thisIm(thisIm>cutoff)));
                 bacInten{scanNum,colorNum}(end).std = std(double(thisIm(thisIm>cutoff)));
                 bacInten{scanNum,colorNum}(end).sum = sum(sum(thisIm(thisIm>cutoff)))/numBact;
-                [sum(sum(thisIm(thisIm>180)))/numBact,mean(double(thisIm(thisIm>cutoff)))]
+                bacInten{scanNum, colorNum}(end).numBac = numBact;
+
             else
                 fprintf(2, 'Need to set camera background pixel intensity first!\n');
             end
             param.bacInten = bacInten;
+            
+            set(hMenuBacteria, 'Checked', 'off');
+
          end
         
          
@@ -1168,6 +1177,34 @@ hContrast = imcontrast(imageRegion);
         param.camBkg = camBkg;
     end
 
+
+    function endGut_Callback(hObject, eventdata)
+        if strcmp(get(hMenuEndGut, 'Checked'),'on')
+            set(hMenuEndGut, 'Checked', 'off');
+            hTemp = findobj('Tag', 'endGutPt');
+            delete(hTemp);
+        else
+            set(hMenuEndGut, 'Checked', 'on');
+            endGutPt = impoint(imageRegion);
+            set(endGutPt, 'Tag', 'endGutPt');
+            setColor(endGutPt, 'r');
+        end
+         
+    end
+
+    function autoFluorGut_Callback(hObject, eventdata)
+        if strcmp(get(hMenuAutoFluorGut, 'Checked'),'on')
+            set(hMenuAutoFluorGut, 'Checked', 'off');
+            hTemp = findobj('Tag', 'autoFluorPt');
+            delete(hTemp);
+        else
+            set(hMenuAutoFluorGut, 'Checked', 'on');
+            autoFluorPt = impoint(imageRegion);
+            set(autoFluorPt, 'Tag', 'autoFluorPt');
+            setColor(autoFluorPt, 'b');
+        end 
+    end
+        
     function segSurfaceClick_Callback(~, ~)
 
         pos =  get(gca, 'Currentpoint'); pos = pos(1,1:2);
@@ -1492,12 +1529,45 @@ hContrast = imcontrast(imageRegion);
             bkgHandle = iptgetapi(bkgHandle);
             bkgPos = bkgHandle.getPosition();
             allIm = get(hIm, 'CData');
+            
             allIm = allIm(bkgPos(2):bkgPos(2)+bkgPos(4), bkgPos(1):bkgPos(1)+bkgPos(3));
             bkgInten(scanNum,colorNum,1) = mean(allIm(:));
             bkgInten(scanNum, colorNum,2) = std(double(allIm(:)));
-            param.bkgInten = bkgInten;
+            param.bkgIntenAll = bkgInten; %Keep record of background intensity in different scans to see if it change
+            
+            %Update mean and std of total bkg intensity
+            meanVal = param.bkgIntenAll(:,colorNum,1);
+            param.bkgInten(colorNum,1) = nanmean(meanVal);
+            
+            stdVal = param.bkgIntenAll(:,colorNum,2);
+            param.bkgInten(colorNum,2) = nanmean(stdVal);
         end
         
+        %%% Check to see if the end of the gut has been labeled and if so
+        %%% update param
+        endGutHandle = findobj('Tag', 'endGutPt');
+        if(~isempty(endGutHandle))
+            endGutHandle = iptgetapi(endGutHandle);
+            endGutPos = endGutHandle.getPosition();
+            param.endGutPos(scanNum,:) = endGutPos;
+        end
+        
+        
+        %%% Check to see if the beginning of the autfluorescent region has
+        %%% been labeled and if so update param
+        
+        autoFluorHandle = findobj('Tag', 'autoFluorPt');
+        if(~isempty(autoFluorHandle))
+            autoFluorHandle = iptgetapi(autoFluorHandle);
+            autoFluorPos = autoFluorHandle.getPosition();
+            param.autoFluorPos(scanNum,:) = autoFluorPos;
+        end
+        
+        
+        
+        
+        
+    
         
         %Check to see if we're doing a quick-Z crop. If so load in the
         %entire 3D volume

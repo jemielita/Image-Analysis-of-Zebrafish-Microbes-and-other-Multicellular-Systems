@@ -1,7 +1,7 @@
 %Wrapper for plot_gut_1D to extract almost all information from the param
 %and scanParam mat files
 
-function plot_gut_1Dintensity_mlj(param, scanParam,timeInfo)
+function plot_gut_1Dintensity_mlj(param, scanParam,timeInfo,bkgThresh,surfplotfilenamebase)
 
 if(isfield(scanParam, 'binSize'))
     intensitybins = scanParam.binSize;
@@ -20,40 +20,71 @@ end
 timestep = param.expData.pauseTime/60;
 
 %Get mean and std dev. of gut background signal
-for nC=1:size(param.bkgInten,2)
-    meanVal = param.bkgInten(:,nC,1);
-    meanVal(meanVal==0) = [];
-    gutBkg(nC,1) = mean(meanVal);
-    stdVal = param.bkgInten(:,nC,2);
-    stdVal(stdVal==0) = [];
-    gutBkg(nC,2) = std(stdVal);
+for i=1:size(param.bkgIntenAll,1)
+    for nC=1:size(param.bkgInten,2)
+        if(isnan(param.bkgIntenAll(i,nC,1))&&i~=1&&~isnan(param.bkgIntenAll(i-1,nC,1)))
+           param.bkgIntenAll(i,nC,1) = param.bkgIntenAll(i-1,nC,1);
+           param.bkgIntenAll(i,nC,2) = param.bkgIntenAll(i-1,nC,2);          
+        elseif(isnan(param.bkgIntenAll(i,nC,1))&&i~=size(param.bkgIntenAll,1)&&~isnan(param.bkgIntenAll(i+1,nC,1)))
+            param.bkgIntenAll(i,nC,1) = param.bkgIntenAll(i+1,nC,1);
+            param.bkgIntenAll(i,nC,2) = param.bkgIntenAll(i+1,nC,2);
+        end
+   
+    meanVal = param.bkgInten(nC,1);
+    gutBkg(nC,1) = param.bkgIntenAll(i,nC,1);
+    gutBkg(nC,2) = param.bkgIntenAll(i,nC,2);
     
     %Threshold cutoff for both channels will be 1 std dev above background
-    threshCutoff(nC) = ...
-        find(abs(intensitybins-gutBkg(nC,1)-gutBkg(nC,2))==min(abs(intensitybins-gutBkg(nC,1)-gutBkg(nC,2))));
-    
+    threshCutoff(i,nC) = ...
+        find(abs(intensitybins-gutBkg(nC,1)-bkgThresh*gutBkg(nC,2))==min(abs(intensitybins-gutBkg(nC,1)-bkgThresh*gutBkg(nC,2))));
+    end 
 end
-
 maxPlotPos = Inf; %For now-need to add code to mark the end of the gut
 
 bacteriaVolume = 1;
-
-surfplotfilenamebase = '';
 
 %Get average total intensity for a bacteria in either channel. This will be
 %used to set the relative intensity of the two different 
 
 if(isfield(param, 'bacInten'))
-    for nC=1:size(param.bkgInten,2)
-        bacInten(nC) = mean(param.bacInten{:,nC}.sum);
+    for nC=1:size(param.bacInten,2)
+        temp = [];
+        for i=1:size(param.bacInten,1)
+            if(isfield(param.bacInten{i,nC}, 'sum'))
+                temp = [temp [param.bacInten{i,nC}.sum]];
+            end
+        end  
+        temp(temp==0) = [];
+        bacInten(nC) = nanmean(temp);
     end
     greenRedIntensity = bacInten(1)/bacInten(2);   
 else
     greenRedIntensity = 7;%Raghu measured this awhile back...probably not particularly accurate from sample to sample
 end
 
+
+%%% Figure out cutoff point to exclude stuff past the endpoint of the gut
+%%% and stuff past the autofluorescent cells
+
+endPosList = zeros(length(scanParam.scanList),1);
+fluorPosList = zeros(length(scanParam.scanList),1);
+
+for i=1:max(scanParam.scanList)
+    endPos = param.centerLineAll{i}-repmat(param.endGutPos(i,:), length(param.centerLineAll{i}),1);
+    endPos = sum(endPos.^2,2);
+    [~,ind] = min(endPos);
+    endPosList(i) = ind;
+    
+    fluorPos = param.centerLineAll{i}-repmat(param.autoFluorPos(i,:), length(param.centerLineAll{i}),1);
+    fluorPos = sum(fluorPos.^2,2);
+    [~,ind] = min(fluorPos);
+    fluorPosList(i) = ind;
+end
+    
+   
 %Running the 1D plotting code
 plot_gut_1Dintensity(timeInfo, threshCutoff, intensitybins, timestep, ...
-    boxWidth, maxPlotPos, greenRedIntensity, bacteriaVolume, surfplotfilenamebase)
+    boxWidth, endPosList, greenRedIntensity, bacteriaVolume, ...
+    surfplotfilenamebase,min(scanParam.scanList),max(scanParam.scanList), param.dataSaveDirectory)
 
 end

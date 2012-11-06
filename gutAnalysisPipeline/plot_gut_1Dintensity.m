@@ -67,12 +67,15 @@
 % almost all inputs.
 
 function data_all = plot_gut_1Dintensity(timeinfo, threshCutoff, intensitybins, timestep, ...
-    boxwidth, maxplotpos, greenredintensity, bacteriavolume, surfplotfilenamebase)
+    boxwidth, maxplotpos, greenredintensity, bacteriavolume, surfplotfilenamebase,min_scan, max_scan,datadir)
 
 % get file name from list
- [matfilebase, min_scan, max_scan, formatstr, FileName1, FileName2, datadir ext] = ...
-     getnumfilelist;
- disp(datadir)
+%  [matfilebase, min_scan, max_scan, formatstr, FileName1, FileName2, datadir ext] = ...
+%      getnumfilelist;
+%  disp(datadir)
+ 
+ formatstr = '%d';
+ matfilebase = 'Analysis_Scan'; ext = '.mat';
 
 NtimePoints = max_scan-min_scan+1;
 presentdir = pwd;
@@ -135,12 +138,12 @@ for j=1:NtimePoints
     % Load data
     matfile = strcat(matfilebase, sprintf(formatstr,j+min_scan-1), ext);
     load(matfile)
-    xpos = boxwidth*((1:length(regFeatures{1,1}))' - 0.5); % position along gut, microns (column vector)
+    xpos = boxwidth*((1:length(regFeatures{1}))' - 0.5); % position along gut, microns (column vector)
     % Cutting off all pixel intensities below a certain threshold (bin)
-    gr_bincounts = regFeatures{1}(:,threshCutoff(1)+1:end);  % +1 since first element is mean
-    ibins_gr = repmat(intensitybins(threshCutoff(1):end), size(gr_bincounts,1),1);
-    red_bincounts = regFeatures{2}(:,threshCutoff(2)+1:end);
-    ibins_red = repmat(intensitybins(threshCutoff(2):end), size(red_bincounts,1),1);
+    gr_bincounts = regFeatures{1}(:,threshCutoff(j,1)+1:end);  % +1 since first element is mean
+    ibins_gr = repmat(intensitybins(threshCutoff(j,1):end), size(gr_bincounts,1),1);
+    red_bincounts = regFeatures{2}(:,threshCutoff(j,2)+1:end);
+    ibins_red = repmat(intensitybins(threshCutoff(j,2):end), size(red_bincounts,1),1);
     thisLine_green = sum(gr_bincounts.*ibins_gr,2);  % total intensity at each position -- counts * bin values
     thisLine_red   = sum(red_bincounts.*ibins_red,2);
     if length(greenredintensity)==1
@@ -152,16 +155,16 @@ for j=1:NtimePoints
         thisLine_red = thisLine_red / greenredintensity(2) / bacteriavolume;
     end
     % save in structured array
-    data_all(j).x = xpos(xpos<=maxplotpos);
-    data_all(j).green = thisLine_green(xpos<=maxplotpos);
-    data_all(j).red = thisLine_red(xpos<=maxplotpos);
+    data_all(j).x = xpos(1:maxplotpos(j));
+    data_all(j).green = thisLine_green(1:maxplotpos(j));
+    data_all(j).red = thisLine_red(1:maxplotpos(j));
     data_all(j).time = j*timestep*ones(size(data_all(j).x));
     maxgreen(j) = max(data_all(j).green);
     maxred(j) = max(data_all(j).red);
     totalgreen(j) = sum(data_all(j).green);
     totalred(j) = sum(data_all(j).red);
     
-    j
+    
 end
 
 
@@ -236,44 +239,15 @@ figurethings(hFig_red, plotTitleRed, viewangle);
 maxgreenall = max(maxgreen);
 maxredall = max(maxred);
 
-sameax = [0 min([maxplotpos agreen(2)]) 1 NtimePoints*timestep 0 1.1*max([maxgreenall maxredall])];
+sameax = [0 min([ agreen(2)]) 1 NtimePoints*timestep 0 1.1*max([maxgreenall maxredall])];
 figure(hFig_green);
 axis(sameax)
 figure(hFig_red);
 axis(sameax)
 
-% surface plots
-% Deal with simplest case that all position values are the same at each
-% time point; abandon if this isn't true
-try
-    hFig_green_surf = figure('name', 'GFP surface');
-    surf([data_all.x], [data_all.time], [data_all.green])
-    colormap(cmapgreen)
-    shading interp
-    figurethings(hFig_green_surf, plotTitleGreen, viewangle);
-    axis(sameax)
-    
-    hFig_red_surf = figure('name', 'RFP surface');
-    surf([data_all.x], [data_all.time], [data_all.red])
-    colormap(cmapred)
-    shading interp
-    figurethings(hFig_red_surf, plotTitleRed, viewangle);
-    axis(sameax)
-    
-    % Print figures
-    if ~isempty(surfplotfilenamebase)
-        set(hFig_green_surf, 'PaperPosition', [0.25 2.5 6 4])  % to get a decent aspect ratio
-        print(hFig_green_surf, '-dpng', strcat(surfplotfilenamebase, '_green.png'), '-r300')
-        set(hFig_red_surf, 'PaperPosition', [0.25 2.5 6 4])  % to get a decent aspect ratio
-        print(hFig_red_surf, '-dpng', strcat(surfplotfilenamebase, '_red.png'), '-r300')
-    end
-catch
-    disp('ERROR: surface plots probably failed because of differing x values.')
-    disp('Try again with smaller maxplotpos.')
-end
 
 % Total intensity plot(s)
-figure; plot(timestep*(1:NtimePoints), totalgreen, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
+hTotInten = figure; plot(timestep*(1:NtimePoints), totalgreen, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
 hold on
 plot(timestep*(1:NtimePoints), totalred, 'kd', 'markerfacecolor', [0.8 0.4 0.2]);
 xlabel('Time, hrs.')
@@ -285,7 +259,7 @@ end
 title(dataTitle, 'interpreter', 'none')
 
 % Total intensity, log scale
-figure('name', 'Total intensity, log scale');
+hTotIntenLog = figure('name', 'Total intensity, log scale');
 semilogy(timestep*(1:NtimePoints), totalgreen, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
 hold on
 semilogy(timestep*(1:NtimePoints), totalred, 'kd', 'markerfacecolor', [0.8 0.4 0.2]);
@@ -315,6 +289,23 @@ ylabel('Ratio of green/red bacteria')
 title(dataTitle, 'interpreter', 'none')
 
 cd(presentdir)
+
+
+
+% Print figures
+if ~isempty(surfplotfilenamebase)
+    set(hFig_green, 'PaperPosition', [0.25 2.5 6 4])  % to get a decent aspect ratio
+    print(hFig_green, '-dpng', strcat(surfplotfilenamebase, '_green.png'), '-r300')
+    set(hFig_red, 'PaperPosition', [0.25 2.5 6 4])  % to get a decent aspect ratio
+    print(hFig_red, '-dpng', strcat(surfplotfilenamebase, '_red.png'), '-r300')
+    
+    set(hTotInten, 'PaperPosition', [0.25 2.5 6 4])  % to get a decent aspect ratio
+    print(hTotInten, '-dpng', strcat(surfplotfilenamebase, '_totalIntensity.png'), '-r300')
+    
+    set(hTotIntenLog, 'PaperPosition', [0.25 2.5 6 4])  % to get a decent aspect ratio
+    print(hTotIntenLog, '-dpng', strcat(surfplotfilenamebase, '_totalIntensityLog.png'), '-r300')
+    
+end
 
 
     function figurethings(hFig, plotTitle, viewangle)
