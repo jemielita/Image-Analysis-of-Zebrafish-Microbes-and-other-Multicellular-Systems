@@ -431,15 +431,18 @@ hContrast = imcontrast(imageRegion);
        %This is done in other function calls, but not with a directory of
        %your choice...currently this will only be used to create a script
        %for cropping images.
-       
-       [fileName, saveDir]  = uiputfile('*.mat', 'Select a location to save the param.mat file', [param.directoryName filesep 'param.mat']);
+       if(isfield(param, 'dataSaveDirectory'))
+           [fileName, saveDir]  = uiputfile('*.mat', 'Select a location to save the param.mat file', [param.dataSaveDirectory filesep 'param.mat']);
+       else
+           [fileName, saveDir]  = uiputfile('*.mat', 'Select a location to save the param.mat file', [param.directoryName filesep 'param.mat']);
+       end
        if(fileName==0)
            return
        end
        %Save the result to the param file associated with the data.
        saveFile = [saveDir fileName];
        %Update param.dataSaveDirectory to where we are saving param
-       param.dataSaveDirectory = saveFile;
+       param.dataSaveDirectory = saveDir;
        save(saveFile, 'param');
        
        
