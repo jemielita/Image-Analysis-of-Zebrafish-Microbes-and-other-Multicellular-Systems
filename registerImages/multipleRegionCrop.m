@@ -670,9 +670,14 @@ hContrast = imcontrast(imageRegion);
         
         %Cropping the image stack in the z direction.
         [data,param] = registerImagesZData('crop', data,param);
-        
-        
-         
+        set(hZSlider, 'Max', size(param.regionExtent.Z,1));
+        zNum = get(hZSlider, 'Value');
+        zNum = int16(zNum);
+         if(zNum>size(param.regionExtent.Z,1))
+             zNum = size(param.regionExtent.Z,1);
+             set(hZTextEdit, 'String', num2str(zNum));
+             set(hZSlider, 'Value', double(zNum));
+         end
         colorNum = get(hColorSlider, 'Value');
         colorNum = ceil(colorNum);
         colorNum = int16(colorNum);
@@ -1104,9 +1109,41 @@ hContrast = imcontrast(imageRegion);
             set(hMenuBkg, 'Checked', 'on');    
             bkgRect = imrect(imageRegion);
             set(bkgRect, 'Tag', 'bkgRect');
+            addNewPositionCallback(bkgRect, @(p)updateBkgPosition);
             
         end
     end
+
+    function updateBkgPosition()
+        %Get color and scan number
+        colorNum = get(hColorSlider, 'Value');
+        colorNum = ceil(colorNum);
+        colorNum = int16(colorNum);
+        scanNum = get(hScanSlider, 'Value');
+        scanNum = int16(scanNum);
+        
+        %Update the mean and std. dev of the background pixel values.
+        bkgHandle = findobj('Tag', 'bkgRect');
+        
+        bkgHandle = iptgetapi(bkgHandle);
+        bkgPos = bkgHandle.getPosition();
+        allIm = get(hIm, 'CData');
+        bkgPos = round(bkgPos);
+        allIm = allIm(bkgPos(2):bkgPos(2)+bkgPos(4), bkgPos(1):bkgPos(1)+bkgPos(3));
+        bkgInten(scanNum,colorNum,1) = mean(allIm(:));
+        bkgInten(scanNum, colorNum,2) = std(double(allIm(:)));
+        param.bkgIntenAll = bkgInten; %Keep record of background intensity in different scans to see if it change
+        
+        %Update mean and std of total bkg intensity
+        meanVal = param.bkgIntenAll(:,colorNum,1);
+        param.bkgInten(colorNum,1) = nanmean(meanVal);
+        
+        stdVal = param.bkgIntenAll(:,colorNum,2);
+        param.bkgInten(colorNum,2) = nanmean(stdVal);
+   
+    end
+
+
     function outlineBacteria_Callback(hObject, eventdata)
          if strcmp(get(hMenuBacteria, 'Checked'),'on')
             set(hMenuBacteria, 'Checked', 'off');
@@ -1136,18 +1173,25 @@ hContrast = imcontrast(imageRegion);
             thisIm = load3dVolume(param,imVar,'crop',bacPos);
             
             
-            %Set the cutoff for bacteria intensity at 1 standard deviation
-            %above camera mean background pixel intensity
+            %Calculate the mean and total pixel intensity values for a
+            %variety of cutoffs above 
             
             if(isfield(param, 'bkgInten'))
-                cutoff = param.bkgInten(colorNum,1)+param.bkgInten(colorNum,2);
-             
-                bacInten{scanNum,colorNum}(end+1).rect = bacPos;
-                bacInten{scanNum,colorNum}(end).mean = mean(double(thisIm(thisIm>cutoff)));
-                bacInten{scanNum,colorNum}(end).std = std(double(thisIm(thisIm>cutoff)));
-                bacInten{scanNum,colorNum}(end).sum = sum(sum(thisIm(thisIm>cutoff)))/numBact;
-                bacInten{scanNum, colorNum}(end).numBac = numBact;
+                cutPoint = 1:10;
+                cutoff = param.bkgInten(colorNum,1)+cutPoint*param.bkgInten(colorNum,2);
 
+                bacInten{scanNum,colorNum}(end+1).rect = bacPos;
+                
+                meanVal = arrayfun(@(x)mean(double(thisIm(thisIm>cutoff(x)))), cutPoint, 'UniformOutput', false);
+                bacInten{scanNum,colorNum}(end).mean = cell2mat(meanVal);
+                
+                stdVal = arrayfun(@(x)std(double(thisIm(thisIm>cutoff(x)))), cutPoint, 'UniformOutput', false);
+                bacInten{scanNum,colorNum}(end).std = cell2mat(stdVal);
+                
+                sumVal = arrayfun(@(x)sum(sum(thisIm(thisIm>cutoff(x))))/numBact, cutPoint, 'UniformOutput', false);
+                bacInten{scanNum,colorNum}(end).sum = sumVal;
+                bacInten{scanNum, colorNum}(end).numBac = numBact;
+                bacInten{scanNum,colorNum}
             else
                 fprintf(2, 'Need to set camera background pixel intensity first!\n');
             end
@@ -1191,6 +1235,8 @@ hContrast = imcontrast(imageRegion);
             endGutPt = impoint(imageRegion);
             set(endGutPt, 'Tag', 'endGutPt');
             setColor(endGutPt, 'r');
+            addNewPositionCallback(endGutPt, @(p)updateEndGutPosition);
+
         end
          
     end
@@ -1205,14 +1251,37 @@ hContrast = imcontrast(imageRegion);
             autoFluorPt = impoint(imageRegion);
             set(autoFluorPt, 'Tag', 'autoFluorPt');
             setColor(autoFluorPt, 'b');
+            addNewPositionCallback(autoFluorPt, @(p)updateAutoFluorPosition);
+
         end 
     end
         
-    function segSurfaceClick_Callback(~, ~)
+    function updateAutoFluorPosition()
+        autoFluorHandle = findobj('Tag', 'autoFluorPt');
 
+        scanNum = get(hScanSlider, 'Value');
+        scanNum = int16(scanNum);
+        autoFluorHandle = iptgetapi(autoFluorHandle);
+        autoFluorPos = autoFluorHandle.getPosition();
+        param.autoFluorPos(scanNum,:) = autoFluorPos;
+    end
+
+    function updateEndGutPosition()
+        endGutHandle = findobj('Tag', 'endGutPt');
+        
+        scanNum = get(hScanSlider, 'Value');
+        scanNum = int16(scanNum);
+        endGutHandle = iptgetapi(endGutHandle);
+        endGutPos = endGutHandle.getPosition();
+        param.endGutPos(scanNum,:) = endGutPos;
+        
+    end
+
+    function segSurfaceClick_Callback(~, ~)
+        
         pos =  get(gca, 'Currentpoint'); pos = pos(1,1:2);
         allInd = cellfun(@isempty, surfaceCell);
-       
+        
         if(isempty(allInd))
             ind = 1;
         elseif(size(allInd,1)~=scanNum)
@@ -1529,30 +1598,14 @@ hContrast = imcontrast(imageRegion);
         %%% if so update the appropriate entry in param
         bkgHandle = findobj('Tag', 'bkgRect');
         if(~isempty(bkgHandle))
-            bkgHandle = iptgetapi(bkgHandle);
-            bkgPos = bkgHandle.getPosition();
-            allIm = get(hIm, 'CData');
-            
-            allIm = allIm(bkgPos(2):bkgPos(2)+bkgPos(4), bkgPos(1):bkgPos(1)+bkgPos(3));
-            bkgInten(scanNum,colorNum,1) = mean(allIm(:));
-            bkgInten(scanNum, colorNum,2) = std(double(allIm(:)));
-            param.bkgIntenAll = bkgInten; %Keep record of background intensity in different scans to see if it change
-            
-            %Update mean and std of total bkg intensity
-            meanVal = param.bkgIntenAll(:,colorNum,1);
-            param.bkgInten(colorNum,1) = nanmean(meanVal);
-            
-            stdVal = param.bkgIntenAll(:,colorNum,2);
-            param.bkgInten(colorNum,2) = nanmean(stdVal);
+           updateBkgPosition();
         end
         
         %%% Check to see if the end of the gut has been labeled and if so
         %%% update param
         endGutHandle = findobj('Tag', 'endGutPt');
         if(~isempty(endGutHandle))
-            endGutHandle = iptgetapi(endGutHandle);
-            endGutPos = endGutHandle.getPosition();
-            param.endGutPos(scanNum,:) = endGutPos;
+            updateEndGutPosition();
         end
         
         
@@ -1561,16 +1614,8 @@ hContrast = imcontrast(imageRegion);
         
         autoFluorHandle = findobj('Tag', 'autoFluorPt');
         if(~isempty(autoFluorHandle))
-            autoFluorHandle = iptgetapi(autoFluorHandle);
-            autoFluorPos = autoFluorHandle.getPosition();
-            param.autoFluorPos(scanNum,:) = autoFluorPos;
+            updateAutoFluorPosition();
         end
-        
-        
-        
-        
-        
-    
         
         %Check to see if we're doing a quick-Z crop. If so load in the
         %entire 3D volume
@@ -1706,8 +1751,6 @@ hContrast = imcontrast(imageRegion);
     end
 
 %Callbacks for the polygon outlining of the gut
-
-
     function multipleOutline_Callback(hObject, eventdata)
         %Marker telling us to load in a new outline for each time point
         if strcmp(get(hMultipleOutline, 'Checked'),'on')
@@ -1719,6 +1762,7 @@ hContrast = imcontrast(imageRegion);
         
         
     end
+
     function createFreeHandPoly_Callback(hObject, eventdata)
         %Start drawing the boundaries!
         hPoly = impoly(imageRegion);   

@@ -119,7 +119,7 @@ switch analysisType(stepNum).name
         thisRegFeatures = radialProjection(imStack, centerLine, gutMask);
         
     case 'linearIntensity'
-        binSize = scanParam.binSize;
+        binSize = analysisType(stepNum).binSize;
  %       maxNumReg = scanParam.maxNumReg;
         thisRegFeatures = intensityCurve(imStack, gutMask,centerLine,binSize);
     

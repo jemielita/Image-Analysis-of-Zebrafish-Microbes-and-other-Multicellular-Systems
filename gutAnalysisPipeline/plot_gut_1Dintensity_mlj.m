@@ -48,20 +48,22 @@ bacteriaVolume = 1;
 
 if(isfield(param, 'bacInten'))
     for nC=1:size(param.bacInten,2)
-        temp = [];
+        bacInten{nC}= [];
         for i=1:size(param.bacInten,1)
             if(isfield(param.bacInten{i,nC}, 'sum'))
-                temp = [temp [param.bacInten{i,nC}.sum]];
+                bacInten{nC} = [bacInten{nC} [param.bacInten{i,nC}.sum]];
             end
         end  
-        temp(temp==0) = [];
-        bacInten(nC) = nanmean(temp);
+        bacInten{nC}(bacInten{nC}==0) = [];
+        bacIntenAll(nC) = nanmean(bacInten{nC});
     end
-    greenRedIntensity = bacInten(1)/bacInten(2);   
+    greenRedIntensity = bacIntenAll(1)/bacIntenAll(2);   
 else
     greenRedIntensity = 7;%Raghu measured this awhile back...probably not particularly accurate from sample to sample
 end
 
+
+    greenRedIntensity = 7;%Raghu measured this awhile back...probably not particularly accurate from sample to sample
 
 %%% Figure out cutoff point to exclude stuff past the endpoint of the gut
 %%% and stuff past the autofluorescent cells
@@ -95,7 +97,7 @@ for i=1:max(scanParam.scanList)
     endPos = param.centerLineAll{i}-repmat(param.endGutPos(i,:), length(param.centerLineAll{i}),1);
     endPos = sum(endPos.^2,2);
     [~,ind] = min(endPos);
-    endPosList(i) = ind;
+    endPosList(i) = ind-60;
     
 %     fluorPos = param.centerLineAll{i}-repmat(param.autoFluorPos(i,:), length(param.centerLineAll{i}),1);
 %     fluorPos = sum(fluorPos.^2,2);
