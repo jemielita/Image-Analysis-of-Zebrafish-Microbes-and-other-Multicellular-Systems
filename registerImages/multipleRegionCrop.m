@@ -1191,7 +1191,7 @@ hContrast = imcontrast(imageRegion);
                 sumVal = arrayfun(@(x)sum(sum(thisIm(thisIm>cutoff(x))))/numBact, cutPoint, 'UniformOutput', false);
                 bacInten{scanNum,colorNum}(end).sum = sumVal;
                 bacInten{scanNum, colorNum}(end).numBac = numBact;
-                bacInten{scanNum,colorNum}
+
             else
                 fprintf(2, 'Need to set camera background pixel intensity first!\n');
             end

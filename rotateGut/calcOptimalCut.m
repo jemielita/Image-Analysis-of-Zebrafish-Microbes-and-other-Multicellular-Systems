@@ -66,7 +66,7 @@ imOrig(~mask) = 0;
 %Get masks for each of the different regions-will be used to see which
 %regions are in which cut of the gut
 numRegions = size(param.regionExtent.XY{1}, 1);
-regionMask = cell(4,1);
+regionMask = cell(numRegions,1);
 
 for i=1:numRegions
    regionMask{i} =  zeros(height, width);
