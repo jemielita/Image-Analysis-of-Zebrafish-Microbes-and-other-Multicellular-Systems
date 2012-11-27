@@ -42,10 +42,10 @@ if(scanNum>1 && isfield(param, 'cutValAll'))
            param.regionExtent.polyAll{i}(:),param.regionExtent.polyAll{scanNum}(:));
        
        
-       if(sameLine==true && sameOutline==true && ~isempty(param.cutValAll{i}))
-           cutVal = param.cutValAll{i};
-           return;
-       end
+%        if(sameLine==true && sameOutline==true && ~isempty(param.cutValAll{i}))
+%            cutVal = param.cutValAll{i};
+%            return;
+%        end
     end
 end
 

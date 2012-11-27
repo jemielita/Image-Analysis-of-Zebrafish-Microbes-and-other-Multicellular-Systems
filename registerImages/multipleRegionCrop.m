@@ -68,7 +68,7 @@ colorNum = 1;
 
 %%%%%%%%%%%% variable that contains information about expected pixel
 %%%%%%%%%%%% intensity of background and different colors of bacteria
-bkgInten = nan*zeros(numScans, numColor,2); %Calculate mean and std of background
+bkgInten = cell(numScans, numColor); 
 bacInten = cell(numScans, numColor);
 
 %%%%%%% projection type
@@ -1130,8 +1130,14 @@ hContrast = imcontrast(imageRegion);
         allIm = get(hIm, 'CData');
         bkgPos = round(bkgPos);
         allIm = allIm(bkgPos(2):bkgPos(2)+bkgPos(4), bkgPos(1):bkgPos(1)+bkgPos(3));
-        bkgInten(scanNum,colorNum,1) = mean(allIm(:));
-        bkgInten(scanNum, colorNum,2) = std(double(allIm(:)));
+        %bkgInten(scanNum,colorNum,1) = mean(allIm(:));
+        %bkgInten(scanNum, colorNum,2) = std(double(allIm(:)));
+        bkgInten{scanNum,colorNum} = bkgPos;
+        %Load in this cropped region and calculate features of it
+        imVar.color = {param.color{colorNum}}; imVar.scanNum = scanNum;
+        % thisIm = load3dVolume(param, imVar, 'crop', bkgPos);
+        %NO!!!!!NO!!! Don't calculate the mean of mip-get the position of
+        %this rect. and get the mean of the z-stack instead.
         param.bkgIntenAll = bkgInten; %Keep record of background intensity in different scans to see if it change
         
         %Update mean and std of total bkg intensity

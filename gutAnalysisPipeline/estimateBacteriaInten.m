@@ -11,7 +11,7 @@
 %       maxStdDev: number of standard deviations above background to go.
 %       
 % OUTPUT bacRatio: format: bacRatio{p_i}(nS,nD) = green/red intensity for scan n (nS), and a
-%        number of standard deviations above background (nD).
+%        number of standard deviations above background (0.1* nD).
 %
 % AUTHOR Matthew Jemielita, Nov. 13, 2012
 
@@ -27,11 +27,13 @@ for nP=1:totalNumP
     for nS=1:totalNumScan
         for nD=1:maxStdDev
             for nC=1:totalNumColor
-                minInten = bkgInten{nP}(nS,nC,1) + nD*bkgInten{nP}(nS,nC,2);
-                
+             minInten = bkgInten{nP}(nS,nC,1) + (0.1)*nD*bkgInten{nP}(nS,nC,2);
+             % minInten = bkgInten{nP}(nS,nC,1);
+
                 [~,ind] = min(abs(bacCutoff-minInten));
                 
-                inten(nC) = bacInten{nC}(ind);
+%                inten(nC) = bacInten{nC}(ind);
+                inten(nC) = bacInten{nC}(ind) + minInten;
             end
             bacRatio{nP}(nS,nD,:) = [nD, inten(1)/inten(2)];
             

@@ -1,7 +1,6 @@
 % Pipeline to analyze the results of several fish from the same
 % experimental setup and collect together the results
 
-
 %% Load in parameters
 
 %hard coded in for now, but should be a prompt at some point
@@ -21,28 +20,30 @@ maxInten = 5000; %Maximum intensity for bacterial intensity histogram
 plotResults = false; 
 
 %Update pAll with any corrected bacteria intensities.
-[bacInten, bacCutoff,bacMat, bacScan,paramAll] = ...
+[bacSum,bacInten, bacCutoff,bacMat, bacScan,bacHist,pAll] = ...
     bacteriaIntensityAll(pAll, maxInten, stepInten,numColor, plotResults);
 
 %Need to show evidence that the individual bacterial intensity doesn't
 %change over time...
 
 %% Get the background estimation for all the fish
-%format: bkgInten{p_i}(nS,nC,:) = mean and standard deviation of background
-smoothWindow = 5;%Window over which to smooth data
-bkgInten = estimateBkg(pAll, smoothWindow);
 
+bkgInten =  estimateBkg(pAll);
 
 %% Plot background intensity
 
 %Need to move this to it's own folder
 figure; 
 for nP = 1:length(pAll)
-    subplot(2,2,nP); 
+    h  = subplot(2,2,nP); 
     hold on; 
-    plot(bkgInten{nP}(:,1,1), 'Color', [0 1 0]); 
     
-    plot(bkgInten{nP}(:,2,1), 'Color', [1 0 0]);
+    nC = 2;
+    for nS=1:size(bkgInten{nP,nC},2);
+        plot3(bkgInten{nP,nC}{nS}(2,:), nS*ones(size(bkgInten{nP,nC}{nS},2),1),bkgInten{nP,nC}{nS}(1,:), 'Color', [0 1 0]);
+    end
+    
+%    plot(bkgInten{nP,1}(:,2,1), 'Color', [1 0 0]);
     title(pAll{nP}.directoryName);
     xlabel('Scan Number');
     ylabel('Intensity');
@@ -55,7 +56,7 @@ end
 %the background
 %format: bacRatio{p_i}(nS,nD) = green/red intensity for scan n (nS), and a
 %number of standard deviations above background (nD).
-bacRatio = estimateBacteriaInten(bkgInten, bacInten, bacCutoff,20);
+bacRatio = estimateBacteriaInten(bkgInten, bacInten, bacCutoff,30);
 
 %% Plot the red/green intensity ratios for each fish
 figure; 
@@ -78,7 +79,7 @@ end
 
 figure;
 hold on
-cutoff = 100;
+cutoff = 5; %This is a cutoff of 350
 
 for nC=1:2
    subplot(2,1,nC);

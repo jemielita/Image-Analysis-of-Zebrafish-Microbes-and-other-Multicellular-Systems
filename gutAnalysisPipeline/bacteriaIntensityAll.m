@@ -23,7 +23,7 @@
 %
 % AUTHOR Matthew Jemielita, Novemer 13, 2012
 
-function [bacInten, bacCutoff,bacMat,bacScan,paramAll] =  bacteriaIntensityAll(paramAll, maxInten, stepInten, numColor,plotResults)
+function [bacSum,bacInten, bacCutoff,bacMat,bacScan,bacHist,paramAll] =  bacteriaIntensityAll(paramAll, maxInten, stepInten, numColor,plotResults)
 
 %For every param file in the cell array of param files
 bacCutoff = 100:stepInten:maxInten;
@@ -32,7 +32,10 @@ bacInten = cell(numColor,1);
 bacMat =cell(numColor,1);
 bacMat{1} = nan*zeros(length(bacCutoff),100);
 bacMat{2} = bacMat{1};
+bacHist = bacMat;
 
+bacSum = cell(2,1);
+m = 1;
 %Handle to imcontrast, which might be used
 if(plotResults==true)
     hFig = figure;
@@ -48,7 +51,7 @@ end
 
 for nC=1:numColor
     n= 1;
-    
+    m=1;
     for nP = 1:length(paramAll)
         param = paramAll{nP};
         
@@ -71,6 +74,7 @@ for nC=1:numColor
                 
                 thisIm = load3dVolume(param, imVar, 'crop', param.bacInten{nS, nC}(nB).rect);
                 numBact = param.bacInten{nS,nC}(nB).numBac;
+                
                 
                 if(plotResults==true)
                     set(hIm, 'CData', max(thisIm,[],3));
@@ -100,12 +104,33 @@ for nC=1:numColor
  
                     end
                 end
+               
+                %For each of these bacteria see how well the background is
+                %described by camera noise.
+                %Quick and dirty way of doing this: see if the bottom 50%
+                %of the pixels are within a given number of standard
+                %deviations of camera background.
+                camBkg =[103.10,102.27];
+                if(numBact~=0)
+                    bacSum{nC}(m) = sum(thisIm(:))-size(thisIm,1)*size(thisIm,2)*size(thisIm,3)*camBkg(nC);
+                    bacSum{nC}(m) = bacSum{nC}(m)/numBact;
+                    m = m+1;
+                end
+%               imSum = sum(thisIm,3);
+%               figure; imshow(mat2gray(sum(thisIm,3)),[]); imcontrast;
+%               figure; hist(double(mat2gray(imSum(:))),200);
+%               
+%               close all
+              
+                
+                
                 
                %Total intensity of this bacteria for a given cutoff lower
                %pixel intensity
                 for nCut=1:length(bacCutoff)
                     bacMat{nC}(nCut,n) = sum(thisIm(thisIm>bacCutoff(nCut)))/numBact;
                 end
+                bacHist{nC}(:,n) = hist(double(thisIm(:)), bacCutoff)/numBact;
                 bacScan{nC}(n) = nS;
                 n = n+1;
                 
@@ -117,6 +142,7 @@ for nC=1:numColor
     end
     
     bacInten{nC} = nanmean(bacMat{nC},2);
+   
 
 end
 

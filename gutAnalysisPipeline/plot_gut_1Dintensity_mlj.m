@@ -1,7 +1,7 @@
 %Wrapper for plot_gut_1D to extract almost all information from the param
 %and scanParam mat files
 
-function plot_gut_1Dintensity_mlj(param, scanParam,timeInfo,bkgThresh,surfplotfilenamebase, bacInten, bacCut)
+function plot_gut_1Dintensity_mlj(param, bkgInten,scanParam,timeInfo,bkgThresh,surfplotfilenamebase, bacInten, bacCut)
 
 if(isfield(scanParam, 'binSize'))
     intensitybins = scanParam.binSize;
@@ -22,17 +22,16 @@ timestep = param.expData.pauseTime/60;
 %Get mean and std dev. of gut background signal
 for i=1:size(param.bkgIntenAll,1)
     for nC=1:size(param.bkgInten,2)
-        if(isnan(param.bkgIntenAll(i,nC,1))&&i~=1&&~isnan(param.bkgIntenAll(i-1,nC,1)))
-           param.bkgIntenAll(i,nC,1) = param.bkgIntenAll(i-1,nC,1);
-           param.bkgIntenAll(i,nC,2) = param.bkgIntenAll(i-1,nC,2);          
-        elseif(isnan(param.bkgIntenAll(i,nC,1))&&i~=size(param.bkgIntenAll,1)&&~isnan(param.bkgIntenAll(i+1,nC,1)))
-            param.bkgIntenAll(i,nC,1) = param.bkgIntenAll(i+1,nC,1);
-            param.bkgIntenAll(i,nC,2) = param.bkgIntenAll(i+1,nC,2);
-        end
+%         if(isnan(param.bkgIntenAll(i,nC,1))&&i~=1&&~isnan(param.bkgIntenAll(i-1,nC,1)))
+%            param.bkgIntenAll(i,nC,1) = param.bkgIntenAll(i-1,nC,1);
+%            param.bkgIntenAll(i,nC,2) = param.bkgIntenAll(i-1,nC,2);          
+%         elseif(isnan(param.bkgIntenAll(i,nC,1))&&i~=size(param.bkgIntenAll,1)&&~isnan(param.bkgIntenAll(i+1,nC,1)))
+%             param.bkgIntenAll(i,nC,1) = param.bkgIntenAll(i+1,nC,1);
+%             param.bkgIntenAll(i,nC,2) = param.bkgIntenAll(i+1,nC,2);
+%         end
    
-    meanVal = param.bkgInten(nC,1);
-    gutBkg(nC,1) = param.bkgIntenAll(i,nC,1);
-    gutBkg(nC,2) = param.bkgIntenAll(i,nC,2);
+    gutBkg(nC,1) = bkgInten(i,nC,1);
+    gutBkg(nC,2) = bkgInten(i,nC,2);
     
     %Threshold cutoff for both channels will be bkgThresh std dev's above background
     threshCutoff(i,nC) = ...
@@ -51,7 +50,7 @@ bacteriaVolume = 1;
 
 %Find the total sum of pixel intensities a given number of standard
 %deviations above the background in this channel
-greenRedIntensity = 1.2;
+greenRedIntensity = 20;
 
 % 
 % if(isfield(param, 'bacInten'))
@@ -108,7 +107,7 @@ for i=1:max(scanParam.scanList)
     endPos = param.centerLineAll{i}-repmat(param.endGutPos(i,:), length(param.centerLineAll{i}),1);
     endPos = sum(endPos.^2,2);
     [~,ind] = min(endPos);
-    endPosList(i) = ind-60;
+    endPosList(i) = ind;
     
 %     fluorPos = param.centerLineAll{i}-repmat(param.autoFluorPos(i,:), length(param.centerLineAll{i}),1);
 %     fluorPos = sum(fluorPos.^2,2);

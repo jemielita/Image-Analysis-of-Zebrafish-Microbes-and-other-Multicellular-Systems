@@ -57,6 +57,7 @@ for numMask = 1:totalNumMask
             intenL(thisReg,2:end) = hist(inten(thisReg).PixelValues,boxDim);
             
         end
+        
     else
        fprintf(1, 'Number of regions is too great: subdividing regionmask');
        
