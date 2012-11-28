@@ -67,7 +67,7 @@ for thisScan=1:length(scanParam.scanList)
     
     regFeatures = analyzeGut(analysisType,scanParam,param,centerLine,gutMask);
     
-    error = saveAnalysis(regFeatures, scanParam);
+    error = saveAnalysis(regFeatures, scanParam,analysisType);
     
     updateFinishedScanList(scanParam, error);
     
@@ -108,7 +108,7 @@ scanParam.scanNum = sN;
 scan
 end
 
-function error = saveAnalysis(regFeatures, scanParam)
+function error = saveAnalysis(regFeatures, scanParam,analysisType)
 
     fileName = [scanParam.dataSaveDirectory, filesep, 'Analysis_Scan', ...
         num2str(scanParam.scanNum), '.mat'];

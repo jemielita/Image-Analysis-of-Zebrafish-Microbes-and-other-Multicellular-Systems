@@ -5,21 +5,31 @@
 
 %Also need the param file
 
-%1. Calculate linear intensity down length of gut
-analysisType(1).name = 'linearIntensity';
+%1. Calculate a histogram of pixel values near background
+analysisType(1).name = 'backgroundHistogram';
 analysisType(1).return = true;
-analysisType(1).binSize = 1:2:2000;
+analysisType(1).binSize = 1:2:2000; 
 
-%2. Calculate radial projection at all points along the gut
-analysisType(2).name = 'radialProjection';
+
+%Calculate the linear intensity down the length of the gut after
+%subtracting the background intensity at those regions
+analysisType(2).name = 'linearIntensityBkgSub';
 analysisType(2).return = true;
+analysisType(2).bkgList = 1:25:2000; %Need to get a sense of what size 
+%2. Calculate linear intensity down length of gut
+analysisType(2).name = 'linearIntensity';
+analysisType(2).return = true;
+analysisType(2).binSize = 1:2:2000;
 
-% %3. Calculate radial distribution 
-analysisType(3).name = 'radialDistribution';
+%3. Calculate radial projection at all points along the gut
+analysisType(3).name = 'radialProjection';
 analysisType(3).return = true;
-analysisType(3).param.father = 2;
-analysisType(3).param.binSize = 2;
 
+%4. Calculate radial distribution 
+analysisType(4).name = 'radialDistribution';
+analysisType(4).return = true;
+analysisType(4).param.father = 2;
+analysisType(4).param.binSize = 2;
 
 %Scan parameters
 
@@ -34,8 +44,3 @@ scanParam.scanList = 1:1;
 
 scanParam.stepSize = 5;
 scanParam.regOverlap = 10;
-
-
-%For linear intensity
-scanParam.boxDim = 100:100:4000;
-scanParam.

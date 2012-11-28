@@ -33,21 +33,31 @@ bkgInten =  estimateBkg(pAll);
 %% Plot background intensity
 
 %Need to move this to it's own folder
-figure; 
+
+ for nC=1:2
+    bkgFig = figure; 
+set(bkgFig, 'Position', [289 184 1074 774]);
 for nP = 1:length(pAll)
-    h  = subplot(2,2,nP); 
+    NtimePoints = size(bkgInten{nP,nC},2);
+    
+    cData{1} = summer(ceil(2*NtimePoints));
+    cData{2} = hot(ceil(2*NtimePoints));
+
+    h(nP)  = subplot(2,2,nP); 
     hold on; 
     
-    nC = 2;
-    for nS=1:size(bkgInten{nP,nC},2);
-        plot3(bkgInten{nP,nC}{nS}(2,:), nS*ones(size(bkgInten{nP,nC}{nS},2),1),bkgInten{nP,nC}{nS}(1,:), 'Color', [0 1 0]);
+    for nS=1:NtimePoints
+        plot3(bkgInten{nP,nC}{nS}(2,:), nS*ones(size(bkgInten{nP,nC}{nS},2),1),bkgInten{nP,nC}{nS}(1,:), 'Color', cData{nC}(nS,:));
     end
     
-%    plot(bkgInten{nP,1}(:,2,1), 'Color', [1 0 0]);
-    title(pAll{nP}.directoryName);
-    xlabel('Scan Number');
-    ylabel('Intensity');
-   hold off
+    set(h(nP), 'CameraPosition', [1494.37 -229.649 3909.55]);
+    title([pAll{nP}.directoryName]);
+    xlabel('Distance down gut');
+    ylabel('Scan #');
+    zlabel('Intensity');
+    hold off
+end
+
 end
 
 %% Get the green/red intensity estimate for each fish
@@ -65,8 +75,7 @@ for nP = 1:length(pAll)
     cM = colormap(autumn(size(bacRatio{nP},1)));
     
     subplot(2,2,nP); hold on
- for nS=1:size(bacRatio{nP},1)
-  
+ for nS=1:size(bacRatio{nP},1) 
      plot(bacRatio{nP}(nS,:,2), 'Color',cM(nS,:) );
  end
  title(pAll{nP}.directoryName);

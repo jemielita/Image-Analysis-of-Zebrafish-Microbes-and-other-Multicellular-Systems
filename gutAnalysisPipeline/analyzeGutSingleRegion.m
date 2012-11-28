@@ -114,15 +114,26 @@ function thisRegFeatures = analysisStep(imStack, centerLine, gutMask,...
     analysisType, regFeatures, stepNum)
 
 switch analysisType(stepNum).name
+    
+    
     case 'radialProjection'
         %mlj: Need to build in support for preallocating arrays
         thisRegFeatures = radialProjection(imStack, centerLine, gutMask);
         
     case 'linearIntensity'
         binSize = analysisType(stepNum).binSize;
- %       maxNumReg = scanParam.maxNumReg;
         thisRegFeatures = intensityCurve(imStack, gutMask,centerLine,binSize);
     
+    case 'backgroundHistogram'
+        %Identical code as the linear intensity code, but given a different
+        %name to make it easier to distinguish from other code
+        binSize = analysisType(stepNum).binSize;
+        thisRegFeatures = intensityCurve(imStack, gutMask,centerLine,binSize);
+    
+    case 'linearIntensityBkgSub'
+        bkgList = analysisType(stepNum).bkgList;
+        thisRegFeatures = intensityBkgSubCurve(imStack, gutMask, centerLine, bkgList);
+        
     case 'radialDistribution'
         %Find the point in this analysis chain where we calculate the
         %radial projections
