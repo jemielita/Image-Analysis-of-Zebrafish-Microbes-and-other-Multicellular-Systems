@@ -18,7 +18,7 @@
 
 #include "mex.h"
 #include "graph.h"
-
+#include "maxflow.cpp"
 
 void mexFunction(int			nlhs, 		/* number of expected outputs */
 				 mxArray		*plhs[],	/* mxArray output pointer array */

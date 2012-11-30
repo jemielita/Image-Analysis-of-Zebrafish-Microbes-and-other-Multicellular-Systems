@@ -12,7 +12,7 @@ end
 
 multipleRegionCropGUI(param,data);
 
-% %Not the most elegant way to extract information from the GUI, but it seems
+%Not the most elegant way to extract information from the GUI, but it seems
 %to work.
 %If the third argument has been set to 'save Results', pause MATLAB until
 %the gui has been closed.
@@ -28,7 +28,6 @@ if(nargin==3)
 end
 
 end
-
 
 function [] = multipleRegionCropGUI(param, data)
 
@@ -119,8 +118,10 @@ uimenu(hMenuCrop, 'Label', 'Single crop region', 'Separator', 'on', ...
 hQuickZ = uimenu(hMenuCrop, 'Label', 'Quick z-crop Initialize', 'Callback', @heightZCrop_Callback, 'Separator', 'on',...
      'Checked', 'off');
 
-hzCropBoxInit = uimenu(hMenuCrop, 'Label', 'Z-crop box initialize', 'Callback',  @cropBoxInit_Callback);
+hzCropBoxInit = uimenu(hMenuCrop, 'Label', 'Add new Z-crop box', 'Callback', @cropBoxInit_Callback);
 zCropBox = cell(numScans,1);
+zCropBoxHandle = [];
+
 hzCropBox = uimenu(hMenuCrop, 'Label', 'Finalize z-crop box', 'Callback', @cropBoxMeas_Callback);
 
 hMenuOutline = uimenu('Label', 'Outline region');
@@ -331,7 +332,6 @@ zCrop = cell(0,0);
 surfaceCell = cell(0,0); %Same structure as zCrop, but will be used to exclusively remove surface cells from the image series
 hThresh = ''; %Handle to the mask showing segmented/possible segmented regions
 threshIm = ''; %Array that will contain the masks for pixels that we're trying to remove from the image
-
 
 imC = [];
 %Create a scroll panel
@@ -560,11 +560,8 @@ hContrast = imcontrast(imageRegion);
                apiScroll.setMagnification(initMag);
                
                set(hMenuScroll, 'Label', 'Add scroll bar to image display');
-               
-           
+         
        end
-       
-       
         
     end
     function modifyBoundingBox_Callback(hObject, eventdata)
@@ -584,7 +581,6 @@ hContrast = imcontrast(imageRegion);
            
        end
        
-        
     end
 
     function outlineRegions(hObject, eventdata)
@@ -843,17 +839,174 @@ hContrast = imcontrast(imageRegion);
         
     end
 
+    function cropBoxInit_Callback(hobject, eventdata)
+        %Open up a timer object-we'll use this to update the z-cropping
+        %rectangles as we go.
+        prevtimer = timerfind('tag', 'zCropTimer');
+        delete(prevtimer);
+       if(isempty(zCropBoxHandle))
+           zCropBoxHandle{1}(1) =imrect(imageRegion);
+       else
+           zCropBoxHandle{end+1}(1) = imrect(imageRegion);
+       end
+       
+       set(zCropBoxHandle{end}(1), 'Tag', 'zCropBoxHandle');
+       addNewPositionCallback(zCropBoxHandle{end}(1), @(p)updateCropBox);
+       
+       T = timer('ExecutionMode', 'fixedDelay', 'Tag', 'zCropTimer',...
+           'TimerFcn', @updateCropBox, 'Period', 1);
+       start(T);
+    end
 
-    function cropBoxInit_Callback(hObject, eventdata)
-       zCropBoxHandle =imrect(imageRegion);
-       set(zCropBoxHandle, 'Tag', 'zCropBoxHandle');
+    function updateCropBox(~,~)
+        
+        zNum = get(hZSlider, 'Value');
+        zNum = int16(zNum);
+        
+        for nB=1:length(zCropBoxHandle)
+            h = iptgetapi(zCropBoxHandle{nB}(1));
+            zCropBox{scanNumPrev,nB}{1} = zCropBoxHandle{nB}(1);
+            zCropBox{scanNumPrev,nB}{2} = h.getPosition();%Filler for now-we'll set this when we go to a new scan
+            thisBoxColor = h.getColor();
+            
+            %If the color is green or red, then set this height to be the
+            %top or bottom of the cropping window.
+            greenColor = [0.2824 0.9725 0.2824];
+            redColor = [0.9725 0.3098 0.3098];
+            
+            if(sum(abs(thisBoxColor-greenColor))<0.01)
+                zCropBox{scanNumPrev,nB}{3} = 'top';
+                zCropBox{scanNumPrev,nB}{4} = zNum;
+                
+                %Then set to be a color slightly different so that we don't
+                %update zNum unless we've picked a different z-height
+                h.setColor(greenColor - [0.1 0 0]);
+            elseif(sum(abs(thisBoxColor-redColor))<0.01)
+                zCropBox{scanNumPrev,nB}{3} = 'bottom';
+                zCropBox{scanNumPrev,nB}{4} = zNum;
+                h.setColor(redColor - [0.1 0 0]);
+            end
+        
+            %Depending on where we are in the z-height set the color to be
+            %blue or yellow depending on if we're inside or outside the
+            %cropping region
+            if(length(zCropBox{scanNumPrev,nB})<3)
+              %Then declare this to be a top region until we've said
+              %otherwise
+              zCropBox{scanNumPrev, nB}{3} = 'top';
+              zCropBox{scanNumPrev, nB}{4} = zNum;
+            end
+            
+            zCutoff = zCropBox{scanNumPrev,nB}{4};
+            switch zCropBox{scanNumPrev,nB}{3}
+                case 'top'
+                    if(zNum>zCutoff)
+                        h.setColor([1 1 0]); %set color to yellow
+                    elseif(zNum<zCutoff)
+                        h.setColor([0 0 1]);
+                    else
+                        h.setColor(greenColor - [0.1 0 0]);
+                    end
+                case 'bottom'
+                    if(zNum<zCutoff)
+                        h.setColor([1 1 0]); %set color to yellow
+                    elseif(zNum>zCutoff)
+                        h.setColor([0 0 1]);
+                    else
+                        h.setColor(redColor - [0.1 0 0]);
+                    end
+                    
+                otherwise
+                    fprintf(2, 'Yikes! Something went wrong in updateCropBox()');
+            end
+                        
+            zCropBox{scanNumPrev,nB}{5} = h.getColor();
+
+            %If the color of the box is red, crop towards the bottom of the
+            %z-stack. If the colro
+            
+%             if(nB==2)
+% 
+%               [sum(zCropBox{1,nB}{2}), sum(zCropBox{2,nB}{2}), sum(zCropBox{3,nB}{2})]
+%             end
+        end
+        
+    end
+
+    function updateCropBoxPosition(thisScanNum)
+        
+        for nB=1:size(zCropBoxHandle,2)
+            h = iptgetapi(zCropBoxHandle{nB}(1));
+            zCropBox{thisScanNum,nB}{2} = h.getPosition();
+            %Also save the result to the param file for later use in
+            %cropping the image stack
+            param.regionExtent.zCropBox{thisScanNum}{nB} =...
+                zCropBox{thisScanNum,nB};
+        end
        
     end
+
+    function updateCropBoxNewScan()
+        cropTimer = timerfind('tag', 'zCropTimer');
+        stop(cropTimer);
+        
+        updateCropBoxPosition(scanNumPrev);
+        
+        for nB=1:size(zCropBoxHandle,2)
+
+            h = iptgetapi(zCropBoxHandle{nB}(1));
+        
+            if(isempty(zCropBox{scanNum,nB})||nB>size(zCropBox,2))
+                continue
+            else
+                h.setPosition(zCropBox{scanNum,nB}{2});
+                
+                if(length(zCropBox{scanNum,nB})>=5)
+                    h.setColor(zCropBox{scanNum,nB}{5});
+                end
+            end
+        end
+        
+        start(cropTimer);        
+    end
+
+    function im = removeZCroppedRegions(im)
+        colorNum = get(hColorSlider, 'Value');
+        colorNum = ceil(colorNum);
+        colorNum = int16(colorNum);
+        
+       for nB=1:size(zCropBoxHandle,2)
+           thisPos = zCropBox{scanNumPrev,nB}{2};
+           thisPos = round(thisPos);
+          
+
+           zList = param.regionExtent.Z;
+           zCutoff = zCropBox{scanNumPrev,nB}{4};
+           %Remove all z heights that are not within the cropping region
+           switch zCropBox{scanNumPrev, nB}{3}
+               case 'top'
+                   zList(zCutoff:end,:) = -1;
+               case 'bottom'
+                   zList(1:zCutoff,:) = -1;
+           end
+           paramTemp = param;
+           paramTemp.regionExtent.Z = zList;
+           
+           imVar.color ={param.color{colorNum}};imVar.scanNum= scanNumPrev;
+           thisIm= load3dVolume(paramTemp, imVar, 'crop', thisPos);
+           thisIm = max(thisIm,[],3);
+           im(thisPos(2):thisPos(2)+thisPos(4), thisPos(1):thisPos(1)+thisPos(3))=...
+               thisIm;
+       end
+        
+    end
+
     function cropBoxMeas_Callback(hObject, eventdata)
         zCropBoxHandle = findobj('Tag', 'zCropBoxHandle');
         apiTemp = iptgetapi(zCropBoxHandle);
         zCropBox{scanNum}(end+1).pos = apiTemp.getPosition();
         zCropBox{scanNum}(end).zHeight = int16(get(hZSlider, 'Value'));
+
         delete(zCropBoxHandle);
         param.regionExtent.zCropBox = zCropBox;
     end
@@ -1061,7 +1214,6 @@ hContrast = imcontrast(imageRegion);
     end
 
 
-
 %%% Functions for doing removal of surface cells
     function segSurface_Callback(hObject, eventdata)
          isChecked = get(hMenuSeg, 'Checked');
@@ -1115,6 +1267,9 @@ hContrast = imcontrast(imageRegion);
     end
 
     function updateBkgPosition()
+        
+
+        stop(cropTimer);
         %Get color and scan number
         colorNum = get(hColorSlider, 'Value');
         colorNum = ceil(colorNum);
@@ -1148,7 +1303,6 @@ hContrast = imcontrast(imageRegion);
         param.bkgInten(colorNum,2) = nanmean(stdVal);
    
     end
-
 
     function outlineBacteria_Callback(hObject, eventdata)
          if strcmp(get(hMenuBacteria, 'Checked'),'on')
@@ -1229,7 +1383,6 @@ hContrast = imcontrast(imageRegion);
         end
         param.camBkg = camBkg;
     end
-
 
     function endGut_Callback(hObject, eventdata)
         if strcmp(get(hMenuEndGut, 'Checked'),'on')
@@ -1578,7 +1731,10 @@ hContrast = imcontrast(imageRegion);
     end
 
     function scanSlider_Callback(hObject, eventData)
-        
+        %Stop the timer for updating the crop windows before doing anything
+        %else-it's acting screwy.
+        cropTimer = timerfind('tag', 'zCropTimer');
+        stop(cropTimer);
         scanTag = get(hObject, 'tag');
         
         switch scanTag
@@ -1600,12 +1756,15 @@ hContrast = imcontrast(imageRegion);
         colorNum = ceil(colorNum);
         colorNum = int16(colorNum);
         
+        %Update the z-cropping rectangles when we go through the scan list
+        updateCropBoxNewScan();
         %%% See if we're calculating the background intensity of the gut,
         %%% if so update the appropriate entry in param
         bkgHandle = findobj('Tag', 'bkgRect');
         if(~isempty(bkgHandle))
            updateBkgPosition();
         end
+        
         
         %%% Check to see if the end of the gut has been labeled and if so
         %%% update param
@@ -1623,25 +1782,28 @@ hContrast = imcontrast(imageRegion);
             updateAutoFluorPosition();
         end
         
+
+        
+        %mlj: note this code is no longer in use.
         %Check to see if we're doing a quick-Z crop. If so load in the
         %entire 3D volume
-        if(strcmp(get(hQuickZ, 'Checked'), 'on'))
-            fprintf(1, 'Loading in all images');
-            totalNumColors = size(param.color,2);
-            for nC=1:totalNumColors
-                for nR=1:totalNumRegions
-                    imVar.color = param.color{nC};
-                    imVar.zNum = '';
-                    imVar.scanNum = scanNum;
-                    imAll{nC, nR} = load3dVolume(param, imVar, 'single', nR);
-                    fprintf(1, '.');
-                end
-            end
-            displayAllMIP();
-            
-            return;
-            
-        end
+%         if(strcmp(get(hQuickZ, 'Checked'), 'on'))
+%             fprintf(1, 'Loading in all images');
+%             totalNumColors = size(param.color,2);
+%             for nC=1:totalNumColors
+%                 for nR=1:totalNumRegions
+%                     imVar.color = param.color{nC};
+%                     imVar.zNum = '';
+%                     imVar.scanNum = scanNum;
+%                     imAll{nC, nR} = load3dVolume(param, imVar, 'single', nR);
+%                     fprintf(1, '.');
+%                 end
+%             end
+%             displayAllMIP();
+%             
+%             return;
+%             
+%         end
        
            
         
@@ -1747,13 +1909,20 @@ hContrast = imcontrast(imageRegion);
 
     function projectionType_Callback(hObject, eventdata)
         
-         switch get(eventdata.NewValue, 'String')
+        oldValue = get(eventdata.OldValue, 'String');
+        newValue = get(eventdata.NewValue, 'String');
+         switch newValue
              case 'none'
                  projectionType = 'none';
              case 'mip'
                  projectionType = 'mip';
          end
-         
+        
+         if(~strcmp(oldValue,newValue))
+             znum = get(hZSlider, 'value');
+             znum = int16(znum);
+              getRegisteredImage(scanNum, color, zNum, im, data, param );
+         end
     end
 
 %Callbacks for the polygon outlining of the gut
@@ -2179,9 +2348,7 @@ hContrast = imcontrast(imageRegion);
                 %to begin with this will mess things up. This approach is somewhat
                 %crude. What we should really be doing is in nicer fashion.
                 im(im(:)>50000) = 0;
-
-
-                
+        
             case 'mip'
                  set(hIm, 'Visible', 'off');drawnow;
                 param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
@@ -2213,6 +2380,14 @@ hContrast = imcontrast(imageRegion);
                     im = selectProjection(param, 'mip', 'true', scanNum,color, zNum,recalcProj);
                     fprintf(1, 'done!\n');
                 end
+                
+                %Check to see if we're doing a z-cropping procedure. If so,
+                %update the regions that we're cropping to
+              %mlj: NOTE temporarilly removed to use this code for
+              %calculating the background instead
+                %  im = removeZCroppedRegions(im);
+                
+                
         end
         
         %If a single crop region (not region specific crop boxes) for the
@@ -2386,8 +2561,7 @@ T = timer('ExecutionMode', 'fixedDelay', 'Tag', 'cropTimer', ...
 start(T);
 param.regionExtent.crop.z = cropRange;
 
-
-%Udate the z crop height table
+%Update the z crop height table
 set(hRegTable, 'Data', param.regionExtent.crop.z);
 drawnow;
 end
@@ -2554,10 +2728,8 @@ function [data, param] = loadParameters()
                         %Load in the number of scans. Default will be for all of the
                         %scans...might want to make this an interactive thing at some point.
                         param.scans = 1:param.expData.totalNumberScans;
-                       % param.scans = 3:37;
                         %Number of regions in be analyzed. Hardcoded to be all of them
                         param.regions = 'all';
-                       % param.regions = 1:4;
                         
                         %Find all the colors in the scan. Semi-clumsy b/c
                         %the expData file doesn't contain a nice list of

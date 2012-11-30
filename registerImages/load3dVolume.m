@@ -100,7 +100,6 @@ end
         %Going through each scan
         scanDir = [baseDir, 'scan_', num2str(imVar.scanNum), filesep];
         
-        
         for nZ = 1:totalZ
             imNum = zList(nZ);
             
@@ -114,10 +113,10 @@ end
             end
         end
         
-        
         %Load in mask showing variable maximum z-heights for different parts of the
         %gut-used to remove surface cells
         if(isfield(param.regionExtent, 'zCropBox'))
+            
             zCrop = param.regionExtent.zCropBox{imVar.scanNum};
             
             %Find the parts of these masks that lie within the region that we're
@@ -528,10 +527,15 @@ end
             xInI = param.regionExtent.XY{colorNum}(regNum,5)+cropRect(2)-xOutI;
             xInF = xInI+cropRect(4);
             
+            
             yInI = param.regionExtent.XY{colorNum}(regNum,6)+cropRect(1)-yOutI;
             yInF = yInI+cropRect(3);
             
             xInI = round(xInI);xInF= round(xInF); yInI = round(yInI); yInF = round(yInF);
+            
+            %Make sure that the region extents don't go beyond the range of
+            %this image
+            
             baseDir = [param.directoryName filesep 'Scans' filesep];
             %Going through each scan
             scanDir = [baseDir, 'scan_', num2str(imVar.scanNum), filesep];

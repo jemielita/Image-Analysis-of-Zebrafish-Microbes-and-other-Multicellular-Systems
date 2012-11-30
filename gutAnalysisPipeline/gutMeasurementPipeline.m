@@ -27,37 +27,38 @@ plotResults = false;
 %change over time...
 
 %% Get the background estimation for all the fish
-
-bkgInten =  estimateBkg(pAll);
-
+%bkgInten gives the estimated background at each point along the gut,
+%threshCutoff gives the appropriate index to plot in plot_gut
+bkgInten = estimateBkg(pAll);
+threshCutoff = findCutoffIndex(bkgInten);
 %% Plot background intensity
 
 %Need to move this to it's own folder
 
- for nC=1:2
-    bkgFig = figure; 
-set(bkgFig, 'Position', [289 184 1074 774]);
-for nP = 1:length(pAll)
-    NtimePoints = size(bkgInten{nP,nC},2);
-    
-    cData{1} = summer(ceil(2*NtimePoints));
-    cData{2} = hot(ceil(2*NtimePoints));
-
-    h(nP)  = subplot(2,2,nP); 
-    hold on; 
-    
-    for nS=1:NtimePoints
-        plot3(bkgInten{nP,nC}{nS}(2,:), nS*ones(size(bkgInten{nP,nC}{nS},2),1),bkgInten{nP,nC}{nS}(1,:), 'Color', cData{nC}(nS,:));
+for nC=1:2
+    bkgFig = figure;
+    set(bkgFig, 'Position', [289 184 1074 774]);
+    for nP = 1:length(pAll)
+        NtimePoints = size(bkgInten{nP,nC},2);
+        
+        cData{1} = summer(ceil(2*NtimePoints));
+        cData{2} = hot(ceil(2*NtimePoints));
+        
+        h(nP)  = subplot(2,2,nP);
+        hold on;
+        disp('111')
+        for nS=1:NtimePoints
+            plot3(bkgInten{nP,nC}{nS}(2,:), nS*ones(size(bkgInten{nP,nC}{nS},2),1),bkgInten{nP,nC}{nS}(1,:), 'Color', cData{nC}(nS,:));
+        end
+        disp('1kla')
+        set(h(nP), 'CameraPosition', [1494.37 -229.649 3909.55]);
+        title([pAll{nP}.directoryName]);
+        xlabel('Distance down gut');
+        ylabel('Scan #');
+        zlabel('Intensity');
+        hold off
     end
     
-    set(h(nP), 'CameraPosition', [1494.37 -229.649 3909.55]);
-    title([pAll{nP}.directoryName]);
-    xlabel('Distance down gut');
-    ylabel('Scan #');
-    zlabel('Intensity');
-    hold off
-end
-
 end
 
 %% Get the green/red intensity estimate for each fish
@@ -85,7 +86,6 @@ for nP = 1:length(pAll)
 end
 
 %% Plot all bacteria total intensities above a given threshold
-
 figure;
 hold on
 cutoff = 5; %This is a cutoff of 350

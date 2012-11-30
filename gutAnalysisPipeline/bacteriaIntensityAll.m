@@ -116,14 +116,6 @@ for nC=1:numColor
                     bacSum{nC}(m) = bacSum{nC}(m)/numBact;
                     m = m+1;
                 end
-%               imSum = sum(thisIm,3);
-%               figure; imshow(mat2gray(sum(thisIm,3)),[]); imcontrast;
-%               figure; hist(double(mat2gray(imSum(:))),200);
-%               
-%               close all
-              
-                
-                
                 
                %Total intensity of this bacteria for a given cutoff lower
                %pixel intensity

@@ -18,7 +18,7 @@
 function intenL = intensityBkgSubCurve(im,regionMask,centerLine,bkgList)
 
 totalNumMask = size(regionMask,3);
-maxNumReg = 30; %Maximum number of regions to calculate properties of at the same time
+maxNumReg = 60; %Maximum number of regions to calculate properties of at the same time
 %Duplicate the mask.
 regionMask =uint16(regionMask);
 
@@ -46,12 +46,10 @@ for numMask = 1:totalNumMask
         for i=1:length(regNum)
             thisReg  = regNum(i);
             
-            for bkgInd = 1:length(bkgList)
-                thisInten = inten-bkgList(bkgInd);
-                thisInten(thisInten<0) = 0;
-                intenL(thisReg, bkgInd)= sum(thisInten(:));
-                
-            end
+            thisInten = arrayfun(@(x)sum(inten(thisReg).PixelValues-x),...
+                bkgList, 'UniformOutput', false);
+            intenL(thisReg,:) = cell2mat(thisInten);
+            
         end
         
     else
@@ -77,11 +75,11 @@ for numMask = 1:totalNumMask
            fprintf(1, '.');
            for i=1:length(subRegNum)
                thisReg  = subRegNum(i);
-               for bkgInd =1:length(bkgList)
-                   thisInten = inten-bkgList(bkgInd);
-                   thisInten(thisInten<0) = 0;
-                   intenL(thisReg, bkgInd)= sum(thisInten(:));
-               end
+               
+               thisInten = arrayfun(@(x)sum(inten(thisReg).PixelValues-x),...
+                   bkgList, 'UniformOutput', false);
+               intenL(thisReg,:) = cell2mat(thisInten);
+               
            end
            fprintf(1, '.\n');
            

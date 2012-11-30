@@ -128,24 +128,38 @@ hold on
 % Put position and intensity values in a structured array -- will put into
 % a matrix later, but for now, lengths may not be the same for all time
 % points.  See header comments for structure fields
-
+NtimePoints = NtimePoints-1; %mlj: temporary
 maxgreen = zeros(1,NtimePoints);  % max intensity at each time point
 maxred = zeros(1,NtimePoints);
 totalgreen = zeros(1,NtimePoints);  % total intensity at each time point
 totalred = zeros(1,NtimePoints);
-NtimePoints
+
 for j=1:NtimePoints
     % Load data
     matfile = strcat(matfilebase, sprintf(formatstr,j+min_scan-1), ext);
     load(matfile)
-    xpos = boxwidth*((1:length(regFeatures{1}))' - 0.5); % position along gut, microns (column vector)
+    
+    gutLength = size(regFeatures{1,1},1);
+    xpos = boxwidth*((1:gutLength)' - 0.5); % position along gut, microns (column vector)
     % Cutting off all pixel intensities below a certain threshold (bin)
-    gr_bincounts = regFeatures{1}(:,threshCutoff(j,1)+1:end);  % +1 since first element is mean
-    ibins_gr = repmat(intensitybins(threshCutoff(j,1):end), size(gr_bincounts,1),1);
-    red_bincounts = regFeatures{2}(:,threshCutoff(j,2)+1:end);
-    ibins_red = repmat(intensitybins(threshCutoff(j,2):end), size(red_bincounts,1),1);
-    thisLine_green = sum(gr_bincounts.*ibins_gr,2);  % total intensity at each position -- counts * bin values
-    thisLine_red   = sum(red_bincounts.*ibins_red,2);
+    
+    %     gr_bincounts = regFeatures{1,2}(:,threshCutoff(j,1)+1:end);  % +1 since first element is mean
+    %     ibins_gr = repmat(intensitybins(threshCutoff(j,1):end), size(gr_bincounts,1),1);
+    %     red_bincounts = regFeatures{2,2}(:,threshCutoff(j,2)+1:end);
+    %     ibins_red = repmat(intensitybins(threshCutoff(j,2):end), size(red_bincounts,1),1);
+    %     thisLine_green = sum(gr_bincounts.*ibins_gr,2);  % total intensity at each position -- counts * bin values
+    %     thisLine_red   = sum(red_bincounts.*ibins_red,2);
+    %
+    
+    %Find the appropriate background cutoff for this particular point in
+    %the scan
+    for cutInd =1:gutLength
+        thisCutG = threshCutoff{1,j}(cutInd);
+        thisCutR = threshCutoff{2,j}(cutInd);
+        thisLine_green(cutInd) = regFeatures{1,2}(cutInd,thisCutG);
+        thisLine_red(cutInd) = regFeatures{2,2}(cutInd, thisCutR);
+    end
+    
     if length(greenredintensity)==1
         % Multiply by green / red intensity scaling factor:
         thisLine_red = thisLine_red * greenredintensity;
@@ -250,6 +264,7 @@ axis(sameax)
 hTotInten = figure; plot(timestep*(1:NtimePoints), totalgreen, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
 hold on
 plot(timestep*(1:NtimePoints), totalred, 'kd', 'markerfacecolor', [0.8 0.4 0.2]);
+
 xlabel('Time, hrs.')
 if length(greenredintensity)==1
     ylabel('Total Intensity, a.u.')
@@ -293,6 +308,7 @@ cd(presentdir)
 
 
 % Print figures
+surfplotfilenamebase = '';
 if ~isempty(surfplotfilenamebase)
     set(hFig_green, 'PaperPosition', [0.25 2.5 6 4])  % to get a decent aspect ratio
     print(hFig_green, '-dpng', strcat(surfplotfilenamebase, '_green.png'), '-r300')

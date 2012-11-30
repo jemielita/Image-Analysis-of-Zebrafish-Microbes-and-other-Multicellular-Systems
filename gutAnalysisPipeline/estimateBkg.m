@@ -5,7 +5,7 @@
 %
 % INPUT pAll: cell array of param files for different fish to estimate
 % background for
-% OUTPUT bkgInten: bkgInten{p_i}{nC,nS,nT} the mean background along the
+% OUTPUT bkgInten: bkgInten{p_i,nC}{nS} the mean background along the
 %        entire length of the gut for scan nS, color nC, and time nT.
 %
 % AUTHOR: Matthew Jemielita, November 13, 2012
@@ -14,6 +14,8 @@
 function bkgInten = estimateBkg(pAll)
 
 totNumP = length(pAll);
+
+
 
 for nP = 1:totNumP
     param = pAll{nP};
@@ -27,9 +29,13 @@ for nP = 1:totNumP
             
            temp = smoothBkgData(param,nC,false, 1, numScan, [50,100]);
            bkgInten{nP,nC}= temp;
+           
         end
         
     end
+    
+    
+    
     
 end
 
