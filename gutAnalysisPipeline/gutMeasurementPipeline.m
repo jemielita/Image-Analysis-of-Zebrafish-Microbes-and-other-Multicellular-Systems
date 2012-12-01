@@ -4,7 +4,7 @@
 %% Load in parameters
 
 %hard coded in for now, but should be a prompt at some point
-pAll = {p1, p3,p4,p5};
+pAll = {p1, p2, 3};
 
 sAll = {scanParam, scanParam, scanParam, scanParam};
 
@@ -17,7 +17,7 @@ stepInten = 25; %Step size for the bacterial intensity histogram
 maxInten = 5000; %Maximum intensity for bacterial intensity histogram
 %If plotResults == true we can verify the number of bacteria in each of
 %these images and adjust the results accordingly.
-plotResults = false; 
+plotResults = true; 
 
 %Update pAll with any corrected bacteria intensities.
 [bacSum,bacInten, bacCutoff,bacMat, bacScan,bacHist,pAll] = ...

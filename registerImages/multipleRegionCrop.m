@@ -866,7 +866,7 @@ hContrast = imcontrast(imageRegion);
         for nB=1:length(zCropBoxHandle)
             h = iptgetapi(zCropBoxHandle{nB}(1));
             zCropBox{scanNumPrev,nB}{1} = zCropBoxHandle{nB}(1);
-            zCropBox{scanNumPrev,nB}{2} = h.getPosition();%Filler for now-we'll set this when we go to a new scan
+            %zCropBox{scanNumPrev,nB}{2} = h.getPosition();%Filler for now-we'll set this when we go to a new scan
             thisBoxColor = h.getColor();
             
             %If the color is green or red, then set this height to be the
@@ -923,7 +923,7 @@ hContrast = imcontrast(imageRegion);
             zCropBox{scanNumPrev,nB}{5} = h.getColor();
 
             %If the color of the box is red, crop towards the bottom of the
-            %z-stack. If the colro
+            %z-stack. If the color
             
 %             if(nB==2)
 % 
@@ -938,6 +938,12 @@ hContrast = imcontrast(imageRegion);
         for nB=1:size(zCropBoxHandle,2)
             h = iptgetapi(zCropBoxHandle{nB}(1));
             zCropBox{thisScanNum,nB}{2} = h.getPosition();
+            
+            %Set the next scan box, if empty, to have all the same features
+            %of the previous box.
+            if(isempty(zCropBox{scanNum, nB}))
+                zCropBox{scanNum,nB} = zCropBox{thisScanNum,nB};
+            end
             %Also save the result to the param file for later use in
             %cropping the image stack
             param.regionExtent.zCropBox{thisScanNum}{nB} =...
@@ -1734,7 +1740,9 @@ hContrast = imcontrast(imageRegion);
         %Stop the timer for updating the crop windows before doing anything
         %else-it's acting screwy.
         cropTimer = timerfind('tag', 'zCropTimer');
-        stop(cropTimer);
+        if(~isempty(cropTimer))
+            stop(cropTimer);
+        end
         scanTag = get(hObject, 'tag');
         
         switch scanTag
@@ -1756,8 +1764,10 @@ hContrast = imcontrast(imageRegion);
         colorNum = ceil(colorNum);
         colorNum = int16(colorNum);
         
-        %Update the z-cropping rectangles when we go through the scan list
-        updateCropBoxNewScan();
+        if(~isempty(cropTimer))
+            %Update the z-cropping rectangles when we go through the scan list
+            updateCropBoxNewScan();
+        end
         %%% See if we're calculating the background intensity of the gut,
         %%% if so update the appropriate entry in param
         bkgHandle = findobj('Tag', 'bkgRect');

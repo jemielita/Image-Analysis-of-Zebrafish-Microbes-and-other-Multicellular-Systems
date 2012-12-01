@@ -23,22 +23,22 @@ end
 
 if nargin==0
 
-    [imLoc, pathN] = uigetfile('.TIF', 'Select the first image to load in.');
+    [imLoc, pathN] = uigetfile('.tif', 'Select the first image to load in.');
     imPath = [pathN imLoc];
     
     %Get string base of these images, and the first scan number
-    thisIm = regexp(imLoc, '\d+(?=.TIF)');
+    thisIm = regexp(imLoc, '\d+(?=.tif)');
     
     baseIm = imLoc(1:thisIm-1);
     thisIm = imLoc(thisIm:end-4);
     thisIm = str2num(thisIm);
     minIm = thisIm;
    
-       [imLocEnd, pathNEnd] = uigetfile('.TIF', 'Select the last image in this stack.', ...
+       [imLocEnd, pathNEnd] = uigetfile('.tif', 'Select the last image in this stack.', ...
           imPath);
     imPathEnd = [pathNEnd imLocEnd];
     
-    imEnd = regexp(imLocEnd, '\d+(?=.TIF)');
+    imEnd = regexp(imLocEnd, '\d+(?=.tif)');
     
     maxIm = imLocEnd(imEnd:end-4);
     maxIm = str2num(maxIm);
@@ -722,7 +722,8 @@ hRect = imrect(hAxes(1),[200 200 100 100]);
 
     function [isOpercle, isBackground,im,imOrig, imMIP] = loadImage(isOpercle, isBackground)
         %Load in a new image stack
-        imPath = [pathN baseIm num2str(thisIm) '.tif'];
+        %imPath = [pathN baseIm num2str(thisIm) '.tif'];
+        imPath = [pathN baseIm sprintf('%04d',thisIm) '.tif'];
         switch isGlobalCropped
             case 'false'
                 for i=1:maxN
