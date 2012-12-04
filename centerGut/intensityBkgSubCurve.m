@@ -23,7 +23,8 @@ maxNumReg = 60; %Maximum number of regions to calculate properties of at the sam
 regionMask =uint16(regionMask);
 
 allReg = unique(regionMask(:));
-intenL = zeros(length(centerLine),length(bkgList));
+
+intenL = zeros(length(centerLine),2);
 
 fprintf(1, '\n');
 for numMask = 1:totalNumMask
@@ -46,14 +47,12 @@ for numMask = 1:totalNumMask
         for i=1:length(regNum)
             thisReg  = regNum(i);
             
-            thisInten = arrayfun(@(x)sum(inten(thisReg).PixelValues-x),...
-                bkgList, 'UniformOutput', false);
-            intenL(thisReg,:) = cell2mat(thisInten);
-            
+            intenL(thisReg,1) = double(sum(thisInten));
+            intenL(thisReg,2) = length(thisInten);
         end
         
     else
-       fprintf(1, 'Number of regions is too great: subdividing regionmask');
+        fprintf(1, 'Number of regions is too great: subdividing regionmask');
        
        numCuts = ceil(length(regNum)/maxNumReg);
        
@@ -75,10 +74,9 @@ for numMask = 1:totalNumMask
            fprintf(1, '.');
            for i=1:length(subRegNum)
                thisReg  = subRegNum(i);
-               
-               thisInten = arrayfun(@(x)sum(inten(thisReg).PixelValues-x),...
-                   bkgList, 'UniformOutput', false);
-               intenL(thisReg,:) = cell2mat(thisInten);
+              
+                intenL(thisReg, 1) = double(sum(inten(thisReg).PixelValues));
+                intenL(thisReg,2) = length(inten(thisReg).PixelValues);
                
            end
            fprintf(1, '.\n');

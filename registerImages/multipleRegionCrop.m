@@ -1275,7 +1275,6 @@ hContrast = imcontrast(imageRegion);
     function updateBkgPosition()
         
 
-        stop(cropTimer);
         %Get color and scan number
         colorNum = get(hColorSlider, 'Value');
         colorNum = ceil(colorNum);
@@ -1340,27 +1339,23 @@ hContrast = imcontrast(imageRegion);
             
             
             %Calculate the mean and total pixel intensity values for a
-            %variety of cutoffs above 
+            %variety of cutoffs above
             
-            if(isfield(param, 'bkgInten'))
-                cutPoint = 1:10;
-                cutoff = param.bkgInten(colorNum,1)+cutPoint*param.bkgInten(colorNum,2);
-
-                bacInten{scanNum,colorNum}(end+1).rect = bacPos;
-                
-                meanVal = arrayfun(@(x)mean(double(thisIm(thisIm>cutoff(x)))), cutPoint, 'UniformOutput', false);
-                bacInten{scanNum,colorNum}(end).mean = cell2mat(meanVal);
-                
-                stdVal = arrayfun(@(x)std(double(thisIm(thisIm>cutoff(x)))), cutPoint, 'UniformOutput', false);
-                bacInten{scanNum,colorNum}(end).std = cell2mat(stdVal);
-                
-                sumVal = arrayfun(@(x)sum(sum(thisIm(thisIm>cutoff(x))))/numBact, cutPoint, 'UniformOutput', false);
-                bacInten{scanNum,colorNum}(end).sum = sumVal;
-                bacInten{scanNum, colorNum}(end).numBac = numBact;
-
-            else
-                fprintf(2, 'Need to set camera background pixel intensity first!\n');
-            end
+            cutPoint = 1:10;
+%            cutoff = param.bkgInten(colorNum,1)+cutPoint*param.bkgInten(colorNum,2);
+            
+            bacInten{scanNum,colorNum}(end+1).rect = bacPos;
+            
+%             meanVal = arrayfun(@(x)mean(double(thisIm(thisIm>cutoff(x)))), cutPoint, 'UniformOutput', false);
+%             bacInten{scanNum,colorNum}(end).mean = cell2mat(meanVal);
+%             
+%             stdVal = arrayfun(@(x)std(double(thisIm(thisIm>cutoff(x)))), cutPoint, 'UniformOutput', false);
+%             bacInten{scanNum,colorNum}(end).std = cell2mat(stdVal);
+%             
+%             sumVal = arrayfun(@(x)sum(sum(thisIm(thisIm>cutoff(x))))/numBact, cutPoint, 'UniformOutput', false);
+%             bacInten{scanNum,colorNum}(end).sum = sumVal;
+            bacInten{scanNum, colorNum}(end).numBac = numBact;
+            
             param.bacInten = bacInten;
             
             set(hMenuBacteria, 'Checked', 'off');

@@ -721,8 +721,10 @@ hRect = imrect(hAxes(1),[200 200 100 100]);
     end
 
     function [isOpercle, isBackground,im,imOrig, imMIP] = loadImage(isOpercle, isBackground)
+        
         %Load in a new image stack
         %imPath = [pathN baseIm num2str(thisIm) '.tif'];
+        
         imPath = [pathN baseIm sprintf('%04d',thisIm) '.tif'];
         switch isGlobalCropped
             case 'false'

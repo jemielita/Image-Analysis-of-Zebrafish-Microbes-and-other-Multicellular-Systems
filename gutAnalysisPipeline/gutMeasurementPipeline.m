@@ -6,6 +6,8 @@
 %hard coded in for now, but should be a prompt at some point
 pAll = {p1, p2, 3};
 
+pAll = {param};
+sAll = {scanParam};
 sAll = {scanParam, scanParam, scanParam, scanParam};
 
 numColor = length(pAll{1}.color);
@@ -17,7 +19,7 @@ stepInten = 25; %Step size for the bacterial intensity histogram
 maxInten = 5000; %Maximum intensity for bacterial intensity histogram
 %If plotResults == true we can verify the number of bacteria in each of
 %these images and adjust the results accordingly.
-plotResults = true; 
+plotResults =false; 
 
 %Update pAll with any corrected bacteria intensities.
 [bacSum,bacInten, bacCutoff,bacMat, bacScan,bacHist,pAll] = ...
@@ -39,6 +41,7 @@ for nC=1:2
     bkgFig = figure;
     set(bkgFig, 'Position', [289 184 1074 774]);
     for nP = 1:length(pAll)
+        
         NtimePoints = size(bkgInten{nP,nC},2);
         
         cData{1} = summer(ceil(2*NtimePoints));
