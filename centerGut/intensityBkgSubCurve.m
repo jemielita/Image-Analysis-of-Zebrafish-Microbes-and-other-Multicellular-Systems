@@ -47,8 +47,8 @@ for numMask = 1:totalNumMask
         for i=1:length(regNum)
             thisReg  = regNum(i);
             
-            intenL(thisReg,1) = double(sum(thisInten));
-            intenL(thisReg,2) = length(thisInten);
+            intenL(thisReg,1) = double(sum(inten(thisReg).PixelValues));
+            intenL(thisReg,2) = length(inten(thisReg).PixelValues);
         end
         
     else
