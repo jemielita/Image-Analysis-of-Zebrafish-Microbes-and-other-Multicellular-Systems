@@ -21,7 +21,7 @@ end
 %% Unpack the results
 
 %Find number of saved analysis steps
-analInd = find([analysisType.return]==true);
+ analInd = find([analysisType.return]==true);
 totNumSteps = length(analInd);
 totNumColor = length(scanParam.color);
 
@@ -54,8 +54,12 @@ for colorNum=1:totNumColor;
                 end
                 
             else
-                regFeatAll{colorNum,stepNum}(thisCut,:) = ...
-                    regFeat{cutNum}{analInd(stepNum),colorNum};
+                
+                val =  regFeat{cutNum}{analInd(stepNum),colorNum};
+                ind = find(sum(val,2)~=0);
+                thisCut = thisCut(ind);
+                %Only update values that are not-equal to zero.
+                regFeatAll{colorNum,stepNum}(thisCut,:) = val(ind,:);
             end
             
         end

@@ -33,7 +33,6 @@ for numMask = 1:totalNumMask
     regNum = unique(regionMask(:,:,numMask));
     regNum(regNum==0) = [];
     
-    
     %This is something of a cludge: we'll truncate down the number of
     %regions that will be simultaneously analyzed with regionprops to 30-if
     %this doesnt' work we'll use a catch statement to run through this code
@@ -53,12 +52,12 @@ for numMask = 1:totalNumMask
         
     else
         fprintf(1, 'Number of regions is too great: subdividing regionmask');
-       
-       numCuts = ceil(length(regNum)/maxNumReg);
-       
+        
+        numCuts = ceil(length(regNum)/maxNumReg);
+        
        for cN=1:numCuts
            fprintf(1, ['Analyzing sub region: ', num2str(cN), ' ']);
-           minN=(cN-1)*30 +1; maxN = min([length(regNum),cN*30]);
+           minN=(cN-1)*maxNumReg +1; maxN = min([length(regNum),cN*maxNumReg]);
            subRegNum = regNum(minN:maxN);
            
            %Remove all other regions from this max
@@ -86,8 +85,7 @@ for numMask = 1:totalNumMask
         
     end
     
-
-       
+     
 end
 clear rMaskBig
 fprintf(1, 'All intensities found! \n');
