@@ -17,9 +17,9 @@ analysisType(2).name = 'linearIntensityBkgSub';
 analysisType(2).return = true;
 analysisType(2).bkgList = 1:25:2000; %Need to get a sense of what size 
 %2. Calculate linear intensity down length of gut
-analysisType(2).name = 'linearIntensity';
-analysisType(2).return = true;
-analysisType(2).binSize = 1:2:2000;
+analysisType(1).name = 'linearIntensity';
+analysisType(1).return = true;
+analysisType(1).binSize = 1:2:2000;
 
 %3. Calculate radial projection at all points along the gut
 analysisType(3).name = 'radialProjection';

@@ -73,7 +73,7 @@ function data_all = plot_gut_1Dintensity(timeinfo, threshCutoff, intensitybins, 
 %  [matfilebase, min_scan, max_scan, formatstr, FileName1, FileName2, datadir ext] = ...
 %      getnumfilelist;
 %  disp(datadir)
- 
+ NtimePoints = 20;
  formatstr = '%d';
  matfilebase = 'Analysis_Scan'; ext = '.mat';
 
@@ -139,7 +139,11 @@ for j=1:NtimePoints
     matfile = strcat(matfilebase, sprintf(formatstr,j+min_scan-1), ext);
     load(matfile)
     
+
+    
     gutLength = size(regFeatures{1,1},1);
+        %Set the maximum plotting position to be the end of the gut
+    maxplotpos(j) = gutLength;
     xpos = boxwidth*((1:gutLength)' - 0.5); % position along gut, microns (column vector)
     % Cutting off all pixel intensities below a certain threshold (bin)
     
@@ -154,12 +158,28 @@ for j=1:NtimePoints
     %Find the appropriate background cutoff for this particular point in
     %the scan
     for cutInd =1:gutLength
-        thisCutG = threshCutoff{1,j}(cutInd);
-        thisCutR = threshCutoff{2,j}(cutInd);
-        thisLine_green(cutInd) = regFeatures{1,2}(cutInd,thisCutG);
-        thisLine_red(cutInd) = regFeatures{2,2}(cutInd, thisCutR);
+        thisCutG = threshCutoff{1}{j}(cutInd);
+        thisCutR = threshCutoff{2}{j}(cutInd);
+        
+        nP = 1; %Needs to be an input!
+        
+        %Background is the product of the mean background value and the
+        %total volume of this box
+        bkgGreen = (threshCutoff{nP,1}{j}(1,cutInd))*regFeatures{1}(cutInd,2);
+        bkgRed = (threshCutoff{nP,2}{j}(1,cutInd))*regFeatures{2}(cutInd,2);
+
+        thisLine_green(cutInd) = regFeatures{1}(cutInd,1)-bkgGreen;
+        thisLine_red(cutInd) = regFeatures{2}(cutInd,1) -bkgRed;
+        
+        %Set it so that it can't be below zero
+       
+        
     end
     
+    for cutInd = 1:gutLength
+        thisLine_green(cutInd) = max([0, thisLine_green(cutInd)]);
+        thisLine_red(cutInd) = max([0, thisLine_red(cutInd)]); 
+    end
     if length(greenredintensity)==1
         % Multiply by green / red intensity scaling factor:
         thisLine_red = thisLine_red * greenredintensity;
@@ -172,7 +192,9 @@ for j=1:NtimePoints
     data_all(j).x = xpos(1:maxplotpos(j));
     data_all(j).green = thisLine_green(1:maxplotpos(j));
     data_all(j).red = thisLine_red(1:maxplotpos(j));
-    data_all(j).time = j*timestep*ones(size(data_all(j).x));
+ 
+
+data_all(j).time = j*timestep*ones(size(data_all(j).x));
     maxgreen(j) = max(data_all(j).green);
     maxred(j) = max(data_all(j).red);
     totalgreen(j) = sum(data_all(j).green);
@@ -255,9 +277,9 @@ maxredall = max(maxred);
 
 sameax = [0 min([ agreen(2)]) 1 NtimePoints*timestep 0 1.1*max([maxgreenall maxredall])];
 figure(hFig_green);
-axis(sameax)
+%axis(sameax)
 figure(hFig_red);
-axis(sameax)
+%axis(sameax)
 
 
 % Total intensity plot(s)

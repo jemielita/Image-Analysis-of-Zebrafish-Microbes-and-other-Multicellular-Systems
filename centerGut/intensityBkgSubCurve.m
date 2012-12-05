@@ -72,11 +72,9 @@ for numMask = 1:totalNumMask
            inten = regionprops(rMaskBig, im,'PixelValues');
            fprintf(1, '.');
            for i=1:length(subRegNum)
-               thisReg  = subRegNum(i);
-              
+               thisReg  = subRegNum(i);              
                 intenL(thisReg, 1) = double(sum(inten(thisReg).PixelValues));
-                intenL(thisReg,2) = length(inten(thisReg).PixelValues);
-               
+                intenL(thisReg,3) = sum(inten(thisReg).PixelValues>0);
            end
            fprintf(1, '.\n');
            

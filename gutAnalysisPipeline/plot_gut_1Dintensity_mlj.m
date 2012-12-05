@@ -65,6 +65,8 @@ for i=1:max(scanParam.scanList)
     endPos = param.centerLineAll{i}-repmat(param.endGutPos(i,:), length(param.centerLineAll{i}),1);
     endPos = sum(endPos.^2,2);
     [~,ind] = min(endPos);
+    
+    ind = length(param.centerLineAll{i});
     endPosList(i) = ind;
     
 %     fluorPos = param.centerLineAll{i}-repmat(param.autoFluorPos(i,:), length(param.centerLineAll{i}),1);

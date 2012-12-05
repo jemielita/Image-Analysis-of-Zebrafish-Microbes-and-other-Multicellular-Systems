@@ -37,6 +37,7 @@ for colorNum=1:totNumColor;
         if(iscell(regFeat{1}{analInd(stepNum),colorNum}))
             regFeatAll{colorNum, stepNum} = cell(lineLength,1);
         else
+            
             firstEl = param.cutVal{1,1}(1);
             numEl = size(regFeat{1}{analInd(stepNum),colorNum}(firstEl,:),2);
             regFeatAll{colorNum, stepNum} = zeros(lineLength,numEl);

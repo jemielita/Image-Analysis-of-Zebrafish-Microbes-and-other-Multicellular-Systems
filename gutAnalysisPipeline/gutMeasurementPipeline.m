@@ -4,9 +4,9 @@
 %% Load in parameters
 
 %hard coded in for now, but should be a prompt at some point
-pAll = {p1, p2, 3};
+pAll = {p1};
 
-pAll = {param};
+pAll = {p{1}};
 sAll = {scanParam};
 sAll = {scanParam, scanParam, scanParam, scanParam};
 
