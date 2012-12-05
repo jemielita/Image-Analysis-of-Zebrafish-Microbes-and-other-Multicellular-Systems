@@ -66,6 +66,7 @@ end
 %Deal with -1 put in to find regions outside gut
 imStack(imStack==-1) = nan;
 end
+
 %Load in all images in a one region
     function im = loadSingleRegion(param, imVar, regNum, dataType)
         %Allocating a huge array for the entire image stack
