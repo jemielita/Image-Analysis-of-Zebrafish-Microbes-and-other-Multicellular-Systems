@@ -119,7 +119,7 @@ end
 
 function param = resampleCenterLine(param, scanParam)
 
-for nS=1:size(param.centerLineAll,1)
+for nS=1:size(param.centerLineAll,2)
     clear polyT
    
     poly = param.centerLineAll{nS};
