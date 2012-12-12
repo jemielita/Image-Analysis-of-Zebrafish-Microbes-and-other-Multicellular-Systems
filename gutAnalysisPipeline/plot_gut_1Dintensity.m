@@ -73,7 +73,6 @@ function data_all = plot_gut_1Dintensity(timeinfo, threshCutoff, intensitybins, 
 %  [matfilebase, min_scan, max_scan, formatstr, FileName1, FileName2, datadir ext] = ...
 %      getnumfilelist;
 %  disp(datadir)
- NtimePoints = 20;
  formatstr = '%d';
  matfilebase = 'Analysis_Scan'; ext = '.mat';
 
@@ -93,9 +92,10 @@ end
 if ~exist('surfplotfilenamebase', 'var')  
     surfplotfilenamebase = [];
 end
-if length(threshCutoff)==1
-    threshCutoff = [threshCutoff threshCutoff];  % use the same bin for both color channels
-end
+
+% if length(threshCutoff)==1
+%     threshCutoff = [threshCutoff threshCutoff];  % use the same bin for both color channels
+% end
 
 % Note the time delay, and create a string for figure labels
 if isempty(timeinfo)
@@ -134,14 +134,18 @@ maxred = zeros(1,NtimePoints);
 totalgreen = zeros(1,NtimePoints);  % total intensity at each time point
 totalred = zeros(1,NtimePoints);
 
+
+allBkg = [];
+
+%Which column in regFeatures contains the data of interest
+dataInd = 1;
+
 for j=1:NtimePoints
     % Load data
     matfile = strcat(matfilebase, sprintf(formatstr,j+min_scan-1), ext);
     load(matfile)
     
-
-    
-    gutLength = size(regFeatures{1,1},1);
+    gutLength = size(regFeatures{dataInd,1},1);
         %Set the maximum plotting position to be the end of the gut
     maxplotpos(j) = gutLength;
     xpos = boxwidth*((1:gutLength)' - 0.5); % position along gut, microns (column vector)
@@ -158,52 +162,65 @@ for j=1:NtimePoints
     %Find the appropriate background cutoff for this particular point in
     %the scan
     for cutInd =1:gutLength
-        thisCutG = threshCutoff{1}{j}(cutInd);
-        thisCutR = threshCutoff{2}{j}(cutInd);
         
         nP = 1; %Needs to be an input!
         
+        thisCutG = 1.18*threshCutoff{1}{j}(cutInd);
+        thisCutR = 1.18*threshCutoff{2}{j}(cutInd);
+        
         %Background is the product of the mean background value and the
         %total volume of this box
-        bkgGreen = (threshCutoff{nP,1}{j}(1,cutInd))*regFeatures{1}(cutInd,2);
-        bkgRed = (threshCutoff{nP,2}{j}(1,cutInd))*regFeatures{2}(cutInd,2);
+        bkgGreen = thisCutG*regFeatures{1}(cutInd,2);
+        bkgRed = thisCutR*regFeatures{2}(cutInd,2);
 
         thisLine_green(cutInd) = regFeatures{1}(cutInd,1)-bkgGreen;
         thisLine_red(cutInd) = regFeatures{2}(cutInd,1) -bkgRed;
         
         %Set it so that it can't be below zero
-       
         
     end
+    
+  bkgDiff{j} = (regFeatures{2}(1:gutLength,1)./regFeatures{2}(1:gutLength,2))./ threshCutoff{2}{j}(1,1:gutLength)';
     
     for cutInd = 1:gutLength
         thisLine_green(cutInd) = max([0, thisLine_green(cutInd)]);
         thisLine_red(cutInd) = max([0, thisLine_red(cutInd)]); 
     end
-    if length(greenredintensity)==1
+  %  if length(greenredintensity)==1
         % Multiply by green / red intensity scaling factor:
-        thisLine_red = thisLine_red * greenredintensity;
-    else
+       % thisLine_red = thisLine_red * greenredintensity;
+   % else
         % convert to number of bacteria
-        thisLine_green = thisLine_green / greenredintensity(1) / bacteriavolume;
-        thisLine_red = thisLine_red / greenredintensity(2) / bacteriavolume;
-    end
-    % save in structured array
-    data_all(j).x = xpos(1:maxplotpos(j));
-    data_all(j).green = thisLine_green(1:maxplotpos(j));
-    data_all(j).red = thisLine_red(1:maxplotpos(j));
- 
-
-data_all(j).time = j*timestep*ones(size(data_all(j).x));
-    maxgreen(j) = max(data_all(j).green);
-    maxred(j) = max(data_all(j).red);
-    totalgreen(j) = sum(data_all(j).green);
-    totalred(j) = sum(data_all(j).red);
-    
-    
+        thisLine_green = thisLine_green /  bacteriavolume(1);
+        thisLine_red = (thisLine_red) / bacteriavolume(2);
+        %end
+        % save in structured array
+        data_all(j).x = xpos(1:maxplotpos(j));
+        data_all(j).green = thisLine_green(1:maxplotpos(j));
+        data_all(j).red = thisLine_red(1:maxplotpos(j));
+        
+        
+        data_all(j).time = j*timestep*ones(size(data_all(j).x));
+        maxgreen(j) = max(data_all(j).green);
+        maxred(j) = max(data_all(j).red);
+        totalgreen(j) = sum(data_all(j).green);
+        totalred(j) = sum(data_all(j).red);
+        
+        
+        if(j<15)
+            allBkg = [allBkg; bkgDiff{j}];
+        end
 end
 
-
+%Plot distribution of background ratios below the time point 15
+allBkg(isnan(allBkg)) = [];
+figure; hist(allBkg,100); title('Ratio of true mean to predicted mean');
+figure;
+hold on
+for  i=1:NtimePoints
+   plot(i,nanmean(bkgDiff{i}), '*') 
+end
+hold off
 %% Growth rate from 'exponential growth phase'
 % fit to intensity = I0*exp(k*time)
 dlg_title = 'Fit range'; num_lines= 1;
@@ -277,9 +294,9 @@ maxredall = max(maxred);
 
 sameax = [0 min([ agreen(2)]) 1 NtimePoints*timestep 0 1.1*max([maxgreenall maxredall])];
 figure(hFig_green);
-%axis(sameax)
+axis(sameax)
 figure(hFig_red);
-%axis(sameax)
+axis(sameax)
 
 
 % Total intensity plot(s)
@@ -289,7 +306,8 @@ plot(timestep*(1:NtimePoints), totalred, 'kd', 'markerfacecolor', [0.8 0.4 0.2])
 
 xlabel('Time, hrs.')
 if length(greenredintensity)==1
-    ylabel('Total Intensity, a.u.')
+    %ylabel('Total Intensity, a.u.')
+    ylabel('# of bacteria');
 else
     ylabel('Total Number of Bacteria')
 end    
@@ -302,7 +320,8 @@ hold on
 semilogy(timestep*(1:NtimePoints), totalred, 'kd', 'markerfacecolor', [0.8 0.4 0.2]);
 xlabel('Time, hrs.')
 if length(greenredintensity)==1
-    ylabel('Total Intensity, a.u.')
+   % ylabel('Total Intensity, a.u.')
+   
 else
     ylabel('Total Number of Bacteria')
 end    

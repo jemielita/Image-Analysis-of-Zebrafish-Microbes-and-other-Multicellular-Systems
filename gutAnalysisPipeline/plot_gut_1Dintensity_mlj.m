@@ -1,7 +1,7 @@
 %Wrapper for plot_gut_1D to extract almost all information from the param
 %and scanParam mat files
 
-function plot_gut_1Dintensity_mlj(param, threshCutoff,scanParam,timeInfo,surfplotfilenamebase,greenRedIntensity)
+function plot_gut_1Dintensity_mlj(param, threshCutoff,scanParam,bacIntensity, timeInfo,surfplotfilenamebase,greenRedIntensity)
 
 if(isfield(scanParam, 'binSize'))
     intensitybins = scanParam.binSize;
@@ -76,8 +76,12 @@ for i=1:max(scanParam.scanList)
 end
    
 %Running the 1D plotting code
+
+%Really the bacteria intensity.
+bacteriaVolume = bacIntensity; 
+
 plot_gut_1Dintensity(timeInfo, threshCutoff, intensitybins, timestep, ...
-    boxWidth, endPosList, greenRedIntensity, bacteriaVolume, ...
+    boxWidth, endPosList, greenRedIntensity, bacIntensity, ...
     surfplotfilenamebase,min(scanParam.scanList),max(scanParam.scanList), param.dataSaveDirectory)
 
 end
