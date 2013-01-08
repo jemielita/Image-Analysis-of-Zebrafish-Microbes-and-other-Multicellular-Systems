@@ -21,7 +21,7 @@ end
 %% Unpack the results
 
 %Find number of saved analysis steps
- analInd = find([analysisType.return]==true);
+analInd = find([analysisType.return]==true);
 totNumSteps = length(analInd);
 totNumColor = length(scanParam.color);
 

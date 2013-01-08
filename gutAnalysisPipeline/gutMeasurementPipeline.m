@@ -30,8 +30,8 @@ plotResults = true;
 %change over time...
 
 %% Parameters for this particular series of fish
-timeData = [0 0];
-baseTitle = 'Fish '; rootTitle = '0 GFP, 0 RFP';
+timeData = {[0 3], [0 3]};
+baseTitle = 'Fish '; rootTitle = '0 GFP, 3 RFP';
 
 %% Get the background estimation for all the fish
 %bkgInten gives the estimated background at each point along the gut,
@@ -124,11 +124,10 @@ for nP = 1:length(pAll)
     maxS =pAll{nP}.expData.totalNumberScans;
     [~, ~, bkgDiff{nP}] = ...
         assembleDataGutTimeSeries(pAll{nP}, 1, maxS, bacMean, bkgInten{nP}, bkgOffsetRatio);
-    
 end
 for nP=1:length(pAll)
     %   Estimate the background to subtract
-    maxScan = [2,2,2,2]; %Maximum scan before the channel that's ~empty shows up
+    maxScan = [15,2,2,15]; %Maximum scan before the channel that's ~empty shows up
     emptyColor = 2;
     minS = 1;
     maxS =pAll{nP}.expData.totalNumberScans;
@@ -137,14 +136,16 @@ for nP=1:length(pAll)
         assembleDataGutTimeSeries(pAll{nP}, minS, maxS, bacMean, bkgInten{nP}, bkgOffsetRatio);
 end
 %% Plot/output data for 1D analysis
-
-for nP=1:length(pAll)
+nplist = [1,4];
+for nP1=1:2
+ nP = nplist(nP1);
 %    thisTitle = [pAll{nP}.directoryName '   ', rootTitle];
 thisTitle = pAll{nP}.outputName; 
-plotGutData({'totalintensityLog'}, popTot{nP},popXpos{nP}, bkgDiff{nP}, thisTitle, timeData,true, thisTitle);
-    plotGutData({'linePlots'}, popTot{nP},popXpos{nP}, bkgDiff{nP}, thisTitle, timeData,true, thisTitle);
+%thisTitle =  '';
+plotGutData({'totalintensityLog'}, popTot{nP},popXpos{nP}, bkgDiff{nP}, thisTitle, timeData{nP1},true, thisTitle);
+  %  plotGutData({'linePlots'}, popTot{nP},popXpos{nP}, bkgDiff{nP}, thisTitle, timeData{nP1},true, thisTitle);
    
-    
+   pause 
 end
 
 

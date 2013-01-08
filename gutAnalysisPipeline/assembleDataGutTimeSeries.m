@@ -42,7 +42,7 @@ for j=1:NtimePoints
     
     %The background is the product of the mean background value and the
     %total volume of this box
-    meanBkgGreen = bkgOffset*bkgInten{1}{j}(1:gutLength)';
+    meanBkgGreen = 1*bkgInten{1}{j}(1:gutLength)';
     meanBkgRed = bkgOffset*bkgInten{2}{j}(1:gutLength)';
     
     bkgGreen = meanBkgGreen.*regFeatures{1}(1:gutLength,2);
@@ -76,11 +76,14 @@ for j=1:NtimePoints
     %Save the difference between the predicted background mean and the
     %total pixel
     bkgDiff{j,1} = ...
-        (regFeatures{2}(:,1)./regFeatures{2}(1:gutLength,2))...
+        (regFeatures{1}(1:gutLength,1)./regFeatures{1}(1:gutLength,2))...
         ./ bkgInten{1}{j}(1,1:gutLength)';
     bkgDiff{j,2} = ...
-        (regFeatures{2}(:,1)./regFeatures{2}(1:gutLength,2))...
+        (regFeatures{2}(1:gutLength,1)./regFeatures{2}(1:gutLength,2))...
         ./ bkgInten{2}{j}(1,1:gutLength)';
+    bkgDiff{j,3} = bkgInten{1}{j}(1,1:gutLength)'.*regFeatures{1}(1:gutLength,2);
+    bkgDiff{j,4} = regFeatures{2}(1:gutLength,1);
+    %Also save the total volume of each 
     
     %Calculate the total population at this time point
     popTot(j,1) = sum(popXpos{j,1}(1,:));

@@ -66,31 +66,45 @@ end
         hTotInten = figure; plot(timestep*(1:NtimePoints), totalgreen, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
         hold on
         plot(timestep*(1:NtimePoints), totalred, 'kd', 'markerfacecolor', [0.8 0.4 0.2]);
-        xlabel('Time, hrs.')
-        ylabel('# of bacteria');
-        title(dataTitle)
+        hLabels(1) = xlabel('Time, hrs.');
+        hLabels(2) = ylabel('# of bacteria');
+       % title(dataTitle)
         
         % Total intensity, log scale
         hTotIntenLog = figure('name', 'Total intensity, log scale');
         semilogy(timestep*(1:NtimePoints), totalgreen, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
         hold on
         semilogy(timestep*(1:NtimePoints), totalred, 'kd', 'markerfacecolor', [0.8 0.4 0.2]);
-        xlabel('Time, hrs.')
-        ylabel('# of bacteria');
-        title(dataTitle);
+        hLabels(3) = xlabel('Time, hrs.');
+        hLabels(4) = ylabel('# of bacteria');
+       % title(dataTitle);
         
-        if timeinfo(1)>timeinfo(2)
-            % first red, then green; so scale red
-            semilogy(timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2)), exp(-k_red*tdelay)*I0_red*exp(k_red*timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2))), 'r:')
-        else
-            % first green, then red; so scale red
-            semilogy(timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2)), exp(-k_green*tdelay)*I0_green*exp(k_green*timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2))), 'g:')
+        plotFitLine= true;
+        if(plotFitLine==true)
+            if timeinfo(1)>timeinfo(2)
+                % first red, then green; so scale red
+                semilogy(timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2)), ...
+                    exp(-k_red*tdelay)*I0_red*exp(k_red*timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2))), ...
+                    'r', 'LineWidth', 1)
+            else
+                % first green, then red; so scale red
+                semilogy(timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2)), ...
+                    exp(-k_green*tdelay)*I0_green*exp(k_green*timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2))), ...
+                    'g', 'LineWidth', 1)
+            end
         end
-        
         set(hTotInten, 'Tag', [dataTitle '_TotInten']);
         set(hTotIntenLog, 'Tag', [dataTitle '_TotIntenLog']);
         
-        figHandle = [hTotInten, hTotIntenLog];
+        %Tweak the label sizes and fonts
+        for i=1:length(hLabels)
+            set(hLabels(i), 'FontName', 'Calibri');
+            set(hLabels(i), 'FontSize', 20);
+        end
+        
+        %mlj: (temporary) to make all the axis on our plots the same scale
+        set(gca, 'YLim', [0 100000]);
+         figHandle = [hTotInten, hTotIntenLog];
         
         
     end
@@ -137,7 +151,7 @@ end
         figure(hFig_red);
         for j=1:NtimePoints
             plot3(popXpos{j,2}(2,:), popXpos{j,2}(3,:), popXpos{j,2}(1,:), 'Color', cData_red(j,:));
-            maxred(j) = max(popXpos{j,1}(1,:));
+            maxred(j) = max(popXpos{j,2}(1,:));
         end
         
         %Making the plots prettier
@@ -145,11 +159,13 @@ end
         
         figure(hFig_green);
         plotTitleGreen = strcat(dataTitle, ': GFP');
+
         figurethings(hFig_green, plotTitleGreen, viewangle);
         agreen = axis;
         
         figure(hFig_red);
         plotTitleRed = strcat(dataTitle, ': TdTomato');
+        
         figurethings(hFig_red, plotTitleRed, viewangle);
         
         % Axis ranges
@@ -175,10 +191,18 @@ end
     function figurethings(hFig, plotTitle, viewangle)
         figure(hFig)
         title(plotTitle, 'interpreter', 'none', 'FontSize', 16);
-        xlabel('Position, \mum')
-        ylabel('Time, hrs.')
-        zlabel('Intensity, a.u.')
+        label(1) = xlabel('Position, \mum');
+        label(2) = ylabel('Time, hrs.');
+        label(3) = zlabel('# of bacteria');
         view(viewangle);
+        
+        for i=1:3
+            set(label(i), 'FontSize', 20);
+            set(label(i), 'FontName', 'Calibri');
+        end
+        %Prettify the location of the axis labels
+        set(label(1), 'Position', [-901.579 -112.852 10058.79])
+         set(label(2), 'Position', [-1654.77 -108.666 10997.04])
     end
 
     function printFigures(figHandle)
