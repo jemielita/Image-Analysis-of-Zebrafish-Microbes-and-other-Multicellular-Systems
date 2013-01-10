@@ -22,9 +22,11 @@ function varargout = constructRotRegion(cutNum,...
 scanNum, color, param,varargin )
 
 %% Quality check inputs
-
+imVar.color = color;
+imVar.zNum = ''; 
+imVar.scanNum = scanNum;
 %% Get gut mask and center line
-[rotMask, rotCenterLine] = getMaskAndLine(param, scanNum, cutNum);
+[rotMask, rotCenterLine] = getMaskAndLine(param, scanNum, cutNum,imVar.color);
 
 %If we're only calculating the masks, then return at this point
 if(nargin==5 && varargin{1} ==true)
@@ -36,9 +38,7 @@ end
 %% Load in image stack 
 
 fprintf(1, '\n Loading in image stack...');
-imVar.color = color;
-imVar.zNum = ''; 
-imVar.scanNum = scanNum;
+
 loadType = 'multiple'; %To return optimal cut.
 
 %Loading in images as double.
@@ -69,7 +69,7 @@ end
 fprintf(1, '\n');
 end
 
-function [rotMask, rotCenterLine] = getMaskAndLine(param, scanNum,cutNum)
+function [rotMask, rotCenterLine] = getMaskAndLine(param, scanNum,cutNum,color)
 %% Calculate rotated masks
 cutVal = param.cutValAll{scanNum};
 %Get mask of rotated gut
@@ -106,6 +106,33 @@ cutMask = cutMask.*gutMask;
 
 %% Get rotated mask
 rotMask = curveMask(cutMask, rotCenterLine, param,'rectangle');
+
+%% Remove regions that have been selected as background
+
+%See if we've also done a segmentation of the background fluorescence in
+%the gut. If so, then also include those points
+if(isfield(param.regionExtent, 'bulbMask'))
+    
+    for nC=1:length(param.regionExtent.bulbMask)
+        rect = param.regionExtent.bulbRect;
+        rect = round(rect);
+        
+        colorNum = find(strcmp(color, param.color));
+        thisMask = ones(height, width);
+        thisMask(rect(2):rect(2)+rect(4), rect(1):rect(1)+rect(3)) = param.regionExtent.bulbMask{nC}(:,:,scanNum);
+        rotSegMask = imrotate(thisMask, theta);
+        rotSegMask = rotSegMask(xMin:xMax,yMin:yMax);
+
+        rotSegMask = rotSegMask==0;
+        for nM=1:size(rotMask,3)
+            thisRegMask = rotMask(:,:,nM);
+            thisRegMask(rotSegMask) = NaN;
+            rotMask(:,:,nM) = thisRegMask;
+        end
+        rotMaskAll{nC} = rotMask;
+    end
+    rotMask = rotMaskAll;
+end
 
 end
 

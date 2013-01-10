@@ -10,7 +10,7 @@ maskDir = [param.dataSaveDirectory filesep 'masks'];
 if(isdir(maskDir))
     fprintf(1, '\n Mask directory has already been made. No new masks will be made.\n');
     fprintf(1, 'If scan parameters have been changed delete or rename this directory of masks!\n');
-    return
+%    return
 end
 mkdir(maskDir);
 
@@ -54,7 +54,7 @@ uniqMasks = unique(maskInd);
 
 fprintf(1, 'Creating masks for all scans\n');
 
-for nS=1:length(scanParam.scanList)
+for nS=29:length(scanParam.scanList)
     thisScan= scanParam.scanList(nS);
     [centerLine, gutMask] = getThisMask(scanParam, param,thisScan);
     outFile = [maskDir filesep 'mask_', num2str(thisScan), '.mat'];

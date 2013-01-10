@@ -14,6 +14,9 @@
 
 %Img=imread('gourd.bmp');
 %Img=double(Img(:,:,1));
+
+nS = 20;
+Img = im(:,:,nS);
 %% parameter setting
 timestep=1;  % time step
 mu=0.2/timestep;  % coefficient of the distance regularization term R(phi)
@@ -34,7 +37,7 @@ g=1./(1+f);  % edge indicator function.
 c0=2;
 initialLSF = c0*ones(size(Img));
 
-initialLSF(Img>1400) = -c0;
+initialLSF(gutMask{1}(:,:,nS)) = -c0;
 % generate the initial region R0 as two rectangles
 %initialLSF(25:35,20:25)=-c0; 
 %initialLSF(25:35,40:50)=-c0;

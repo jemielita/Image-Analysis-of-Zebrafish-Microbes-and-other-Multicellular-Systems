@@ -143,6 +143,11 @@ uimenu(hMenuOutline, 'Label', 'Clear center of gut line', 'Callback', @clearGutC
 uimenu(hMenuOutline, 'Label', 'Smooth/extrapolate all outlines & centers',...
     'Separator', 'on', 'Callback', @smoothAll_Callback);
 
+%Box to outline the region containing the bulb
+uimenu(hMenuOutline, 'Label', 'Outline bulb region', 'Callback', @outlineBulbRegion_Callback, 'Separator', 'on');
+uimenu(hMenuOutline, 'Label', 'Show bulb segmentation', 'Callback', @showBulbSegmenatation_Callback);
+
+
 hMenuDisplay = uimenu('Label', 'Display');
 hMenuContrast = uimenu(hMenuDisplay, 'Label', 'Adjust image contrast', 'Callback', @adjustContrast_Callback);
 hMenuBoundBox = uimenu(hMenuDisplay, 'Label', 'Remove region bounding boxes', 'Callback', @modifyBoundingBox_Callback);
@@ -2129,8 +2134,7 @@ hContrast = imcontrast(imageRegion);
         hLine = findobj('Tag', 'gutCenter');
         if(ishandle(hLine))
             delete(hLine);
-        end
-       
+        end       
     end
 
     function smoothAll_Callback(hObject, eventdata)
@@ -2221,6 +2225,25 @@ hContrast = imcontrast(imageRegion);
       
     end
 
+    function outlineBulbRegion_Callback(hOjbect, eventdata)
+        hBulbRect = imrect(imageRegion); 
+        posBulb = wait(hBulbRect);
+        
+        param.regionExtent.bulbRect = posBulb;
+        
+        hBulbApi = iptgetapi(hBulbRect);
+        hBulbApi.setColor([1 0 0]);
+        pause(1);
+        delete(hBulbRect); clear hBulbRect
+    end
+
+    function showBulbSegmenatation_Callback(hObject, eventdata)
+       if(isfield(param.regionExtent, 'bulbMask'))
+           
+           
+       end
+        
+    end
     function loadGutCenter_Callback(hObject, eventdata)
         if(isfield(param, 'centerLineAll'))
             hLine = findobj('Tag', 'gutCenter');

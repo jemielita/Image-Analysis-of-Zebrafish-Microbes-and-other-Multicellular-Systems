@@ -51,8 +51,6 @@ else
 end
 
 %% Load in image stack
-
-
 switch loadType
     case 'single'
         imStack = loadSingleRegion(param, imVar, regionNumber, dataType);

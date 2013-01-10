@@ -22,9 +22,10 @@ function intenL = intensityCurve(im,regionMask,centerLine,varargin)
 if(nargin==3)
     %hard coding in box dimensions for histogram
     boxDim = 100:100:4000;
-    else
+else
     boxDim = varargin{1};
 end
+
 totalNumMask = size(regionMask,3);
 maxNumReg = 30; %Maximum number of regions to calculate properties of at the same time
 %Duplicate the mask.

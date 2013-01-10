@@ -143,6 +143,11 @@ uimenu(hMenuOutline, 'Label', 'Clear center of gut line', 'Callback', @clearGutC
 uimenu(hMenuOutline, 'Label', 'Smooth/extrapolate all outlines & centers',...
     'Separator', 'on', 'Callback', @smoothAll_Callback);
 
+%Box to outline the region containing the bulb
+uimenu(hMenuOutline, 'Label', 'Outline bulb region', 'Callback', @outlineBulbRegion_Callback, 'Separator', 'on');
+uimenu(hMenuOutline, 'Label', 'Show bulb segmentation', 'Callback', @showBulbSegmenatation_Callback);
+
+
 hMenuDisplay = uimenu('Label', 'Display');
 hMenuContrast = uimenu(hMenuDisplay, 'Label', 'Adjust image contrast', 'Callback', @adjustContrast_Callback);
 hMenuBoundBox = uimenu(hMenuDisplay, 'Label', 'Remove region bounding boxes', 'Callback', @modifyBoundingBox_Callback);
@@ -2129,8 +2134,7 @@ hContrast = imcontrast(imageRegion);
         hLine = findobj('Tag', 'gutCenter');
         if(ishandle(hLine))
             delete(hLine);
-        end
-       
+        end       
     end
 
     function smoothAll_Callback(hObject, eventdata)
@@ -2221,6 +2225,25 @@ hContrast = imcontrast(imageRegion);
       
     end
 
+    function outlineBulbRegion_Callback(hOjbect, eventdata)
+        hBulbRect = imrect(imageRegion); 
+        posBulb = wait(hBulbRect);
+        
+        param.regionExtent.bulbRect = posBulb;
+        
+        hBulbApi = iptgetapi(hBulbRect);
+        hBulbApi.setColor([1 0 0]);
+        pause(1);
+        delete(hBulbRect); clear hBulbRect
+    end
+
+    function showBulbSegmenatation_Callback(hObject, eventdata)
+       if(isfield(param.regionExtent, 'bulbMask'))
+           
+           
+       end
+        
+    end
     function loadGutCenter_Callback(hObject, eventdata)
         if(isfield(param, 'centerLineAll'))
             hLine = findobj('Tag', 'gutCenter');
@@ -2714,6 +2737,30 @@ function [data, param] = loadParameters()
                         else
                             data = ''; %We don't use it anyway...we need to cull this from our code!
                         end
+                        %Check to see if the directory listed in the param
+                        %variable matches the directory we choose-if not
+                        %this suggests that the volume name has been
+                        %changes. If this is the case prompt the user to
+                        %see if they want to change the name of the
+                        %directory or quit
+                        
+                        if(~strcmp(param.directoryName, dirName))
+                            answer = inputdlg('The directory name in the param variable does not match the selected directory! Do you want to change the directory name (1) or quit the program (2)?');
+                            answer = answer{1};
+                            answer = str2num(answer);
+                            
+                            switch answer
+                                case 1
+                                    param.directoryName = dirName;
+                                    if(isfield(param, 'dataSaveDirectory'))
+                                        param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
+                                    end
+                                case 2
+                                    return
+                            end
+                        end
+                        
+                        
                         
                     case 0
                         
@@ -2772,16 +2819,6 @@ function [data, param] = loadParameters()
                         
                         disp('Parameters succesfully loaded.');
                         
-                        %Check to see if the directory listed in the param
-                        %variable matches the directory we choose-if not
-                        %this suggests that the volume name has been
-                        %changes. If this is the case prompt the user to
-                        %see if they want to change the name of the
-                        %directory or quit
-                        
-                        if(~strcmp(param.directoryName, dirName))
-                            answer = inputdlg('The directory name in the param variable does not match the selected directory! Do you want to change the directory name (1) or quit the program
-                        end
                         
                         % Calculate the overlap between different regions
                         
