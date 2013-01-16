@@ -130,9 +130,9 @@ if(isfield(param.regionExtent, 'bulbMask'))
             for nM=1:size(rotMask,3)
                 thisRegMask = rotMask(:,:,nM);
                 thisRegMask(rotSegMask) = NaN;
-                rotMask(:,:,nM) = thisRegMask;
+                rotMaskAll{nC}(:,:,nM) = thisRegMask;
             end
-            rotMaskAll{nC} = rotMask;
+          
        % end
     end
     
