@@ -30,7 +30,7 @@ plotResults = true;
 %change over time...
 
 %% Parameters for this particular series of fish
-timeData = {[0 3], [0 3]};
+timeData = {[0 3], [0 3], [0 3], [6 0]};
 baseTitle = 'Fish '; rootTitle = '0 GFP, 3 RFP';
 
 %% Get the background estimation for all the fish
@@ -118,7 +118,7 @@ end
 
 %% Assemble 1D information
 bkgOffsetRatio = 1.18;%First estimate
-popTot = cell(length(pAll)); popXpos = cell(length(pAll)); bkgDiff = cell(length(pAll),1);
+popTot = cell(length(pAll),1); popXpos = cell(length(pAll),1); bkgDiff = cell(length(pAll),1);
 for nP = 1:length(pAll)
     minS = 1;
     maxS =pAll{nP}.expData.totalNumberScans;
@@ -127,23 +127,27 @@ for nP = 1:length(pAll)
 end
 for nP=1:length(pAll)
     %   Estimate the background to subtract
-    maxScan = [15,2,2,15]; %Maximum scan before the channel that's ~empty shows up
+    maxScan = [15,1,15,10]; %Maximum scan before the channel that's ~empty shows up
     emptyColor = 2;
     minS = 1;
     maxS =pAll{nP}.expData.totalNumberScans;
     bkgOffsetRatio = getBackgroundRatio(bkgDiff, maxScan, emptyColor);
+  %  bkgOffsetRatio = 1.18;
     [popTot{nP}, popXpos{nP}, bkgDiff{nP}] = ...
         assembleDataGutTimeSeries(pAll{nP}, minS, maxS, bacMean, bkgInten{nP}, bkgOffsetRatio);
 end
 %% Plot/output data for 1D analysis
-nplist = [1,4];
-for nP1=1:2
+nplist = [1];
+for nP1=1:length(nplist)
  nP = nplist(nP1);
 %    thisTitle = [pAll{nP}.directoryName '   ', rootTitle];
 thisTitle = pAll{nP}.outputName; 
 %thisTitle =  '';
-plotGutData({'totalintensityLog'}, popTot{nP},popXpos{nP}, bkgDiff{nP}, thisTitle, timeData{nP1},true, thisTitle);
-  %  plotGutData({'linePlots'}, popTot{nP},popXpos{nP}, bkgDiff{nP}, thisTitle, timeData{nP1},true, thisTitle);
+
+printData = true; %Save the results as both a .png and .fig file
+
+%plotGutData({'totalintensityLog'}, popTot{nP},popXpos{nP}, bkgDiff{nP}, thisTitle, timeData{nP},printData, thisTitle);
+    plotGutData({'linePlots'}, popTot{nP},popXpos{nP}, bkgDiff{nP}, thisTitle, timeData{nP1},true, thisTitle);
    
    pause 
 end

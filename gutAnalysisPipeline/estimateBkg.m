@@ -17,12 +17,13 @@ totNumP = length(pAll);
 
 
 
-for nP = 1:totNumP
+for nP = 4:4
     param = pAll{nP};
     numColor = length(param.color);
     numScan = param.expData.totalNumberScans;
     
-    fileDir = [param.dataSaveDirectory filesep 'bkgEst'];
+    %fileDir = [param.dataSaveDirectory filesep 'bkgEst'];
+   fileDir = param.dataSaveDirectory;
     if(isdir(fileDir))
        cd(fileDir);
         for nC=1:numColor

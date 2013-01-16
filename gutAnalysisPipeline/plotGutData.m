@@ -14,6 +14,19 @@ totalgreen = popTot(:,1)'; totalred = popTot(:,2)';
 timestep = 0.33;
 tdelay = abs(diff(timeinfo)); % difference between inoculation start times, hr.
 
+%Parameters for font size and type
+plotFontSize = 18;
+plotFontType = 'Calibri';
+plotAxisLabelSize = 18;
+
+%Plot a fit line that shows predicted growth of second wave.
+plotFitLine= true;
+
+
+%Limits of y range for log plot
+yMin = 0;
+yMax = 100100;
+
 for nG = 1:length(graphType)
     figHandle = [];
     switch lower(graphType{nG})
@@ -25,8 +38,7 @@ for nG = 1:length(graphType)
             thisFigHandle = plotLineInten(popXpos);
         case 'bkgdiff'
             
-        case 'bkgdiffhist'
-        
+        case 'bkgdiffhist'        
     end
     
     %Update the 
@@ -39,7 +51,28 @@ if(printData==true)
 end
 
     function figHandle = plotTotalInten(totalgreen, totalred)
+       
+        %Total intensity
+        hTotInten = figure; plot(timestep*(1:NtimePoints), totalgreen, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
+        hold on
+        plot(timestep*(1:NtimePoints), totalred, 'kd', 'markerfacecolor', [0.8 0.4 0.2]);
+        hLabels(1) = xlabel('Time, hrs.');
+        hLabels(2) = ylabel('# of bacteria');
+       % title(dataTitle)
         
+        % Total intensity, log scale
+        hTotIntenLog = figure('name', 'Total intensity, log scale');
+        semilogy(timestep*(1:NtimePoints), totalgreen, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
+        hold on
+        semilogy(timestep*(1:NtimePoints), totalred, 'kd', 'markerfacecolor', [0.8 0.4 0.2]);
+        hLabels(3) = xlabel('Time, hrs.');
+        hLabels(4) = ylabel('# of bacteria');
+        
+        %Set font size of numbers
+        set(gca, 'FontSize', plotFontSize);
+        set(gca, 'FontName', plotFontType);
+        
+       % title(dataTitle);
         %% Get fit to the desired time interval
         dlg_title = 'Fit range'; num_lines= 1;
         prompt = {'Start time for exp. fit (hrs. after 1st loaded scan)', 'End time for exp. fit (hrs. after 1st loaded scan)'};
@@ -61,36 +94,18 @@ end
         fs = sprintf('  Ratio of initial intensities (I_0) = %.2e', min([I0_green/I0_red I0_red/I0_green])); disp(fs);
         fs = sprintf('  e^(-k_max t_delay) = %.2e', exp(-max([k_red k_green])*tdelay)); disp(fs)
         
-        
-        %Total intensity
-        hTotInten = figure; plot(timestep*(1:NtimePoints), totalgreen, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
-        hold on
-        plot(timestep*(1:NtimePoints), totalred, 'kd', 'markerfacecolor', [0.8 0.4 0.2]);
-        hLabels(1) = xlabel('Time, hrs.');
-        hLabels(2) = ylabel('# of bacteria');
-       % title(dataTitle)
-        
-        % Total intensity, log scale
-        hTotIntenLog = figure('name', 'Total intensity, log scale');
-        semilogy(timestep*(1:NtimePoints), totalgreen, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
-        hold on
-        semilogy(timestep*(1:NtimePoints), totalred, 'kd', 'markerfacecolor', [0.8 0.4 0.2]);
-        hLabels(3) = xlabel('Time, hrs.');
-        hLabels(4) = ylabel('# of bacteria');
-       % title(dataTitle);
-        
-        plotFitLine= true;
         if(plotFitLine==true)
+            offsetLineWidth = 3;
             if timeinfo(1)>timeinfo(2)
                 % first red, then green; so scale red
                 semilogy(timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2)), ...
                     exp(-k_red*tdelay)*I0_red*exp(k_red*timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2))), ...
-                    'r', 'LineWidth', 1)
+                    'r', 'LineWidth', offsetLineWidth)
             else
                 % first green, then red; so scale red
                 semilogy(timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2)), ...
                     exp(-k_green*tdelay)*I0_green*exp(k_green*timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2))), ...
-                    'g', 'LineWidth', 1)
+                    'g', 'LineWidth', offsetLineWidth)
             end
         end
         set(hTotInten, 'Tag', [dataTitle '_TotInten']);
@@ -99,14 +114,19 @@ end
         %Tweak the label sizes and fonts
         for i=1:length(hLabels)
             set(hLabels(i), 'FontName', 'Calibri');
-            set(hLabels(i), 'FontSize', 20);
+            set(hLabels(i), 'FontSize', plotAxisLabelSize);
         end
         
         %mlj: (temporary) to make all the axis on our plots the same scale
-        set(gca, 'YLim', [0 100000]);
+        set(gca, 'YLim', [yMin yMax]);
          figHandle = [hTotInten, hTotIntenLog];
         
+         set(gca, 'XTick', [0 4 8 12 16]);
+         set(gca, 'XTickLabel', [0 4 8 12 16]);
+        %set(gca, 'XLim', [0 16]);
         
+        set(gca, 'YTick', [ 10 100 1000 10000 100000]);
+        set(gca, 'YLim', [1 yMax]);
     end
 
     function figHandle = plotLineInten(popXpos)
@@ -141,17 +161,19 @@ end
 
         % Plot all green data, line-by-line
         figure(hFig_green);
-        for j=1:NtimePoints
-            plot3(popXpos{j,1}(2,:), popXpos{j,1}(3,:), popXpos{j,1}(1,:), 'Color', cData_green(j,:));
+        minT = 10;
+        NtimePoints = 40;
+        for j=minT:NtimePoints
+            plot3(popXpos{j,1}(2,1:100), popXpos{j,1}(3,1:100), popXpos{j,1}(1,1:100), 'Color', cData_green(j,:));
         
             %Get maximum value-used for setting scale on graph
-            maxgreen(j) = max(popXpos{j,1}(1,:));
+            maxgreen(j) = max(popXpos{j,1}(1,1:100));
         end
         % Plot all red data, line-by-line
         figure(hFig_red);
-        for j=1:NtimePoints
-            plot3(popXpos{j,2}(2,:), popXpos{j,2}(3,:), popXpos{j,2}(1,:), 'Color', cData_red(j,:));
-            maxred(j) = max(popXpos{j,2}(1,:));
+        for j=minT:NtimePoints
+            plot3(popXpos{j,2}(2,1:100), popXpos{j,2}(3,1:100), popXpos{j,2}(1,1:100), 'Color', cData_red(j,:));
+            maxred(j) = max(popXpos{j,2}(1,1:100));
         end
         
         %Making the plots prettier
@@ -159,14 +181,16 @@ end
         
         figure(hFig_green);
         plotTitleGreen = strcat(dataTitle, ': GFP');
-
-        figurethings(hFig_green, plotTitleGreen, viewangle);
+        set(gca, 'FontSize',plotAxisLabelSize);
+        
+       % figurethings(hFig_green, plotTitleGreen, viewangle);
         agreen = axis;
+
         
         figure(hFig_red);
         plotTitleRed = strcat(dataTitle, ': TdTomato');
-        
-        figurethings(hFig_red, plotTitleRed, viewangle);
+        set(gca, 'FontSize',plotAxisLabelSize);
+      %  figurethings(hFig_red, plotTitleRed, viewangle);
         
         % Axis ranges
         % make axis ranges the same
@@ -179,6 +203,9 @@ end
         figure(hFig_red);
         axis(sameax)
        
+        figurethings(hFig_red, plotTitleRed, viewangle);
+        figurethings(hFig_green, plotTitleGreen, viewangle);
+
         %Set name to save figure as
         set(hFig_red, 'Tag', [dataTitle '_LineDist_Red']);
         set(hFig_green, 'Tag', [dataTitle '_LineDist_Green']);
@@ -190,29 +217,39 @@ end
 
     function figurethings(hFig, plotTitle, viewangle)
         figure(hFig)
-        title(plotTitle, 'interpreter', 'none', 'FontSize', 16);
+        title(plotTitle, 'interpreter', 'none', 'FontSize', plotFontSize);
         label(1) = xlabel('Position, \mum');
         label(2) = ylabel('Time, hrs.');
         label(3) = zlabel('# of bacteria');
         view(viewangle);
         
         for i=1:3
-            set(label(i), 'FontSize', 20);
-            set(label(i), 'FontName', 'Calibri');
+            set(label(i), 'FontSize', plotFontSize);
+            set(label(i), 'FontName', plotFontType);
         end
         %Prettify the location of the axis labels
-        set(label(1), 'Position', [-901.579 -112.852 10058.79])
-         set(label(2), 'Position', [-1654.77 -108.666 10997.04])
+       %When numbers are small
+        % set(label(1), 'Position', [-901.579 -112.852 10058.79])
+        % set(label(2), 'Position', [-1654.77 -108.666 10997.04])
+        
+        %When numbers are big
+        set(label(2), 'Position', [-1591, -95, 10114]);
+        set(label(1), 'Position', [-715, -100.6, 9838.8]);
     end
 
     function printFigures(figHandle)
         
         for nF=1:length(figHandle)
             thisFig = figHandle(nF);
+            %Save .png file
             outFile = [get(thisFig, 'Tag') '.png'];
             
             set(thisFig, 'PaperPosition', [0.25 2.5 6 4])  % to get a decent aspect ratio
             print(thisFig, '-dpng', outFile, '-r300')
+            
+            %Save .fig file
+            outFileFig = [get(thisFig, 'Tag'), '.fig'];
+            saveas(thisFig, outFileFig, 'fig');
         end
         
     end

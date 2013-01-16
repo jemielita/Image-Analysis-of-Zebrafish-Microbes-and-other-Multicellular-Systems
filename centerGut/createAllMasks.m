@@ -26,7 +26,7 @@ for nS = 1:length(scanParam.scanList)
             calcOptimalCut(scanParam.regOverlap, param, thisScan);
         maskInd(nS) = thisScan;
         lastScan = thisScan;
-    else
+    else 
         lastScan = scanParam.scanList(nS-1);
         sameLine = isequal(param.centerLineAll{lastScan}(:),param.centerLineAll{thisScan}(:));
         sameOutline = isequal(...
@@ -54,8 +54,8 @@ uniqMasks = unique(maskInd);
 
 fprintf(1, 'Creating masks for all scans\n');
 
-for nS=29:length(scanParam.scanList)
-    thisScan= scanParam.scanList(nS);
+for nS=1:length(scanParam.scanList)
+thisScan= scanParam.scanList(nS);
     [centerLine, gutMask] = getThisMask(scanParam, param,thisScan);
     outFile = [maskDir filesep 'mask_', num2str(thisScan), '.mat'];
 

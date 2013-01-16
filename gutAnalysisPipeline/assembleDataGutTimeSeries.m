@@ -42,14 +42,14 @@ for j=1:NtimePoints
     
     %The background is the product of the mean background value and the
     %total volume of this box
-    meanBkgGreen = 1*bkgInten{1}{j}(1:gutLength)';
+    meanBkgGreen = bkgOffset*bkgInten{1}{j}(1:gutLength)';
     meanBkgRed = bkgOffset*bkgInten{2}{j}(1:gutLength)';
     
-    bkgGreen = meanBkgGreen.*regFeatures{1}(1:gutLength,2);
-    bkgRed = meanBkgRed.*regFeatures{2}(1:gutLength,2);
+    bkgGreen = meanBkgGreen.*regFeatures{1,2}(1:gutLength,2);
+    bkgRed = meanBkgRed.*regFeatures{2,2}(1:gutLength,2);
     
-    thisLine_green = regFeatures{1}(1:gutLength,1)-bkgGreen;
-    thisLine_red = regFeatures{2}(1:gutLength,1)-bkgRed;
+    thisLine_green = regFeatures{1,2}(1:gutLength,1)-bkgGreen;
+    thisLine_red = regFeatures{2,2}(1:gutLength,1)-bkgRed;
     
     %Force the total intensity after background subtraction to be positive
     zPad = zeros(gutLength,1);
@@ -86,8 +86,8 @@ for j=1:NtimePoints
     %Also save the total volume of each 
     
     %Calculate the total population at this time point
-    popTot(j,1) = sum(popXpos{j,1}(1,:));
-    popTot(j,2) = sum(popXpos{j,2}(1,:));
+    popTot(j,1) = nansum(popXpos{j,1}(1,:));
+    popTot(j,2) = nansum(popXpos{j,2}(1,:));
     %Include a column of time
     popTot(j,3) = j*timestep*ones(size(popTot(j,1)));
  

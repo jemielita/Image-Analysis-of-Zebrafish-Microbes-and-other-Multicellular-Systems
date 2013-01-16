@@ -65,7 +65,14 @@ for colorNum =1:length(colorList)
         centerLine = varargin{1};
         gutMask = varargin{2};
         
-        allMasks = sum(gutMask{colorNum},3);
+        %Gut mask will be a cell if we've done additional segmentation
+        %before 
+        if(iscell(gutMask))
+            allMasks = sum(gutMask{colorNum},3);
+        else
+            allMask = sum(gutMask,3);
+        end
+        
         allMasks = allMasks==0;
         fprintf(1, 'Setting pixels outside the mask to NaN');
         for i=1:size(imStack,3)
@@ -80,15 +87,23 @@ for colorNum =1:length(colorList)
     end
     
     %% Doing all the analysis steps
-    if(size(imStack,1)~=size(gutMask{colorNum},1) ||size(imStack,2)~=size(gutMask{colorNum},2))
+     if(size(imStack,1)~=size(gutMask,1) ||size(imStack,2)~=size(gutMask,2))
        disp('Image stack dimensions do not match gut mask dimensions!');
        
-    end
-    for stepNum = 1:totNumSteps
-        regFeatures{stepNum, colorNum} = ...
-            analysisStep(imStack, centerLine, gutMask, analysisType,regFeatures,...
-            stepNum, colorNum);      
-    end    
+     end
+     
+     for stepNum = 1:totNumSteps
+         if(iscell(gutMask))
+             regFeatures{stepNum, colorNum} = ...
+                 analysisStep(imStack, centerLine, gutMask{colorNum}, analysisType,regFeatures,...
+                 stepNum, colorNum);
+         else
+             regFeatures{stepNum, colorNum} = ...
+                 analysisStep(imStack, centerLine, gutMask, analysisType,regFeatures,...
+                 stepNum, colorNum);
+         end
+         
+     end
     
 end
 
@@ -122,17 +137,17 @@ switch analysisType(stepNum).name
         
     case 'linearIntensity'
         binSize = analysisType(stepNum).binSize;
-        thisRegFeatures = intensityCurve(imStack, gutMask{colorNum},centerLine,binSize);
+        thisRegFeatures = intensityCurve(imStack, gutMask,centerLine,binSize);
     
     case 'backgroundHistogram'
         %Identical code as the linear intensity code, but given a different
         %name to make it easier to distinguish from other code
         binSize = analysisType(stepNum).binSize;
-        thisRegFeatures = intensityCurve(imStack, gutMask{colorNum},centerLine,binSize);
+        thisRegFeatures = intensityCurve(imStack, gutMask,centerLine,binSize);
     
     case 'linearIntensityBkgSub'
         bkgList = analysisType(stepNum).bkgList;
-        thisRegFeatures = intensityBkgSubCurve(imStack, gutMask{colorNum}, centerLine, bkgList);
+        thisRegFeatures = intensityBkgSubCurve(imStack, gutMask, centerLine, bkgList);
         
     case 'radialDistribution'
         %Find the point in this analysis chain where we calculate the

@@ -113,24 +113,29 @@ rotMask = curveMask(cutMask, rotCenterLine, param,'rectangle');
 %the gut. If so, then also include those points
 if(isfield(param.regionExtent, 'bulbMask'))
     
-    for nC=1:length(param.regionExtent.bulbMask)
-        rect = param.regionExtent.bulbRect;
-        rect = round(rect);
+    for nC=1:length(param.color)
         
-        colorNum = find(strcmp(color, param.color));
-        thisMask = ones(height, width);
-        thisMask(rect(2):rect(2)+rect(4), rect(1):rect(1)+rect(3)) = param.regionExtent.bulbMask{nC}(:,:,scanNum);
-        rotSegMask = imrotate(thisMask, theta);
-        rotSegMask = rotSegMask(xMin:xMax,yMin:yMax);
-
-        rotSegMask = rotSegMask==0;
-        for nM=1:size(rotMask,3)
-            thisRegMask = rotMask(:,:,nM);
-            thisRegMask(rotSegMask) = NaN;
-            rotMask(:,:,nM) = thisRegMask;
-        end
-        rotMaskAll{nC} = rotMask;
+       % rotMaskAll{nC}{1} = rotMask;
+        %for nSeg = 2:length(param.regionExtent.bulbMask{nC})+1
+            rect = param.regionExtent.bulbRect;
+            rect = round(rect);
+            
+            colorNum = find(strcmp(color, param.color));
+            thisMask = ones(height, width);
+            thisMask(rect(2):rect(2)+rect(4), rect(1):rect(1)+rect(3)) = param.regionExtent.bulbMask{nC}(:,:,scanNum);
+            rotSegMask = imrotate(thisMask, theta);
+            rotSegMask = rotSegMask(xMin:xMax,yMin:yMax);
+            
+            rotSegMask = rotSegMask==0;
+            for nM=1:size(rotMask,3)
+                thisRegMask = rotMask(:,:,nM);
+                thisRegMask(rotSegMask) = NaN;
+                rotMask(:,:,nM) = thisRegMask;
+            end
+            rotMaskAll{nC} = rotMask;
+       % end
     end
+    
     rotMask = rotMaskAll;
 end
 
