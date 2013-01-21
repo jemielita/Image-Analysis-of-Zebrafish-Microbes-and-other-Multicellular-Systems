@@ -21,8 +21,6 @@ saveDir = scanParam.dataSaveDirectory;
 %case we want to do only a subset of scans.
 scanParam = getFinishedScanList(scanParam);
 
-
-
 %% Declaring variables
 
 %We'll keep these from scan to scan, so that we can reuse the previous mask

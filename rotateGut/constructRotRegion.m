@@ -115,25 +115,32 @@ if(isfield(param.regionExtent, 'bulbMask'))
     
     for nC=1:length(param.color)
         
-       % rotMaskAll{nC}{1} = rotMask;
+        % rotMaskAll{nC}{1} = rotMask;
         %for nSeg = 2:length(param.regionExtent.bulbMask{nC})+1
-            rect = param.regionExtent.bulbRect;
-            rect = round(rect);
-            
-            colorNum = find(strcmp(color, param.color));
-            thisMask = ones(height, width);
-            thisMask(rect(2):rect(2)+rect(4), rect(1):rect(1)+rect(3)) = param.regionExtent.bulbMask{nC}(:,:,scanNum);
-            rotSegMask = imrotate(thisMask, theta);
-            rotSegMask = rotSegMask(xMin:xMax,yMin:yMax);
-            
-            rotSegMask = rotSegMask==0;
-            for nM=1:size(rotMask,3)
-                thisRegMask = rotMask(:,:,nM);
-                thisRegMask(rotSegMask) = NaN;
-                rotMaskAll{nC}(:,:,nM) = thisRegMask;
-            end
-          
-       % end
+        rect = param.regionExtent.bulbRect;
+        rect = round(rect);
+        
+        colorNum = find(strcmp(color, param.color));
+        thisMask = ones(height, width);
+        
+        sizeM = size(thisMask(rect(2):rect(2)+rect(4), rect(1):rect(1)+rect(3)));
+        sizeB = size(param.regionExtent.bulbMask{nC}(:,:,scanNum));
+        %If sizes are different, adjust height and width of the rectangle
+        rect(4) = rect(4)+ sizeB(1)-sizeM(1);
+        rect(3) = rect(3) + sizeB(2)-sizeM(2);
+
+        thisMask(rect(2):rect(2)+rect(4), rect(1):rect(1)+rect(3)) = param.regionExtent.bulbMask{nC}(:,:,scanNum);
+        rotSegMask = imrotate(thisMask, theta);
+        rotSegMask = rotSegMask(xMin:xMax,yMin:yMax);
+        
+        rotSegMask = rotSegMask==0;
+        for nM=1:size(rotMask,3)
+            thisRegMask = rotMask(:,:,nM);
+            thisRegMask(rotSegMask) = NaN;
+            rotMaskAll{nC}(:,:,nM) = thisRegMask;
+        end
+        
+        % end
     end
     
     rotMask = rotMaskAll;

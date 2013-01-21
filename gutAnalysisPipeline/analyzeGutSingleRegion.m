@@ -70,7 +70,7 @@ for colorNum =1:length(colorList)
         if(iscell(gutMask))
             allMasks = sum(gutMask{colorNum},3);
         else
-            allMask = sum(gutMask,3);
+            allMasks = sum(gutMask,3);
         end
         
         allMasks = allMasks==0;

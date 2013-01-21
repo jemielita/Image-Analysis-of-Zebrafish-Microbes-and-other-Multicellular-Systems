@@ -4,7 +4,7 @@
 
 function [gutMaskAll, im] = segmentBulb(param, saveData, displayData)
 %% Load in image stack
-maxS = param.expData.totalNumberScans-1;
+maxS = param.expData.totalNumberScans
 
 fileDir = param.dataSaveDirectory;
 color = param.color;
@@ -78,9 +78,15 @@ end
             ind(end) =[];
             smth = smooth(ind,data, 51, 'sgolay',3);
             
-            minP = data(end)+ 1500;
-            [pks,loc] = findpeaks(smth, 'MINPEAKHEIGHT', minP,...
-                'MINPEAKDISTANCE', 20);
+            pkOffset = 1500;
+            loc = [];
+            while(isempty(loc))    
+                minP = data(end)+ pkOffset;
+                [pks,loc] = findpeaks(smth, 'MINPEAKHEIGHT', minP,...
+                    'MINPEAKDISTANCE', 20);
+                pkOffset = pkOffset -100;
+            end
+            
             
             pksOut =[]; locOut = [];
             for j=1:length(pks)

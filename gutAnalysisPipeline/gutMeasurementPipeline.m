@@ -30,7 +30,7 @@ plotResults = true;
 %change over time...
 
 %% Parameters for this particular series of fish
-timeData = {[0 3], [0 3], [0 3], [6 0]};
+timeData = {[0 0], [3 0], [0 3], [6 0], [6 6]};
 baseTitle = 'Fish '; rootTitle = '0 GFP, 3 RFP';
 
 %% Get the background estimation for all the fish
@@ -127,17 +127,17 @@ for nP = 1:length(pAll)
 end
 for nP=1:length(pAll)
     %   Estimate the background to subtract
-    maxScan = [15,1,15,10]; %Maximum scan before the channel that's ~empty shows up
+    maxScan = [15,1,15,10,1]; %Maximum scan before the channel that's ~empty shows up
     emptyColor = 2;
     minS = 1;
     maxS =pAll{nP}.expData.totalNumberScans;
-    bkgOffsetRatio = getBackgroundRatio(bkgDiff, maxScan, emptyColor);
-  %  bkgOffsetRatio = 1.18;
+   % bkgOffsetRatio = getBackgroundRatio(bkgDiff, maxScan, emptyColor);
+   bkgOffsetRatio = 1.18;
     [popTot{nP}, popXpos{nP}, bkgDiff{nP}] = ...
         assembleDataGutTimeSeries(pAll{nP}, minS, maxS, bacMean, bkgInten{nP}, bkgOffsetRatio);
 end
 %% Plot/output data for 1D analysis
-nplist = [1];
+nplist = 1:5
 for nP1=1:length(nplist)
  nP = nplist(nP1);
 %    thisTitle = [pAll{nP}.directoryName '   ', rootTitle];
@@ -146,7 +146,7 @@ thisTitle = pAll{nP}.outputName;
 
 printData = true; %Save the results as both a .png and .fig file
 
-%plotGutData({'totalintensityLog'}, popTot{nP},popXpos{nP}, bkgDiff{nP}, thisTitle, timeData{nP},printData, thisTitle);
+plotGutData({'totalintensityLog'}, popTot{nP},popXpos{nP}, bkgDiff{nP}, thisTitle, timeData{nP},printData, thisTitle);
     plotGutData({'linePlots'}, popTot{nP},popXpos{nP}, bkgDiff{nP}, thisTitle, timeData{nP1},true, thisTitle);
    
    pause 

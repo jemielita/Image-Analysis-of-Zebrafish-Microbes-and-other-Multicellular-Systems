@@ -22,7 +22,6 @@ plotAxisLabelSize = 18;
 %Plot a fit line that shows predicted growth of second wave.
 plotFitLine= true;
 
-
 %Limits of y range for log plot
 yMin = 0;
 yMax = 100100;
@@ -162,18 +161,17 @@ end
         % Plot all green data, line-by-line
         figure(hFig_green);
         minT = 10;
-        NtimePoints = 40;
         for j=minT:NtimePoints
-            plot3(popXpos{j,1}(2,1:100), popXpos{j,1}(3,1:100), popXpos{j,1}(1,1:100), 'Color', cData_green(j,:));
+            plot3(popXpos{j,1}(2,:), popXpos{j,1}(3,:), popXpos{j,1}(1,:), 'Color', cData_green(j,:));
         
             %Get maximum value-used for setting scale on graph
-            maxgreen(j) = max(popXpos{j,1}(1,1:100));
+            maxgreen(j) = max(popXpos{j,1}(1,:));
         end
         % Plot all red data, line-by-line
         figure(hFig_red);
         for j=minT:NtimePoints
-            plot3(popXpos{j,2}(2,1:100), popXpos{j,2}(3,1:100), popXpos{j,2}(1,1:100), 'Color', cData_red(j,:));
-            maxred(j) = max(popXpos{j,2}(1,1:100));
+            plot3(popXpos{j,2}(2,:), popXpos{j,2}(3,:), popXpos{j,2}(1,:), 'Color', cData_red(j,:));
+            maxred(j) = max(popXpos{j,2}(1,:));
         end
         
         %Making the plots prettier

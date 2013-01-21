@@ -17,7 +17,7 @@ totNumP = length(pAll);
 
 
 
-for nP = 4:4
+for nP = 1:length(pAll)
     param = pAll{nP};
     numColor = length(param.color);
     numScan = param.expData.totalNumberScans;
