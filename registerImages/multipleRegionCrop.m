@@ -1695,9 +1695,12 @@ hContrast = imcontrast(imageRegion);
             
         end
         
-        
-        set(hIm, 'CData', imC(:,:,1)+imC(:,:,2));
-        
+        if(strcmp(projectionType, 'mip'))  
+            set(hIm,'CData',...
+                selectProjection(param, 'mip', 'true', scanNum,color, zNum,false));
+        else
+            set(hIm, 'CData', imC(:,:,1)+imC(:,:,2));
+        end
         %Draw the bounding boxes again
         hRect = findobj('Tag', 'outlineRect');
         if(~isempty(hRect))

@@ -31,28 +31,13 @@ im = calculateProjection(type);
         
         if(strcmp(autoLoad, 'true'))
             if(isfield(param, 'dataSaveDirectory')&&recalcProj==false)
-                try
-                  imTot = imread([param.dataSaveDirectory filesep...
-                         'FluoroScan_', num2str(imVar.scanNum), '_', imVar.color,'.tiff']);
+                
+                if(exist([param.dataSaveDirectory filesep...
+                        'FluoroScan_', num2str(imVar.scanNum), '_', imVar.color,'.tiff'],'file')==2)
                     
-%                     %See if the entry has already been loaded
-%                     inputFile = load([param.dataSaveDirectory filesep...
-%                         'FluoroScan_', num2str(imVar.scanNum), '_', imVar.color,'.tiff']);
-%                     
-%                     switch projType
-%                         case 'mip'     
-%                             mip = inputFile.mip;
-%                             imTot = mip{colorNum};
-%                         case 'total'
-%                             total = inputFile.total;
-%                             imTot = total{colorNum};
-%                     end
-%                     
-                    return
-                    
-                catch
-                    fprintf(1,'Calculating the maximum intensity projection for this scan number...');
-
+                    imTot = imread([param.dataSaveDirectory filesep...
+                        'FluoroScan_', num2str(imVar.scanNum), '_', imVar.color,'.tiff']);
+                          return
                 end
             end
         end
@@ -76,14 +61,23 @@ im = calculateProjection(type);
 
             switch projType
                 case 'mip'
-                    %Use a different data type for maximum inten.
-                    %projections and total inten. projections. The latter
-                    %will need more memory than the former, since the
-                    %greatest intensity any pixel will have is the pixel
-                    %range of our camera: 16 bit.
-                    im = load3dVolume(param, imVar, 'single', nR);
-                    mipR = max(im,[],3); %Get the maximum intensity projection for this region
-                    
+                    %See if individual regions exist as MIP. If so load
+                    %these.
+                    if(exist([param.dataSaveDirectory filesep...
+                            'mip', imVar.color, '_R', num2str(nR), '_nS', num2str(imVar.scanNum)],'file')==2)
+                        
+                        mipR = imread([param.dataSaveDirectory filesep...
+                            'mip', imVar.color, '_R', num2str(nR), '_nS', num2str(imVar.scanNum)]);
+                    else
+                        fprintf(1, 'Calculating MIP projection.');
+                        %Use a different data type for maximum inten.
+                        %projections and total inten. projections. The latter
+                        %will need more memory than the former, since the
+                        %greatest intensity any pixel will have is the pixel
+                        %range of our camera: 16 bit.
+                        im = load3dVolume(param, imVar, 'single', nR);
+                        mipR = max(im,[],3); %Get the maximum intensity projection for this region
+                    end
                 case 'total'
                     im = load3dVolume(param, imVar, 'single', nR, 'dataType', '32bit');
                     mipR = sum(im,3);

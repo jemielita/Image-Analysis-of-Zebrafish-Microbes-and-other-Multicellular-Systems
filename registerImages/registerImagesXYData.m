@@ -176,13 +176,16 @@ for regNum=1:totalNumRegions
     %mlj: negative sign important for aligning images
 
     if(param.expData.Scan(1).xBegin==min([param.expData.Scan(:).xBegin]))
-        regLoc(regNum,1) = param.expData.Scan(regionIndex).xBegin;
+      %  regLoc(regNum,1) = param.expData.Scan(regionIndex).xBegin;
     else
-        regLoc(regNum,1) = -param.expData.Scan(regionIndex).xBegin;
+   %     regLoc(regNum,1) = -param.expData.Scan(regionIndex).xBegin;
     end
        regLoc(regNum,1) = param.expData.Scan(regionIndex).xBegin;
-       regLoc(regNum,1) = regLoc(regNum,1) +10*0.1625*(param.expData.Scan(regionIndex).cropRegion(1));
-  %   regLoc(regNum,1) = param.expData.Scan(regionIndex).xBegin
+    %   regLoc(regNum,1) = regLoc(regNum,1) +10*0.1625*(param.expData.Scan(regionIndex).cropRegion(1));
+%  regLoc(regNum,1) = regLoc(regNum,1) + (10*0.1625)*(2160 -param.expData.Scan(regionIndex).cropRegion(1)-...
+ %     param.expData.Scan(regionIndex).cropRegion(3));
+  
+    %   regLoc(regNum,1) = param.expData.Scan(regionIndex).xBegin
     regLoc(regNum,2) = param.expData.Scan(regionIndex).yBegin;
     
     %Convert micron range to pixels;
