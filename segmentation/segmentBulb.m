@@ -4,7 +4,7 @@
 
 function [gutMaskAll, im] = segmentBulb(param, saveData, displayData)
 %% Load in image stack
-maxS = param.expData.totalNumberScans
+maxS = param.expData.totalNumberScans;
 
 fileDir = param.dataSaveDirectory;
 color = param.color;
@@ -58,6 +58,9 @@ end
     end
 
     function gutMask = segmentThisBulb(imStd, imMean, im)
+        if(displayData)
+            figure;
+        end
         
         fprintf(1, 'Segmenting background noise');
         for nS= 1:maxS

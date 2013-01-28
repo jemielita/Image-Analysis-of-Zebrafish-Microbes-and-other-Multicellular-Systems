@@ -112,26 +112,43 @@ end
         
         %Load in mask showing variable maximum z-heights for different parts of the
         %gut-used to remove surface cells
-        if(isfield(param.regionExtent, 'zCropBox'))
+        if(isfield(param.regionExtent, 'redozCropBox'))
+            redoCrop = param.regionExtent.redozCropBox;
+        else 
+            redoCrop = 1;
+        end
+        if(isfield(param.regionExtent, 'zCropBox')&& redoCrop==1)
             
             zCrop = param.regionExtent.zCropBox{imVar.scanNum};
             
             %Find the parts of these masks that lie within the region that we're
             %loading in
             zCropMask = zeros(size(im,1), size(im,2));
+            zCropMaskDir = zeros(size(im,1), size(im,2));
             thisMask = zeros(size(zCropMask));
             
             for i=1:length(zCrop)
                 thisMask(:) = 0;
-                cXI = max(zCrop(i).pos(2)-xOutI,1);
-                cXF = min(zCrop(i).pos(4)+cXI, size(im,1));
+                cXI = max(zCrop{i}{2}(2)-xOutI,1);
+                cXF = min(zCrop{i}{2}(4)+cXI, size(im,1));
                 
-                cYI = max(zCrop(i).pos(1)-yOutI, 1);
-                cYF = min(zCrop(i).pos(3) +cYI, size(im,2));
+                cYI = max(zCrop{i}{2}(1)-yOutI, 1);
+                cYF = min(zCrop{i}{2}(3) +cYI, size(im,2));
                 
                 cXI = round(cXI);cXF = round(cXF); cYI = round(cYI); cYF = round(cYF);
-                thisMask(cXI:cXF, cYI:cYF) = zCrop(i).zHeight;
+                thisMask(cXI:cXF, cYI:cYF) = zCrop{i}{4};
+                
+                %Save location of mask and whether it's a top or bottom
+                %mask.
                 zCropMask(thisMask~=0) = thisMask(thisMask~=0);
+                
+                switch zCrop{i}{3}
+                    case 'top'
+                        zCropMaskDir(thisMask~=0) = 1;
+                    case 'bottom'
+                        zCropMaskDir(thisMask~=0) = -1;
+                end
+                
                 
             end
             
@@ -144,13 +161,21 @@ end
                 if(minZ==-1)
                     return
                 end
-                for thisZ=minZ+1:size(im,3)
-                    temp = im(:,:,thisZ);
-                    temp(zCropMask==cropZ(nZ)) = nan;
-                    im(:,:,thisZ) = temp;
+                %Convoluted way of cropping top or bottom regions.
+                if(sum(zCropMaskDir(zCropMask==cropZ(nZ)))>0)
+                    for thisZ=minZ+1:size(im,3)
+                        temp = im(:,:,thisZ);
+                        temp(zCropMask==cropZ(nZ)) = nan;
+                        im(:,:,thisZ) = temp;
+                    end
+                else
+                    for thisZ=1:minZ
+                        temp = im(:,:,thisZ);
+                        temp(zCropMask==cropZ(nZ)) = nan;
+                        im(:,:,thisZ) = temp;
+                    end
                 end
-                
-                
+  
             end
         end
         

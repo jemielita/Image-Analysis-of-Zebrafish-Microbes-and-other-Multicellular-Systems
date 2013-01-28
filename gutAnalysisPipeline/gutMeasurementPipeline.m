@@ -137,7 +137,7 @@ for nP=1:length(pAll)
         assembleDataGutTimeSeries(pAll{nP}, minS, maxS, bacMean, bkgInten{nP}, bkgOffsetRatio);
 end
 %% Plot/output data for 1D analysis
-nplist = 1:5
+nplist = 1:5;
 for nP1=1:length(nplist)
  nP = nplist(nP1);
 %    thisTitle = [pAll{nP}.directoryName '   ', rootTitle];
