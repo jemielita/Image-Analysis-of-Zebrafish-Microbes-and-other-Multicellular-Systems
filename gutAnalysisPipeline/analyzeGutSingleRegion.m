@@ -73,7 +73,9 @@ for colorNum =1:length(colorList)
             allMasks = sum(gutMask,3);
         end
         
+        
         allMasks = allMasks==0;
+        
         fprintf(1, 'Setting pixels outside the mask to NaN');
         for i=1:size(imStack,3)
             temp = imStack(:,:,i);
@@ -96,11 +98,11 @@ for colorNum =1:length(colorList)
          if(iscell(gutMask))
              regFeatures{stepNum, colorNum} = ...
                  analysisStep(imStack, centerLine, gutMask{colorNum}, analysisType,regFeatures,...
-                 stepNum, colorNum);
+                 stepNum, colorNum,param);
          else
              regFeatures{stepNum, colorNum} = ...
                  analysisStep(imStack, centerLine, gutMask, analysisType,regFeatures,...
-                 stepNum, colorNum);
+                 stepNum, colorNum,param);
          end
          
      end
@@ -126,11 +128,10 @@ end
 %Large switch function that contains all the analysis functions that we've
 %worked on so far
 function thisRegFeatures = analysisStep(imStack, centerLine, gutMask,...
-    analysisType, regFeatures, stepNum,colorNum)
+    analysisType, regFeatures, stepNum,colorNum,param)
 
 switch analysisType(stepNum).name
-    
-    
+        
     case 'radialProjection'
         %mlj: Need to build in support for preallocating arrays
         thisRegFeatures = radialProjection(imStack, centerLine, gutMask);
@@ -164,16 +165,20 @@ switch analysisType(stepNum).name
             %cellfun, for loop, or parfor loop is  used. 
            thisRegFeatures = radDistAll(regFeatures{ind}, centerLine, ...
                analysisType(stepNum).param);
-       
-           
-          
+   
         end
         
     case 'test'
         thisRegFeatures = 1:length(centerLine);
     case 'projection'
         %Get a particular projection of this region.
-        
+    case 'correlation'
+        %Calculate the 3D correlation function for each box down the length
+        %of the gut
+        subtractBkg = analysisType(stepNum).bkgSub;
+        radStep = analysisType(stepNum).radStep;
+        thisRegFeatures = correlationGut(imStack, gutMask, centerLine,...
+            subtractBkg,radStep, param);
 end
 
 
