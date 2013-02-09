@@ -6,8 +6,8 @@ function [imSeg, neutPos] = segmentNeutrophil(im)
 %% Parameters for segmentation
 
 %Threshold for region extents
-minThresh= 1000;
-maxThresh = 1500;
+minThresh= 800;
+maxThresh = 1000;
 
 smallestVolume = 1000;
 smallestArea = 200;
@@ -17,7 +17,6 @@ smallestArea = 200;
 %Get mask for pixels above the maximum threshold
 imSeg = im>maxThresh;
 imSeg = 2*imSeg + double(im>minThresh);
-
 
 numR = sum(imSeg(:));
 numRprev = 0;
@@ -64,12 +63,16 @@ imSeg = bwareaopen(imSeg,smallestVolume);
 imSeg = bwlabeln(imSeg);
 
 %% Find center of mass of each region
-neutPosStruct = regionprops(imSeg, im,'WeightedCentroid');
+neutPosStruct = regionprops(imSeg, im,'WeightedCentroid', 'Area', 'MeanIntensity');
 
 %convert to nx3 matrix, where (n,:) gives the x,y,z position
 %each identified neutrophil.
 neutPos = zeros(length(neutPosStruct),3);
 for i=1:length(neutPosStruct)
-    neutPos(i,:) = neutPosStruct(i).WeightedCentroid(:);
+    neutPos(i,1:3) = neutPosStruct(i).WeightedCentroid(:);
+    neutPos(i,4) = neutPosStruct(i).Area*neutPosStruct(i).MeanIntensity;
+end
+
+
 end
 

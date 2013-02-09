@@ -16,8 +16,7 @@ for nP=1:maxP
        bkgAll{nP}(nS,1:length(bkgDiff{nP}{nS,emptyColor}(10:end-20)))=...
            bkgDiff{nP}{nS,emptyColor}(10:end-20);
         
-    end
-    
+    end    
 end
 
 %% Calculate the mean background offset

@@ -30,7 +30,7 @@ plotResults = true;
 %change over time...
 
 %% Parameters for this particular series of fish
-timeData = {[0 0], [3 0], [0 3], [6 0], [6 6]};
+timeData = {[0 3], [0 3], [0 3], [0 3]};
 baseTitle = 'Fish '; rootTitle = '0 GFP, 3 RFP';
 
 %% Get the background estimation for all the fish
@@ -117,7 +117,7 @@ end
 %intensity
 
 %% Assemble 1D information
-bkgOffsetRatio = 1.18;%First estimate
+bkgOffsetRatio = 1.5;%First estimate
 popTot = cell(length(pAll),1); popXpos = cell(length(pAll),1); bkgDiff = cell(length(pAll),1);
 for nP = 1:length(pAll)
     minS = 1;
@@ -132,24 +132,24 @@ for nP=1:length(pAll)
     minS = 1;
     maxS =pAll{nP}.expData.totalNumberScans;
    % bkgOffsetRatio = getBackgroundRatio(bkgDiff, maxScan, emptyColor);
-   bkgOffsetRatio = 1.18;
+   bkgOffsetRatio = 1.5;
     [popTot{nP}, popXpos{nP}, bkgDiff{nP}] = ...
         assembleDataGutTimeSeries(pAll{nP}, minS, maxS, bacMean, bkgInten{nP}, bkgOffsetRatio);
 end
 %% Plot/output data for 1D analysis
 nplist = 1:5;
 for nP1=1:length(nplist)
- nP = nplist(nP1);
-%    thisTitle = [pAll{nP}.directoryName '   ', rootTitle];
-thisTitle = pAll{nP}.outputName; 
-%thisTitle =  '';
-
-printData = true; %Save the results as both a .png and .fig file
-
-plotGutData({'totalintensityLog'}, popTot{nP},popXpos{nP}, bkgDiff{nP}, thisTitle, timeData{nP},printData, thisTitle);
+    nP = nplist(nP1);
+    %    thisTitle = [pAll{nP}.directoryName '   ', rootTitle];
+    thisTitle = pAll{nP}.outputName;
+    %thisTitle =  '';
+    
+    printData = true; %Save the results as both a .png and .fig file
+    
+   % plotGutData({'totalintensityLog'}, popTot{nP},popXpos{nP}, bkgDiff{nP}, thisTitle, timeData{nP},printData, thisTitle);
     plotGutData({'linePlots'}, popTot{nP},popXpos{nP}, bkgDiff{nP}, thisTitle, timeData{nP1},true, thisTitle);
-   
-   pause 
+    
+    pause
 end
 
 
