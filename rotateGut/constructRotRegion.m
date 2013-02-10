@@ -85,10 +85,17 @@ yMin = cutVal{cutNum,4}(3); yMax = cutVal{cutNum,4}(4);
 
 theta = cutVal{cutNum,3};
 
+gutMask = double(gutMask);
+
+centerLine = param.centerLineAll{scanNum};
+
+%Cut down the size of the center line
+centerLine = centerLine(cutVal{cutNum,1}(1):cutVal{cutNum,1}(2),:);
+ 
+gutMask(round(centerLine(1,2)), round(centerLine(1,1))) = 2;
 gutMaskRot = imrotate(gutMask,theta);
 
 %% Calculate rotated center line
-centerLine = param.centerLineAll{scanNum};
 
 rotCenterLine = getRotatedLine(centerLine, cutVal, cutNum,height,width,gutMask,gutMaskRot);
 
@@ -151,8 +158,6 @@ end
 function rotCenterLine = getRotatedLine(centerLine, cutVal, cutNum,height, width,gutMask,gutMaskRot)
 
 
-%Cut down the size of the center line
-centerLine = centerLine(cutVal{cutNum,1}(1):cutVal{cutNum,1}(2),:);
 
 theta = -deg2rad(cutVal{cutNum,3});
 rotMat = [cos(theta), -sin(theta); sin(theta), cos(theta)];
@@ -170,11 +175,11 @@ rotCenterLine(:,2) = rotCenterLine(:,2)+ (height/2);
 
 
 %When using the imrotate command the image size is potentially changed. In
-%order find out what the correct offset on the rotated center line is find
+%order find out what the correct offset on the rotated center line find
 %the difference in centroid location between the rotated and unrotated
 %image.
-cOrig = regionprops(gutMask, 'Centroid');
-cRot = regionprops(gutMaskRot,'Centroid');
+cOrig = regionprops(gutMask>0, 'Centroid');
+cRot = regionprops(gutMaskRot>0,'Centroid');
 rotCenterLine(:,1) = rotCenterLine(:,1) + cRot.Centroid(1)-cOrig.Centroid(1);
 rotCenterLine(:,2) = rotCenterLine(:,2) + cRot.Centroid(2)-cOrig.Centroid(2);
 
