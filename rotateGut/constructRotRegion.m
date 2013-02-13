@@ -258,7 +258,7 @@ for nR =1:length(allReg)
    inWedge = bwconncomp(wedgeMask, 8);
    inExMask = bwconncomp(exMask,8);
 
-   figure;
+
    exMaskOrig = exMask;
    for nM = 1:inExMask.NumObjects
        ind =  inExMask.PixelIdxList{nM};

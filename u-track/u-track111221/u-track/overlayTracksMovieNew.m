@@ -1017,7 +1017,7 @@ for iFrame = 1 : numFramesMovie-1
         currFrame = getframe(h);
         writeVideo(vidObj, currFrame);
         
-        outFileName  = ['video', sprintf('%03d', iFrame), '.png'];
+        outFileName  = ['video_2', sprintf('%03d', iFrame), '.png'];
         print(h, '-dpng', outFileName);
     end
     

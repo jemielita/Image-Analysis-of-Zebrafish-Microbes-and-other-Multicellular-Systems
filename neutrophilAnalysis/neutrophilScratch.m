@@ -50,7 +50,7 @@ end
     
 
 for nS=1:120
-        load(['seg_', num2str(nS), '.mat']);
+        load(['seg_', num2str(nS), '.mat'], 'neutPos');
 for i=1:size(neutPos,1)
     movieInfo(nS).xCoord(i,1) = neutPos(i,1);
     movieInfo(nS).yCoord(i,1) = neutPos(i,2);
@@ -76,19 +76,19 @@ end
 
 %Plot the tracked data
 startend = [1 118];
-dragtailLength = 3;
+dragtailLength = 5;
 saveMovie = 1;
-movieName = 'test';
+movieName = 'test_color';
 filterSigma = 0;
 classifyGaps = 0;
 highlightES  = 1;
 showRaw = 0;
 imageRange = [1, 2160; 1, 2560];
-onlyTracks = 1;
+onlyTracks = 0;
 classifyLft = 2;
 diffAnalysisRes = [];
 intensityScale = 1;
-colorTracks = 0;
+colorTracks = 1;
 firstImageFile = [];
 dir2saveMovie = pwd;
 minLength = 5;
