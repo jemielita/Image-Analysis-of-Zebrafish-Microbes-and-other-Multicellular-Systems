@@ -31,7 +31,6 @@ for nS = minS:maxS
     %Get bounding box so that we can crop down each of these regions.
     rp = regionprops(imSeg, 'BoundingBox');
     
-    
     %Load in entire image stack
     thisImBase = [imDir, filesep, 'Scan_', num2str(nS), filesep,...
             'region_1', filesep, '488nm', filesep, 'pco'];
@@ -42,6 +41,39 @@ for nS = minS:maxS
     end
     imIn = double(imIn);
     
+    
+    
+    %Get features of each segmented neutrophil-will be used to classify,
+    %and potentially further segment each of these regions.
+    segFeat = getSegFeat(imSeg, imIn,neutPos, rp);
+    
+    
+    displaySeg=true;
+    if(displaySeg==true)
+        %Masks for individual neutrophils when we segment them
+        regMaskPerimAll = zeros(size(imSeg,1), size(imSeg,2));
+        regMask2PerimAll = zeros(size(imSeg,1), size(imSeg,2));
+        
+        %Display full image region, but with the neutrophil of interest
+        %highlighted
+        mIm = max(imIn,[],3);
+        %Remove the time stamp
+        mIm(1:20,1:300) = 0;
+        mIm = mat2gray(mIm);
+        
+        close all;
+        hFig = figure; drawnow
+        set(hFig, 'Position', [450 612 239 252])
+        imshow(mIm,[0 0.1]);
+        hold on
+        
+        maxInten = 0.1;
+        hS =imshow(regMaskPerimAll,[0 maxInten]);
+        set(hS, 'AlphaData', regMaskPerimAll);
+        
+        hP = imshow(regMask2PerimAll,[0 maxInten]);
+        set(hP, 'AlphaData', regMask2PerimAll);
+    end
     
     for nR=1:numReg
         xMin = rp(nR).BoundingBox(1); xMin = max([1 floor(xMin)]);
@@ -54,7 +86,6 @@ for nS = minS:maxS
         
         regSeg = imSeg(yMin:yMax,xMin:xMax,zMin:zMax)==nR;
         
-        
         im = zeros(size(regSeg));
         
         for nZ=zMin:zMax
@@ -66,23 +97,26 @@ for nS = minS:maxS
         displaySeg = true;
         
         if(displaySeg==true)
+           regMaskPerimAll(:) = 0;
+           regMask2PerimAll(:) = 0;
            
-            mIm = mat2gray(max(im,[],3));
-            close all;
-            hFig = figure; drawnow
-            set(hFig, 'Position', [450 612 239 252])
-            imshow(mIm);
-            hold on
             regMask= max(regSeg,[],3);
             regMaskPerim = bwperim(regMask);
-            hS =imshow(max(mIm(:))*regMaskPerim,[0 max(mIm(:))]);
-            set(hS, 'AlphaData', regMaskPerim);
+            
+            regMaskPerimAll(yMin:yMax,xMin:xMax) = regMaskPerim;
+            
+            maxInten = 0.1;
+            %hS =imshow(max(mIm(:))*regMaskPerimAll,[0 maxInten]);
+            set(hS, 'CData', max(mIm(:))*regMaskPerimAll);
+            set(hS, 'AlphaData', regMaskPerimAll);
        
-            otsuT = graythresh(mIm);
-            regMask2Perim = bwperim(mIm>otsuT);
+            otsuT = graythresh(max(im,[],3));
+            regMask2Perim = bwperim(max(im,[],3)>otsuT);
             regMask2Perim = bwmorph(regMask2Perim, 'dilate');
-            hP = imshow(max(mIm(:))*regMask2Perim,[0 max(mIm(:))]);
-            set(hP, 'AlphaData', regMask2Perim);
+            regMask2PerimAll(yMin:yMax,xMin:xMax) = regMask2Perim;
+            %hP = imshow(max(mIm(:))*regMask2PerimAll,[0 maxInten]);
+            set(hP, 'CData', max(mIm(:))*regMask2PerimAll);
+            set(hP, 'AlphaData', regMask2PerimAll);
             
             
             if(getIntensityInfo)
@@ -126,7 +160,25 @@ end
 
 end
 
+function segFeat = getSegFeat(imSeg, imIn,neutPos,rp)
+numReg = size(neutPos,1);
+for nR = 1:numReg
+    xMin = rp(nR).BoundingBox(1); xMin = max([1 floor(xMin)]);
+    yMin = rp(nR).BoundingBox(2); yMin = max([1, floor(yMin)]);
+    zMin = rp(nR).BoundingBox(3); zMin = max([1, floor(zMin)]);
+    
+    xMax = xMin + rp(nR).BoundingBox(4); xMax = min([size(imSeg,2), xMax]);
+    yMax = yMin + rp(nR).BoundingBox(5); yMax = min([size(imSeg,1), yMax]);
+    zMax = zMin + rp(nR).BoundingBox(6); zMax = min([size(imSeg,3), zMax]);
+    
+    regSeg = imSeg(yMin:yMax,xMin:xMax,zMin:zMax)==nR;
+    
+    im = zeros(size(regSeg));
+    im = imIn(yMin:yMax,xMin:xMax,zMin:zMax);
+    
+end
 
+end
 %Segmentation protocol for resegmenting a region 
 function updatedSeg = segmentFunc(im, regSeg, segVal)
 

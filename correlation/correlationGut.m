@@ -25,7 +25,7 @@ regionMask =uint16(regionMask);
 allReg = unique(regionMask(:));
 
 maxCorr =100; %Should be input-gives upper bound on how
-radCorr= zeros(length(centerLine),1);
+radCorr= cell(length(centerLine),1);
 
 
 
@@ -38,18 +38,16 @@ for numMask=1:totalNumMask
       thisRegMask = regionMask(:,:,numMask)==regNum(nR);
       
       %Collect together all the regions with 3 boxes of this one-this will
-      %give each box an effective are of 35 microns.
+      %give each box an effective area of 35 microns.
       regList = [regNum(nR)-3:regNum(nR)-1, regNum(nR)+1:regNum(nR)+3];
       regList(regList==0) = [];
       regList(regList>max(allReg)) = [];
       for i=1:length(regList)
          for nM =1:totalNumMask
-            thisRegMask = thisRegMask + (regionMask(:,:,numMask)==regList(i)); 
+            thisRegMask = thisRegMask + (regionMask(:,:,nM)==regList(i)); 
          end
       end
       thisRegMask = thisRegMask>0;
-      %Get the convex hull of this region
-      thisRegMask = bwconvhull(thisRegMask);
       
       %Crop down the image to the size of this mask
       xMin = find(sum(thisRegMask,2)>0, 1,'first');
@@ -97,7 +95,7 @@ for numMask=1:totalNumMask
 
 
        [rpos, rint] = getrdist(cc, cm, dr);
-       radCorr = [rpos; rint];
+       radCorr{regNum(nR)} = [rpos; rint];
        fprintf(1, '.');
    end
     

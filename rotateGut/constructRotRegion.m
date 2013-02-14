@@ -152,9 +152,6 @@ end
 end
 
 function [rotCenterLine,cutMask] = getRotatedLineAndMask(centerLine, cutVal, cutNum,height, width,gutMask)
-
-
-hw = [width; height];
 theta = -deg2rad(cutVal{cutNum,3});
 rotMat = [cos(theta), -sin(theta); sin(theta), cos(theta)];
 
@@ -167,32 +164,33 @@ rotCenterLine = rotMat*(centerLineO');
 
 rotCenterLine = rotCenterLine';
 
-%rotCenterLine(:,1) = rotCenterLine(:,1)+(width/2);
-%rotCenterLine(:,2) = rotCenterLine(:,2)+(height/2);
+rotCenterLine(:,1) = rotCenterLine(:,1)+(width/2);
+rotCenterLine(:,2) = rotCenterLine(:,2)+(height/2);
 
+%Now rotate the line using imrotate
+thetaDegrees = cutVal{cutNum,3};
+imC = zeros(size(gutMask));
 
-%Rotate the gut mask
-[y,x] = find(gutMask==1);
-gutInd = [x-(width/2),y-(height/2)];
-gutIndRot = rotMat*(gutInd');
-gutIndRot = gutIndRot';
+ind = sub2ind(size(gutMask),round(centerLine(:,2)), round(centerLine(:,1)));
+imC(ind) = 1;
 
-minX = min([1, min(gutIndRot(:,1)), min(rotCenterLine(:,1))])-1;
-minY = min([1, min(gutIndRot(:,2)), min(rotCenterLine(:,2))])-1;
+imCR = imrotate(imC, thetaDegrees);
+indR = find(imCR~=0);
+[yR,xR] = ind2sub(size(imCR), indR);
+cR = [xR,yR];
 
-gutIndRot(:,1) = gutIndRot(:,1) -minX;
-gutIndRot(:,2) = gutIndRot(:,2) - minY;
-rotCenterLine(:,1) = rotCenterLine(:,1)- minX;
-rotCenterLine(:,2) = rotCenterLine(:,2) - minY;
+meanR1 = mean(rotCenterLine);
+meanR2 = mean(cR);
+rotCenterLine(:,1) = rotCenterLine(:,1) + (meanR2(1)-meanR1(1));
+rotCenterLine(:,2) = rotCenterLine(:,2) + (meanR2(2)-meanR1(2));
 
-maxX = max([max(gutIndRot(:,1)), max(rotCenterLine(:,1))]);
-maxY = max([max(gutIndRot(:,2)), max(rotCenterLine(:,2))]);
+xMin =cutVal{cutNum, 4}(5); xMax = cutVal{cutNum,4}(6);
+yMin = cutVal{cutNum,4}(3); yMax = cutVal{cutNum,4}(4);
+gutMaskRot = imrotate(gutMask, thetaDegrees);
 
-gutIndRot = floor(gutIndRot);
-gutMaskRot = zeros(maxY,maxX);
-ind = sub2ind(size(gutMaskRot), gutIndRot(:,2), gutIndRot(:,1));
-gutMaskRot(ind) = 1;
-gutMaskRot = ~bwareaopen(~gutMaskRot, 10);
+gutMaskRot = gutMaskRot(xMin:xMax, yMin:yMax);
+rotCenterLine(:,1) = rotCenterLine(:,1) -yMin;
+rotCenterLine(:,2) = rotCenterLine(:,2) - xMin;
 
 %Crop down gut region to this cut.
 
@@ -204,13 +202,46 @@ pos = [cutPosFinal(1:2,:); cutPosInit(2,:); cutPosInit(1,:)];
 cutMask = poly2mask(pos(:,1), pos(:,2), size(gutMaskRot,1), size(gutMaskRot,2));
 cutMask = cutMask.*gutMaskRot;
 
-%Crop down size of mask
-[x,y] = find(bwperim(cutMask)==1);
-xMin = min(x);xMax = max(x);
-yMin = min(y); yMax = max(y);
-cutMask = cutMask(xMin:xMax, yMin:yMax);
-rotCenterLine(:,1) = rotCenterLine(:,1)-yMin;
-rotCenterLine(:,2) = rotCenterLine(:,2)-xMin;
+% %Rotate the gut mask
+% [y,x] = find(gutMask==1);
+% gutInd = [x-(width/2),y-(height/2)];
+% gutIndRot = rotMat*(gutInd');
+% gutIndRot = gutIndRot';
+% 
+% minX = min([1, min(gutIndRot(:,1)), min(rotCenterLine(:,1))])-1;
+% minY = min([1, min(gutIndRot(:,2)), min(rotCenterLine(:,2))])-1;
+% 
+% gutIndRot(:,1) = gutIndRot(:,1) -minX;
+% gutIndRot(:,2) = gutIndRot(:,2) - minY;
+% rotCenterLine(:,1) = rotCenterLine(:,1)- minX;
+% rotCenterLine(:,2) = rotCenterLine(:,2) - minY;
+% 
+% maxX = max([max(gutIndRot(:,1)), max(rotCenterLine(:,1))]);
+% maxY = max([max(gutIndRot(:,2)), max(rotCenterLine(:,2))]);
+% 
+% gutIndRot = floor(gutIndRot);
+% gutMaskRot = zeros(maxY,maxX);
+% ind = sub2ind(size(gutMaskRot), gutIndRot(:,2), gutIndRot(:,1));
+% gutMaskRot(ind) = 1;
+% gutMaskRot = ~bwareaopen(~gutMaskRot, 10);
+% 
+% %Crop down gut region to this cut.
+% 
+% initPos = 2; finalPos = size(rotCenterLine,1)-1;
+% cutPosInit = getOrthVect(rotCenterLine(:,1), rotCenterLine(:,2), 'rectangle', finalPos);
+% cutPosFinal = getOrthVect(rotCenterLine(:,1), rotCenterLine(:,2), 'rectangle', initPos);
+% pos = [cutPosFinal(1:2,:); cutPosInit(2,:); cutPosInit(1,:)];
+% 
+% cutMask = poly2mask(pos(:,1), pos(:,2), size(gutMaskRot,1), size(gutMaskRot,2));
+% cutMask = cutMask.*gutMaskRot;
+% 
+% %Crop down size of mask
+% [x,y] = find(bwperim(cutMask)==1);
+% xMin = min(x);xMax = max(x);
+% yMin = min(y); yMax = max(y);
+% cutMask = cutMask(xMin:xMax, yMin:yMax);
+% rotCenterLine(:,1) = rotCenterLine(:,1)-yMin;
+% rotCenterLine(:,2) = rotCenterLine(:,2)-xMin;
 
 %Remove tips of 
 %When using the imrotate command the image size is potentially changed. In
@@ -225,6 +256,8 @@ rotCenterLine(:,2) = rotCenterLine(:,2)-xMin;
 %Then deal with the resizing we're going to do on the rotated image.
 %rotCenterLine(:,1) = rotCenterLine(:,1) -cutVal{cutNum,4}(3);
 %rotCenterLine(:,2) = rotCenterLine(:,2) - cutVal{cutNum,4}(5);
+
+
 end
  
 function rotMask = fillInMask(rotMask, cutMask)
