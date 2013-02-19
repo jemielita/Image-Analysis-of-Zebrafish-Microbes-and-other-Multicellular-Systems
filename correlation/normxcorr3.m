@@ -60,11 +60,14 @@ rotT = flipdim(flipdim(flipdim(T,1),2),3); % this is rot90 in 3d
 fftRotT = fftn(rotT,szOut);
 fftA = fftn(A,szOut);
 corrTA = real(ifftn(fftA.*fftRotT));
-num = (corrTA - intImgA*sum(T(:))/pSzT ) / (pSzT-1);
+%num = (corrTA - intImgA*sum(T(:))/pSzT ) / (pSzT-1);
+
+%mlj: temporarily edited out top part, but keep normalization by image
+%size-might want to change this at some point
+num = corrTA/ (pSzT-1);
 
 
-
-if(normalizeCorr==true
+if(normalizeCorr==true)
     % compute the denominator of the NCC
     denomA = sqrt( ( intImgA2 - (intImgA.^2)/pSzT ) / (pSzT-1) );
 else

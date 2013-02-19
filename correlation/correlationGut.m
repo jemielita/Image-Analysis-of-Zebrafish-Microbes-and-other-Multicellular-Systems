@@ -39,8 +39,10 @@ for numMask=1:totalNumMask
       
       %Collect together all the regions with 3 boxes of this one-this will
       %give each box an effective area of 35 microns.
-      regList = [regNum(nR)-3:regNum(nR)-1, regNum(nR)+1:regNum(nR)+3];
-      regList(regList==0) = [];
+      regList = [regNum(nR)-7:regNum(nR)-1, regNum(nR)+1:regNum(nR)+7];
+      regList(regList<min(regNum)) = [];
+      regList(regList>max(regNum)) = [];
+      
       regList(regList>max(allReg)) = [];
       for i=1:length(regList)
          for nM =1:totalNumMask
@@ -86,19 +88,22 @@ for numMask=1:totalNumMask
           im(:,:,nZ) = rotIm;
       end
       
-      cc = normxcorr3(im,im);
+      cc = normxcorr3(im,im, 'full', false);
       %Get radial correlation function
       cm.x = round(size(cc,2)/2);
       cm.y = round(size(cc,1)/2);
       cm.z = round(size(cc,3)/2);
       dr = 1;
-
-
-       [rpos, rint] = getrdist(cc, cm, dr);
-       radCorr{regNum(nR)} = [rpos; rint];
-       fprintf(1, '.');
+      
+      
+      [rpos, rint] = getrdist(cc, cm, dr);
+      %Also temporarily keep image size-it's an issue with how we're
+      %normalizing in normxcorr3
+      radCorr{regNum(nR),1} = [rpos; rint];
+      radCorr{regNum(nR),2} = [size(im,1); size(im,2); size(im,3)];
+      fprintf(1, '.');
    end
-    
+   
     
 end
 fprintf(1, 'done!\n');
