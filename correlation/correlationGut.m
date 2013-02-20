@@ -32,6 +32,9 @@ radCorr= cell(length(centerLine),1);
 for numMask=1:totalNumMask
    %Get regions in this particular mask.
    regNum = unique(regionMask(:,:,numMask));
+   
+   %mlj: temporarily added to only limit ourselves to the bulb.
+   regNum(regNum>150) = [];
    regNum(regNum==0) = [];
     
    for nR=1:length(regNum)
@@ -39,7 +42,8 @@ for numMask=1:totalNumMask
       
       %Collect together all the regions with 3 boxes of this one-this will
       %give each box an effective area of 35 microns.
-      regList = [regNum(nR)-7:regNum(nR)-1, regNum(nR)+1:regNum(nR)+7];
+      regList = [regNum(nR)-3:regNum(nR)-1, regNum(nR)+1:regNum(nR)+3];
+      
       regList(regList<min(regNum)) = [];
       regList(regList>max(regNum)) = [];
       
@@ -87,14 +91,14 @@ for numMask=1:totalNumMask
           rotIm = imresize(rotIm, 0.1625);
           im(:,:,nZ) = rotIm;
       end
-      
+
       cc = normxcorr3(im,im, 'full', false);
+      
       %Get radial correlation function
       cm.x = round(size(cc,2)/2);
       cm.y = round(size(cc,1)/2);
       cm.z = round(size(cc,3)/2);
       dr = 1;
-      
       
       [rpos, rint] = getrdist(cc, cm, dr);
       %Also temporarily keep image size-it's an issue with how we're

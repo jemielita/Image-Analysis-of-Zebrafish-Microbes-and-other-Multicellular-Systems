@@ -39,6 +39,8 @@ end
 szT = size(T);
 szA = size(A);
 
+T(T<1000) = 0;
+A(A<1000) = 0;
 if any(szT>szA)
 	error('template must be smaller than image');
 end
