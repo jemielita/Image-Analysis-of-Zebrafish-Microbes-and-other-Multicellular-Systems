@@ -2,12 +2,13 @@
 %
 %
 
-function [gutMaskAll, im] = segmentBulb(param, saveData, displayData)
+function [gutMaskAll, im] = segmentBulb(param, saveData, displayData,im)
 %% Load in image stack
 maxS = param.expData.totalNumberScans;
 
 fileDir = param.dataSaveDirectory;
 color = param.color;
+color = {'488nm'};
 
 %Filter size for std. dev. filter
 filtSize = 5;
