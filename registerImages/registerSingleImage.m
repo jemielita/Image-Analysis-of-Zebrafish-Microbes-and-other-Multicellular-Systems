@@ -142,6 +142,11 @@ end
         imNum = param.regionExtent.Z(zNum,:);
         %Load in the associated images
         
+        totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
+        totalNumRegions(totalNumRegions==0) = [];
+        
+        totalNumRegions = length(totalNumRegions);
+
         for regNum=1:totalNumRegions
             
             height = param.regionExtent.XY{colorNum}(regNum,3);

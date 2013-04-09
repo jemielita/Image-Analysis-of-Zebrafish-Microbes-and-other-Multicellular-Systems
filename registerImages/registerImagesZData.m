@@ -25,9 +25,12 @@ function param = registerCroppedImage(param)
  zOldCropRange = param.regionExtentOrig.crop.z;
  
  zDepth = size(zRange,1);
- 
- totalNumRegions = length(unique([param.expData.Scan.region]));
- 
+
+ totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
+ totalNumRegions(totalNumRegions==0) = [];
+
+ totalNumRegions = length(totalNumRegions);
+
  for numReg = 1:totalNumRegions
      zMin = max(zOldCropRange(numReg,1), zCropRange(numReg,1));
      zMax = min(zOldCropRange(numReg,2), zCropRange(numReg,2));
@@ -98,7 +101,13 @@ posArray = minZ:stepZ:maxZ+stepZ;
 
 %Construct a cell array of all the positions in the z-direction that images
 %were taken at.
-totalNumRegions = length(unique([param.expData.Scan.region]));
+
+totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
+totalNumRegions(totalNumRegions==0) = [];
+
+totalNumRegions = length(totalNumRegions);
+
+
 imArray = cell(totalNumRegions,1);
 
 for regNum=1:totalNumRegions
