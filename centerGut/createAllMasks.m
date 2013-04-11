@@ -17,37 +17,40 @@ mkdir(maskDir);
 maskInd = zeros(length(scanParam.scanList),1);
 
 fprintf(1, 'Finding optimal cuts for all scans');
+% 
+% for nS = 1:length(scanParam.scanList)
+%     thisScan= scanParam.scanList(nS);
+%    
+%     if(nS==1)
+%         param.cutValAll{thisScan} = ...
+%             calcOptimalCut(scanParam.regOverlap, param, thisScan);
+%         maskInd(nS) = thisScan;
+%         lastScan = thisScan;
+%     else 
+%         lastScan = scanParam.scanList(nS-1);
+%         sameLine = isequal(param.centerLineAll{lastScan}(:),param.centerLineAll{thisScan}(:));
+%         sameOutline = isequal(...
+%             param.regionExtent.polyAll{lastScan}(:),param.regionExtent.polyAll{thisScan}(:));
+%         if(sameLine==true && sameOutline==true)        
+%             param.cutValAll{thisScan} = param.cutValAll{lastScan};
+%             
+%             maskInd(nS) = lastScan;
+%         else
+%             param.cutValAll{thisScan} = ...
+%                 calcOptimalCut(scanParam.regOverlap, param, thisScan);
+%             maskInd(nS) = thisScan;
+%             lastScan = thisScan;
+%         end
+%         
+%     end
+%     fprintf(1, '.');
+% end
+load([maskDir filesep 'cutVal.mat']);
+param.cutValAll = cutValAll;
 
-for nS = 1:length(scanParam.scanList)
-    thisScan= scanParam.scanList(nS);
-   
-    if(nS==1)
-        param.cutValAll{thisScan} = ...
-            calcOptimalCut(scanParam.regOverlap, param, thisScan);
-        maskInd(nS) = thisScan;
-        lastScan = thisScan;
-    else 
-        lastScan = scanParam.scanList(nS-1);
-        sameLine = isequal(param.centerLineAll{lastScan}(:),param.centerLineAll{thisScan}(:));
-        sameOutline = isequal(...
-            param.regionExtent.polyAll{lastScan}(:),param.regionExtent.polyAll{thisScan}(:));
-        if(sameLine==true && sameOutline==true)        
-            param.cutValAll{thisScan} = param.cutValAll{lastScan};
-            
-            maskInd(nS) = lastScan;
-        else
-            param.cutValAll{thisScan} = ...
-                calcOptimalCut(scanParam.regOverlap, param, thisScan);
-            maskInd(nS) = thisScan;
-            lastScan = thisScan;
-        end
-        
-    end
-    fprintf(1, '.');
-end
-cutValAll = param.cutValAll;
+%cutValAll = param.cutValAll;
 
-save([maskDir filesep 'cutVal.mat'], 'cutValAll');
+%save([maskDir filesep 'cutVal.mat'], 'cutValAll');
 fprintf(1, '\n');
 
 uniqMasks = unique(maskInd);

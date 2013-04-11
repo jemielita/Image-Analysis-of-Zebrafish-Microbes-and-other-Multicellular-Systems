@@ -75,7 +75,7 @@ bkgInten = cell(numScans, numColor);
 bacInten = cell(numScans, numColor);
 
 %%%%%%% projection type
-projectionType = 'none';
+projectionType = 'mip';
 
 %%%number of regions
 totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
@@ -152,8 +152,8 @@ uimenu(hMenuOutline, 'Label', 'Smooth/extrapolate all outlines & centers',...
 
 %Box to outline the region containing the bulb
 uimenu(hMenuOutline, 'Label', 'Outline bulb region', 'Callback', @outlineBulbRegion_Callback, 'Separator', 'on');
-uimenu(hMenuOutline, 'Label', 'Show bulb segmentation', 'Callback', @showBulbSegmenatation_Callback);
-
+hShowBulbSeg = uimenu(hMenuOutline, 'Label', 'Show bulb segmentation', 'Callback', @showBulbSegmenatation_Callback, 'Checked', 'off');
+showBulb = false;
 
 hMenuDisplay = uimenu('Label', 'Display');
 hMenuContrast = uimenu(hMenuDisplay, 'Label', 'Adjust image contrast', 'Callback', @adjustContrast_Callback);
@@ -1852,37 +1852,10 @@ hContrast = imcontrast(imageRegion);
             updateAutoFluorPosition();
         end
         
-
-        
-        %mlj: note this code is no longer in use.
-        %Check to see if we're doing a quick-Z crop. If so load in the
-        %entire 3D volume
-%         if(strcmp(get(hQuickZ, 'Checked'), 'on'))
-%             fprintf(1, 'Loading in all images');
-%             totalNumColors = size(param.color,2);
-%             for nC=1:totalNumColors
-%                 for nR=1:totalNumRegions
-%                     imVar.color = param.color{nC};
-%                     imVar.zNum = '';
-%                     imVar.scanNum = scanNum;
-%                     imAll{nC, nR} = load3dVolume(param, imVar, 'single', nR);
-%                     fprintf(1, '.');
-%                 end
-%             end
-%             displayAllMIP();
-%             
-%             return;
-%             
-%         end
-       
-           
-        
-        
         %Display the new image
         color = colorType(colorNum);
         color = color{1};
         getRegisteredImage(scanNum, color, zNum, im, data, param);
-        
         
         %If we're drawing a different outline & center of gut  on the gut
         %at different time points, get the new outline.
@@ -2298,12 +2271,20 @@ hContrast = imcontrast(imageRegion);
     end
 
     function showBulbSegmenatation_Callback(hObject, eventdata)
-       if(isfield(param.regionExtent, 'bulbMask'))
-           
-           
-       end
-        
+        %Use a check mark to indicate whether we'll align or not
+        if strcmp(get(hShowBulbSeg, 'Checked'),'on')
+            set(hShowBulbSeg, 'Checked', 'off');
+            if(isfield(param.regionExtent, 'bulbMask'))
+                showBulb = false;
+            end
+        else
+            set(hShowBulbSeg, 'Checked', 'on');
+            if(isfield(param.regionExtent, 'bulbMask'))
+                showBulb = true;
+            end
+        end
     end
+
     function loadGutCenter_Callback(hObject, eventdata)
         if(isfield(param, 'centerLineAll'))
             hLine = findobj('Tag', 'gutCenter');
@@ -2505,7 +2486,7 @@ hContrast = imcontrast(imageRegion);
         switch nargout
             case 0
                 set(hIm, 'CData', im);
-                
+                    
             case 1
                 %Used for saving potentially modified images to a new
                 %folder

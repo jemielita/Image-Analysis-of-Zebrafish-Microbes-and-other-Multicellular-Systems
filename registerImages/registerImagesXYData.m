@@ -224,6 +224,7 @@ regLoc(:,1) = regLoc(:,1) - min(regLoc(:,1))+1;
 regLoc(:,2) = regLoc(:,2) - min(regLoc(:,2))+1;
 regLoc(:,5:6) = 1;
 
+
 %Store the result in the structure param.regionExtent, where
 %param.regionExtentXY is a regNum x 6 matrix with entries:
 %[pixel X location, pixel Y Location, pixel extent X,

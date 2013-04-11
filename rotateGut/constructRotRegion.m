@@ -85,27 +85,30 @@ yMin = cutVal{cutNum,4}(3); yMax = cutVal{cutNum,4}(4);
 
 theta = cutVal{cutNum,3};
 
-gutMaskRot = imrotate(gutMask,theta);
+gutMask = double(gutMask);
 
-%% Calculate rotated center line
 centerLine = param.centerLineAll{scanNum};
 
-rotCenterLine = getRotatedLine(centerLine, cutVal, cutNum,height,width,gutMask,gutMaskRot);
+%Cut down the size of the center line
+centerLine = centerLine(cutVal{cutNum,1}(1):cutVal{cutNum,1}(2),:);
+ 
+gutMask(round(centerLine(1,2)), round(centerLine(1,1))) = 2;
+%gutMaskRot = imrotate(gutMask,theta);
+
+%% Calculate rotated center line and gut mask
+
+[rotCenterLine,cutMask] = getRotatedLineAndMask(centerLine, cutVal, cutNum,height,width,gutMask);
 
 %Rescale the rotated gut mask
-gutMask = gutMaskRot(xMin:xMax,yMin:yMax);
 
-initPos = 2; finalPos = size(rotCenterLine,1)-1;
-cutPosInit = getOrthVect(rotCenterLine(:,1), rotCenterLine(:,2), 'rectangle', finalPos);
-cutPosFinal = getOrthVect(rotCenterLine(:,1), rotCenterLine(:,2), 'rectangle', initPos);
 
-pos = [cutPosFinal(1:2,:); cutPosInit(2,:); cutPosInit(1,:)];
-
-cutMask = poly2mask(pos(:,1), pos(:,2), size(gutMask,1), size(gutMask,2));
-cutMask = cutMask.*gutMask;
 
 %% Get rotated mask
 rotMask = curveMask(cutMask, rotCenterLine, param,'rectangle');
+
+%Fill in blank spots in the gut mask
+
+rotMask = fillInMask(rotMask, cutMask);
 
 %% Remove regions that have been selected as background
 
@@ -148,12 +151,7 @@ end
 
 end
 
-function rotCenterLine = getRotatedLine(centerLine, cutVal, cutNum,height, width,gutMask,gutMaskRot)
-
-
-%Cut down the size of the center line
-centerLine = centerLine(cutVal{cutNum,1}(1):cutVal{cutNum,1}(2),:);
-
+function [rotCenterLine,cutMask] = getRotatedLineAndMask(centerLine, cutVal, cutNum,height, width,gutMask)
 theta = -deg2rad(cutVal{cutNum,3});
 rotMat = [cos(theta), -sin(theta); sin(theta), cos(theta)];
 
@@ -161,24 +159,161 @@ rotMat = [cos(theta), -sin(theta); sin(theta), cos(theta)];
 centerLineO(:,1)= centerLine(:,1)-(width/2);
 centerLineO(:,2) = centerLine(:,2)-(height/2);
 
-rotCenterLine = rotMat*centerLineO';
+%rotCenterLine = rotMat*(centerLineO'+repmat(hw,1,size(centerLineO,1)));
+rotCenterLine = rotMat*(centerLineO');
 
 rotCenterLine = rotCenterLine';
 
 rotCenterLine(:,1) = rotCenterLine(:,1)+(width/2);
-rotCenterLine(:,2) = rotCenterLine(:,2)+ (height/2);
+rotCenterLine(:,2) = rotCenterLine(:,2)+(height/2);
 
+%Now rotate the line using imrotate
+thetaDegrees = cutVal{cutNum,3};
+imC = zeros(size(gutMask));
 
+ind = sub2ind(size(gutMask),round(centerLine(:,2)), round(centerLine(:,1)));
+imC(ind) = 1;
+
+imCR = imrotate(imC, thetaDegrees);
+indR = find(imCR~=0);
+[yR,xR] = ind2sub(size(imCR), indR);
+cR = [xR,yR];
+
+meanR1 = mean(rotCenterLine);
+meanR2 = mean(cR);
+rotCenterLine(:,1) = rotCenterLine(:,1) + (meanR2(1)-meanR1(1));
+rotCenterLine(:,2) = rotCenterLine(:,2) + (meanR2(2)-meanR1(2));
+
+xMin =cutVal{cutNum, 4}(5); xMax = cutVal{cutNum,4}(6);
+yMin = cutVal{cutNum,4}(3); yMax = cutVal{cutNum,4}(4);
+gutMaskRot = imrotate(gutMask, thetaDegrees);
+
+gutMaskRot = gutMaskRot(xMin:xMax, yMin:yMax);
+rotCenterLine(:,1) = rotCenterLine(:,1) -yMin;
+rotCenterLine(:,2) = rotCenterLine(:,2) - xMin;
+
+%Crop down gut region to this cut.
+
+initPos = 2; finalPos = size(rotCenterLine,1)-1;
+cutPosInit = getOrthVect(rotCenterLine(:,1), rotCenterLine(:,2), 'rectangle', finalPos);
+cutPosFinal = getOrthVect(rotCenterLine(:,1), rotCenterLine(:,2), 'rectangle', initPos);
+pos = [cutPosFinal(1:2,:); cutPosInit(2,:); cutPosInit(1,:)];
+
+cutMask = poly2mask(pos(:,1), pos(:,2), size(gutMaskRot,1), size(gutMaskRot,2));
+cutMask = cutMask.*gutMaskRot;
+
+% %Rotate the gut mask
+% [y,x] = find(gutMask==1);
+% gutInd = [x-(width/2),y-(height/2)];
+% gutIndRot = rotMat*(gutInd');
+% gutIndRot = gutIndRot';
+% 
+% minX = min([1, min(gutIndRot(:,1)), min(rotCenterLine(:,1))])-1;
+% minY = min([1, min(gutIndRot(:,2)), min(rotCenterLine(:,2))])-1;
+% 
+% gutIndRot(:,1) = gutIndRot(:,1) -minX;
+% gutIndRot(:,2) = gutIndRot(:,2) - minY;
+% rotCenterLine(:,1) = rotCenterLine(:,1)- minX;
+% rotCenterLine(:,2) = rotCenterLine(:,2) - minY;
+% 
+% maxX = max([max(gutIndRot(:,1)), max(rotCenterLine(:,1))]);
+% maxY = max([max(gutIndRot(:,2)), max(rotCenterLine(:,2))]);
+% 
+% gutIndRot = floor(gutIndRot);
+% gutMaskRot = zeros(maxY,maxX);
+% ind = sub2ind(size(gutMaskRot), gutIndRot(:,2), gutIndRot(:,1));
+% gutMaskRot(ind) = 1;
+% gutMaskRot = ~bwareaopen(~gutMaskRot, 10);
+% 
+% %Crop down gut region to this cut.
+% 
+% initPos = 2; finalPos = size(rotCenterLine,1)-1;
+% cutPosInit = getOrthVect(rotCenterLine(:,1), rotCenterLine(:,2), 'rectangle', finalPos);
+% cutPosFinal = getOrthVect(rotCenterLine(:,1), rotCenterLine(:,2), 'rectangle', initPos);
+% pos = [cutPosFinal(1:2,:); cutPosInit(2,:); cutPosInit(1,:)];
+% 
+% cutMask = poly2mask(pos(:,1), pos(:,2), size(gutMaskRot,1), size(gutMaskRot,2));
+% cutMask = cutMask.*gutMaskRot;
+% 
+% %Crop down size of mask
+% [x,y] = find(bwperim(cutMask)==1);
+% xMin = min(x);xMax = max(x);
+% yMin = min(y); yMax = max(y);
+% cutMask = cutMask(xMin:xMax, yMin:yMax);
+% rotCenterLine(:,1) = rotCenterLine(:,1)-yMin;
+% rotCenterLine(:,2) = rotCenterLine(:,2)-xMin;
+
+%Remove tips of 
 %When using the imrotate command the image size is potentially changed. In
-%order find out what the correct offset on the rotated center line is find
+%order find out what the correct offset on the rotated center line find
 %the difference in centroid location between the rotated and unrotated
 %image.
-cOrig = regionprops(gutMask, 'Centroid');
-cRot = regionprops(gutMaskRot,'Centroid');
-rotCenterLine(:,1) = rotCenterLine(:,1) + cRot.Centroid(1)-cOrig.Centroid(1);
-rotCenterLine(:,2) = rotCenterLine(:,2) + cRot.Centroid(2)-cOrig.Centroid(2);
+%cOrig = regionprops(gutMask>0, 'Centroid');
+%cRot = regionprops(gutMaskRot>0,'Centroid');
+%rotCenterLine(:,1) = rotCenterLine(:,1) + cRot.Centroid(1)-cOrig.Centroid(1);
+%rotCenterLine(:,2) = rotCenterLine(:,2) + cRot.Centroid(2)-cOrig.Centroid(2);
 
 %Then deal with the resizing we're going to do on the rotated image.
-rotCenterLine(:,1) = rotCenterLine(:,1) -cutVal{cutNum,4}(3);
-rotCenterLine(:,2) = rotCenterLine(:,2) - cutVal{cutNum,4}(5);
+%rotCenterLine(:,1) = rotCenterLine(:,1) -cutVal{cutNum,4}(3);
+%rotCenterLine(:,2) = rotCenterLine(:,2) - cutVal{cutNum,4}(5);
+
+
+end
+ 
+function rotMask = fillInMask(rotMask, cutMask)
+
+rotMaskAll = zeros(size(rotMask,1), size(rotMask,2));
+for i =1:size(rotMask,3)
+   rotMaskAll = rotMaskAll+rotMask(:,:,i);
+end
+rotMaskAlll = rotMaskAll>0;
+
+exMask = cutMask-rotMaskAll;
+exMask = exMask==1;
+
+%Go through all regions
+allReg = unique(rotMask(rotMask>0));
+
+for nR =1:length(allReg)
+   thisReg = allReg(nR);
+   
+   %Get this particular wedge, and it's location in rotMask
+   wedgeMask = zeros(size(rotMask,1),size(rotMask,2));
+   for i=1:size(rotMask,3)
+       wedgeMask = wedgeMask + (rotMask(:,:,i)==thisReg);
+       if(sum(wedgeMask(:))~=0)
+           maskSlice = i;
+           break
+       end
+   end
+   wedgeMask = bwmorph(wedgeMask, 'dilate');
+   
+   inWedge = bwconncomp(wedgeMask, 8);
+   inExMask = bwconncomp(exMask,8);
+
+
+   exMaskOrig = exMask;
+   for nM = 1:inExMask.NumObjects
+       ind =  inExMask.PixelIdxList{nM};
+       if(sum(intersect(inWedge.PixelIdxList{1},ind)))
+          %If there's an intersection, remove this region from exMask and
+          %add it to the appropriate region of rotMask
+          exMask(ind) = 0;
+           
+          thisRotMask = rotMask(:,:,maskSlice);
+          thisRotMask(ind) = thisReg;
+          rotMask(:,:,maskSlice) = thisRotMask;
+          
+          temp = zeros(size(exMask));
+          temp(ind) = 1;
+%           imshow((thisRotMask>0)+5*temp,[]);
+%           pause(0.1);
+       end
+   end
+   
+    
+    
+end
+
+
 end

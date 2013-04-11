@@ -1,4 +1,4 @@
-function C = normxcorr3(T, A, shape)
+function C = normxcorr3(T, A, shape, normalizeCorr)
 % C = normxcorr3(TEMPLATE, IMAGE, SHAPE)
 %
 %       TEMPLATE - type double, ndims==3, size <= size of image
@@ -7,6 +7,10 @@ function C = normxcorr3(T, A, shape)
 %                  'full' by default
 %
 %       C        - values in [-1,1]. size depends on SHAPE
+%
+%       normalizeCorr: true (default) normalize the cross correlation. This
+%       is the standard form for cross correlation. False: don't apply
+%       normalization. Optional input.
 %
 % the syntax of this function is identical to Matlab's
 % normxcorr2, except that it's been extended to 3D matrices,
@@ -24,6 +28,10 @@ if nargin<3
 	shape = 'full';
 end
 
+if nargin <4
+    normalizeCorr = false;
+end
+
 if ndims(A)~=3 || ndims(T)~=3
 	error('A and T must be 3 dimensional matrices');
 end
@@ -31,6 +39,8 @@ end
 szT = size(T);
 szA = size(A);
 
+T(T<1000) = 0;
+A(A<1000) = 0;
 if any(szT>szA)
 	error('template must be smaller than image');
 end
@@ -52,10 +62,21 @@ rotT = flipdim(flipdim(flipdim(T,1),2),3); % this is rot90 in 3d
 fftRotT = fftn(rotT,szOut);
 fftA = fftn(A,szOut);
 corrTA = real(ifftn(fftA.*fftRotT));
-num = (corrTA - intImgA*sum(T(:))/pSzT ) / (pSzT-1);
+%num = (corrTA - intImgA*sum(T(:))/pSzT ) / (pSzT-1);
 
-% compute the denominator of the NCC
-denomA = sqrt( ( intImgA2 - (intImgA.^2)/pSzT ) / (pSzT-1) );
+%mlj: temporarily edited out top part, but keep normalization by image
+%size-might want to change this at some point
+num = corrTA/ (pSzT-1);
+
+
+if(normalizeCorr==true)
+    % compute the denominator of the NCC
+    denomA = sqrt( ( intImgA2 - (intImgA.^2)/pSzT ) / (pSzT-1) );
+else
+    %Don't normalize the correlation function.
+    denomA = 1;
+end
+
 denomT = std(T(:));
 denom = denomT*denomA;
 

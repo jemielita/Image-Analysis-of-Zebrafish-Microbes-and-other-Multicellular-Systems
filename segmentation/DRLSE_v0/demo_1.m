@@ -15,20 +15,19 @@
 %Img=imread('gourd.bmp');
 %Img=double(Img(:,:,1));
 
-nS = 20;
-Img = im(:,:,nS);
+Img = mIm;
 %% parameter setting
 timestep=1;  % time step
 mu=0.2/timestep;  % coefficient of the distance regularization term R(phi)
 iter_inner=5;
 iter_outer=20;
 lambda=5; % coefficient of the weighted length term L(phi)
-alfa=-3;  % coefficient of the weighted area term A(phi)
+alfa=-0.5;  % coefficient of the weighted area term A(phi)
 epsilon=1.5; % papramater that specifies the width of the DiracDelta function
 
 sigma=.8;    % scale parameter in Gaussian kernel
 G=fspecial('gaussian',15,sigma); % Caussian kernel
-Img_smooth=conv2(Img,G,'same');  % smooth image by Gaussiin convolution
+Img_smooth=conv2(Img,G,'same');  % smooth image by Gaussian convolution
 [Ix,Iy]=gradient(Img_smooth);
 f=Ix.^2+Iy.^2;
 g=1./(1+f);  % edge indicator function.
@@ -37,7 +36,7 @@ g=1./(1+f);  % edge indicator function.
 c0=2;
 initialLSF = c0*ones(size(Img));
 
-initialLSF(gutMask{1}(:,:,nS)) = -c0;
+initialLSF(mIm>0.5*otsuT) = -c0;
 % generate the initial region R0 as two rectangles
 %initialLSF(25:35,20:25)=-c0; 
 %initialLSF(25:35,40:50)=-c0;

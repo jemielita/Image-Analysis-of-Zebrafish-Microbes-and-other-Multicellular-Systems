@@ -1,7 +1,3 @@
-                                                                     
-                                                                     
-                                                                     
-                                             
 % corr_notes_25Jan2012.m
 %
 % 3D two color bacteria image correlations

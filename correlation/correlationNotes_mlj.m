@@ -78,8 +78,7 @@ figure; imshow(g,[])
  imOff(ind) = 1;
  %Calculate correlation between these points
  cc = normxcorr2(imOff, im);
- 
- 
+
  %Ring around the center of the image clearly visible
  figure; imshow(cc,[])
  %figure; imshow(im,[])
