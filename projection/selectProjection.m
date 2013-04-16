@@ -86,19 +86,20 @@ im = calculateProjection(type);
             mipR = double(mipR);
             
             
-            imTot(xOutI:xOutF, yOutI:yOutF) = mipR + imTot(xOutI:xOutF, yOutI:yOutF);
+            %imTot(xOutI:xOutF, yOutI:yOutF) = mipR + imTot(xOutI:xOutF, yOutI:yOutF);
+                        imTot(xOutI:xOutF, yOutI:yOutF) = mipR ;
         end
         
-        for regNum = 2:totNumRegions
-            %Overlapping regions
-            %This is potentially slow (however we need to be as quick as possible with this type of thing).
-            %After we know this code works, we'll come back and write quicker code.
-            imTot(param.regionExtent.overlapIndex{colorNum,regNum-1} )= ...
-                0.5*imTot(param.regionExtent.overlapIndex{colorNum,regNum-1});
-            %    im(:) =1;
-            %   im(param.regionExtent.overlapIndex{regNum-1} ) = 0;
-            
-        end
+%         for regNum = 2:totNumRegions
+%             %Overlapping regions
+%             %This is potentially slow (however we need to be as quick as possible with this type of thing).
+%             %After we know this code works, we'll come back and write quicker code.
+%             imTot(param.regionExtent.overlapIndex{colorNum,regNum-1} )= ...
+%                 0.5*imTot(param.regionExtent.overlapIndex{colorNum,regNum-1});
+%             %    im(:) =1;
+%             %   im(param.regionExtent.overlapIndex{regNum-1} ) = 0;
+%             
+%         end
         
         
     end

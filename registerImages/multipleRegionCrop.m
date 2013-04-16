@@ -42,7 +42,11 @@ function [] = multipleRegionCropGUI(param, data)
 %%%%%% z stack depth
 zMin = 1;
 %Put this back in in a second.
-zMax = length([param.regionExtent.Z]);
+if(isfield(param.regionExtent, 'Z'))
+    zMax = length([param.regionExtent.Z]);
+else 
+    zMax = zMin+1;
+end
 zNum = zMin;
 zLast = zNum; %The last z level we went to.
 
@@ -71,11 +75,14 @@ bkgInten = cell(numScans, numColor);
 bacInten = cell(numScans, numColor);
 
 %%%%%%% projection type
-projectionType = 'none';
+projectionType = 'mip';
 
 %%%number of regions
-totalNumRegions = length(unique([param.expData.Scan.region]));
+totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
+totalNumRegions(totalNumRegions==0) = [];
 
+totalNumRegions = length(totalNumRegions);
+ 
 %%%%api handle
 hApi = '';
 
@@ -277,15 +284,18 @@ set(hMenuProjectionType, 'SelectionChangeFcn', @projectionType_Callback);
  rnames = cell(totalNumRegions,1);
  for i=1:totalNumRegions
     rnames{i} = i;
-end
+ end
 
-dataTable = param.regionExtent.crop.z;
-
-hRegTable = uitable('Parent', fGui,...
-'Data', dataTable, 'ColumnName', cnames,...
-   'RowName', rnames, 'Units', 'Normalized', 'Position', [ 0.36 0.02 0.11 0.19-offset],...
-   'ColumnEditable', true);
-set(hRegTable, 'CellEditCallback', @table_Callback);
+ if(isfield( param.regionExtent, 'crop'))
+     dataTable = param.regionExtent.crop.z;
+     
+     hRegTable = uitable('Parent', fGui,...
+         'Data', dataTable, 'ColumnName', cnames,...
+         'RowName', rnames, 'Units', 'Normalized', 'Position', [ 0.36 0.02 0.11 0.19-offset],...
+         'ColumnEditable', true);
+     set(hRegTable, 'CellEditCallback', @table_Callback);
+     
+ end
 %%%%%%%%%%%
 % GUI Setup
 %%%%%%%%%%%
@@ -303,10 +313,13 @@ im = zeros(param.regionExtent.regImSize{1}(1), param.regionExtent.regImSize{1}(2
 color = colorType(colorNum);
 color = color{1};
 
-im = registerSingleImage(scanNum,color, zNum,im, data,param);
-im(im(:)>40000) = 0;
+projectionType = 'mip';
 
 hIm = imshow(im, [],'Parent', imageRegion);
+%im = registerSingleImage(scanNum,color, zNum,im, data,param);
+im = getRegisteredImage(scanNum, color, 0, im, data, param );
+im(im(:)>40000) = 0;
+
 
 numColor = length(param.color);
 
@@ -446,6 +459,9 @@ hContrast = imcontrast(imageRegion);
        end
        %Save the result to the param file associated with the data.
        saveFile = [saveDir fileName];
+       
+       %Remove the last backspace
+       saveDir = saveDir(1:end-1);
        %Update param.dataSaveDirectory to where we are saving param
        param.dataSaveDirectory = saveDir;
        save(saveFile, 'param');
@@ -1529,11 +1545,17 @@ hContrast = imcontrast(imageRegion);
     end
 
     function getIndividualRegions()
-        totalNumRegions = length(unique([param.expData.Scan.region]));
         
-        imNum = param.regionExtent.Z(zNum,:);
+        totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
+        totalNumRegions(totalNumRegions==0) = [];
+        
+        totalNumRegions = length(totalNumRegions);
+
+        if(strcmp(param.expData.saveScan, 'true'))
+            imNum = param.regionExtent.Z(zNum,:);
+        end
+        
         %Load in the associated images
-        
         
         baseDir = [param.directoryName filesep 'Scans' filesep];
         %Going through each scan
@@ -1564,25 +1586,45 @@ hContrast = imcontrast(imageRegion);
                 yInI = param.regionExtent.XY{cN}(regNum,6);
                 yInF = yOutF - yOutI +yInI;
                 
-                if(imNum(regNum)~=-1)
-                    imFileName = ...
-                        strcat(scanDir,  'region_', num2str(regNum),filesep,...
-                        color, filesep,'pco', num2str(imNum(regNum)),'.tif');
-                    imArray{cN,regNum} = imread(imFileName,...
-                        'PixelRegion', {[xInI xInF], [yInI yInF]});
+                switch param.expData.saveScan
                     
-                else
-                    imArray{cN,regNum} = zeros(xInF-xInI+1, yInF-yInI+1);
+                    case 'true'
+                        %Full scan has been saved-load this ind
+                        
+                        if(imNum(regNum)~=-1)
+                            imFileName = ...
+                                strcat(scanDir,  'region_', num2str(regNum),filesep,...
+                                color, filesep,'pco', num2str(imNum(regNum)),'.tif');
+                            
+                            imArray{cN,regNum} = imread(imFileName,...
+                                'PixelRegion', {[xInI xInF], [yInI yInF]});
+                            
+                        else
+                            imArray{cN,regNum} = zeros(xInF-xInI+1, yInF-yInI+1);
+                        end
+                        
+                        %Also update imC
+                        if(imNum(regNum)~=-1)
+                            whichC = mod(regNum, 2)+1;
+                            imC(xOutI:xOutF,yOutI:yOutF,whichC) = ...
+                                imArray{cN,regNum} + ...
+                                imC(xOutI:xOutF,yOutI:yOutF,whichC);
+                            
+                        end
+                        
+                    case 'false'
+                        %Load in just the MIP
+                        imFileName = strcat('mip', color, '_R',num2str(regNum), '_nS', num2str(scanNum));
+                        imArray{cN,regNum} = imread(imFileName,...
+                            'PixelRegion', {[xInI xInF], [yInI yInF]});
+                        
+                        %Also update imC
+                        whichC = mod(regNum,2)+1;
+                        imC(xOutI:xOutF, yOutI:yOutF, whichC) = ...
+                            imArray{cN,regNum} + ...
+                            imC(xOutI:xOutF,yOutI:yOutF,whichC);
                 end
-                
-                %Also update imC
-                if(imNum(regNum)~=-1)
-                    whichC = mod(regNum, 2)+1;
-                    imC(xOutI:xOutF,yOutI:yOutF,whichC) = ...
-                        imArray{cN,regNum} + ...
-                        imC(xOutI:xOutF,yOutI:yOutF,whichC);
-                    
-                end
+
                 
             end
             
@@ -1626,8 +1668,12 @@ hContrast = imcontrast(imageRegion);
         for j=0:numColor-1
             param.regionExtent.XY{j+1}(:, 1:2) = tableData(1:end-1,2*j+1:2*j+2);
         end
-        totalNumRegions = length(unique([param.expData.Scan.region]));
-
+        
+        totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
+        totalNumRegions(totalNumRegions==0) = [];
+        
+        totalNumRegions = length(totalNumRegions);
+        
         %If we've changed the size of the image, then redefine image
         
         for j=0:numColor-1
@@ -1650,8 +1696,9 @@ hContrast = imcontrast(imageRegion);
         end
         [~,param] = registerImagesXYData('overlap', data,param);
         
-        
-        imNum = param.regionExtent.Z(zNum,:);
+        if(strcmp(param.expData.saveScan, 'true'))
+            imNum = param.regionExtent.Z(zNum,:);
+        end
         %Load in the associated images
         
         %Filling the input image with zeros, to be safe.
@@ -1685,14 +1732,24 @@ hContrast = imcontrast(imageRegion);
             yInI = param.regionExtent.XY{thisColor}(regNum,6);
             yInF = yOutF - yOutI +yInI;
             
-            if(imNum(regNum)~=-1)
-                whichC = mod(regNum, 2)+1;
-                imC(xOutI:xOutF,yOutI:yOutF,whichC) = ...
-                    imArray{thisColor,regNum} + ...
-                    imC(xOutI:xOutF,yOutI:yOutF,whichC);
+            switch param.expData.saveScan
+                case 'true'
+                    if(imNum(regNum)~=-1)
+                        whichC = mod(regNum, 2)+1;
+                        imC(xOutI:xOutF,yOutI:yOutF,whichC) = ...
+                            imArray{thisColor,regNum} + ...
+                            imC(xOutI:xOutF,yOutI:yOutF,whichC);
+                        
+                    end
                 
+                case 'false'
+                    
+                    %Also update imC
+                    whichC = mod(regNum,2)+1;
+                    imC(xOutI:xOutF, yOutI:yOutF, whichC) = ...
+                        imArray{thisColor,regNum} + ...
+                        imC(xOutI:xOutF,yOutI:yOutF,whichC);
             end
-            
         end
         
         if(strcmp(projectionType, 'mip'))  
@@ -2265,8 +2322,12 @@ hContrast = imcontrast(imageRegion);
         end
         
         %Set z values
-        zMax = length([param.regionExtent.Z]);
-        
+        if(isfield(param.regionExtent, 'Z'))
+            zMax = length([param.regionExtent.Z]);
+        else
+            zMax = zMin +1;
+        end
+       
         zStepSmall = 1.0/(zMax-zMin);
         zStepBig = 15.0/(zMax-zMin);
         
@@ -2318,19 +2379,25 @@ hContrast = imcontrast(imageRegion);
         
         
         %%%number of regions
-        totalNumRegions = length(unique([param.expData.Scan.region]));
+        totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
+        totalNumRegions(totalNumRegions==0) = [];
+        
+        totalNumRegions = length(totalNumRegions);
         
         %Color map for bounding rectangles.
         cMap = rand(totalNumRegions,3);
         
         
         %Update the table for max and min z values.
-        dataTable = param.regionExtent.crop.z;
-        set(hRegTable, 'Data', dataTable);
-        for i=1:totalNumRegions
-            rnames{i} = i;
+        if(isfield(param.regionExtent, 'crop'))
+            dataTable = param.regionExtent.crop.z;
+            set(hRegTable, 'Data', dataTable);
+            for i=1:totalNumRegions
+                rnames{i} = i;
+            end
+            set(hRegTable, 'RowName', rnames);
+            
         end
-        set(hRegTable, 'RowName', rnames);
         
 
     end
@@ -2809,8 +2876,12 @@ function [data, param] = loadParameters()
                         fprintf(2,'Calculating information needed to register the images...');
                         [data,param] = registerImagesXYData('original', data,param);
                         
-                        [data,param] = registerImagesZData('original', data,param);
-                        
+                        %Only register in z-direction if we've ssved the
+                        %full 3-d scans
+                        if(strcmp(param.expData.saveScan,'true'))
+                            [data,param] = registerImagesZData('original', data,param);
+                        end
+                            
                         %Store the result in a backup structure, since .regionExtent will be
                         %modified by cropping.
                         param.regionExtentOrig = param.regionExtent;
@@ -2826,6 +2897,12 @@ function [data, param] = loadParameters()
                 numScans = regexp({scanDir.name}, 'scan_\d+');
                 numScans = sum([numScans{:}]);
                 param.expData.totalNumberScans = numScans;
+                
+                
+                %Set data save directory if not done already
+                if(~isfield(param, 'dataSaveDirectory'))
+                   param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
+                end
 end
 
 %For a given polygon, smooth out the polygon using spline interpolation

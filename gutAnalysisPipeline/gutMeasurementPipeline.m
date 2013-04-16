@@ -30,7 +30,8 @@ plotResults = true;
 %change over time...
 
 %% Parameters for this particular series of fish
-timeData = {[0 3], [0 3], [0 3], [0 3]};
+
+timeData = {[3 0], [3 0], [3 0]};
 baseTitle = 'Fish '; rootTitle = '0 GFP, 3 RFP';
 
 %% Get the background estimation for all the fish
@@ -78,6 +79,8 @@ end
 %the background
 %format: bacRatio{p_i}(nS,nD) = green/red intensity for scan n (nS), and a
 %number of standard deviations above background (nD).
+
+%mlj: not used anymore
 bacRatio = estimateBacteriaInten(bkgInten, bacInten, bacCutoff,30);
 
 %% Plot the red/green intensity ratios for each fish
@@ -137,7 +140,11 @@ for nP=1:length(pAll)
         assembleDataGutTimeSeries(pAll{nP}, minS, maxS, bacMean, bkgInten{nP}, bkgOffsetRatio);
 end
 %% Plot/output data for 1D analysis
+<<<<<<< TREE
+nplist = 1:3;
+=======
 nplist = 1:5;
+>>>>>>> MERGE-SOURCE
 for nP1=1:length(nplist)
     nP = nplist(nP1);
     %    thisTitle = [pAll{nP}.directoryName '   ', rootTitle];

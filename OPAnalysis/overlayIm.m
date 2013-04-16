@@ -10,6 +10,9 @@ if nargin==2
     imIn = varargin{1};
     mask = varargin{2};
     
+    %Adjust contrast on imIn;
+    imIn(imIn>100) = 100;
+    imIn = imIn/max(imIn(:));
     imIn = mat2gray(imIn);
     
     im = zeros(size(imIn,1), size(imIn,2), 3);

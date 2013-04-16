@@ -20,7 +20,10 @@ function [data, param] = registerImagesXYData(type, data,param)
 %calculation, to keep the code as general as possible.
 
 %%Find the extent of each region of the scan
-totalNumRegions = unique([param.expData.Scan.region]);
+%Only count regions that are scans, not videos
+totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
+totalNumRegions(totalNumRegions==0) = [];
+
 totalNumRegions = length(totalNumRegions);
 % 
 % cIn1 = 1;cIn2 = 1;
@@ -180,8 +183,12 @@ for regNum=1:totalNumRegions
     else
    %     regLoc(regNum,1) = -param.expData.Scan(regionIndex).xBegin;
     end
-       regLoc(regNum,1) = param.expData.Scan(regionIndex).xBegin;
-    %   regLoc(regNum,1) = regLoc(regNum,1) +10*0.1625*(param.expData.Scan(regionIndex).cropRegion(1));
+    
+    
+       regLoc(regNum,1) = -param.expData.Scan(regionIndex).xBegin;
+       
+       
+       regLoc(regNum,1) = regLoc(regNum,1) +2*10*0.1625*(param.expData.Scan(regionIndex).cropRegion(1));
 %  regLoc(regNum,1) = regLoc(regNum,1) + (10*0.1625)*(2160 -param.expData.Scan(regionIndex).cropRegion(1)-...
  %     param.expData.Scan(regionIndex).cropRegion(3));
   
@@ -216,6 +223,7 @@ regLoc = round(regLoc);
 regLoc(:,1) = regLoc(:,1) - min(regLoc(:,1))+1;
 regLoc(:,2) = regLoc(:,2) - min(regLoc(:,2))+1;
 regLoc(:,5:6) = 1;
+
 
 %Store the result in the structure param.regionExtent, where
 %param.regionExtentXY is a regNum x 6 matrix with entries:
