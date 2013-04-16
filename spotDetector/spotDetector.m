@@ -43,13 +43,27 @@ delta = 1;
 
 %Keep on iterating algorithm until the difference in the result is below
 %some threshold (0.002 is probably an arbitrary choice)
+n = 1;
+
+frameInfo = 0;
+
+%Ignore all iterations and output the first pass-it's pretty good!
+resDenoised = significantCoefficientDenoising(res, S);
+imgDenoised = imgDenoised + resDenoised; % add significant residuals
+return;
+
 while delta > 0.002
     resDenoised = significantCoefficientDenoising(res, S);
     imgDenoised = imgDenoised + resDenoised; % add significant residuals
+    
     res = img - imgDenoised;
     sigma_res1 = std(res(:));
     delta = abs(sigma_res0/sigma_res1 - 1);
     sigma_res0 = sigma_res1;
+   % figure; imshow(imgDenoised,[0 1000]);
+    title(num2str(n));
+    n = n+1;
+    delta
 end
 
 %The code above is the only thing that uses the paper Olivo-Marin, Pattern
