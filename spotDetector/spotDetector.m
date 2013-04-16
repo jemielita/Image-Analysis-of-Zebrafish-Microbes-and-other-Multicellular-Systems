@@ -26,7 +26,6 @@ if nargin<4
     postProcLevel = 1;
 end
 
-
 maxI = max(img(:));
 minI = min(img(:));
 [ny nx] = size(img);
@@ -60,6 +59,10 @@ end
 % Multiscale product of wavelet coefficients
 %===================================================
 % The support of the objects is given by the multiscale product in the wavelet domain.
+frameInfo = 0;
+
+return;
+
 W = awt(imgDenoised, S);
 imgMSP = abs(prod(W(:,:,1:S),3));
 
