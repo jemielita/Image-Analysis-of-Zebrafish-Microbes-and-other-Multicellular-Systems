@@ -78,7 +78,11 @@ bacInten = cell(numScans, numColor);
 projectionType = 'mip';
 
 %%%number of regions
-totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
+if(isfield(param.expData.Scan, 'isScan'))
+    totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
+else
+    totalNumRegions = unique([param.expData.Scan.region]);
+end
 totalNumRegions(totalNumRegions==0) = [];
 
 totalNumRegions = length(totalNumRegions);
@@ -316,10 +320,11 @@ color = color{1};
 projectionType = 'mip';
 
 hIm = imshow(im, [],'Parent', imageRegion);
-%im = registerSingleImage(scanNum,color, zNum,im, data,param);
+
 im = getRegisteredImage(scanNum, color, 0, im, data, param );
 im(im(:)>40000) = 0;
 
+set(imageRegion, 'CLim', [0 1000]);
 
 numColor = length(param.color);
 
@@ -1052,8 +1057,6 @@ hContrast = imcontrast(imageRegion);
      def = {'1','1'};
      answer = inputdlg(prompt,dlg_title,num_lines,def);
 
-     
-     totalNumRegions = length(unique([param.expData.Scan.region]));
      totalNumScans = param.expData.totalNumberScans;
      totalNumColors = size(param.color,2);
     
@@ -1545,15 +1548,15 @@ hContrast = imcontrast(imageRegion);
     end
 
     function getIndividualRegions()
-        
-        totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
-        totalNumRegions(totalNumRegions==0) = [];
-        
-        totalNumRegions = length(totalNumRegions);
 
-        if(strcmp(param.expData.saveScan, 'true'))
+
+        if(~isfield(param.expData, 'saveScan')||strcmp(param.expData.saveScan, 'true'))
             imNum = param.regionExtent.Z(zNum,:);
+            saveScan = 'true';
+        else
+            saveScan = 'false';
         end
+            
         
         %Load in the associated images
         
@@ -1586,7 +1589,7 @@ hContrast = imcontrast(imageRegion);
                 yInI = param.regionExtent.XY{cN}(regNum,6);
                 yInF = yOutF - yOutI +yInI;
                 
-                switch param.expData.saveScan
+                switch saveScan
                     
                     case 'true'
                         %Full scan has been saved-load this ind
@@ -1670,67 +1673,87 @@ hContrast = imcontrast(imageRegion);
             
             isSame = param.regionExtent.XY{j+1}(:, 1:2)==tableData(1:end-1,2*j+1:2*j+2);
             
+            isSameSize = param.regionExtent.regImSize{j+1}==tableData(end,2*j+1:2*j+2);
+            isSameSize = prod(double(isSameSize(:)));
+            
+            
+            
             [changeRow,changeCol] = find(isSame==0);
-            thisOffset = tableData(changeRow,numColor*j+changeCol)- ...
+            thisOffset = tableData(changeRow,numColor*j+changeCol) -...
                 param.regionExtent.XY{j+1}(changeRow, changeCol);
             
             isSame = prod(double(isSame(:)));
+            isSame = isSame*isSameSize;
 
+            %Move every region after the region that was adjusted by the
+            %same amount.
+            
             if(isSame==0)
                 changeColor = j;
                 break
             end
         end
         
-        if(isSame==0)
-           for j=0:numColor-1
-               param.regionExtent.XY{j+1}(:, 1:2) = tableData(1:end-1,2*j+1:2*j+2);
-               if(j~=changeColor)
-                   tableData(1:end-1,2*j+1:2*j+2) = tableData(1:end-1,2*changeColor+1:2*changeColor+2);
-               end
-           end
-           
-           %Move everything after this region by the same offset
-            for i=1:size(param.regionExtent.XY{j+1})
-               if(i>changeRow)
-                   tableData(i,changeCol+(numColor*j)) = tableData(i, changeColor+(numColor*j)) + thisOffset;
-               end
+        %Move everything after the manually moved region by the same
+        %amount
+        for j=0:numColor-1
+            for i=changeRow+1:size(tableData,1)-1
+        
+              tableData(i, changeCol+(numColor*j)) = ...
+                  tableData(i,changeCol+(numColor*j))+(i-changeRow)*thisOffset;
             end
-           
-            %Update the table
-           set(hxyRegTable, 'Data', tableData);
         end
         
+        %Update table data so that the different colors are the same
+        for j=0:numColor-1
+            if(j~=changeColor)
+                tableData(:,2*j+1:2*j+2) = tableData(:,2*changeColor+1:2*changeColor+2);               
+            end
+        end
         
-        totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
-        totalNumRegions(totalNumRegions==0) = [];
+        %Update the table
+        set(hxyRegTable, 'Data', tableData);
         
-        totalNumRegions = length(totalNumRegions);
+        %Update regionExtent and regImSize
+        for j=0:numColor-1
+           param.regionExtent.XY{j+1}(:,1:2) = tableData(1:end-1,2*j+1:2*j+2);
+           param.regionExtent.regImSize{j+1} = tableData(end,2*j+1:2*j+2);
+        end
+        
+        %Change size of displayed image if necessary
+        if(isSameSize==0)
+            
+            hContrast = findobj('Tag', 'imcontrast');
+            conPos = get(hContrast, 'Position');
+            im = zeros(param.regionExtent.regImSize{j+1});
+            %hIm = imshow(im,[],'Parent', imageRegion);
+            
+            set(hIm, 'CData', im);
+            set(imageRegion, 'YLim', [1 param.regionExtent.regImSize{j+1}(1)]);
+            set(imageRegion, 'XLim', [1 param.regionExtent.regImSize{j+1}(2)]);
+            if(~isempty(hContrast))
+                hContrast = imcontrast(imageRegion);
+                set(hContrast, 'Position', conPos);
+            end
+        end
+                
         
         %If we've changed the size of the image, then redefine image
         
         for j=0:numColor-1
             if(sum(param.regionExtent.regImSize{j+1}~=tableData(end,2*j+1:2*j+2))~=0)
                 
-                hContrast = findobj('Tag', 'imcontrast');
-                conPos = get(hContrast, 'Position');
-                param.regionExtent.regImSize{j+1}= tableData(end,2*j+1:2*j+2);
-                im = zeros(param.regionExtent.regImSize{j+1});
-                %hIm = imshow(im,[],'Parent', imageRegion);
-               
-                set(hIm, 'CData', im);
-                set(imageRegion, 'YLim', [1 param.regionExtent.regImSize{j+1}(1)]);
-                set(imageRegion, 'XLim', [1 param.regionExtent.regImSize{j+1}(2)]);
-                if(~isempty(hContrast))
-                    hContrast = imcontrast(imageRegion);
-                    set(hContrast, 'Position', conPos);
-                end
+              %  param.regionExtent.regImSize{j+1}= tableData(end,2*j+1:2*j+2);
+           
             end
         end
         [~,param] = registerImagesXYData('overlap', data,param);
         
-        if(strcmp(param.expData.saveScan, 'true'))
+        if(~isfield(param.expData, 'saveScan') ||strcmp(param.expData.saveScan, 'true'))
             imNum = param.regionExtent.Z(zNum,:);
+            saveScan = 'true';
+        else
+           saveScan = 'false'; 
         end
         %Load in the associated images
         
@@ -1765,7 +1788,7 @@ hContrast = imcontrast(imageRegion);
             yInI = param.regionExtent.XY{thisColor}(regNum,6);
             yInF = yOutF - yOutI +yInI;
             
-            switch param.expData.saveScan
+            switch saveScan
                 case 'true'
                     if(imNum(regNum)~=-1)
                         whichC = mod(regNum, 2)+1;
@@ -1783,11 +1806,12 @@ hContrast = imcontrast(imageRegion);
                         imArray{thisColor,regNum} + ...
                         imC(xOutI:xOutF,yOutI:yOutF,whichC);
             end
+            
         end
         
         if(strcmp(projectionType, 'mip'))  
             set(hIm,'CData',...
-                selectProjection(param, 'mip', 'true', scanNum,color, zNum,false));
+                selectProjection(param, 'mip', 'false', scanNum,color, zNum,false));
         else
             set(hIm, 'CData', imC(:,:,1)+imC(:,:,2));
         end
@@ -2409,14 +2433,7 @@ hContrast = imcontrast(imageRegion);
         set(hColorTextEdit, 'String', minColor);
         set(hColorSlider, 'Min', minColor);
         set(hColorSlider, 'Max', maxColor);
-        
-        
-        %%%number of regions
-        totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
-        totalNumRegions(totalNumRegions==0) = [];
-        
-        totalNumRegions = length(totalNumRegions);
-        
+       
         %Color map for bounding rectangles.
         cMap = rand(totalNumRegions,3);
         
@@ -2752,8 +2769,6 @@ function param = calcCroppedRegion(param)
 im = zeros(param.regionExtent.regImSize);
 imCropRect = im;
 
-totalNumRegions = length(unique([param.expData.Scan.region]));
-
 sizeOverlap = zeros(totalNumRegions);
 
 for regNum =1:totalNumRegions
@@ -2793,9 +2808,6 @@ for regNum =1:totalNumRegions
     sizeOverlap(cropNum,RegNum) = sum(imOverlap);
     
 end
-
-%[cropIndex, temp]  = find(sizeOverlap
-
 
 end
 

@@ -21,7 +21,11 @@ function [data, param] = registerImagesXYData(type, data,param)
 
 %%Find the extent of each region of the scan
 %Only count regions that are scans, not videos
-totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
+if(isfield(param.expData.Scan, 'isScan'))
+    totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
+else
+    totalNumRegions = unique([param.expData.Scan.region]);
+end
 totalNumRegions(totalNumRegions==0) = [];
 
 totalNumRegions = length(totalNumRegions);

@@ -3,7 +3,7 @@
 %
 % AUTHOR: Matthew Jemielita, April 18, 2013
 
-function [] = batchMontage
+function imFinal = fishMontage
 %% Variables
 % 
 
@@ -199,7 +199,7 @@ width = max(allW(:));
 imGap = montageSpaceWidth*finalSize;
 
 
-imFinal = zeros(2*(height+imGap), length(colorList)*width + (length(colorList)-1)*imGap);
+imFinal = zeros(2*(height+imGap), length(colorList)*width + (length(colorList)-1)*imGap, 'uint8');
 
 %Populating montage 
 
