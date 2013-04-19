@@ -6,6 +6,8 @@
 function [] = batchMontage
 %% Variables
 % 
+
+%testytest
 % micronToPixel = 0.1625;
 % scaleBarWidth = 0.05; %Fraction of image width taken up by scale bar
 % 
