@@ -1665,9 +1665,42 @@ hContrast = imcontrast(imageRegion);
         
         numColor = length(param.color);
         
+        %See if we've changed a color, if so change both of them.
         for j=0:numColor-1
-            param.regionExtent.XY{j+1}(:, 1:2) = tableData(1:end-1,2*j+1:2*j+2);
+            
+            isSame = param.regionExtent.XY{j+1}(:, 1:2)==tableData(1:end-1,2*j+1:2*j+2);
+            
+            [changeRow,changeCol] = find(isSame==0);
+            thisOffset = tableData(changeRow,numColor*j+changeCol)- ...
+                param.regionExtent.XY{j+1}(changeRow, changeCol);
+            
+            isSame = prod(double(isSame(:)));
+
+            if(isSame==0)
+                changeColor = j;
+                break
+            end
         end
+        
+        if(isSame==0)
+           for j=0:numColor-1
+               param.regionExtent.XY{j+1}(:, 1:2) = tableData(1:end-1,2*j+1:2*j+2);
+               if(j~=changeColor)
+                   tableData(1:end-1,2*j+1:2*j+2) = tableData(1:end-1,2*changeColor+1:2*changeColor+2);
+               end
+           end
+           
+           %Move everything after this region by the same offset
+            for i=1:size(param.regionExtent.XY{j+1})
+               if(i>changeRow)
+                   tableData(i,changeCol+(numColor*j)) = tableData(i, changeColor+(numColor*j)) + thisOffset;
+               end
+            end
+           
+            %Update the table
+           set(hxyRegTable, 'Data', tableData);
+        end
+        
         
         totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
         totalNumRegions(totalNumRegions==0) = [];

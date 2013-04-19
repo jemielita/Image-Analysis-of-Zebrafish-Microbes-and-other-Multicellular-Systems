@@ -4,15 +4,21 @@
 % AUTHOR: Matthew Jemielita, April 16, 2013
 
 
-function [] = bacteriaCensus()
+function rProp = bacteriaCensus(varargin)
 
 
 %% Load in the images that were filtered using the wavelet-based spot
 %detector.
 
-%Hard coded for now, but will laod in
-nR = 1;
-nS = 18;
+switch nargin
+    case 0
+        %Hard coded for now, but will load in
+        nR = 1;
+        nS = 27;
+    case 2
+        nS = varargin{1};
+        nR = varargin{2};
+end
 
 fileDir = 'F:\gutSegmentationTest';
 
@@ -28,41 +34,41 @@ im = temp.imDenoised;
 
 im(im<0) = 0;
 %Filter out small objects
-minObjSize = 400; %Objects that are likely not bacteria
+minObjSize = 50; %Objects that are likely not bacteria
 maxObjSize = 10000; %Objects that are likely clumps of bacteria
 
 %For doing hysteresis thresholding
-minThresh = 800;
-maxThresh = 1000; %How can we provide a more robust estimate of this threshold?
+minThresh = 600;
+maxThresh = 800; %How can we provide a more robust estimate of this threshold?
 
 imSeg = zeros(size(im), 'uint8');
-imSeg(im>maxThresh) = 2;
 imSeg(im>minThresh) = 1;
+imSeg(im>maxThresh) = 2;
 
 numR = sum(imSeg(:));
 numRprev = 0;
 
 %Remove small regions from each plane
-for nS=1:size(im,3)
-    mask = bwareaopen(imSeg(:,:,nS)>0, minObjSize);
-    thisIm = imSeg(:,:,nS);
-    thisIm(~mask) = 0;
-    imSeg(:,:,nS) = thisIm;
-end
+% for nS=1:size(im,3)
+%     mask = bwareaopen(imSeg(:,:,nS)>0, minObjSize);
+%     thisIm = imSeg(:,:,nS);
+%     thisIm(~mask) = 0;
+%     imSeg(:,:,nS) = thisIm;
+% end
 
 % Linking together regions
 fprintf(1, 'Linking together 3d regions:');
 
 while(numRprev ~= numR)
 
-    for nS = 2:size(im,3)-1
-        [r,c] = find(imSeg(:,:,nS-1)+imSeg(:,:,nS+1)>2);
+    for i = 2:size(im,3)-1
+        [r,c] = find(imSeg(:,:,i-1)+imSeg(:,:,i+1)>2);
         
         %Find regions that overlap with
-        thisPlane = imSeg(:,:,nS);
+        thisPlane = imSeg(:,:,i);
         bw = bwselect(thisPlane,c,r,4);
         thisPlane(bw) = 2;
-        imSeg(:,:,nS) = thisPlane;       
+        imSeg(:,:,i) = thisPlane;       
     end
     
     numRprev = numR;
@@ -71,24 +77,49 @@ while(numRprev ~= numR)
 end
 fprintf(1, 'done!\n');
 
-
+bw = imSeg==2;
 rProp = regionprops(bw, 'Centroid', 'Area');
-
 
 %% Plot values if desired
 
-plotVal= true;
+plotVal=true;
 
 if(plotVal==true)
-   figure; imshow(max(im,[],3), [0 1000]);
-   
-   hold on
-   cM = rand(length(rProp),3);
-   for i=1:length(rProp)
-      plot(rProp(i).Centroid(1), rProp(i).Centroid(2), 'o', 'Color', [1 0 0],...
-          'MarkerSize', 10);
+%    figure; imshow(max(im,[],3), [0 1000]);
+%    
+%    hold on
+%    cM = rand(length(rProp),3);
+%    for i=1:length(rProp)
+%       plot(rProp(i).Centroid(1), rProp(i).Centroid(2), 'o', 'Color', [1 0 0],...
+%           'MarkerSize', 10);
+%       
+%        
+%    end
       
-       
+   %Save the image with the location of each of the found spots
+   mkdir(['spot_Scan_', num2str(nS)]);
+   for z=1:size(im,3)
+      close all
+      figure;
+      imshow(im(:,:,z),[0 1000]);
+      hold on
+      for i=1:length(rProp)
+         if(abs(rProp(i).Centroid(3)-z)<1)
+             if(rProp(i).Area<100)
+                 plot(rProp(i).Centroid(1), rProp(i).Centroid(2), 'o', 'Color', [1 0 0],...
+                'MarkerSize', 10);
+             else
+                 plot(rProp(i).Centroid(1), rProp(i).Centroid(2), 'o', 'Color', [0 0 1],...
+                'MarkerSize', 10);
+             end
+                 
+         end
+   
+      end
+      
+      fileName = ['spot_Scan_', num2str(nS), filesep, 'pco', num2str(z), '.tif'];
+      print('-dtiff', '-r300', fileName);
+      
    end
 end
 
