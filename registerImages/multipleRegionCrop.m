@@ -1175,21 +1175,26 @@ hContrast = imcontrast(imageRegion);
     function getImageArray_Callback(hObject, eventdata)
         if(strcmp(get(hMenuRegisterManual, 'Checked'), 'on'))
             set(hMenuRegisterManual, 'Checked', 'off');
-
+            
             set(hxyRegTable, 'Visible', 'off');
             set(hMenuAlternateRegions, 'Visible', 'off');
             
         else
             set(hMenuRegisterManual, 'Checked', 'on');
             getIndividualRegions();
-           % manualRegisterImage_Callback('','');
+            % manualRegisterImage_Callback('','');
             set(hxyRegTable, 'Visible', 'on');
             set(hMenuAlternateRegions, 'Visible', 'on');
             
-            
-            
+            tableData = get(hxyRegTable, 'Data');
+            %Increase size of image in x direction
+            for i=1:size(tableData,2)/2
+                tableData(end,2*(i-1)+1) = round(1.5*tableData(end,2*(i-1)+1));
+            end
+            set(hxyRegTable, 'Data', tableData);
+            manualRegisterImage_Callback('','');
         end
-            
+        
     end
 
     function setMinImageSize_Callback(hObject, eventdata)
@@ -1700,7 +1705,7 @@ hContrast = imcontrast(imageRegion);
             for i=changeRow+1:size(tableData,1)-1
         
               tableData(i, changeCol+(numColor*j)) = ...
-                  tableData(i,changeCol+(numColor*j))+(i-changeRow)*thisOffset;
+                  tableData(i,changeCol+(numColor*j))+thisOffset;
             end
         end
         
@@ -1724,19 +1729,24 @@ hContrast = imcontrast(imageRegion);
         if(isSameSize==0)
             
             hContrast = findobj('Tag', 'imcontrast');
-            conPos = get(hContrast, 'Position');
+            if(~isempty(hContrast))
+                conPos = get(hContrast, 'Position');
+            else
+                conPas = [];
+            end
             im = zeros(param.regionExtent.regImSize{j+1});
             %hIm = imshow(im,[],'Parent', imageRegion);
             
-            set(hIm, 'CData', im);
+            %set(hIm, 'CData', im);
             set(imageRegion, 'YLim', [1 param.regionExtent.regImSize{j+1}(1)]);
             set(imageRegion, 'XLim', [1 param.regionExtent.regImSize{j+1}(2)]);
-            if(~isempty(hContrast))
+            if(isempty(hContrast))
                 hContrast = imcontrast(imageRegion);
-                set(hContrast, 'Position', conPos);
+                if(~isempty(conPos))
+                    set(hContrast, 'Position', conPos);
+                end
             end
         end
-                
         
         %If we've changed the size of the image, then redefine image
         
