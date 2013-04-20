@@ -1747,16 +1747,7 @@ hContrast = imcontrast(imageRegion);
                 end
             end
         end
-        
-        %If we've changed the size of the image, then redefine image
-        
-        for j=0:numColor-1
-            if(sum(param.regionExtent.regImSize{j+1}~=tableData(end,2*j+1:2*j+2))~=0)
-                
-              %  param.regionExtent.regImSize{j+1}= tableData(end,2*j+1:2*j+2);
-           
-            end
-        end
+
         [~,param] = registerImagesXYData('overlap', data,param);
         
         if(~isfield(param.expData, 'saveScan') ||strcmp(param.expData.saveScan, 'true'))
