@@ -2821,6 +2821,9 @@ function [data, param] = loadParameters()
                 dataFileExist = exist(dataFile, 'file');
                 %If work has been done on this file already, load in the results
                 
+                %Go to the directory above this one-useful for quickly
+                %going through different fish.
+                cd([pwd filesep '..']);
                 
                 switch paramFileExist
                     case 2
@@ -2948,6 +2951,13 @@ function [data, param] = loadParameters()
                 %Set data save directory if not done already
                 if(~isfield(param, 'dataSaveDirectory'))
                    param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
+                end
+                
+                
+                %Save the calculated parameters, unless they've been
+                %calculated befor.
+                if(dataFileExist~=2)
+                   save(paramFile, 'param');
                 end
 end
 
