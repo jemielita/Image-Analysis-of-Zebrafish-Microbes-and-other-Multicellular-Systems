@@ -117,7 +117,7 @@ if(plotVal==true)
    
       end
       
-      fileName = ['spot_Scan_', num2str(nS), filesep, 'pco', num2str(z), '.tif'];
+      fileName = ['spot_Scan_', num2str(nS), '_nR', num2str(nR), filesep, 'pco', num2str(z), '.tif'];
       print('-dtiff', '-r300', fileName);
       
    end

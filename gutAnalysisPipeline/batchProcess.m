@@ -15,17 +15,24 @@ function [] = batchProcess(commandList)
 files = uipickfiles;
 
 for nF=1:length(files)
-    thisFile = files(nF); thisFile = thisFile{1};
-  fileDir = [thisFile filesep 'gutOutline' filesep 'param.mat'];
+    thisFileBase = files(nF); thisFileBase = thisFileBase{1};
+    
+    % Find the subdirectory that contains the param.mat file
+    cd(thisFileBase);
+    thisFileRoot = rdir('**\*param.mat');
+    thisFileRoot = thisFileRoot(1).name; %Should be able to load multiple files, but not right now.
+    fileDir = [thisFileBase filesep thisFileRoot];
+%  fileDir = [thisFile filesep 'gutOutline' filesep 'param.mat'];
   input = load(fileDir);
   param = input.param;
   
+  disp(['Batch processing: ', param.directoryName])
   for nC = 1: length(commandList)
     ind = regexp(commandList{nC}, '[*]');
     thisCommand = [commandList{nC}(1:ind-1), 'param', commandList{nC}(ind+1:end)];
     eval(thisCommand);
       
-  end
+ba  end
 end
 
 end
