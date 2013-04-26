@@ -45,6 +45,9 @@ totNumSteps = length(analysisType);
 
 regFeatures = cell(totNumSteps,length(colorList));
 
+
+%Load in images as double
+dataType = 'double';
 %Repeating analysis for each color.
 %mlj: Should switch things up a bit to make it easier to do 2-color
 %analysis on large data stacks. But this can wait for now.
@@ -60,7 +63,7 @@ for colorNum =1:length(colorList)
         imVar.zNum = '';
         imVar.scanNum = scanNum;
         fprintf(1, 'Loading image stack');
-        imStack = load3dVolume(param, imVar, 'multiple', [cutNum, scanNum]);
+        imStack = load3dVolume(param, imVar, 'multiple', [cutNum, scanNum],dataType);
         fprintf(1, '\n');
         centerLine = varargin{1};
         gutMask = varargin{2};

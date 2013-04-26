@@ -40,6 +40,10 @@ end
 
 if nargin==6
     dataType = varargin{6};
+elseif nargin==5
+    dataType = varargin{2};
+    
+    
 elseif nargin==4
     dataType = 'uint16';
     if(strcmp(loadType, 'crop'))
@@ -285,9 +289,15 @@ for nZ=minZ:maxZ
        imFileName = ...
            strcat(scanDir,  'region_', num2str(regNum),filesep,...
            param.color(colorNum), filesep,'pco', num2str(imNum),'.tif');
-       try                           
-           imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
-               uint16(imread(imFileName{1},'PixelRegion', {[xInI xInF], [yInI yInF]}));     
+       try         
+           switch dataType
+               case 'uint16'
+                   imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
+                       uint16(imread(imFileName{1},'PixelRegion', {[xInI xInF], [yInI yInF]}));
+               case 'double'
+                   imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
+                       double(imread(imFileName{1},'PixelRegion', {[xInI xInF], [yInI yInF]}));
+           end
        catch
            disp('This image doesnt exist-fix up your code!!!!');
        end

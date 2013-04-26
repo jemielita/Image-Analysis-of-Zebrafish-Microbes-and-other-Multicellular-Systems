@@ -57,7 +57,7 @@ end
 
 %Go through the directory structure and load the appropriate images,
 %crop them, and then save the result as either a TIFF or PNG.
-
+% 
 for nS=1:totalNumScans
     mess = ['Cropping scan ', num2str(nS)];
     fprintf(2, mess);
@@ -124,10 +124,14 @@ for nS=1:totalNumScans
     fprintf(2, '\n');
 end
 
+
+%Recalculate the MIP for this new cropping region
+calcProjections(param);
+
 %Saving the new range of pixel locations
 for nC = 1:totalNumColors
     
-    if(length(param.regionExtent.XY)==1)
+    if(length(param.regionExtent.XY)==1&&~iscell(param.regionExtent.XY))
         param.regionExtent.XY(:,5)= 1;
         param.regionExtent.XY(:,6) = 1;
     elseif(length(param.regionExtent.XY)==totalNumColors)

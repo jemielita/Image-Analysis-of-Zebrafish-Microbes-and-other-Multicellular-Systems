@@ -260,6 +260,6 @@ result = zeros(size(img));
 W = awt(img, S);
 for s = 1:S
     tmp = W(:,:,s);
-    mask(abs(tmp) >= 3*std(tmp(:))) = 1;
+    mask(abs(tmp) >= 3*nanstd(tmp(:))) = 1;
     result = result + tmp.*mask;
 end

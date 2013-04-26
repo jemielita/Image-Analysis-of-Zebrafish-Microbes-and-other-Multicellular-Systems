@@ -19,7 +19,6 @@ if(nargin==7)
     recalcProj = varargin{7};
 end
 
-
 im = calculateProjection(type);
 
 
@@ -67,7 +66,8 @@ im = calculateProjection(type);
                             'mip', imVar.color, '_R', num2str(nR), '_nS', num2str(imVar.scanNum)],'file')==2)
                         
                         mipR = imread([param.dataSaveDirectory filesep...
-                            'mip', imVar.color, '_R', num2str(nR), '_nS', num2str(imVar.scanNum)]);
+                            'mip', imVar.color, '_R', num2str(nR), '_nS', num2str(imVar.scanNum)],...
+                            'PixelRegion', {[xInI xInF], [yInI yInF]} );
                     else
                         fprintf(1, 'Calculating MIP projection.');
                         %Use a different data type for maximum inten.

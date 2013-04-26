@@ -268,6 +268,7 @@ hColorSlider = uicontrol('Parent', hManipPanel,'Units', 'Normalized', 'Position'
     'Style', 'slider', 'Min', minColor, 'Max', maxColor, 'SliderStep', [1 1], 'Value', 1,...
     'Callback', @colorSlider_Callback);
 
+
 %Button group to select one of several projection types
 hMenuProjectionType = uibuttongroup('Parent', fGui, 'Units', 'Normalized','Title', 'Projection',...
     'Position', [ 0.005 0.02 0.04 0.2-offset]);
@@ -2431,10 +2432,11 @@ hContrast = imcontrast(imageRegion);
         colorType = [param.color];
         colorNum = 1;
         %%%%And update the slider bar
+        
         set(hColorTextEdit, 'String', minColor);
         set(hColorSlider, 'Min', minColor);
         set(hColorSlider, 'Max', maxColor);
-       
+        
         %Color map for bounding rectangles.
         cMap = rand(totalNumRegions,3);
         

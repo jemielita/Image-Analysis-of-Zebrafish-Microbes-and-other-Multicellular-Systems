@@ -33,36 +33,45 @@ regFeatAll = cell(totNumColor,totNumSteps);
 for colorNum=1:totNumColor;
     for stepNum=1:totNumSteps
         
-        %Store entry as either a cell or an array
-        if(iscell(regFeat{1}{analInd(stepNum),colorNum}))
-            regFeatAll{colorNum, stepNum} = cell(lineLength,1);
-        else
-            
-            firstEl = param.cutVal{1,1}(1);
-            numEl = size(regFeat{1}{analInd(stepNum),colorNum}(firstEl,:),2);
-            regFeatAll{colorNum, stepNum} = zeros(lineLength,numEl);
-        end
+        %Unpack differently for different calculations
         
-        %Now unpack the result
-        for cutNum=1:totNumCut
-            thisCut = param.cutVal{cutNum,1}(1):param.cutVal{cutNum,1}(2);
-            
-            %MESSSY~!!!!!!JKH!@LK!@H
-            if(iscell(regFeat{cutNum}{analInd(stepNum),colorNum}))
-                for i=1:length(thisCut)
-                    regFeatAll{colorNum,stepNum}{thisCut(i)} = ...
-                        regFeat{cutNum}{analInd(stepNum),colorNum}{i};
+        switch analysisType(stepNum).name
+            case 'spotDetection'
+                for cutNum=1:totNumCut
+                   regFeatAll{colorNum, stepNum}{cutNum} = regFeat{cutNum}; 
+                end
+            otherwise
+                %Store entry as either a cell or an array
+                if(iscell(regFeat{1}{analInd(stepNum),colorNum}))
+                    regFeatAll{colorNum, stepNum} = cell(lineLength,1);
+                else
+                    
+                    firstEl = param.cutVal{1,1}(1);
+                    numEl = size(regFeat{1}{analInd(stepNum),colorNum}(firstEl,:),2);
+                    regFeatAll{colorNum, stepNum} = zeros(lineLength,numEl);
                 end
                 
-            else
-                
-                val =  regFeat{cutNum}{analInd(stepNum),colorNum};
-                ind = find(sum(val,2)~=0);
-                thisCut = thisCut(ind);
-                %Only update values that are not-equal to zero.
-                regFeatAll{colorNum,stepNum}(thisCut,:) = val(ind,:);
-            end
-            
+                %Now unpack the result
+                for cutNum=1:totNumCut
+                    thisCut = param.cutVal{cutNum,1}(1):param.cutVal{cutNum,1}(2);
+                    
+                    %MESSSY~!!!!!!JKH!@LK!@H
+                    if(iscell(regFeat{cutNum}{analInd(stepNum),colorNum}))
+                        for i=1:length(thisCut)
+                            regFeatAll{colorNum,stepNum}{thisCut(i)} = ...
+                                regFeat{cutNum}{analInd(stepNum),colorNum}{i};
+                        end
+                        
+                    else
+                        
+                        val =  regFeat{cutNum}{analInd(stepNum),colorNum};
+                        ind = find(sum(val,2)~=0);
+                        thisCut = thisCut(ind);
+                        %Only update values that are not-equal to zero.
+                        regFeatAll{colorNum,stepNum}(thisCut,:) = val(ind,:);
+                    end
+                    
+                end
         end
         
     end
