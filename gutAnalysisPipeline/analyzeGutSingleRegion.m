@@ -179,8 +179,13 @@ switch analysisType(stepNum).name
         radStep = analysisType(stepNum).radStep;
         thisRegFeatures = correlationGut(imStack, gutMask, centerLine,...
             subtractBkg,radStep, param);
+        
+    case 'spotDetection'
+        %Estimate the location of single bacteria in these images
+        spotFeatures = analysisType(stepNum).spotFeatures;
+        thisRegFeatures = countSingleBacteria(imStack, spotFeatures, colorNum, param);
+        
 end
-
 
 %mlj: need to deal with saving the results appropriately.
 

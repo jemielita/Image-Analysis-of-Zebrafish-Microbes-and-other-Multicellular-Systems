@@ -318,8 +318,7 @@ for nZ=minZ:maxZ
     fprintf(1, '.');   
 
 end
-
-
+fprintf(1, '\n');
 
 end
 

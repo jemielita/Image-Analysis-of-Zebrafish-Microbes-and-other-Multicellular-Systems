@@ -60,6 +60,7 @@ for i = k2+1:k2+N
                    + tmp(i + k2, :) + tmp(i - k2, :);
 end
 
+
 tmp = padarray(I * .0625, [0 k2], 'replicate');
 
 % Convolve the rows

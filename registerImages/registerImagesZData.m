@@ -102,7 +102,11 @@ posArray = minZ:stepZ:maxZ+stepZ;
 %Construct a cell array of all the positions in the z-direction that images
 %were taken at.
 
-totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
+if(isfield(param.expData, 'isScan'))
+    totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
+else
+    totalNumRegions = unique([param.expData.Scan.region]);
+end
 totalNumRegions(totalNumRegions==0) = [];
 
 totalNumRegions = length(totalNumRegions);

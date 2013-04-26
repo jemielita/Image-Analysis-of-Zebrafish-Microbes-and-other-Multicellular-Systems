@@ -2927,7 +2927,7 @@ function [data, param] = loadParameters()
                         
                         %Only register in z-direction if we've ssved the
                         %full 3-d scans
-                        if(strcmp(param.expData.saveScan,'true'))
+                        if(~isfield(param.expData, 'saveScan')||strcmp(param.expData.saveScan,'true'))
                             [data,param] = registerImagesZData('original', data,param);
                         end
                             
@@ -2956,6 +2956,7 @@ function [data, param] = loadParameters()
                 
                 %Save the calculated parameters, unless they've been
                 %calculated befor.
+               
                 if(dataFileExist~=2)
                    save(paramFile, 'param');
                 end

@@ -15,17 +15,33 @@ switch nargin
         %Hard coded for now, but will load in
         nR = 1;
         nS = 27;
+        
+        fileDir = 'F:\gutSegmentationTest';
+        
+        fileName = ['Scan_', num2str(nS), '_reg', num2str(nR), '.mat'];
+        
+        temp = load(fileName);
+        im = temp.imDenoised;
+
+    case 1
+        im = varargin{1};
+        plotVal = true;
     case 2
-        nS = varargin{1};
-        nR = varargin{2};
+      im = varargin{1};
+      plotVal = varargin{2};
+        
+        %Unnecessary code now
+        %nS = varargin{1};
+        %nR = varargin{2};
+        
+        %fileDir = 'F:\gutSegmentationTest';
+        
+        %fileName = ['Scan_', num2str(nS), '_reg', num2str(nR), '.mat'];
+        
+        %temp = load(fileName);
+        %im = temp.imDenoised;
 end
 
-fileDir = 'F:\gutSegmentationTest';
-
-fileName = ['Scan_', num2str(nS), '_reg', num2str(nR), '.mat'];
-
-temp = load(fileName);
-im = temp.imDenoised;
 
 %% Clean up the image and do a threshold-based segmentation
 
@@ -49,12 +65,12 @@ numR = sum(imSeg(:));
 numRprev = 0;
 
 %Remove small regions from each plane
-% for nS=1:size(im,3)
-%     mask = bwareaopen(imSeg(:,:,nS)>0, minObjSize);
-%     thisIm = imSeg(:,:,nS);
-%     thisIm(~mask) = 0;
-%     imSeg(:,:,nS) = thisIm;
-% end
+for nS=1:size(im,3)
+    mask = bwareaopen(imSeg(:,:,nS)==2, minObjSize);
+    thisIm = imSeg(:,:,nS);
+    thisIm(~mask) = 0;
+    imSeg(:,:,nS) = thisIm;
+end
 
 % Linking together regions
 fprintf(1, 'Linking together 3d regions:');
@@ -78,11 +94,21 @@ end
 fprintf(1, 'done!\n');
 
 bw = imSeg==2;
-rProp = regionprops(bw, 'Centroid', 'Area');
+rProp = regionprops(bw, im, 'Centroid', 'Area', 'MeanIntensity');
+
+%Calculate eccentricity from 3d projections
+labelM = bwlabeln(bw);
+uniqL = unique(labelM(labelM>0));
+for nL = 1:length(uniqL)
+   thisL = uniqL(nL);
+   maxL = max(labelM==thisL,[],3);
+   ecc = regionProps(maxL, 'Eccentricity');
+   rProp(i).eccentricity = ecc.Eccentricity;
+end
 
 %% Plot values if desired
 
-plotVal=true;
+%plotVal=true;
 
 if(plotVal==true)
 %    figure; imshow(max(im,[],3), [0 1000]);
@@ -94,10 +120,10 @@ if(plotVal==true)
 %           'MarkerSize', 10);
 %       
 %        
-%    end
+%    end 
       
    %Save the image with the location of each of the found spots
-   mkdir(['spot_Scan_', num2str(nS)]);
+  % mkdir(['spot_Scan_', num2str(nS)]);
    for z=1:size(im,3)
       close all
       figure;
@@ -116,11 +142,11 @@ if(plotVal==true)
          end
    
       end
-      
-      fileName = ['spot_Scan_', num2str(nS), '_nR', num2str(nR), filesep, 'pco', num2str(z), '.tif'];
-      print('-dtiff', '-r300', fileName);
+      pause
+     % fileName = ['spot_Scan_', num2str(nS), '_nR', num2str(nR), filesep, 'pco', num2str(z), '.tif'];
+     % print('-dtiff', '-r300', fileName);
       
    end
-end
+ end
 
 end
