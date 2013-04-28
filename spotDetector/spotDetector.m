@@ -14,7 +14,7 @@
 % Parts of this function are based on code by Henry Jaqaman.
 % Francois Aguet, March 2010
 
-function [frameInfo imgDenoised] = spotDetector(img, S, dthreshold, postProcLevel)
+function [frameInfo, imgDenoised] = spotDetector(img, S, dthreshold, postProcLevel)
 
 if nargin<2
     S = 4;
@@ -34,6 +34,7 @@ minI = min(img(:));
 % Iterative filtering from significant coefficients
 %===================================================
 imgDenoised = significantCoefficientDenoising(img, S);
+nansum(imgDenoised(:))
 
 
 res = img - imgDenoised; % residuals
@@ -50,6 +51,7 @@ frameInfo = 0;
 %Ignore all iterations and output the first pass-it's pretty good!
 resDenoised = significantCoefficientDenoising(res, S);
 imgDenoised = imgDenoised + resDenoised; % add significant residuals
+
 return;
 
 while delta > 0.002
@@ -248,13 +250,14 @@ frameInfo.yCoord(:,1) = frameInfo.ycom;
 frameInfo.path = [];
 frameInfo.maskPath = [];
 
-
+end
 
 
 %=======================
 % Subfunctions
 %=======================
 function result = significantCoefficientDenoising(img, S)
+
 mask = zeros(size(img));
 result = zeros(size(img));
 W = awt(img, S);
@@ -262,4 +265,7 @@ for s = 1:S
     tmp = W(:,:,s);
     mask(abs(tmp) >= 3*nanstd(tmp(:))) = 1;
     result = result + tmp.*mask;
+    
+end
+
 end

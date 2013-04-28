@@ -33,7 +33,12 @@ if nargin > 1 && ~isempty(varargin{1})
     end
 end
 
-W = zeros(N, M, nBands + 1);
+if(nargin==3)
+   W = varargin{2};
+else
+    W = zeros(N, M, nBands + 1);
+end
+
 
 I = double(I);
 lastA = I;
@@ -47,13 +52,9 @@ end
 W(:, :, nBands + 1) = lastA;
 end
 
-function F = convolve(I, k)
-
-I2 = I;
+function I = convolve(I, k)
 
 %Fill in filter
-
-tic; 
 h = zeros(2^(k+1) +1,1);
 h(1 + 2^k) = 6;
 h(1) = 1;
@@ -62,35 +63,37 @@ h(1+ 2^(k-1)) = 4;
 h(end -2^(k-1)) = 4;
 h = 0.0625*h;
 
-I2 = imfilter(I2, h, 'replicate');
-I2 = imfilter(I2, h', 'replicate');
+%h = gpuArray(h);
+I = imfilter(I, h, 'replicate');
+I = imfilter(I, h', 'replicate');
 
-filtTime = toc;
-
-tic;
-[N, M] = size(I);
-k1 = 2^(k - 1);
-k2 = 2^k;
-tmp = padarray(I, [k2 0], 'replicate');
-
-% Convolve the columns
-for i = k2+1:k2+N
-    I(i - k2, :) = 6*tmp(i, :) + 4*(tmp(i + k1, :) + tmp(i - k1, :))...
-                   + tmp(i + k2, :) + tmp(i - k2, :);
-end
-
-tmp = padarray(I * .0625, [0 k2], 'replicate');
-% Convolve the rows
-for i = k2+1:k2+M
-    I(:, i - k2) = 6*tmp(:, i) + 4*(tmp(:, i + k1) + tmp(:, i - k1))...
-                   + tmp(:, i + k2) + tmp(:, i - k2);
-end
-
-F = I * .0625;
-oldCode = toc;
-
-oldCode/filtTime;
-b = F-I2;
-disp([ num2str(sum(b(:))), '   ', num2str(oldCode/filtTime)])
+% 
+% filtTime = toc;
+% 
+% tic;
+% [N, M] = size(I);
+% k1 = 2^(k - 1);
+% k2 = 2^k;
+% tmp = padarray(I, [k2 0], 'replicate');
+% 
+% % Convolve the columns
+% for i = k2+1:k2+N
+%     I(i - k2, :) = 6*tmp(i, :) + 4*(tmp(i + k1, :) + tmp(i - k1, :))...
+%                    + tmp(i + k2, :) + tmp(i - k2, :);
+% end
+% 
+% tmp = padarray(I * .0625, [0 k2], 'replicate');
+% % Convolve the rows
+% for i = k2+1:k2+M
+%     I(:, i - k2) = 6*tmp(:, i) + 4*(tmp(:, i + k1) + tmp(:, i - k1))...
+%                    + tmp(:, i + k2) + tmp(:, i - k2);
+% end
+% 
+% F = I * .0625;
+% oldCode = toc;
+% 
+% oldCode/filtTime;
+% b = F-I2;
+% disp([ num2str(sum(b(:))), '   ', num2str(oldCode/filtTime)])
 
 end
