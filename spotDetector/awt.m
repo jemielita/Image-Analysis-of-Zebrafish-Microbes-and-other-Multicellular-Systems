@@ -41,15 +41,18 @@ end
 
 
 I = double(I);
-lastA = I;
 
-for k = 1:nBands
+
+lastA = I;
+ for k = 1:nBands
     newA = convolve(lastA, k);
     W(:, :, k) = lastA - newA;
     lastA = newA;
+    
 end
 
 W(:, :, nBands + 1) = lastA;
+
 end
 
 function I = convolve(I, k)
@@ -63,37 +66,12 @@ h(1+ 2^(k-1)) = 4;
 h(end -2^(k-1)) = 4;
 h = 0.0625*h;
 
+%hGPU = gpuArray(h);
+%hGPUtrans = gpuArray(h');
 %h = gpuArray(h);
+
 I = imfilter(I, h, 'replicate');
 I = imfilter(I, h', 'replicate');
 
-% 
-% filtTime = toc;
-% 
-% tic;
-% [N, M] = size(I);
-% k1 = 2^(k - 1);
-% k2 = 2^k;
-% tmp = padarray(I, [k2 0], 'replicate');
-% 
-% % Convolve the columns
-% for i = k2+1:k2+N
-%     I(i - k2, :) = 6*tmp(i, :) + 4*(tmp(i + k1, :) + tmp(i - k1, :))...
-%                    + tmp(i + k2, :) + tmp(i - k2, :);
-% end
-% 
-% tmp = padarray(I * .0625, [0 k2], 'replicate');
-% % Convolve the rows
-% for i = k2+1:k2+M
-%     I(:, i - k2) = 6*tmp(:, i) + 4*(tmp(:, i + k1) + tmp(:, i - k1))...
-%                    + tmp(:, i + k2) + tmp(:, i - k2);
-% end
-% 
-% F = I * .0625;
-% oldCode = toc;
-% 
-% oldCode/filtTime;
-% b = F-I2;
-% disp([ num2str(sum(b(:))), '   ', num2str(oldCode/filtTime)])
 
 end

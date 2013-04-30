@@ -11,30 +11,46 @@
 function spotLoc = countSingleBacteria(im, spotFeatures, colorNum, param)
 
 %Loading in filtering parameters
-minObjSize = spotFeatures.minSize;
-maxObjSize = spotFeatures.maxSize;
+%minObjSize = spotFeatures.minSize;
+%maxObjSize = spotFeatures.maxSize;
 
-minThresh = spotFeatures.minThresh;
-maxThresh = spotFeatures.maxThresh;
+minThresh = 100;
+maxThresh = 200;
 
-
-imSeg = zeros(size(im), 'uint8');
+%imSeg = zeros(size(im), 'uint8');
+imSeg = zeros(size(im), 'double');
+maskAll = zeros(size(im), 'uint8');
 % Filter image using wavelet filter
 fprintf(1, 'Filtering image and segmenting.');
 for nZ=1:size(im,3)
-   [~,thisFrame] = spotDetector(im(:,:,nZ));
-   
-   %Processing this z-slice
-   thisFrame(thisFrame<0) = 0;
-   mask = zeros(size(thisFrame));
-   mask(thisFrame>maxThresh) = 1;
+   [mask,thisFrame] = spotDetector(double(im(:,:,nZ)));
+   mask = uint8(mask);
+   mask(thisFrame>maxThresh) =1;
    mask(thisFrame>minThresh) = mask(thisFrame>minThresh)+1;
    
-   maskMinObj = bwareaopen(mask==2, minObjSize);
-   mask(~maskMinObj) = 0;
-   
-   imSeg(:,:,nZ) = uint8(mask);
+   imSeg(:,:,nZ)= mask;
+   %Processing this z-slice
+%    thisFrame(thisFrame<0) = 0;
+%    mask = zeros(size(thisFrame));
+%    mask(thisFrame>maxThresh) = 1;
+%    mask(thisFrame>minThresh) = mask(thisFrame>minThresh)+1;
+%    
+%    maskMinObj = bwareaopen(mask==2, minObjSize);
+%    mask(~maskMinObj) = 0;
+%    
+%
+% bin = 0:10:max(thisFrame(:));
+% hVal = hist(thisFrame(:), bin);
+% ind = rosin(hVal);
+% 
+% thresh(nZ)= bin(ind);
+
+
+%imSeg(:,:,nZ) = thisFrame;
+
+%   imSeg(:,:,nZ) = uint8(mask);
    fprintf(1, '.');
+
 end
 fprintf(1, '\n');
 

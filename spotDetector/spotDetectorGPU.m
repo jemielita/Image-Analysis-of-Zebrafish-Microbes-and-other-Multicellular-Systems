@@ -39,7 +39,7 @@ minI = min(img(:));
 %Moving img onto the GPU
 img = gpuArray(img);
 
-W = gpuArray(zeros(size(img,1), size(img,2), S));
+W = gpuArray(zeros(size(img,1), size(img,2), S+1));
 mask = gpuArray(zeros(size(img)));
 result = gpuArray(zeros(size(img)));
 
@@ -60,9 +60,6 @@ frameInfo = 0;
 resDenoised = significantCoefficientDenoising(res, S,result, mask,W);
 imgDenoised = imgDenoised + resDenoised; % add significant residuals
 
-
-nansum(imgDenoised(:))
-
 end
 
 %=======================
@@ -73,6 +70,7 @@ end
        % mask = zeros(size(img));
        % result = zeros(size(img));
         W = awt(img, S,W);
+     %   W = awt_test(img, S,W);
         mask(:) = 0;
         result(:) = 0;
         for s = 1:S

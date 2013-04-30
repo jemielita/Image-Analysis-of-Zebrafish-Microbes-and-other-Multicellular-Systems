@@ -14,7 +14,7 @@
 % Parts of this function are based on code by Henry Jaqaman.
 % Francois Aguet, March 2010
 
-function [frameInfo, imgDenoised] = spotDetector(img, S, dthreshold, postProcLevel)
+function [mask, imgDenoised] = spotDetector(img, S, dthreshold, postProcLevel)
 
 if nargin<2
     S = 4;
@@ -34,8 +34,6 @@ minI = min(img(:));
 % Iterative filtering from significant coefficients
 %===================================================
 imgDenoised = significantCoefficientDenoising(img, S);
-nansum(imgDenoised(:))
-
 
 res = img - imgDenoised; % residuals
 sigma_res0 = std(res(:));
@@ -52,32 +50,33 @@ frameInfo = 0;
 resDenoised = significantCoefficientDenoising(res, S);
 imgDenoised = imgDenoised + resDenoised; % add significant residuals
 
-return;
+%nansum(imgDenoised(:))
 
-while delta > 0.002
-    resDenoised = significantCoefficientDenoising(res, S);
-    imgDenoised = imgDenoised + resDenoised; % add significant residuals
-    
-    res = img - imgDenoised;
-    sigma_res1 = std(res(:));
-    delta = abs(sigma_res0/sigma_res1 - 1);
-    sigma_res0 = sigma_res1;
-   % figure; imshow(imgDenoised,[0 1000]);
-    title(num2str(n));
-    n = n+1;
-    delta
-end
-
-%The code above is the only thing that uses the paper Olivo-Marin, Pattern
-%Recognition, 2002.
-
-%===================================================
-% Multiscale product of wavelet coefficients
-%===================================================
-% The support of the objects is given by the multiscale product in the wavelet domain.
-frameInfo = 0;
-
-return;
+% 
+% while delta > 0.002
+%     resDenoised = significantCoefficientDenoising(res, S);
+%     imgDenoised = imgDenoised + resDenoised; % add significant residuals
+%     
+%     res = img - imgDenoised;
+%     sigma_res1 = std(res(:));
+%     delta = abs(sigma_res0/sigma_res1 - 1);
+%     sigma_res0 = sigma_res1;
+%    % figure; imshow(imgDenoised,[0 1000]);
+%     title(num2str(n));
+%     n = n+1;
+%     delta
+% end
+% 
+% %The code above is the only thing that uses the paper Olivo-Marin, Pattern
+% %Recognition, 2002.
+% 
+% %===================================================
+% % Multiscale product of wavelet coefficients
+% %===================================================
+% % The support of the objects is given by the multiscale product in the wavelet domain.
+% frameInfo = 0;
+% 
+% return;
 
 W = awt(imgDenoised, S);
 imgMSP = abs(prod(W(:,:,1:S),3));
@@ -90,14 +89,13 @@ imgMSP = abs(prod(W(:,:,1:S),3));
 %The value of 9 here probably corresponds to the expected pixel range for
 %diffraction limited spots...would potentially want to adapt this for
 %picking out larger spots.
-[imAvg imStd] = localAvgStd2D(imgDenoised, 9);
+[imAvg imStd] = localAvgStd2D(imgDenoised, 55);
 
 mask = zeros(ny,nx);
 %In the second argument, why no reference to the std of imgDenoised? Is it
 %because values away from the std. have already been cut off by the
 %iterative procedure used?
 mask((imgDenoised >= imAvg+0.5*imStd) & (imgDenoised.*imgMSP >= mean(imgDenoised(:)))) = 1;
-
 
 % Morphological postprocessing
 mask = bwmorph(mask, 'clean'); % remove isolated pixels
@@ -107,6 +105,10 @@ mask = bwmorph(mask, 'spur'); % remove single pixels 8-attached to clusters
 mask = bwmorph(mask, 'spur');
 mask = bwmorph(mask, 'clean');
 
+mask = bwareaopen(mask, 70);
+return
+
+
 if postProcLevel >= 1
     mask = bwmorph(mask, 'erode');
     if postProcLevel == 2
@@ -115,7 +117,6 @@ if postProcLevel >= 1
     mask = bwmorph(mask, 'clean');
     mask = bwmorph(mask, 'thicken');
 end
-
 
 % rescale denoised image
 imgDenoised = (imgDenoised-min(imgDenoised(:))) * (maxI-minI) / (max(imgDenoised(:))-min(imgDenoised(:)));
