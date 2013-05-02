@@ -28,7 +28,9 @@ for nZ=1:size(im,3)
    mask(thisFrame>maxThresh) =1;
    mask(thisFrame>minThresh) = mask(thisFrame>minThresh)+1;
    
-   imSeg(:,:,nZ)= mask;
+   maskAll(:,:,nZ)= mask;
+   imSeg(:,:,nZ) = thisFrame;
+  % imSeg(:,:,nZ)= mask;
    %Processing this z-slice
 %    thisFrame(thisFrame<0) = 0;
 %    mask = zeros(size(thisFrame));
@@ -54,6 +56,8 @@ for nZ=1:size(im,3)
 end
 fprintf(1, '\n');
 
+spotLoc = regionprops(imSeg>200, imSeg, 'Centroid', 'Area', 'MeanIntensity', 'BoundingBox');
+spotLoc([spotLoc.Area]<500)  = [];
 % Linking together regions
 fprintf(1, 'Linking together 3d regions:');
 numR = sum(imSeg(:));
