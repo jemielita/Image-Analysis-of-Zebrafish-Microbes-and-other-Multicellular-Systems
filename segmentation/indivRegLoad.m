@@ -1,3 +1,5 @@
+function [] = indivRegLoad(param, minS, maxS)
+
 allZ = param.regionExtent.Z;
 allZ = allZ>0;
 
@@ -62,7 +64,10 @@ fileDir = [param.directoryName filesep 'Scans' filesep 'scan_' num2str(nS) files
     spotLoc{nR} = countSingleBacteria(im, '', '', param);
     
 end
-saveName = ['BacteriaCount', num2str(nS), '.mat'];
+saveName = [param.dataSaveDirectory filesep 'BacteriaCount', num2str(nS), '.mat'];
 save(saveName, 'spotLoc');
+
+end
+
 
 end
