@@ -1,4 +1,4 @@
-function spotLoc = combineRegions(spotLoc)
+function spotLoc = combineRegions(spotLoc, varargin)
 %Calculate the distance of each region to the nearest one-remove regions
 %that are dimmer than any regions within a given radius of this region
 
@@ -6,7 +6,14 @@ maxNumReg = length(spotLoc);
 radCutoffH =40; %Combine together all regions within radCutoff microns of each other
 radCutoffV = 3; %Vertical distance cutoff
 
-radCutoff = 10;
+switch nargin
+    case 1
+    radCutoff = 10;
+    case 2
+    radCutoff = varargin{1};
+    otherwise
+        fprintf(2, 'Wrong number of inputs to combineRegions!');
+end
 
 loc = [spotLoc(:).Centroid];
 loc = reshape(loc, 3,length(spotLoc));

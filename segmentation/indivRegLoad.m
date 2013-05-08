@@ -10,7 +10,7 @@ maxZ = sum(allZ,1);
 height = param.regionExtent.regImSize{1}(1);
 width = param.regionExtent.regImSize{1}(2);
 
-for nS=1:44
+for nS=minS:maxS
     
 %Make gut masks
 
@@ -40,7 +40,6 @@ for nR=1:4
     yMin = find(sum(thisMask,1)~=0, 1, 'first');
     yMax = find(sum(thisMask,1)~=0, 1, 'last');
     
-
     thisMask = thisMask(xMin:xMax, yMin:yMax);
 
     im = zeros(size(thisMask,1), size(thisMask,2), maxZ(nR));
@@ -70,4 +69,5 @@ save(saveName, 'spotLoc');
 end
 
 
+clearvars
 end
