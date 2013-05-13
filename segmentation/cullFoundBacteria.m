@@ -4,13 +4,22 @@
 function rPropNew = cullFoundBacteria(rProp, gutMask, cullProp,xOffset, yOffset)
 
 borderDist = 2/0.1625;
-absoluteMin = 10;
-radCutoff = 10;
+absoluteMinArea = cullProp.minArea;
+radCutoff = cullProp.radCutoff;
+
+minRadius = cullProp.minRadius;
+minInten = cullProp.minInten;
+
 %% Remove really small regions
 fprintf(1, 'cullFoundBacteria: Remove small regions');
-ind = [rProp.Area]>absoluteMin;
+ind = [rProp.Area]>absoluteMinArea;
 rProp = rProp(ind);
 
+if(isempty(rProp))
+    rPropNew = rProp;
+    return
+end
+    
 fprintf(1, '\n');
 
 %% Remove found regions close to the border of the gutMask-Lot's of false
@@ -54,13 +63,40 @@ end
 
 rProp = rProp(ind); 
 
+
+if(isempty(rProp))
+    rPropNew = rProp;
+    return;
+end
+
 fprintf(1, '\n');
 
 %% Remove regions that are close to brighter pixels
-radCutoff = 4;
+
 rProp = combineRegions(rProp,radCutoff);
 
 
+if(isempty(rProp))
+    rPropNew = rProp;
+    return
+end
+
+%% Remove low intensity regions
+rProp = rProp([rProp.MeanIntensity]> minInten);
+
+
+if(isempty(rProp))
+    rPropNew = rProp;
+    return
+end
+%% Remove low radii regions
+rProp = rProp([rProp.EffRadius]>minRadius);
+
+
+if(isempty(rProp))
+    rPropNew = rProp;
+    return
+end
 %% Output 
 rPropNew = rProp;
 end

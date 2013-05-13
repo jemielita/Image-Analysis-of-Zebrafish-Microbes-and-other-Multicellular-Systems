@@ -8,6 +8,8 @@ if(nargin==4)
     type = varargin{2};
     autoLoad = varargin{3};
     imVar = varargin{4};
+    
+    recalcProj = false;
 end
 if(nargin==7)
     param=varargin{1};
@@ -63,7 +65,8 @@ im = calculateProjection(type);
                     %See if individual regions exist as MIP. If so load
                     %these.
                     if(exist([param.dataSaveDirectory filesep...
-                            'mip', imVar.color, '_R', num2str(nR), '_nS', num2str(imVar.scanNum)],'file')==2)
+                            'mip', imVar.color, '_R', num2str(nR), '_nS', num2str(imVar.scanNum)],'file')==2 ...
+                        && recalcProj==false)
                         
                         mipR = imread([param.dataSaveDirectory filesep...
                             'mip', imVar.color, '_R', num2str(nR), '_nS', num2str(imVar.scanNum)],...

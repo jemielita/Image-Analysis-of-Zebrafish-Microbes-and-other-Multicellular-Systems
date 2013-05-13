@@ -5,25 +5,36 @@
 %
 % INPUT pAll: cell array of param files for different fish to estimate
 % background for
+%       subDir: (optional, default: '') subdirectory containing background
+%       data.
 % OUTPUT bkgInten: bkgInten{p_i,nC}{nS} the mean background along the
 %        entire length of the gut for scan nS, color nC, and time nT.
 %
 % AUTHOR: Matthew Jemielita, November 13, 2012
 
 
-function bkgInten = estimateBkg(pAll)
+function bkgInten = estimateBkg(pAll, varargin)
 
 totNumP = length(pAll);
 
-
+if(nargin==2)
+   subDir = varargin{1};
+else
+    subDir = '';
+end
 
 for nP = 1:length(pAll)
     param = pAll{nP};
     numColor = length(param.color);
     numScan = param.expData.totalNumberScans;
     
-    %fileDir = [param.dataSaveDirectory filesep 'bkgEst'];
-   fileDir = param.dataSaveDirectory;
+
+    if(isempty(subDir))
+        fileDir = param.dataSaveDirectory;
+    else
+        fileDir = [param.dataSaveDirectory filesep subDir];
+    end
+    
     if(isdir(fileDir))
        cd(fileDir);
         for nC=1:numColor

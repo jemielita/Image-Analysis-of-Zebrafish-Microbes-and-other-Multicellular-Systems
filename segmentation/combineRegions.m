@@ -1,4 +1,8 @@
 function spotLoc = combineRegions(spotLoc, varargin)
+
+if(isempty(spotLoc))
+    return
+end
 %Calculate the distance of each region to the nearest one-remove regions
 %that are dimmer than any regions within a given radius of this region
 

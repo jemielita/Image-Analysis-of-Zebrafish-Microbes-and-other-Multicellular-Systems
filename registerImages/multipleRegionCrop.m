@@ -183,7 +183,7 @@ hMenuCameraBkg = uimenu(hMenuSeg, 'Label', 'Identify camera background noise', '
 
 hMenuEndGut = uimenu(hMenuSeg, 'Label', 'Label the end of the gut', 'Callback', @endGut_Callback, 'Checked', 'off');
 hMenuAutoFluorGut = uimenu(hMenuSeg, 'Label', 'Label beginning of autofluorescent region', 'Callback', @autoFluorGut_Callback, 'Checked', 'off');
-
+hMenuBeginGut = uimenu(hMenuSeg, 'Label', 'Label beginning of the gut (EJ)', 'Callback', @beginGut_Callback);
 %Create a table that will contain the x and y location of each of the image
 %panels-we'll use this to manually adjust the location of each of the
 %images to fix our registration issues.
@@ -1364,9 +1364,6 @@ hContrast = imcontrast(imageRegion);
             colorNum = int16(colorNum);
            
             %Load in this cropped region and calculate features of it
-            imVar.color = {param.color{colorNum}}; imVar.scanNum = scanNum;
-            thisIm = load3dVolume(param,imVar,'crop',bacPos);
-            
             
             %Calculate the mean and total pixel intensity values for a
             %variety of cutoffs above
@@ -1431,6 +1428,21 @@ hContrast = imcontrast(imageRegion);
          
     end
 
+    function beginGut_Callback(hObject, eventdata)
+        if strcmp(get(hObject, 'Checked'),'on')
+            set(hObject, 'Checked', 'off');
+            hTemp = findobj('Tag', 'beginGutPt');
+            delete(hTemp);
+        else
+            set(hObject, 'Checked', 'on');
+            beginGutPt = impoint(imageRegion);
+            set(beginGutPt, 'Tag', 'beginGutPt');
+            setColor(beginGutPt, 'y');
+            addNewPositionCallback(beginGutPt, @(p)updateGutBeginPosition);
+            
+        end
+    end
+
     function autoFluorGut_Callback(hObject, eventdata)
         if strcmp(get(hMenuAutoFluorGut, 'Checked'),'on')
             set(hMenuAutoFluorGut, 'Checked', 'off');
@@ -1455,6 +1467,17 @@ hContrast = imcontrast(imageRegion);
         autoFluorPos = autoFluorHandle.getPosition();
         param.autoFluorPos(scanNum,:) = autoFluorPos;
     end
+
+    function updateGutBeginPosition()        
+        beginGutHandle = findobj('Tag', 'beginGutPt');
+
+        scanNum = get(hScanSlider, 'Value');
+        scanNum = int16(scanNum);
+        beginGutHandle = iptgetapi(beginGutHandle);
+        beginGutPos = beginGutHandle.getPosition();
+        param.beginGutPos(scanNum,:) = beginGutPos;
+    end
+
 
     function updateEndGutPosition()
         endGutHandle = findobj('Tag', 'endGutPt');

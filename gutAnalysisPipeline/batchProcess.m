@@ -14,6 +14,8 @@ function [] = batchProcess(commandList)
 
 files = uipickfiles;
 
+
+
 for nF=1:length(files)
     thisFileBase = files(nF); thisFileBase = thisFileBase{1};
     
@@ -27,12 +29,17 @@ for nF=1:length(files)
   param = input.param;
   
   disp(['Batch processing: ', param.directoryName])
+
+  param.dataSaveDirectory = [thisFileBase filesep 'fish1' filesep 'gutOutline'];
+  param.directoryName = [thisFileBase filesep 'fish1'];
+  
+  
   for nC = 1: length(commandList)
     ind = regexp(commandList{nC}, '[*]');
     thisCommand = [commandList{nC}(1:ind-1), 'param', commandList{nC}(ind+1:end)];
     eval(thisCommand);
       
-ba  end
+  end
 end
 
 end

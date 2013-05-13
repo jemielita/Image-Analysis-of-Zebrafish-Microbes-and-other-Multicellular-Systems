@@ -29,8 +29,7 @@ fprintf(1, '.');
 load(['Analysis_Scan', num2str(nS), '.mat']);
 regT = regFeatures;
 clear regFeatures;
-regFeatures{1} = regT{1,1};
-regFeatures{2} = regT{2,1};
+regFeatures{1} = regT{colorNum,1};
 
 minL = 1;
 maxL = size(regFeatures{colorNum},1);
@@ -81,7 +80,7 @@ if(plotDataHist==true)
     plot(ind(locOut), pksOut, 'square');
     pause
     close all
-    i
+    
 end
 
 if(~isempty(locOut))

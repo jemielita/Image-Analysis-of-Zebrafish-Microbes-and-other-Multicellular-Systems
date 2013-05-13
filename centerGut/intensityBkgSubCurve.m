@@ -46,8 +46,8 @@ for numMask = 1:totalNumMask
         for i=1:length(regNum)
             thisReg  = regNum(i);
             
-            intenL(thisReg,1) = double(sum(inten(thisReg).PixelValues));
-            intenL(thisReg,2) = sum(inten(thisReg).PixelValues>0);
+            intenL(thisReg,1) = double(nansum(inten(thisReg).PixelValues));
+            intenL(thisReg,2) = nansum(inten(thisReg).PixelValues>0);
         end
         
     else
@@ -73,8 +73,8 @@ for numMask = 1:totalNumMask
            fprintf(1, '.');
            for i=1:length(subRegNum)
                thisReg  = subRegNum(i);              
-                intenL(thisReg, 1) = double(sum(inten(thisReg).PixelValues));
-                intenL(thisReg,2) = sum(inten(thisReg).PixelValues>0);
+                intenL(thisReg, 1) = double(nansum(inten(thisReg).PixelValues));
+                intenL(thisReg,2) = nansum(inten(thisReg).PixelValues>0);
            end
            fprintf(1, '.\n');
            

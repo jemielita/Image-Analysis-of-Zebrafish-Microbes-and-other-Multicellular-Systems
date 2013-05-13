@@ -37,10 +37,10 @@ analysisType(4).param.binSize = 2;
 %trail of what the state of the code was when we did the analysis
 scanParam.codeDir = 'C:\code\trunk';
 %Colors to analyze
-scanParam.color = {'488nm', '568nm'};
+scanParam.color = {'488nm'};
 scanParam.dataSaveDirectory =  'F:\Aeromonas_May23_take2\fish6\gutOutline';
 %List of scans to analyze
-scanParam.scanList = 1:1;
+scanParam.scanList = 1:44;
 
 scanParam.stepSize = 5;
 scanParam.regOverlap = 10;

@@ -69,7 +69,13 @@ yOffset = param.regionExtent.indivReg(nS, nR,2);
 
 
 
-rProp = cullFoundBacteria(rProp, thisMask, '', xOffset, yOffset);
+%Cull data
+cullProp.radCutoff = 4;
+cullProp.minRadius = 0;
+cullProp.minInten = 0;
+cullProp.minArea = 10;
+
+rProp = cullFoundBacteria(rProp, thisMask, cullProp, xOffset, yOffset);
 
 figure; imshow(max(im, [],3),[0 1000]);
 hold on

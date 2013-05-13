@@ -2,7 +2,20 @@
 
 
 
-function [] = bugOutlineGUI(im, rProp)
+function [] = bugOutlineGUI(im, rProp, param, nS, nR,varargin)
+
+switch nargin
+    case 5
+        remInd = []; %Indices to remove
+        addPos = []; %Position to add new bacteria
+    case 6
+        remInd = varargin{1};
+        addPos = [];
+    case 7
+        remInd = varargin{1};
+        addPos = varargin{2};
+end
+    
 
 %Get z and xy list of bacteria locations
 loc = [rProp.Centroid]; loc = reshape(loc, 3, length(rProp));
@@ -38,12 +51,13 @@ hMenuUndoAdd = uimenu(hMenuPointPickDropDown, ...
 
 hPoint = '';
 hPointAPI = '';
-remInd = []; %Indices to remove
-addPos = []; %Position to add new bacteria
 
 minZ = 1;
 maxZ = size(im,3);
 zNum = minZ;
+
+xOffset = param.regionExtent.indivReg(nS, nR, 1);
+yOffset = param.regionExtent.indivReg(nS, nR,2);
 
 %Display image
 hImPanel = uipanel('Parent', hFig, 'BackgroundColor', 'white', 'Position', [0.01, .18, .98, .8],...
@@ -53,6 +67,14 @@ imageRegion = axes('Parent', hImPanel,'Tag', 'imageRegion', 'Position', [0, 0 , 
 
 
 hIm = imshow(im(:,:,minZ),'Parent', imageRegion);
+
+meshIm = zeros(size(im,1), size(im,2));
+meshIm(round(size(im,1)/2), :) = 1;
+meshIm(:, round(size(im,2)/2)) = 1;
+meshIm = bwmorph(meshIm, 'dilate');
+meshIm = bwmorph(meshIm, 'dilate');
+
+
 set(imageRegion, 'CLim', [0 1000]);
 hold on
 
@@ -65,7 +87,7 @@ hPAdd = plot(1:2, 1:2, 'o', 'MarkerSize', 10, 'Color', [0 1 0]);
 updatePoints(hP, hPRemove,hPAdd, zNum);
 
 %Handle to image contrast toolbar
-%hContrast = imcontrast(imageRegion);
+hContrast = imcontrast(imageRegion);
 
 
 
@@ -111,22 +133,23 @@ hZSlider = uicontrol('Parent', hFig, 'Units', 'Normalized', ...
     end
 
     function updateImage(zNum)
-        set(hIm, 'CData', im(:,:,zNum));
+        temp = double(im(:,:,zNum)) + double(1000*meshIm);
+        set(hIm, 'CData', temp);
     end
 
     function updatePoints(hP, hPRemove, hPAdd, zNum)
         
-        ind = find(abs(z-zNum)<1);
+        ind = find(abs(z-zNum)<5);
         
         thisRem = intersect(ind, remInd);
         thisInd = setdiff(ind, remInd);
         
-        set(hP, 'XData', xy(1,thisInd));
-        set(hP, 'YData', xy(2, thisInd));      
+        set(hP, 'XData', xy(1,thisInd)+yOffset);
+        set(hP, 'YData', xy(2, thisInd)+xOffset);      
         
         
-        set(hPRemove, 'XData', xy(1,thisRem));
-        set(hPRemove, 'YData', xy(2, thisRem));   
+        set(hPRemove, 'XData', xy(1,thisRem)+yOffset);
+        set(hPRemove, 'YData', xy(2, thisRem)+xOffset);   
      
         if(~isempty(addPos))
             addInd = find(abs(addPos(:,3)-zNum)<1);
@@ -151,13 +174,14 @@ hZSlider = uicontrol('Parent', hFig, 'Units', 'Normalized', ...
             zNum = round(zNum);
             hPoint = impoint(imageRegion);
             
+            zNum
             position = wait(hPoint);
             
             delete(hPoint);
             %Find closest estimated bacteria to this point
             ind = find(abs(z-zNum)<1);
             ind = setdiff(ind, remInd);
-            distB = sqrt((xy(1,ind)-position(1)).^2 + (xy(2,ind)-position(2)).^2);
+            distB = sqrt((xy(1,ind)+yOffset-position(1)).^2 + (xy(2,ind)+xOffset-position(2)).^2);
             
             [~,thisInd2] = min(distB);
             
@@ -175,7 +199,7 @@ hZSlider = uicontrol('Parent', hFig, 'Units', 'Normalized', ...
        updatePoints(hP, hPRemove, hPAdd, zNum);
     end
 
-    function hideRemovedPoints(~,~)
+    function hideRemovedPoints(hObject,eventdata)
        isChecked = get(hObject, 'Checked');
         if(strcmp(isChecked, 'on'))
             set(hObject, 'Checked', 'off');

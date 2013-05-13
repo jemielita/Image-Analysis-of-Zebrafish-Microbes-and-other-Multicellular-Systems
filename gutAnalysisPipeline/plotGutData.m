@@ -37,7 +37,10 @@ for nG = 1:length(graphType)
             thisFigHandle = plotLineInten(popXpos);
         case 'bkgdiff'
             
-        case 'bkgdiffhist'        
+        case 'bkgdiffhist'      
+            
+        case 'singleBacCount'
+            
     end
     
     %Update the 
