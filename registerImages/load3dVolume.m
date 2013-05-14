@@ -544,6 +544,11 @@ end
         %clicked outside of all regions then don't update anything
         overlap = sum(overlap,2);
         regList = find(overlap==2);
+        
+        if(isempty(regList))
+            fprintf(2, 'Region is empty! Returning an empty image');
+           im = []; 
+        end
         for nR=1:length(regList)
             regNum = regList(nR);
             %Getting a list of all the image to load in

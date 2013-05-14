@@ -170,7 +170,7 @@ if(nS~=1)
    end
 end
 
-%Set every point after the minimum value to be equal to the 
+%Set every point after the minimum value to be equal to the minimum
 
 %Resmooth out line after replacing entries
 locMaster{nS}(1,:) = smooth(indAll,locMaster{nS}(1,:), 51, 'sgolay',3);
