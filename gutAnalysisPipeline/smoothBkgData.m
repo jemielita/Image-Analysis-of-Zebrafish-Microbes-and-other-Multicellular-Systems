@@ -32,13 +32,13 @@ clear regFeatures;
 regFeatures{1} = regT{colorNum,1};
 
 minL = 1;
-maxL = size(regFeatures{colorNum},1);
+maxL = size(regT{colorNum,1},1);
 
 locAll = [];pksAll = [];indAll= [];
 for i=minL:maxL
 
   %  data = regFeatures{colorNum,1}(i,3:1000);
-  data = regFeatures{colorNum}(i,3:1000); 
+  data = regT{colorNum,1}(i,3:1000); 
   ind = 1:2:2000;
     ind = ind(3:end);
 
