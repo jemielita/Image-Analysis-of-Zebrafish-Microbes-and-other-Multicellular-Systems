@@ -71,7 +71,7 @@ end
         plot(timestep*(1:NtimePoints), totalred, 'kd', 'markerfacecolor', [0.8 0.4 0.2]);
         hLabels(1) = xlabel('Time, hrs.');
         hLabels(2) = ylabel('# of bacteria');
-       % title(dataTitle)
+        title(dataTitle)
         
         % Total intensity, log scale
         hTotIntenLog = figure('name', 'Total intensity, log scale');
@@ -85,7 +85,7 @@ end
         set(gca, 'FontSize', plotFontSize);
         set(gca, 'FontName', plotFontType);
         
-       % title(dataTitle);
+        title(dataTitle);
         %% Get fit to the desired time interval
         dlg_title = 'Fit range'; num_lines= 1;
         prompt = {'Start time for exp. fit (hrs. after 1st loaded scan)', 'End time for exp. fit (hrs. after 1st loaded scan)'};

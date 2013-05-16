@@ -16,6 +16,10 @@ analysisType(1).binSize = 1:2:2000;
 analysisType(2).name = 'linearIntensityBkgSub';
 analysisType(2).return = true;
 analysisType(2).bkgList = 1:25:2000; %Need to get a sense of what size 
+
+analysisType(3).name = 'spotDetection';
+analysisType(3).return = true;
+
 %2. Calculate linear intensity down length of gut
 analysisType(1).name = 'linearIntensity';
 analysisType(1).return = true;

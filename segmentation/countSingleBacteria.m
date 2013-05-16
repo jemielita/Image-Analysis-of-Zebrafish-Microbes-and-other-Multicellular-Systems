@@ -8,7 +8,18 @@
 % spotLoc = countSingleBacteria(im, spotFeatures, colorNum, param)
 %
 
-function spotLoc = countSingleBacteria(im, spotFeatures, colorNum, param)
+function spotLoc = countSingleBacteria(im, spotFeatures, colorNum, param, varargin)
+
+if(nargin==5)
+    %For mapping the spot locations onto positions down the length of the
+    %gut.
+    gutMask = varargin{1};
+    
+    %Replace elements in im as we go-to avoid creating new array in memory
+    inPlace = true;
+else
+    inPlace = false;
+end
 
 %Loading in filtering parameters
 %minObjSize = spotFeatures.minSize;
@@ -17,8 +28,11 @@ function spotLoc = countSingleBacteria(im, spotFeatures, colorNum, param)
 minThresh = 100;
 maxThresh = 200;
 
-%imSeg = zeros(size(im), 'uint8');
-imSeg = zeros(size(im), 'double');
+
+if(inPlace==false)
+    imSeg = zeros(size(im), 'double');
+end
+
 maskAll = zeros(size(im), 'uint8');
 % Filter image using wavelet filter
 fprintf(1, 'Filtering image and segmenting.');
@@ -31,7 +45,11 @@ for nZ=1:size(im,3)
    %mask(thisFrame>minThresh) = mask(thisFrame>minThresh)+1;
    
   % maskAll(:,:,nZ)= mask;
-   imSeg(:,:,nZ) = thisFrame;
+  if(inPlace==false)
+      imSeg(:,:,nZ) = thisFrame;
+  else
+      im(:,:,nZ) = thisFrame;
+  end
   % imSeg(:,:,nZ)= mask;
    %Processing this z-slice
 %    thisFrame(thisFrame<0) = 0;
@@ -58,54 +76,12 @@ for nZ=1:size(im,3)
 end
 fprintf(1, '\n');
 
-spotLoc = regionprops(imSeg>maxThresh, imSeg, 'Centroid', 'Area', 'MeanIntensity', 'BoundingBox');
+if(inPlace==false)
+    spotLoc = regionprops(imSeg>maxThresh, imSeg, 'Centroid', 'Area', 'MeanIntensity', 'BoundingBox');
+else
+    spotLoc = regionprops(im>maxThresh, im, 'Centroid', 'Area', 'MeanIntensity', 'BoundingBox');
+end
 
-
-%spotLoc([spotLoc.Area]<500)  = [];
-% Linking together regions
-
-%Calculate eccentricity from 3d projections
-% bw = imSeg>maxThresh;
-% labelM = bwlabeln(bw);
-% uniqL = unique(labelM(labelM>0));
-% for nL = 1:length(uniqL)
-%    thisL = uniqL(nL);
-%    maxL = max(labelM==thisL,[],3);
-%    ecc = regionprops(maxL, 'Eccentricity');
-%    spotLoc(thisL).Eccentricity = ecc.Eccentricity;
-% end
-
-
-
-
-% 
-% 
-% 
-% 
-% fprintf(1, 'Linking together 3d regions:');
-% numR = sum(imSeg(:));
-% numRprev = 0;
-% while(numRprev ~= numR)
-% 
-%     for i = 2:size(im,3)-1
-%         [r,c] = find(imSeg(:,:,i-1)+imSeg(:,:,i+1)>2);
-%         
-%         %Find regions that overlap with
-%         thisPlane = imSeg(:,:,i);
-%         bw = bwselect(thisPlane,c,r,4);
-%         thisPlane(bw) = 2;
-%         imSeg(:,:,i) = thisPlane;       
-%     end
-%     
-%     numRprev = numR;
-%     numR = sum(imSeg(:));
-%     fprintf(1, '.');
-% end
-% fprintf(1, 'done!\n');
-% 
-% %Get properties of each of the identified bacteria
-% bw = imSeg==2;
-% spotLoc = regionprops(bw, im, 'Centroid', 'Area', 'MeanIntensity', 'BoundingBox');
 
 
 end
