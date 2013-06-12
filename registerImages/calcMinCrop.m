@@ -10,7 +10,7 @@
 %        borderWidth (Optional): width around the gut outline to save in micron(Default: 0);
 %
 % OUTPUT: regionExtent (optional): New crop region.
-%
+%         param (optional): Updated param file
 % AUTHOR: Matthew Jemielita, May 20, 2013
 
 function varargout = calcMinCrop(param, updateParam, varargin)
@@ -117,8 +117,12 @@ for nR=1:maxR
 %     
 end
 
-if(nargout ==1) 
-    varargout{1} = param.regionExtent.XY{1};
+switch nargout
+    case 1
+        varargout{1} = param.regionExtent.XY{1};
+    case 2
+        varargout{1} = param.regionExtent.XY{1};
+        varargout{2} = param;
 end
 
 if(updateParam==true)

@@ -10,7 +10,20 @@
 % code is somewhat in flux.
 %
 
-function [] = batchProcess(commandList)
+function [] = batchProcess(varargin)
+
+switch nargin
+    case 0
+        commandList = selectCommand();
+    case 1
+        commandList = varargin{1};
+    otherwise
+        fprintf(2, 'batchProcess takes either 0 or 1 argument!');
+        return
+end
+
+
+
 
 files = uipickfiles;
 
@@ -30,8 +43,8 @@ for nF=1:length(files)
   
   disp(['Batch processing: ', param.directoryName])
 
-  param.dataSaveDirectory = [thisFileBase filesep 'fish1' filesep 'gutOutline'];
-  param.directoryName = [thisFileBase filesep 'fish1'];
+  %param.dataSaveDirectory = [thisFileBase filesep 'fish1' filesep 'gutOutline'];
+  %param.directoryName = [thisFileBase filesep 'fish1'];
   
   
   for nC = 1: length(commandList)
@@ -43,3 +56,22 @@ for nF=1:length(files)
 end
 
 end
+
+function commandList = selectCommand()
+
+commandStr{1} = 'multipleRegionCrop(param)';
+commandStr{2} = 'testyTest';
+[selection, ok] = listdlg('PromptString', 'Select command to run in batch mode', ...
+    'SelectionMode', 'single', 'ListString', commandStr);
+
+switch selection
+    case 1
+        commandList = {'multipleRegionCrop(*, [],''saveresults'')'};
+    
+end
+    
+    
+    
+end   
+    
+    

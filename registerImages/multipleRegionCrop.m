@@ -184,6 +184,8 @@ hMenuCameraBkg = uimenu(hMenuSeg, 'Label', 'Identify camera background noise', '
 hMenuEndGut = uimenu(hMenuSeg, 'Label', 'Label the end of the gut', 'Callback', @endGut_Callback, 'Checked', 'off');
 hMenuAutoFluorGut = uimenu(hMenuSeg, 'Label', 'Label beginning of autofluorescent region', 'Callback', @autoFluorGut_Callback, 'Checked', 'off');
 hMenuBeginGut = uimenu(hMenuSeg, 'Label', 'Label beginning of the gut (EJ)', 'Callback', @beginGut_Callback);
+hMenuEndBulb = uimenu(hMenuSeg, 'Label', 'Label ~ end of bulb', 'Callback', @endBulb_Callback);
+
 %Create a table that will contain the x and y location of each of the image
 %panels-we'll use this to manually adjust the location of each of the
 %images to fix our registration issues.
@@ -1420,7 +1422,7 @@ hContrast = imcontrast(imageRegion);
         else
             set(hMenuEndGut, 'Checked', 'on');
             endGutPt = impoint(imageRegion);
-            set(endGutPt, 'Tag', 'endGutPt');
+            set(endGutPt, 'Tag', 'endGutPt'); 
             setColor(endGutPt, 'r');
             addNewPositionCallback(endGutPt, @(p)updateEndGutPosition);
 
@@ -1443,6 +1445,22 @@ hContrast = imcontrast(imageRegion);
         end
     end
 
+    function endBulb_Callback(hObject, eventdata)
+        if strcmp(get(hObject, 'Checked'),'on')
+            set(hObject, 'Checked', 'off');
+            hTemp = findobj('Tag', 'endBulbPt');
+            delete(hTemp);
+        else
+            set(hObject, 'Checked', 'on');
+            beginGutPt = impoint(imageRegion);
+            set(beginGutPt, 'Tag', 'endBulbPt');
+            setColor(beginGutPt, [0.8 0.4 0.2]);
+            addNewPositionCallback(beginGutPt, @(p)updateEndBulbPosition);
+            
+        end
+    end
+        
+
     function autoFluorGut_Callback(hObject, eventdata)
         if strcmp(get(hMenuAutoFluorGut, 'Checked'),'on')
             set(hMenuAutoFluorGut, 'Checked', 'off');
@@ -1463,9 +1481,10 @@ hContrast = imcontrast(imageRegion);
 
         scanNum = get(hScanSlider, 'Value');
         scanNum = int16(scanNum);
+        
         autoFluorHandle = iptgetapi(autoFluorHandle);
         autoFluorPos = autoFluorHandle.getPosition();
-        param.autoFluorPos(scanNum,:) = autoFluorPos;
+        param.autoFluorPos(scanNumPrev,:) = autoFluorPos;
     end
 
     function updateGutBeginPosition()        
@@ -1473,9 +1492,10 @@ hContrast = imcontrast(imageRegion);
 
         scanNum = get(hScanSlider, 'Value');
         scanNum = int16(scanNum);
+        
         beginGutHandle = iptgetapi(beginGutHandle);
         beginGutPos = beginGutHandle.getPosition();
-        param.beginGutPos(scanNum,:) = beginGutPos;
+        param.beginGutPos(scanNumPrev,:) = beginGutPos;
     end
 
 
@@ -1484,10 +1504,34 @@ hContrast = imcontrast(imageRegion);
         
         scanNum = get(hScanSlider, 'Value');
         scanNum = int16(scanNum);
+        
         endGutHandle = iptgetapi(endGutHandle);
         endGutPos = endGutHandle.getPosition();
-        param.endGutPos(scanNum,:) = endGutPos;
+        param.endGutPos(scanNumPrev,:) = endGutPos;
         
+%         endGutPos = param.endGutPos;
+%         if(scanNum>size(endGutPos,1))
+%             changePos = false;
+%         elseif(sum(endGutPos(scanNum,:))==0)
+%             changePos = false;
+%         else
+%             changePos = true;
+%         end
+%         
+%         if(changePos==true)
+%             endGutHandle.setPosition([endGutPos(scanNum,1), endGutPos(scanNum,2)]);
+%         end
+    end
+
+    function updateEndBulbPosition()
+        endBulbHandle = findobj('tag', 'endBulbPt');
+        
+        scanNum = get(hScanSlider, 'Value');
+        scanNum = int16(scanNum);
+        
+        endBulbHandle = iptgetapi(endBulbHandle);
+        endBulbPos = endBulbHandle.getPosition();
+        param.endBulbPos(scanNumPrev,:) = endBulbPos;
     end
 
     function segSurfaceClick_Callback(~, ~)
@@ -1925,14 +1969,20 @@ hContrast = imcontrast(imageRegion);
             updateEndGutPosition();
         end
         
-        
-        %%% Check to see if the beginning of the autfluorescent region has
+        %%% Check to see if the beginning of the autofluorescent region has
         %%% been labeled and if so update param
-        
         autoFluorHandle = findobj('Tag', 'autoFluorPt');
         if(~isempty(autoFluorHandle))
             updateAutoFluorPosition();
         end
+        
+        %%% Check to see if the beginning of the autofluorescent region has
+        %%% been labeled and if so update param
+        endBulbHandle = findobj('Tag', 'endBPt');
+        if(~isempty(endBulbHandle))
+            updateEndBulbPosition();
+        end
+        
         
         %Display the new image
         color = colorType(colorNum);
