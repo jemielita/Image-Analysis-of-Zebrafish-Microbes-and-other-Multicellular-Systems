@@ -181,10 +181,31 @@ hMenuBkg = uimenu(hMenuSeg, 'Label', 'Label background pixel intensity', 'Callba
 hMenuBacteria = uimenu(hMenuSeg, 'Label', 'Identify single bacteria', 'Callback', @outlineBacteria_Callback, 'Checked', 'off');
 hMenuCameraBkg = uimenu(hMenuSeg, 'Label', 'Identify camera background noise', 'Callback', @camBackground_Callback);
 
-hMenuEndGut = uimenu(hMenuSeg, 'Label', 'Label the end of the gut', 'Callback', @endGut_Callback, 'Checked', 'off');
+hMenuEndGut = uimenu(hMenuSeg, 'Separator', 'On','Label',  'Label the end of the gut', 'Callback', @endGut_Callback, 'Checked', 'off');
 hMenuAutoFluorGut = uimenu(hMenuSeg, 'Label', 'Label beginning of autofluorescent region', 'Callback', @autoFluorGut_Callback, 'Checked', 'off');
+hMenuEndAutoFluorGut = uimenu(hMenuSeg, 'Label', 'Label the end of the autofluorescent region', 'Callback', @autoFluorEnd_Callback, 'Checked', 'off');
 hMenuBeginGut = uimenu(hMenuSeg, 'Label', 'Label beginning of the gut (EJ)', 'Callback', @beginGut_Callback);
 hMenuEndBulb = uimenu(hMenuSeg, 'Label', 'Label ~ end of bulb', 'Callback', @endBulb_Callback);
+
+%Populating markers for different parts of the gut
+if(~isfield(param, 'endGutPos')||size(param.endGutPos,1)~=maxScan)
+        param.endGutPos = zeros(maxScan, 2);
+end
+
+if(~isfield(param, 'autoFluorPos')||size(param.autoFluorPos,1)~=maxScan)
+        param.autoFluorPos = zeros(maxScan, 2);
+end
+
+if(~isfield(param, 'endBulbPos')||size(param.endBulbPos,1)~=maxScan)
+        param.endBulbPos = zeros(maxScan, 2);
+end
+
+if(~isfield(param, 'autoFluorEndPos')||size(param.autoFluorEndPos,1)~=maxScan)
+        param.autoFluorEndPos = zeros(maxScan, 2);
+end
+if(~isfield(param, 'beginGutPos')||size(param.beginGutPos,1)~=maxScan)
+        param.beginGutPos = zeros(maxScan, 2);
+end
 
 %Create a table that will contain the x and y location of each of the image
 %panels-we'll use this to manually adjust the location of each of the
@@ -1424,7 +1445,8 @@ hContrast = imcontrast(imageRegion);
             endGutPt = impoint(imageRegion);
             set(endGutPt, 'Tag', 'endGutPt'); 
             setColor(endGutPt, 'r');
-            addNewPositionCallback(endGutPt, @(p)updateEndGutPosition);
+            updateEndGutPosition();
+           % addNewPositionCallback(endGutPt, @(p)updateEndGutPosition);
 
         end
          
@@ -1440,7 +1462,8 @@ hContrast = imcontrast(imageRegion);
             beginGutPt = impoint(imageRegion);
             set(beginGutPt, 'Tag', 'beginGutPt');
             setColor(beginGutPt, 'y');
-            addNewPositionCallback(beginGutPt, @(p)updateGutBeginPosition);
+            updateGutBeginPosition();
+            %addNewPositionCallback(beginGutPt, @(p)updateGutBeginPosition);
             
         end
     end
@@ -1455,11 +1478,11 @@ hContrast = imcontrast(imageRegion);
             beginGutPt = impoint(imageRegion);
             set(beginGutPt, 'Tag', 'endBulbPt');
             setColor(beginGutPt, [0.8 0.4 0.2]);
-            addNewPositionCallback(beginGutPt, @(p)updateEndBulbPosition);
+            updateEndBulbPosition();
+           % addNewPositionCallback(beginGutPt, @(p)updateEndBulbPosition);
             
         end
     end
-        
 
     function autoFluorGut_Callback(hObject, eventdata)
         if strcmp(get(hMenuAutoFluorGut, 'Checked'),'on')
@@ -1471,11 +1494,29 @@ hContrast = imcontrast(imageRegion);
             autoFluorPt = impoint(imageRegion);
             set(autoFluorPt, 'Tag', 'autoFluorPt');
             setColor(autoFluorPt, 'b');
-            addNewPositionCallback(autoFluorPt, @(p)updateAutoFluorPosition);
+            updateAutoFluorPosition();
+            %addNewPositionCallback(autoFluorPt, @(p)updateAutoFluorPosition);
 
         end 
     end
         
+    function autoFluorEnd_Callback(hObject, eventdata)
+        if strcmp(get(hMenuEndAutoFluorGut, 'Checked'),'on')
+            set(hMenuEndAutoFluorGut, 'Checked', 'off');
+            hTemp = findobj('Tag', 'autoFluorEndPt');
+            delete(hTemp);
+        else
+            set(hMenuEndAutoFluorGut, 'Checked', 'on');
+            autoFluorEndPt = impoint(imageRegion);
+            set(autoFluorEndPt, 'Tag', 'autoFluorEndPt');
+            setColor(autoFluorEndPt, [0.3 0.2 0.5]);
+            updateAutoFluorEndPosition();
+            %addNewPositionCallback(autoFluorPt, @(p)updateAutoFluorPosition);
+
+        end
+        
+    end
+
     function updateAutoFluorPosition()
         autoFluorHandle = findobj('Tag', 'autoFluorPt');
 
@@ -1485,6 +1526,25 @@ hContrast = imcontrast(imageRegion);
         autoFluorHandle = iptgetapi(autoFluorHandle);
         autoFluorPos = autoFluorHandle.getPosition();
         param.autoFluorPos(scanNumPrev,:) = autoFluorPos;
+        
+        if(sum(param.autoFluorPos(scanNum,:))~=0)
+            autoFluorHandle.setPosition(param.autoFluorPos(scanNum,:));
+        end
+    end
+
+    function updateAutoFluorEndPosition()
+        autoFluorHandle = findobj('Tag', 'autoFluorEndPt');
+
+        scanNum = get(hScanSlider, 'Value');
+        scanNum = int16(scanNum);
+        
+        autoFluorHandle = iptgetapi(autoFluorHandle);
+        autoFluorPos = autoFluorHandle.getPosition();
+        param.autoFluorEndPos(scanNumPrev,:) = autoFluorPos;
+        
+        if(sum(param.autoFluorEndPos(scanNum,:))~=0)
+            autoFluorHandle.setPosition(param.autoFluorEndPos(scanNum,:));
+        end
     end
 
     function updateGutBeginPosition()        
@@ -1496,6 +1556,10 @@ hContrast = imcontrast(imageRegion);
         beginGutHandle = iptgetapi(beginGutHandle);
         beginGutPos = beginGutHandle.getPosition();
         param.beginGutPos(scanNumPrev,:) = beginGutPos;
+        
+        if(sum(param.beginGutPos(scanNum,:))~=0)
+            beginGutHandle.setPosition(param.beginGutPos(scanNum,:));
+        end
     end
 
 
@@ -1509,6 +1573,10 @@ hContrast = imcontrast(imageRegion);
         endGutPos = endGutHandle.getPosition();
         param.endGutPos(scanNumPrev,:) = endGutPos;
         
+        
+        if(sum(param.endGutPos(scanNum,:))~=0)
+            endGutHandle.setPosition(param.endGutPos(scanNum,:));
+        end
 %         endGutPos = param.endGutPos;
 %         if(scanNum>size(endGutPos,1))
 %             changePos = false;
@@ -1532,6 +1600,11 @@ hContrast = imcontrast(imageRegion);
         endBulbHandle = iptgetapi(endBulbHandle);
         endBulbPos = endBulbHandle.getPosition();
         param.endBulbPos(scanNumPrev,:) = endBulbPos;
+        
+        if(sum(param.endBulbPos(scanNum,:))~=0)
+            endBulbHandle.setPosition(param.endBulbPos(scanNum,:));
+        end
+            
     end
 
     function segSurfaceClick_Callback(~, ~)
@@ -1961,7 +2034,6 @@ hContrast = imcontrast(imageRegion);
            updateBkgPosition();
         end
         
-        
         %%% Check to see if the end of the gut has been labeled and if so
         %%% update param
         endGutHandle = findobj('Tag', 'endGutPt');
@@ -1978,11 +2050,20 @@ hContrast = imcontrast(imageRegion);
         
         %%% Check to see if the beginning of the autofluorescent region has
         %%% been labeled and if so update param
-        endBulbHandle = findobj('Tag', 'endBPt');
+        endBulbHandle = findobj('Tag', 'endBulbPt');
         if(~isempty(endBulbHandle))
             updateEndBulbPosition();
         end
         
+        autoFluorEndHandle = findobj('Tag', 'autoFluorEndPt');
+        if(~isempty(autoFluorEndHandle))
+            updateAutoFluorEndPosition();
+        end
+        
+        beginGutHandle = findobj('Tag', 'beginGutPt');
+        if(~isempty(beginGutHandle))
+            updateGutBeginPosition();
+        end
         
         %Display the new image
         color = colorType(colorNum);
