@@ -4,7 +4,7 @@
 %
 
 function [popDiffReg, regInd] = assembleDiffRegPop(param, popXpos)
-maxS = size(param.endBulbPos,1);
+maxS = size(popXpos,1);
 
 %Add to the end of points that weren't found
 while(size(param.endGutPos,1)<maxS)
