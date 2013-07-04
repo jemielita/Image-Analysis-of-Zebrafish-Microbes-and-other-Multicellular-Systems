@@ -28,7 +28,6 @@ end
 minThresh = 100;
 maxThresh = 200;
 
-
 if(inPlace==false)
     imSeg = zeros(size(im), 'double');
 end

@@ -57,8 +57,14 @@ for nG = 1:length(graphType)
             
         case 'singlebaccount'
             thisFigHandle = plotBothMeasurements(totalgreen, totalred,bac);
+
+            
+        case 'singlelineplot'
+            thisFigHandle = plotSingleLineInten(popXpos);
+
         case  'totalintensitylog_singleregions'
             thisFigHandle =  plotTotalIntensitySingleRegions(totalgreen, totalred, popDiffReg);
+
     end
     
     %Update the 
@@ -467,7 +473,7 @@ figHandle = hFig;
 
         % Plot all green data, line-by-line
         figure(hFig_green);
-        minT = 10;
+        minT = 1;
         for j=minT:NtimePoints
             plot3(popXpos{j,1}(2,:), popXpos{j,1}(3,:), popXpos{j,1}(1,:), 'Color', cData_green(j,:));
         
@@ -520,6 +526,90 @@ figHandle = hFig;
         
     end
 
+    function figHandle = plotSingleLineInten(popXpos)
+                %% Color maps
+        % For surface plots
+        cmaprows = 0:255;
+        % a green colormap that starts black, rapidly saturates green, goes to almost white
+        cmapgreen = zeros(length(cmaprows),3);
+        cmapgreen(:,2) = min(10*cmaprows/max(cmaprows), ones(size(cmaprows)));
+        cmapgreen(:,3) = max(cmaprows/max(cmaprows) - 0.1, zeros(size(cmaprows)));
+        cmapgreen(:,1) = max(1.75*cmaprows/max(cmaprows) - 1, zeros(size(cmaprows)));
+        
+        % a red colormap that starts black, rapidly saturates red, goes to yellow
+        cmapred = zeros(length(cmaprows),3);
+        cmapred(:,1) = min(10*cmaprows/max(cmaprows), ones(size(cmaprows)));
+        cmapred(:,2) = min(2*cmaprows/max(cmaprows), ones(size(cmaprows)));
+        cmapred(:,3) = max(1.75*cmaprows/max(cmaprows) - 1, zeros(size(cmaprows)));
+        
+        % for line-by-line plots
+        cData_green = summer(ceil(2*NtimePoints));
+        cData_red = hot(ceil(2*NtimePoints));
+        
+        cData_green = [0.2 0.8 0.2];
+        cData_red = [0.9 0.2 0.2];
+        
+        %% Line-by-line plots
+        scrsz = get(0,'ScreenSize');
+
+        hFig_green = figure('Position',[1+500 scrsz(4)/2 - 300 scrsz(3)/2 scrsz(4)/2]);
+        hold on
+        hFig_red = figure('Position',[1+300 scrsz(4)/2 - 300 scrsz(3)/2 scrsz(4)/2]);
+        hold on
+
+        % Plot all green data, line-by-line
+        figure(hFig_green);
+        T = 1;
+        
+        plot(popXpos{T,1}(2,:), popXpos{T,1}(1,:), 'Color', cData_green(T,:));
+        hold on
+        %Get maximum value-used for setting scale on graph
+        maxgreen(1) = max(popXpos{T,1}(1,:));
+        
+        % Plot all red data, line-by-line
+        %figure(hFig_red);
+        
+        plot(popXpos{T,2}(2,:), popXpos{T,2}(1,:),  'Color', cData_red(T,:));
+        maxred(1) = max(popXpos{T,2}(1,:));
+        
+        
+        %Making the plots prettier
+        viewangle = [0 90];  % alt, az
+        
+        figure(hFig_green);
+        plotTitleGreen = strcat(dataTitle, ': GFP');
+        set(gca, 'FontSize',plotAxisLabelSize);
+        
+       % figurethings(hFig_green, plotTitleGreen, viewangle);
+        agreen = axis;
+
+        
+        %figure(hFig_red);
+        %plotTitleRed = strcat(dataTitle, ': TdTomato');
+        %set(gca, 'FontSize',plotAxisLabelSize);
+      %  figurethings(hFig_red, plotTitleRed, viewangle);
+        
+        % Axis ranges
+        % make axis ranges the same
+        maxgreenall = max(maxgreen);
+        maxredall = max(maxred);
+        
+        sameax = [0 min([ agreen(2)])  0 1.1*max([maxgreenall maxredall])];
+        figure(hFig_green);
+        axis(sameax)
+        figure(hFig_red);
+        axis(sameax)
+       
+        %figurethings(hFig_red, plotTitleRed, viewangle);
+        figurethings(hFig_green, plotTitleGreen, viewangle);
+
+        %Set name to save figure as
+        set(hFig_red, 'Tag', [dataTitle '_LineDist_Red']);
+        set(hFig_green, 'Tag', [dataTitle '_LineDist_Green']);
+        
+        %Output figure handles
+        figHandle = [hFig_red, hFig_green];
+    end
     function figurethings(hFig, plotTitle, viewangle)
         figure(hFig)
         title(plotTitle, 'interpreter', 'none', 'FontSize', plotFontSize);
