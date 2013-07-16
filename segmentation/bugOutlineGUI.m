@@ -16,7 +16,6 @@ switch nargin
         addPos = varargin{2};
 end
     
-
 %Get z and xy list of bacteria locations
 loc = [rProp.Centroid]; loc = reshape(loc, 3, length(rProp));
 
@@ -134,6 +133,8 @@ hZSlider = uicontrol('Parent', hFig, 'Units', 'Normalized', ...
 
     function updateImage(zNum)
         temp = double(im(:,:,zNum)) + double(1000*meshIm);
+        
+        temp = double(im(:,:,zNum));
         set(hIm, 'CData', temp);
     end
 

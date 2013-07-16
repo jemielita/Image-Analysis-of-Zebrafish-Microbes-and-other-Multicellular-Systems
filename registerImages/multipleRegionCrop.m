@@ -1482,6 +1482,7 @@ hContrast = imcontrast(imageRegion);
             updateEndBulbPosition();
            % addNewPositionCallback(beginGutPt, @(p)updateEndBulbPosition);
             
+            updateGutBeginPosition();
         end
     end
 
