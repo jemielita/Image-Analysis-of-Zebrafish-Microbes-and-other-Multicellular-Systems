@@ -18,26 +18,34 @@ end
 while(size(param.endBulbPos,1)<maxS)
    param.endBulbPos(end+1,:) = param.endBulbPos(end,:);   
 end
-popDiffReg = zeros(maxS, length(param.color), 4);
+
+while(size(param.autoFluorEndPos,1)<maxS)
+   param.autoFluorEndPos(end+1,:) = param.autoFluorEndPos(end,:);   
+end
+
+popDiffReg = zeros(maxS, length(param.color), 3);
     
 for nS=1:maxS
     cL = param.centerLineAll{nS};
     
+    
     endGutPos = param.endGutPos(nS,:);
     autoFluorPos = param.autoFluorPos(nS,:);
+    autoFluorEndPos = param.autoFluorEndPos(nS,:);
     endBulbPos = param.endBulbPos(nS,:);
     
     endGut = closestInd(cL, endGutPos);
     autoFluor = closestInd(cL, autoFluorPos);
     endBulb = closestInd(cL, endBulbPos);
+    autoFluorEndPos = closestInd(cL, autoFluorEndPos);
     
-    regInd(nS,1:3) = [endBulb, autoFluor, endGut];
+    regInd(nS,1:2) = [endBulb, autoFluorEndPos];
     
     for nC=1:length(param.color)
         popDiffReg(nS,nC, 1) = sum(popXpos{nS,nC}(1, 1:endBulb));
-        popDiffReg(nS,nC,2) = sum(popXpos{nS,nC}(1,endBulb+1:autoFluor));
-        popDiffReg(nS,nC,3) = sum(popXpos{nS,nC}(1,autoFluor+1:endGut));
-        popDiffReg(nS,nC, 4) = sum(popXpos{nS,nC}(1,endGut+1:end));
+        popDiffReg(nS,nC,2) = sum(popXpos{nS,nC}(1,endBulb+1:autoFluorEndPos));
+        popDiffReg(nS,nC,3) = sum(popXpos{nS,nC}(1,autoFluorEndPos+1:end));
+        %popDiffReg(nS,nC, 4) = sum(popXpos{nS,nC}(1,endGut+1:end));
     end
     
 end

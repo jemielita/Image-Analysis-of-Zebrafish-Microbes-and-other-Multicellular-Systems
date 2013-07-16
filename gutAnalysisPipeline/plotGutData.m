@@ -150,105 +150,113 @@ end
     end
 
     function figHandle = plotTotalIntensitySingleRegions(totalGreen, totalRed, popDiffReg)
-plotAll = false;
-if(plotAll==true)
-        %% Total intensity: green channel
         
-        hTotInten = figure; plot(timestep*(1:NtimePoints), totalgreen, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
+        %Redefine totalGreen and totalRed to be population before the
+        %marker for outside the gut
+        totalgreen = sum(popDiffReg(:,1,1:2),3);
+        totalred = sum(popDiffReg(:,2,1:2),3);
         
-        % Total intensity, log scale; showing all different regions on one
-        % plot
-        hTotIntenLog = figure('name', 'Total intensity, log scale');
-        pAll = semilogy(timestep*(1:NtimePoints), totalgreen, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
-        hold on
-        pBulb = semilogy(timestep*(1:NtimePoints), popDiffReg(:,1,1), 'ko', 'markerfacecolor', [0.8 0.2 0.4]);
-        pPreAuto = semilogy(timestep*(1:NtimePoints), popDiffReg(:,1,2), 'ko', 'markerfacecolor', [0.5 0.3 0.1]);
-        pPostAuto = semilogy(timestep*(1:NtimePoints), popDiffReg(:,1,3), 'kdiamond', 'markerfacecolor', [0.1 0.3 0.8]);
-        pPostGut = semilogy(timestep*(1:NtimePoints), popDiffReg(:,1,4), 'ksquare', 'markerfacecolor', [0.2 0.2 0.6]);
-        
-        %legend([pAll, pBulb, pPreAuto, pPostAuto, pPostGut], 'Entire Gut', 'Bulb', 'Pre-Autofluorescent cells', 'Post-Autofluorescent cells', 'Outside gut',...
-        %    'Location', 'NorthWest');
-        title([dataTitle ':  GFP']);
-        
-        hLabels(1,3) = xlabel('Time, hrs.','FontName', 'Calibri','FontSize',  plotAxisLabelSize);
-        hLabels(1,4) = ylabel('# of bacteria','FontName', 'Calibri','FontSize',  plotAxisLabelSize);
-        
-        %Set font size of numbers
-        set(gca, 'FontSize', plotFontSize);
-        set(gca, 'FontName', plotFontType);
-        
-        %% Total intensity: red channel
-        
-        % Total intensity, log scale; showing all different regions on one
-        % plot
-        hTotIntenLog = figure('name', 'Total intensity, log scale');
-        pAll = semilogy(timestep*(1:NtimePoints), totalred, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
-        hold on
-        pBulb = semilogy(timestep*(1:NtimePoints), popDiffReg(:,2,1), 'ko', 'markerfacecolor', [0.8 0.2 0.4]);
-        pPreAuto = semilogy(timestep*(1:NtimePoints), popDiffReg(:,2,2), 'ko', 'markerfacecolor', [0.5 0.3 0.1]);
-        pPostAuto = semilogy(timestep*(1:NtimePoints), popDiffReg(:,2,3), 'kdiamond', 'markerfacecolor', [0.1 0.3 0.8]);
-        pPostGut = semilogy(timestep*(1:NtimePoints), popDiffReg(:,2,4), 'ksquare', 'markerfacecolor', [0.2 0.2 0.6]);
-        
-        % legend([pAll, pBulb, pPreAuto, pPostAuto, pPostGut], 'Entire Gut', 'Bulb', 'Pre-Autofluorescent cells', 'Post-Autofluorescent cells', 'Outside gut',...
-        %    'Location', 'NorthWest');
-        title([dataTitle ':  RFP']);
-        
-        hLabels(1,3) = xlabel('Time, hrs.', 'FontName','Calibri', 'FontSize',  plotAxisLabelSize);
-        hLabels(1,4) = ylabel('# of bacteria', 'FontName','Calibri', 'FontSize',  plotAxisLabelSize);
-        
-        
-        %Set font size of numbers
-        set(gca, 'FontSize', plotFontSize);
-        set(gca, 'FontName', plotFontType);
-        
-        %% Get fit to the desired time interval
-        dlg_title = 'Fit range'; num_lines= 1;
-        prompt = {'Start time for exp. fit (hrs. after 1st loaded scan)', 'End time for exp. fit (hrs. after 1st loaded scan)'};
-        def     = {'0', num2str(7)};  % default values
-        answer  = inputdlg(prompt,dlg_title,num_lines,def);
-        logfitrange = [str2double(answer(1)) str2double(answer(2))];
-        % fs = sprintf('exponential fit to hard-wired range!  t = %d hours', logfitrange); disp(fs);
-        timehours = timestep*(0:NtimePoints-1);
-        t_to_fit = timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2) & totalgreen > 0);
-        gr_to_fit = totalgreen(timehours>=logfitrange(1) & timehours<=logfitrange(2) & totalgreen > 0);
-        [A, sigA, k_green, sigk_green] = fitline(t_to_fit, log(gr_to_fit));
-        I0_green = exp(A);
-        t_to_fit = timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2) & totalred > 0);
-        red_to_fit = totalred(timehours>=logfitrange(1) & timehours<=logfitrange(2) & totalred > 0);
-        [A, sigA, k_red, sigk_red] = fitline(t_to_fit, log(red_to_fit));
-        I0_red = exp(A);
-        fs = sprintf('  Growth rate green = %.2f +/- %.2f 1/hr', k_green, sigk_green); disp(fs);
-        fs = sprintf('  Growth rate red = %.2f +/- %.2f 1/hr',  k_red, sigk_red); disp(fs);
-        fs = sprintf('  Ratio of initial intensities (I_0) = %.2e', min([I0_green/I0_red I0_red/I0_green])); disp(fs);
-        fs = sprintf('  e^(-k_max t_delay) = %.2e', exp(-max([k_red k_green])*tdelay)); disp(fs)
-        
-        if(plotFitLine==true)
-            offsetLineWidth = 3;
-            if timeinfo(1)>timeinfo(2)
-                % first red, then green; so scale red
-                semilogy(timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2)), ...
-                    exp(-k_red*tdelay)*I0_red*exp(k_red*timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2))), ...
-                    'r', 'LineWidth', offsetLineWidth)
-            else
-                % first green, then red; so scale red
-                semilogy(timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2)), ...
-                    exp(-k_green*tdelay)*I0_green*exp(k_green*timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2))), ...
-                    'g', 'LineWidth', offsetLineWidth)
+        %totalgreen = popTot(:,1)'; totalred = popTot(:,2)';
+        plotAll = false;
+        if(plotAll==true)
+            %% Total intensity: green channel
+            
+            hTotInten = figure; plot(timestep*(1:NtimePoints), totalgreen, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
+            
+            % Total intensity, log scale; showing all different regions on one
+            % plot
+            hTotIntenLog = figure('name', 'Total intensity, log scale');
+            pAll = semilogy(timestep*(1:NtimePoints), totalgreen, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
+            hold on
+            pBulb = semilogy(timestep*(1:NtimePoints), popDiffReg(:,1,1), 'ko', 'markerfacecolor', [0.8 0.2 0.4]);
+            pPreAuto = semilogy(timestep*(1:NtimePoints), popDiffReg(:,1,2), 'ko', 'markerfacecolor', [0.5 0.3 0.1]);
+            pPostGut = semilogy(timestep*(1:NtimePoints), popDiffReg(:,1,3), 'kdiamond', 'markerfacecolor', [0.1 0.3 0.8]);
+            
+            %pPostGut = semilogy(timestep*(1:NtimePoints), popDiffReg(:,1,4), 'ksquare', 'markerfacecolor', [0.2 0.2 0.6]);
+            
+            %legend([pAll, pBulb, pPreAuto, pPostAuto, pPostGut], 'Entire Gut', 'Bulb', 'Pre-Autofluorescent cells', 'Post-Autofluorescent cells', 'Outside gut',...
+            %    'Location', 'NorthWest');
+            title([dataTitle ':  GFP']);
+            
+            hLabels(1,3) = xlabel('Time, hrs.','FontName', 'Calibri','FontSize',  plotAxisLabelSize);
+            hLabels(1,4) = ylabel('# of bacteria','FontName', 'Calibri','FontSize',  plotAxisLabelSize);
+            
+            %Set font size of numbers
+            set(gca, 'FontSize', plotFontSize);
+            set(gca, 'FontName', plotFontType);
+            
+            %% Total intensity: red channel
+            
+            % Total intensity, log scale; showing all different regions on one
+            % plot
+            hTotIntenLog = figure('name', 'Total intensity, log scale');
+            pAll = semilogy(timestep*(1:NtimePoints), totalred, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
+            hold on
+            pBulb = semilogy(timestep*(1:NtimePoints), popDiffReg(:,2,1), 'ko', 'markerfacecolor', [0.8 0.2 0.4]);
+            pPreAuto = semilogy(timestep*(1:NtimePoints), popDiffReg(:,2,2), 'ko', 'markerfacecolor', [0.5 0.3 0.1]);
+            pPostAuto = semilogy(timestep*(1:NtimePoints), popDiffReg(:,2,3), 'kdiamond', 'markerfacecolor', [0.1 0.3 0.8]);
+            pPostGut = semilogy(timestep*(1:NtimePoints), popDiffReg(:,2,4), 'ksquare', 'markerfacecolor', [0.2 0.2 0.6]);
+            
+            % legend([pAll, pBulb, pPreAuto, pPostAuto, pPostGut], 'Entire Gut', 'Bulb', 'Pre-Autofluorescent cells', 'Post-Autofluorescent cells', 'Outside gut',...
+            %    'Location', 'NorthWest');
+            title([dataTitle ':  RFP']);
+            
+            hLabels(1,3) = xlabel('Time, hrs.', 'FontName','Calibri', 'FontSize',  plotAxisLabelSize);
+            hLabels(1,4) = ylabel('# of bacteria', 'FontName','Calibri', 'FontSize',  plotAxisLabelSize);
+            
+            
+            %Set font size of numbers
+            set(gca, 'FontSize', plotFontSize);
+            set(gca, 'FontName', plotFontType);
+            
+            %% Get fit to the desired time interval
+            dlg_title = 'Fit range'; num_lines= 1;
+            prompt = {'Start time for exp. fit (hrs. after 1st loaded scan)', 'End time for exp. fit (hrs. after 1st loaded scan)'};
+            def     = {'0', num2str(7)};  % default values
+            answer  = inputdlg(prompt,dlg_title,num_lines,def);
+            logfitrange = [str2double(answer(1)) str2double(answer(2))];
+            % fs = sprintf('exponential fit to hard-wired range!  t = %d hours', logfitrange); disp(fs);
+            timehours = timestep*(0:NtimePoints-1);
+            t_to_fit = timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2) & totalgreen > 0);
+            gr_to_fit = totalgreen(timehours>=logfitrange(1) & timehours<=logfitrange(2) & totalgreen > 0);
+            [A, sigA, k_green, sigk_green] = fitline(t_to_fit, log(gr_to_fit));
+            I0_green = exp(A);
+            t_to_fit = timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2) & totalred > 0);
+            red_to_fit = totalred(timehours>=logfitrange(1) & timehours<=logfitrange(2) & totalred > 0);
+            [A, sigA, k_red, sigk_red] = fitline(t_to_fit, log(red_to_fit));
+            I0_red = exp(A);
+            fs = sprintf('  Growth rate green = %.2f +/- %.2f 1/hr', k_green, sigk_green); disp(fs);
+            fs = sprintf('  Growth rate red = %.2f +/- %.2f 1/hr',  k_red, sigk_red); disp(fs);
+            fs = sprintf('  Ratio of initial intensities (I_0) = %.2e', min([I0_green/I0_red I0_red/I0_green])); disp(fs);
+            fs = sprintf('  e^(-k_max t_delay) = %.2e', exp(-max([k_red k_green])*tdelay)); disp(fs)
+            
+            if(plotFitLine==true)
+                offsetLineWidth = 3;
+                if timeinfo(1)>timeinfo(2)
+                    % first red, then green; so scale red
+                    semilogy(timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2)), ...
+                        exp(-k_red*tdelay)*I0_red*exp(k_red*timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2))), ...
+                        'r', 'LineWidth', offsetLineWidth)
+                else
+                    % first green, then red; so scale red
+                    semilogy(timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2)), ...
+                        exp(-k_green*tdelay)*I0_green*exp(k_green*timehours(timehours>=logfitrange(1) & timehours<=logfitrange(2))), ...
+                        'g', 'LineWidth', offsetLineWidth)
+                end
             end
+            set(hTotInten, 'Tag', [dataTitle '_TotInten']);
+            set(hTotIntenLog, 'Tag', [dataTitle '_TotIntenLog']);
+            
+            
         end
-        set(hTotInten, 'Tag', [dataTitle '_TotInten']);
-        set(hTotIntenLog, 'Tag', [dataTitle '_TotIntenLog']);
         
         
-end
-
-
-%% Make subplot showing all the different regions and their growth rates
-hFig = figure;
+        %% Make subplot showing all the different regions and their growth rates
+        hFig = figure;
 
 %Green channel
 set(hFig, 'Position', [686 2 721 912]);
-subplot(4,2,1);
+subplot(3,2,1);
 pAll = semilogy(timestep*(1:NtimePoints), totalgreen, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
 hold on
 pBulb = semilogy(timestep*(1:NtimePoints), popDiffReg(:,1,1), 'ko', 'markerfacecolor', [0.8 0.2 0.4]);
@@ -256,33 +264,33 @@ hold off
 setPlotValues();
 title('Green: Bulb');
 
-subplot(4,2,3);
+subplot(3,2,3);
 pAll = semilogy(timestep*(1:NtimePoints), totalgreen, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
 hold on
 pPreAuto = semilogy(timestep*(1:NtimePoints), popDiffReg(:,1,2), 'ko', 'markerfacecolor', [0.5 0.3 0.1]);
 hold off
 setPlotValues();
-title('Green: Before autofluorescent cells');
+title('Green: Middle of the gut');
 
-subplot(4,2,5);
+subplot(3,2,5);
 pAll = semilogy(timestep*(1:NtimePoints), totalgreen, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
 hold on
 pPostAuto = semilogy(timestep*(1:NtimePoints), popDiffReg(:,1,3), 'kdiamond', 'markerfacecolor', [0.1 0.3 0.8]);
 hold off
 setPlotValues();
-title('Green: After autofluorescent cells');
+title('Green: End of the gut');
 
-subplot(4,2,7);
-pAll = semilogy(timestep*(1:NtimePoints), totalgreen, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
-hold on
-pPostGut = semilogy(timestep*(1:NtimePoints), popDiffReg(:,1,4), 'ksquare', 'markerfacecolor', [0.2 0.2 0.6]);
-hold off
-setPlotValues();
-title('Green: End of gut');
+% subplot(4,2,7);
+% pAll = semilogy(timestep*(1:NtimePoints), totalgreen, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
+% hold on
+% pPostGut = semilogy(timestep*(1:NtimePoints), popDiffReg(:,1,4), 'ksquare', 'markerfacecolor', [0.2 0.2 0.6]);
+% hold off
+% setPlotValues();
+% title('Green: End of gut');
 
 %Red channel
 
-subplot(4,2,2);
+subplot(3,2,2);
 pAll = semilogy(timestep*(1:NtimePoints), totalred, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
 hold on
 pBulb = semilogy(timestep*(1:NtimePoints), popDiffReg(:,2,1), 'ko', 'markerfacecolor', [0.8 0.2 0.4]);
@@ -290,29 +298,29 @@ hold off
 setPlotValues();
 title('Red: Bulb');
 
-subplot(4,2,4);
+subplot(3,2,4);
 pAll = semilogy(timestep*(1:NtimePoints), totalred, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
 hold on
 pPreAuto = semilogy(timestep*(1:NtimePoints), popDiffReg(:,2,2), 'ko', 'markerfacecolor', [0.5 0.3 0.1]);
 hold off
 setPlotValues();
-title('Red: Before autofluorescent cells');
+title('Red: Middle of the gut');
 
-subplot(4,2,6);
+subplot(3,2,6);
 pAll = semilogy(timestep*(1:NtimePoints), totalred, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
 hold on
 pPostAuto = semilogy(timestep*(1:NtimePoints), popDiffReg(:,2,3), 'kdiamond', 'markerfacecolor', [0.1 0.3 0.8]);
 hold off
 setPlotValues();
-title('Red: After autofluorescent cells');
+title('Red: End of the gut');
 
-subplot(4,2,8);
-pAll = semilogy(timestep*(1:NtimePoints), totalred, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
-hold on
-pPostGut = semilogy(timestep*(1:NtimePoints), popDiffReg(:,2,4), 'ksquare', 'markerfacecolor', [0.2 0.2 0.6]);
-hold off
-setPlotValues();
-title([outputTitle, '   ', 'Red: End of gut']);
+% subplot(4,2,8);
+% pAll = semilogy(timestep*(1:NtimePoints), totalred, 'ko', 'markerfacecolor', [0.2 0.8 0.4]);
+% hold on
+% pPostGut = semilogy(timestep*(1:NtimePoints), popDiffReg(:,2,4), 'ksquare', 'markerfacecolor', [0.2 0.2 0.6]);
+% hold off
+% setPlotValues();
+% title([outputTitle, '   ', 'Red: End of gut']);
 
 %text(100,100, outputTitle);
 figHandle = hFig;

@@ -203,6 +203,7 @@ end
 if(~isfield(param, 'autoFluorEndPos')||size(param.autoFluorEndPos,1)~=maxScan)
         param.autoFluorEndPos = zeros(maxScan, 2);
 end
+
 if(~isfield(param, 'beginGutPos')||size(param.beginGutPos,1)~=maxScan)
         param.beginGutPos = zeros(maxScan, 2);
 end

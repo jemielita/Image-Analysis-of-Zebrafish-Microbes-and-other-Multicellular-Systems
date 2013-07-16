@@ -56,7 +56,6 @@ for j=1:NtimePoints
     %Position down the length of the gut
     xpos = boxWidth*((1:gutLength)' - 0.5); % position along gut, microns (column vector)
     
-    
     for nC=1:length(param.color)
         %The background is the product of the mean background value and the
         %total volume of this box
