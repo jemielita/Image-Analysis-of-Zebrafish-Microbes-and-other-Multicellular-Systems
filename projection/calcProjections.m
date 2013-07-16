@@ -16,6 +16,8 @@
 %       saveDirectory: directory in which to save the MIPs.
 %       saveType: 'tiff' or 'mat': format to save the MIP as.
 %
+%NOTE: This function will overwrite any MIP's found in the directory
+%saveDirectory without being prompted!
 %AUTHOR Matthew Jemielita, Oct 31, 2012
 
 function [] = calcProjections(varargin)

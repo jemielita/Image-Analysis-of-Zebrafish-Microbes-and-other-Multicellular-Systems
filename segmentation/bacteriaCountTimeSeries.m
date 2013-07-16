@@ -51,7 +51,7 @@ fprintf(1,'\n');
 end
 
 function [gutMask, xOffset, yOffset] = getMask(param, nS,nR)
-%
+
 allZ = param.regionExtent.Z;
 allZ = allZ>0;
 
