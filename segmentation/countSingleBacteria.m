@@ -9,7 +9,7 @@
 %
 
 function spotLoc = countSingleBacteria(im, spotFeatures, colorNum, param, varargin)
-
+ts = tic;
 if(nargin==5)
     %For mapping the spot locations onto positions down the length of the
     %gut.
@@ -32,12 +32,22 @@ if(inPlace==false)
     imSeg = zeros(size(im), 'double');
 end
 
-maskAll = zeros(size(im), 'uint8');
+%maskAll = zeros(size(im), 'uint8');
 % Filter image using wavelet filter
 fprintf(1, 'Filtering image and segmenting.');
+
+
+thisFrame = zeros(size(im,1), size(im,2));
 for nZ=1:size(im,3)
-   [~,thisFrame] = spotDetector(double(im(:,:,nZ)));
-   
+    thisFrame(:) = 0;
+    %Find minimum and maximum extent of the region that needs to have spots
+    %located in.
+    thisMask = ~isnan(im(:,:,nZ));
+    xMin = find(sum(thisMask,1)>0, 1,'first');
+    xMax = find(sum(thisMask,1)>0, 1, 'last');
+    yMin = find(sum(thisMask,2)>0, 1, 'first');
+    yMax = find(sum(thisMask,2)>0, 1, 'last');
+   [~,thisFrame(yMin:yMax, xMin:xMax)] = spotDetector(double(im(yMin:yMax,xMin:xMax,nZ)));
    
    %mask = uint8(mask);
    %mask(thisFrame>maxThresh) =1;
@@ -48,28 +58,9 @@ for nZ=1:size(im,3)
       imSeg(:,:,nZ) = thisFrame;
   else
       im(:,:,nZ) = thisFrame;
+      
   end
-  % imSeg(:,:,nZ)= mask;
-   %Processing this z-slice
-%    thisFrame(thisFrame<0) = 0;
-%    mask = zeros(size(thisFrame));
-%    mask(thisFrame>maxThresh) = 1;
-%    mask(thisFrame>minThresh) = mask(thisFrame>minThresh)+1;
-%    
-%    maskMinObj = bwareaopen(mask==2, minObjSize);
-%    mask(~maskMinObj) = 0;
-%    
-%
-% bin = 0:10:max(thisFrame(:));
-% hVal = hist(thisFrame(:), bin);
-% ind = rosin(hVal);
-% 
-% thresh(nZ)= bin(ind);
-
-
-%imSeg(:,:,nZ) = thisFrame;
-
-%   imSeg(:,:,nZ) = uint8(mask);
+ 
    fprintf(1, '.');
 
 end
@@ -80,7 +71,6 @@ if(inPlace==false)
 else
     spotLoc = regionprops(im>maxThresh, im, 'Centroid', 'Area', 'MeanIntensity', 'BoundingBox');
 end
-
 
 
 end

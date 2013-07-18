@@ -119,7 +119,7 @@ function param = resampleCenterLine(param, scanParam)
 
 for nS=1:length(param.centerLineAll)
     clear polyT
-   
+    clear polyFit
     poly = param.centerLineAll{nS};
     
     %Resample the center line at the desired spacing

@@ -215,7 +215,6 @@ polyX = param.regionExtent.polyAll{scanNum}(:,1);
 polyY = param.regionExtent.polyAll{scanNum}(:,2);
 gutMask = poly2mask(polyX, polyY, height, width);
 
-fprintf(1, 'imOrig');
 imOrig = nan*zeros(height, width, dataType);
 
 %Size of pre-cropped rotated image
@@ -229,7 +228,6 @@ finalWidth = yMax-yMin+1;
 
 im = nan*zeros(finalHeight, finalWidth, finalDepth, dataType);
 
-fprintf(1, 'im big');
 %Crop down the mask to the size of the cut region
 maxCut = size(param.cutVal,1);
 
