@@ -168,6 +168,13 @@ set(hMenuDenoise, 'Checked', 'off');
 hMenuMIP = uimenu(hMenuDisplay, 'Label', 'Maximum intensity projection', 'Callback', @mip_Callback);
 hMenuOverlapImages = uimenu(hMenuDisplay, 'Label', 'Overlap different colors', 'Callback', @overlapColors_Callback, 'Checked', 'off');
 
+overlapBugs = false;
+hP{1} = ''; %Handle to bugs located above, at the current (or near to) z-slice, and above.
+hP{2} = '';
+hP{3} = '';
+hMenuOverlapBugs = uimenu(hMenuDisplay, 'Label', 'Show found bugs', 'Separator', 'on', 'Callback', @overlapBugs_Callback, 'Checked', 'off');
+
+
 hMenuRegister = uimenu('Label', 'Registration');
 hMenuRegisterManual = uimenu(hMenuRegister, 'Label', 'Manually register images',...
     'Callback', @getImageArray_Callback);
@@ -581,6 +588,77 @@ hContrast = imcontrast(imageRegion);
             set(hMenuOverlapImages, 'Checked', 'on');
         end
  
+    end
+    function overlapBugs_Callback(hObject, eventdata)
+       
+        if strcmp(get(hMenuOverlapBugs, 'Checked'),'on')
+            set(hMenuOverlapBugs, 'Checked', 'off');
+            overlapBugs = false;
+           
+            if(~isempty(hP))
+                for i=1:3
+                    set(hP{i}, 'XData', []);
+                    set(hP{i}, 'YData', []);
+                end
+            end
+        else
+            set(hMenuOverlapBugs, 'Checked', 'on');
+            overlapBugs = true;
+            
+            scanNum = get(hScanSlider, 'Value');
+            scanNum = int16(scanNum);
+            color = colorType(colorNum);
+            color = color{1};
+            getRegisteredImage(scanNum, color, zNum, im, data, param);
+        end
+        
+    end
+
+    function displayOverlappedBugs()
+        rProp = load([param.dataSaveDirectory filesep 'singleBacCount'...
+            filesep 'bacCount' num2str(scanNum) '.mat']);
+        rProp = rProp.rProp;
+        
+        if(isempty(hP{1}))
+            hold on
+            
+            hP{1} = plot(1,1 ,'o', 'Color', [0.8 0.4 0.2]);
+            hP{2} = plot(1,1,'o', 'Color', [0.3 0.7 0.4]);
+            hP{3} = plot(1,1, 'o', 'Color', [0.4 0.5 0.9]);
+            hold off
+            
+        end
+        
+        
+        
+        xyz = [rProp.CentroidOrig];
+        xyz= reshape(xyz,3,length(xyz)/3);
+        
+        switch projectionType
+            case 'mip'
+                %Set all bug outlines to be one color
+                set(hP{1}, 'XData', xyz(1,:));
+                set(hP{1}, 'YData', xyz(2,:));
+                
+                set(hP{2}, 'XData',[]);
+                set(hP{2}, 'YData', []);
+                set(hP{3}, 'XData', []);
+                set(hP{3}, 'YData', []);
+                
+            case 'none'
+                loc = -1*(xyz(3,:)<zNum-1) + (xyz(3,:)>zNum+1);
+                
+                locData{1} = xyz(:,loc==-1);
+                locData{2} = xyz(:,loc==0);
+                locData{3} = xyz(:, loc==1);
+                for i=1:3
+                    set(hP{i},'XData', locData{i}(1,:));
+                    set(hP{i}, 'YData', locData{i}(2,:));
+                end
+        end
+                
+        
+        
     end
 
     function denoiseIm_Callback(hObject, eventdata)
@@ -2702,7 +2780,13 @@ hContrast = imcontrast(imageRegion);
                 varargout{1} = im;
         end
         
+        
         set(hIm, 'Visible', 'on');
+        
+        if(overlapBugs==true)
+           displayOverlappedBugs(); 
+        end
+        
         
         
     end

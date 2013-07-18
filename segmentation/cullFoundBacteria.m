@@ -71,6 +71,12 @@ end
 
 fprintf(1, '\n');
 
+%% For a first pass only do the above cullings
+
+if(isfield(cullProp, 'firstPass') & cullProp.firstPass ==true)
+    rPropNew = rProp;
+   return 
+end
 %% Remove regions that are close to brighter pixels
 
 rProp = combineRegions(rProp,radCutoff);
@@ -90,7 +96,9 @@ if(isempty(rProp))
     return
 end
 %% Remove low radii regions
-rProp = rProp([rProp.EffRadius]>minRadius);
+
+%No need to really do this at this point since we've 
+%rProp = rProp([rProp.EffRadius]>minRadius);
 
 
 if(isempty(rProp))
