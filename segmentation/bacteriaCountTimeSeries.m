@@ -9,7 +9,7 @@ switch nargin
         cullProp.radCutoff(2) = 3;
         cullProp.minRadius = 2;
         cullProp.minInten = 229;
-        cullProp.minArea = 10;
+        cullProp.minArea = 1;
         
         
         analysisType = 'all';
@@ -22,7 +22,7 @@ switch nargin
         cullProp.radCutoff(2) = 3;
         cullProp.minRadius = 2;
         cullProp.minInten = 229;
-        cullProp.minArea = 10;
+        cullProp.minArea = 1;
     case 3
         analysisType = varargin{1};
         cullProp = varargin{2};
@@ -46,6 +46,16 @@ if(~isdir([param.dataSaveDirectory filesep 'singleBacCount']))
 end
 bacSaveDir = [param.dataSaveDirectory filesep 'singleBacCount'];
 
+
+%Find out where the single bacteria count code is saved
+analysisParameters = load([param.dataSaveDirectory filesep 'analysisParam.mat']);
+analysisTypeList = analysisParameters.analysisType;
+analysisNum = cellfun(@(x)strcmp(x, 'spotDetection'), {analysisTypeList.name});
+analysisNum = find(analysisNum==1);
+
+colorList = analysisParameters.scanParam.color;
+param.centerLineAll = analysisParameters.param.centerLineAll;
+
 switch analysisType 
     case 'all'
         
@@ -58,7 +68,11 @@ end
     function [] = bacCountFirstPass()
         %Directory to save single bacteria count analysis
         for nS=minS:maxS
+            
             fprintf(1, ['Processing scan ' num2str(nS) '...\n']);
+            rPropAll = cell(length(colorList),1);
+            for nC=1:length(colorList)
+
             
             %Load data
             %spotLoc = load(['BacteriaCount', num2str(nS), '.mat']);
@@ -67,20 +81,24 @@ end
             %Load data-produced by analyzeGutTimeSeries
             spotLoc = load(['Analysis_Scan', num2str(nS), '.mat']);
             spotLoc = spotLoc.regFeatures;
-            
+          %  spotLoc = spotLoc{nC, analysisNum};
             %The current indexing is screwy-need to fix this up.
-            spotLoc = spotLoc{1};
+            %spotLoc = spotLoc{1};
             
             
             numBac{nS} = [];
             
-            rPropAll = [];
-            for nR=1:length(spotLoc)
+           
+            
+            numReg = size(spotLoc,1);numReg = 2;
+            for nR=1:numReg
                 %Again, the indexing is somewhat screwy.
-                rProp = spotLoc{nR}{1};
+                
+                rProp = spotLoc{1}{nR}{analysisNum,nC};
                 
                 [gutMask, xOffset, yOffset, gutMaskReg] = getMask(param, nS, nR, 'cutmask');
                 
+                b = [rProp.Area];
                 rProp = cullFoundBacteria(rProp, gutMask, cullProp,xOffset, yOffset);
                 
                 rProp = findBacLoc(rProp, gutMaskReg,param,nR,nS);
@@ -89,18 +107,25 @@ end
                 
                 bacProp{nS,nR} = rProp;
                 
-                rPropAll = [rPropAll ; rProp];
+                rPropAll{nC} = [rPropAll{nC} ; rProp];
             end
             
-            
-            %Save first pass of analysis
-            rProp = rPropAll;
-            fileName = [bacSaveDir filesep 'bacCount' num2str(nS) '.mat'];
-            save(fileName, 'rProp');
-            
             fprintf(1, '.');
+            end
+        
+        greenBug = load([bacSaveDir filesep 'bacCount' num2str(nS) '.mat']);
+        greenBug = greenBug.rProp{1};
+        rProp = cell(2,1);
+        rProp{1} = greenBug;
+        rProp{2} = rPropAll{1};
+        %Save first pass of analysis
+%        rProp = rPropAll;
+        fileName = [bacSaveDir filesep 'bacCount' num2str(nS) '.mat'];
+        save(fileName, 'rProp');
+        
         end
         fprintf(1,'\n');
+        
     end
 
 end

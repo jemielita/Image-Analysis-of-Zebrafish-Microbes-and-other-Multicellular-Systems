@@ -55,9 +55,13 @@ minZ = 1;
 maxZ = size(im,3);
 zNum = minZ;
 
-xOffset = param.regionExtent.indivReg(nS, nR, 1);
-yOffset = param.regionExtent.indivReg(nS, nR,2);
-
+if(isfield(param.regionExtent, 'indivReg'))
+    xOffset = param.regionExtent.indivReg(nS, nR, 1);
+    yOffset = param.regionExtent.indivReg(nS, nR,2);
+else
+    xOffset = 0;
+    yOffset = 0;
+end
 %Display image
 hImPanel = uipanel('Parent', hFig, 'BackgroundColor', 'white', 'Position', [0.01, .18, .98, .8],...
     'Units', 'Normalized');
@@ -98,14 +102,6 @@ zStepBig = 15.0/(maxZ-minZ);
 hZSlider = uicontrol('Parent', hFig, 'Units', 'Normalized', ...
     'Position', [0.05 0.05 0.8 0.05], 'Style', 'slider', 'Min', minZ, ...
     'Max', maxZ, 'SliderStep', [zStepSmall zStepBig], 'Value', zNum, 'Callback', @zSliderCallback);
-
-
-
-
-
-
-
-
 
 
 

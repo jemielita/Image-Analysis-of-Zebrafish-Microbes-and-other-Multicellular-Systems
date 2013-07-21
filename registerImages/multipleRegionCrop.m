@@ -619,6 +619,11 @@ hContrast = imcontrast(imageRegion);
             filesep 'bacCount' num2str(scanNum) '.mat']);
         rProp = rProp.rProp;
         
+        colorNum = get(hColorSlider, 'Value');
+        colorNum = ceil(colorNum);
+        colorNum = int16(colorNum);
+        rProp = rProp{colorNum};
+        
         if(isempty(hP{1}))
             hold on
             

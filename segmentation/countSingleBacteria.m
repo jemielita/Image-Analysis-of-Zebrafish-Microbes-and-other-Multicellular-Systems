@@ -9,7 +9,7 @@
 %
 
 function spotLoc = countSingleBacteria(im, spotFeatures, colorNum, param, varargin)
-ts = tic;
+
 if(nargin==5)
     %For mapping the spot locations onto positions down the length of the
     %gut.
@@ -25,8 +25,16 @@ end
 %minObjSize = spotFeatures.minSize;
 %maxObjSize = spotFeatures.maxSize;
 
+
 minThresh = 100;
-maxThresh = 200;
+
+%mlj: maxThresh = 200 is decent for green, maxThresh = 30 should work for
+%red-we'll see tomorro
+if(isempty(spotFeatures))
+    maxThresh = 200;
+else
+    maxThresh = spotFeatures(colorNum).intenThresh;
+end
 
 if(inPlace==false)
     imSeg = zeros(size(im), 'double');
@@ -43,6 +51,12 @@ for nZ=1:size(im,3)
     %Find minimum and maximum extent of the region that needs to have spots
     %located in.
     thisMask = ~isnan(im(:,:,nZ));
+    
+    if(sum(thisMask(:))==0)
+       %Note sure why we're seeing blank frames-should look at load
+       %3dvolume code-this gets around it though.
+        continue;
+    end
     xMin = find(sum(thisMask,1)>0, 1,'first');
     xMax = find(sum(thisMask,1)>0, 1, 'last');
     yMin = find(sum(thisMask,2)>0, 1, 'first');
@@ -54,6 +68,11 @@ for nZ=1:size(im,3)
    %mask(thisFrame>minThresh) = mask(thisFrame>minThresh)+1;
    
   % maskAll(:,:,nZ)= mask;
+
+  
+%Using a median filter on each frame to remove salt and pepper noise
+thisFrame = medfilt2(thisFrame, [5 5]);
+
   if(inPlace==false)
       imSeg(:,:,nZ) = thisFrame;
   else
@@ -64,6 +83,7 @@ for nZ=1:size(im,3)
    fprintf(1, '.');
 
 end
+
 fprintf(1, '\n');
 
 if(inPlace==false)
