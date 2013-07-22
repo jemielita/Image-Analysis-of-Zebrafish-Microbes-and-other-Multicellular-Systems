@@ -32,8 +32,8 @@ end
 scanParam = load([param.dataSaveDirectory filesep 'analysisParam.mat']);
 scanParam = scanParam.scanParam;
 
-minS = scanParam.scanList(1);
-maxS = scanParam.scanList(end);
+minS = 1;
+maxS = param.expData.totalNumberScans;
 
 numColor = length(scanParam.color);
 
@@ -113,13 +113,13 @@ end
             fprintf(1, '.');
             end
         
-        greenBug = load([bacSaveDir filesep 'bacCount' num2str(nS) '.mat']);
-        greenBug = greenBug.rProp{1};
-        rProp = cell(2,1);
-        rProp{1} = greenBug;
-        rProp{2} = rPropAll{1};
+        %greenBug = load([bacSaveDir filesep 'bacCount' num2str(nS) '.mat']);
+        %greenBug = greenBug.rProp{1};
+        %rProp = cell(2,1);
+        %rProp{1} = greenBug;
+       % rProp{2} = rPropAll{1};
         %Save first pass of analysis
-%        rProp = rPropAll;
+        rProp = rPropAll;
         fileName = [bacSaveDir filesep 'bacCount' num2str(nS) '.mat'];
         save(fileName, 'rProp');
         
