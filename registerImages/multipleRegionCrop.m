@@ -173,7 +173,10 @@ hP{1} = ''; %Handle to bugs located above, at the current (or near to) z-slice, 
 hP{2} = '';
 hP{3} = '';
 hMenuOverlapBugs = uimenu(hMenuDisplay, 'Label', 'Show found bugs', 'Separator', 'on', 'Callback', @overlapBugs_Callback, 'Checked', 'off');
-
+hMenuOverlapBugOptions = uimenu(hMenuDisplay, 'Label', 'Bug label options', 'Callback', @overlapBugOptions_Callback);
+hMenuRemoveBugs = uimenu(hMenuDisplay, 'Label', 'Remove bugs', 'Callback', @removeBugs_Callback, 'Checked', 'off');
+rProp = ''; %Will be filled with information about current scans found bacteria
+removeBugInd = cell(numScans, numColor); %Variable to save culled bacteria points.
 
 hMenuRegister = uimenu('Label', 'Registration');
 hMenuRegisterManual = uimenu(hMenuRegister, 'Label', 'Manually register images',...
@@ -615,11 +618,70 @@ hContrast = imcontrast(imageRegion);
         
     end
 
+    function overlapBugOptions_Callback(hObject, eventdata)
+       
+        
+    end
+
+    function removeBugs_Callback(hObject, eventdata)
+        %Until unchecked produce rectangles that the user can place down on
+        %the image. All bacteria in the box are turned pink.
+        if strcmp(get(hMenuRemoveBugs, 'Checked'),'on')
+            removeBugs = false;
+            set(hMenuRemoveBugs, 'Checked','off');
+            hRemBug = findobj('Tag', 'removeBug');
+            delete(hRemBug);
+        else
+            removeBugs = true;
+            set(hMenuRemoveBugs, 'Checked', 'on');
+            
+            while(strcmp(get(hMenuRemoveBugs, 'Checked'),'on'))
+                hRemBug = imrect(imageRegion);
+                set(hRemBug, 'Tag', 'removeBug');
+                position = wait(hRemBug);
+                
+                delete(hRemBug)
+                
+                removeBugBox(position)
+            end
+        end
+    end
+
+    function removeBugBox(position)
+        
+        xyz = [rProp.CentroidOrig];
+        xyz= reshape(xyz,3,length(xyz)/3);
+       
+        xMin = position(1); xMax = position(1) + position(3);
+        yMin = position(2); yMax = position(2) + position(4);
+        
+        indX = find((xyz(1,:)>xMin) + (xyz(1,:)<xMax) ==2);
+        indY = find((xyz(2,:)>yMin) + (xyz(2,:)<yMax) ==2);
+        
+        bugWindow = 3;
+        loc = -1*(xyz(3,:)<zNum-bugWindow) + (xyz(3,:)>zNum+bugWindow);
+        indZ = find(loc==0);
+        
+        indAll = intersect(indX, indY); indAll = intersect(indAll, indZ);
+        
+       scanNum = get(hScanSlider, 'Value');
+       scanNum = int16(scanNum);
+       color = colorType(colorNum);
+       color = color{1};
+       
+       removeBugInd{scanNum, colorNum} =  [removeBugInd{scanNum, colorNum} ,indAll];
+       
+       getRegisteredImage(scanNum, color, zNum, im, data, param);
+    end
+
     function displayOverlappedBugs()
         rProp = load([param.dataSaveDirectory filesep 'singleBacCount'...
             filesep 'bacCount' num2str(scanNum) '.mat']);
         rProp = rProp.rProp;
         
+        
+        scanNum = get(hScanSlider, 'Value');
+        scanNum = int16(scanNum);
         colorNum = get(hColorSlider, 'Value');
         colorNum = ceil(colorNum);
         colorNum = int16(colorNum);
@@ -631,6 +693,9 @@ hContrast = imcontrast(imageRegion);
             hP{1} = plot(1,1 ,'o', 'Color', [0.8 0.4 0.2]);
             hP{2} = plot(1,1,'o', 'Color', [0.3 0.7 0.4]);
             hP{3} = plot(1,1, 'o', 'Color', [0.4 0.5 0.9]);
+            
+            %Handle to bugs that we've declared to be mislabeled
+            hP{4} = plot(1,1,'o', 'Color',[1 110/255 180/255]); 	
             hold off
             
         end
@@ -652,14 +717,31 @@ hContrast = imcontrast(imageRegion);
                 set(hP{3}, 'YData', []);
                 
             case 'none'
-                loc = -1*(xyz(3,:)<zNum-1) + (xyz(3,:)>zNum+1);
+                
+                bugWindow = 3;
+                loc = -1*(xyz(3,:)<zNum-bugWindow) + (xyz(3,:)>zNum+bugWindow);
+                
+                showBugsZ=true;
+                if(showBugsZ==true)
+                    %Only display bacteria in the ~ vicinity of the found
+                    %z-location.
+                   loc(loc~=0) = 2; 
+                end
                 
                 locData{1} = xyz(:,loc==-1);
                 locData{2} = xyz(:,loc==0);
                 locData{3} = xyz(:, loc==1);
+                
+                
                 for i=1:3
                     set(hP{i},'XData', locData{i}(1,:));
                     set(hP{i}, 'YData', locData{i}(2,:));
+                end
+                if(~isempty(removeBugInd))
+                    locData{4} = xyz(:, removeBugInd{scanNum, colorNum});
+                    
+                    set(hP{4},'XData', locData{4}(1,:));
+                    set(hP{4}, 'YData', locData{4}(2,:));
                 end
         end
                 
