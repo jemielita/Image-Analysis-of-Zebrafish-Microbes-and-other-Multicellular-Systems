@@ -6,16 +6,16 @@
 %Also need the param file
 
 %1. Calculate a histogram of pixel values near background
-analysisType(1).name = 'backgroundHistogram';
-analysisType(1).return = true;
-analysisType(1).binSize = 1:2:2000; 
+analysisType(2).name = 'backgroundHistogram';
+analysisType(2).return = true;
+analysisType(2).binSize = 1:2:2000; 
 
 
 %Calculate the linear intensity down the length of the gut after
 %subtracting the background intensity at those regions
-analysisType(2).name = 'linearIntensityBkgSub';
-analysisType(2).return = true;
-analysisType(2).bkgList = 1:25:2000; %Need to get a sense of what size 
+analysisType(3).name = 'linearIntensityBkgSub';
+analysisType(3).return = true;
+analysisType(3).bkgList = 1:25:2000; %Need to get a sense of what size 
 
 analysisType(3).name = 'spotDetection';
 analysisType(3).return = true;

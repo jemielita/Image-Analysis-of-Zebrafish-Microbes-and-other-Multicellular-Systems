@@ -63,6 +63,11 @@ switch analysisType
         %First pass of the data
         cullProp.firstPass = true;
         bacCountFirstPass;
+        
+    case 'updateGutPosNumber'
+        %Update the position of the bacteria along the length of the gut
+        %1-D projection-done by default in firstpass
+        updateGutPosNumber();
 end
 
     function [] = bacCountFirstPass()
@@ -87,9 +92,7 @@ end
             
             
             numBac{nS} = [];
-            
            
-            
             numReg = size(spotLoc,1);numReg = 2;
             for nR=1:numReg
                 %Again, the indexing is somewhat screwy.
@@ -98,11 +101,12 @@ end
                 
                 [gutMask, xOffset, yOffset, gutMaskReg] = getMask(param, nS, nR, 'cutmask');
                 
-                b = [rProp.Area];
                 rProp = cullFoundBacteria(rProp, gutMask, cullProp,xOffset, yOffset);
                 
                 rProp = findBacLoc(rProp, gutMaskReg,param,nR,nS);
-                
+                rProp = findGutRegion(rProp, nS,param);
+                rProp = getRotatedIndices(param,nR,nS,rProp);
+
                 numBac{nS} = [numBac{nS}, length(rProp)];
                 
                 bacProp{nS,nR} = rProp;
@@ -128,6 +132,73 @@ end
         
     end
 
+    function [] = updateGutPosNumber()
+             %Directory to save single bacteria count analysis
+        for nS=minS:maxS
+            
+            fprintf(1, ['Processing scan ' num2str(nS) '...\n']);
+            rPropAll = cell(length(colorList),1);
+            
+            cL = param.centerLineAll{nS};
+            for nC=1:length(colorList)
+
+            
+            %Load data
+            %spotLoc = load(['BacteriaCount', num2str(nS), '.mat']);
+            %spotLoc = spotLoc.spotLoc;
+            
+            %Load data-produced by analyzeGutTimeSeries
+            %spotLoc = load(['Analysis_Scan', num2str(nS), '.mat']);
+            %spotLoc = spotLoc.regFeatures;
+          %  spotLoc = spotLoc{nC, analysisNum};
+            %The current indexing is screwy-need to fix this up.
+            %spotLoc = spotLoc{1};
+            fileName = [bacSaveDir filesep 'bacCount' num2str(nS) '.mat'];
+            
+            spotLoc = load(fileName);
+            rProp = spotLoc.rProp;
+            cL = param.centerLineAll{nS};
+            
+            for nB =1:length(rProp{nC})
+               pos = rProp{nC}(nB).Centroid(1:2);
+               [~,ind] = min((cL(:,1)-pos(1)).^2 + (cL(:,2)-pos(2)).^2);
+              
+            end
+               
+           
+            %numReg = size(spotLoc,1);numReg = 2;
+            %for nR=1:numReg
+                %Again, the indexing is somewhat screwy.
+                
+                rProp = spotLoc{1}{nR}{analysisNum,nC};
+                
+                [gutMask, xOffset, yOffset, gutMaskReg] = getMask(param, nS, nR, 'cutmask');
+                
+                rProp = cullFoundBacteria(rProp, gutMask, cullProp,xOffset, yOffset);
+                
+                rProp = findBacLoc(rProp, gutMaskReg,param,nR,nS);
+
+                rProp = getRotatedIndices(param,nR,nS,rProp);
+
+                numBac{nS} = [numBac{nS}, length(rProp)];
+                
+                bacProp{nS,nR} = rProp;
+                
+                rPropAll{nC} = [rPropAll{nC} ; rProp];
+            %end
+            
+            fprintf(1, '.');
+            end
+            
+        %Save updated gut position number
+        rProp = rPropAll;
+        fileName = [bacSaveDir filesep 'bacCount' num2str(nS) '.mat'];
+        save(fileName, 'rProp');
+        
+        end
+        fprintf(1,'\n'); 
+        
+    end
 end
 
 function [gutMask, xOffset, yOffset, gutMaskReg] = getMask(param, nS,nR, loadType)
@@ -197,6 +268,16 @@ function rProp = findBacLoc(rProp, gutMaskReg,param,nR,nS)
 
 %figure; imshow(max(gutMaskReg,[],3));
 %hold on
+
+cutVal = load([param.dataSaveDirectory filesep 'masks' filesep 'cutVal.mat']);
+cutVal = cutVal.cutValAll;
+cutVal = cutVal{nS};
+
+
+%Find the location down the gut of different points 
+%Required offset to get correct location of the spots in the 1-D
+%projection.
+minCut = cutVal{nR,1}(1);
 for nB = 1:length(rProp)
    xy = [rProp(nB).Centroid(2), rProp(nB).Centroid(1)];
    xy = round(xy);
@@ -205,12 +286,27 @@ for nB = 1:length(rProp)
    for i =1:size(gutMaskReg,3)
       val = max([val, gutMaskReg(xy(1), xy(2),i)]);  
    end
-  rProp(nB).sliceNum = val;
+  rProp(nB).sliceNum = minCut-1+val;
   
 end
 
-rProp = getRotatedIndices(param,nR,nS,rProp);
         
+end
+
+function rProp = findGutRegion(rProp, nS,param)
+%Find which region of the gut these bacteria are in:
+% 1: Between EJ and the ~ end of the bulb reigon
+% 2: Between ~ end of the bulb region and the beginning of the
+% autofluorescent region (this is by far the least well defined region).
+% 3: Somewhere inside the region containing autofluorescent cells in the
+% posterior of the gut.
+% 4: After the autofluorescent cells, but before the ~ end of the gut.
+% 5: Outside the gut.
+
+for nB =1:length(rProp)
+   rProp(nB).gutRegion  = find(rProp(nB).sliceNum > param.gutRegionsInd(nS,:),1, 'last');
+end
+
 end
 
 function rProp = getRotatedIndices(param,cutNumber,scanNum, rProp)

@@ -177,6 +177,13 @@ hMenuOverlapBugOptions = uimenu(hMenuDisplay, 'Label', 'Bug label options', 'Cal
 hMenuRemoveBugs = uimenu(hMenuDisplay, 'Label', 'Remove bugs', 'Callback', @removeBugs_Callback, 'Checked', 'off');
 rProp = ''; %Will be filled with information about current scans found bacteria
 removeBugInd = cell(numScans, numColor); %Variable to save culled bacteria points.
+remBugsSaveDir = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'removedBugs.mat'];
+if(exist(remBugsSaveDir, 'file')==2)
+   removeBugInd = load(remBugsSaveDir); 
+   removeBugInd = removeBugInd.removeBugInd;
+end
+hMenuSaveRemovedBugs = uimenu(hMenuDisplay, 'Label', 'Save removed bug list', 'Callback', @saveRemovedBugs_Callback);
+
 
 hMenuRegister = uimenu('Label', 'Registration');
 hMenuRegisterManual = uimenu(hMenuRegister, 'Label', 'Manually register images',...
@@ -614,8 +621,7 @@ hContrast = imcontrast(imageRegion);
             color = colorType(colorNum);
             color = color{1};
             getRegisteredImage(scanNum, color, zNum, im, data, param);
-        end
-        
+        end      
     end
 
     function overlapBugOptions_Callback(hObject, eventdata)
@@ -638,13 +644,25 @@ hContrast = imcontrast(imageRegion);
             while(strcmp(get(hMenuRemoveBugs, 'Checked'),'on'))
                 hRemBug = imrect(imageRegion);
                 set(hRemBug, 'Tag', 'removeBug');
-                position = wait(hRemBug);
+                
+                %position = wait(hRemBug);
+                pause(1);
+                hRemBugAPI =iptgetapi(hRemBug);
+                
+                position = hRemBugAPI.getPosition();
                 
                 delete(hRemBug)
-                
+                drawnow;
                 removeBugBox(position)
             end
         end
+    end
+
+    function saveRemovedBugs_Callback(hObject, eventdata)
+        remBugsSaveDir = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'removedBugs.mat'];
+        save(remBugsSaveDir, 'removeBugInd');
+        fprintf(1, 'List of bugs removed saved!\n');
+      
     end
 
     function removeBugBox(position)
@@ -658,7 +676,7 @@ hContrast = imcontrast(imageRegion);
         indX = find((xyz(1,:)>xMin) + (xyz(1,:)<xMax) ==2);
         indY = find((xyz(2,:)>yMin) + (xyz(2,:)<yMax) ==2);
         
-        bugWindow = 3;
+        bugWindow = 1;
         loc = -1*(xyz(3,:)<zNum-bugWindow) + (xyz(3,:)>zNum+bugWindow);
         indZ = find(loc==0);
         
@@ -705,11 +723,15 @@ hContrast = imcontrast(imageRegion);
         xyz = [rProp.CentroidOrig];
         xyz= reshape(xyz,3,length(xyz)/3);
         
+        inAutoFluor = [rProp.gutRegion]==5;
+        xyz = xyz(:, inAutoFluor);
         switch projectionType
             case 'mip'
+                
+                ind = setdiff(1:size(xyz,2), removeBugInd{scanNum, colorNum});
                 %Set all bug outlines to be one color
-                set(hP{1}, 'XData', xyz(1,:));
-                set(hP{1}, 'YData', xyz(2,:));
+                set(hP{1}, 'XData', xyz(1,ind));
+                set(hP{1}, 'YData', xyz(2,ind));
                 
                 set(hP{2}, 'XData',[]);
                 set(hP{2}, 'YData', []);
@@ -718,7 +740,7 @@ hContrast = imcontrast(imageRegion);
                 
             case 'none'
                 
-                bugWindow = 3;
+                bugWindow = 1;
                 loc = -1*(xyz(3,:)<zNum-bugWindow) + (xyz(3,:)>zNum+bugWindow);
                 
                 showBugsZ=true;
@@ -733,12 +755,13 @@ hContrast = imcontrast(imageRegion);
                 locData{3} = xyz(:, loc==1);
                 
                 
+                thisZRemBug = intersect(find(loc==0), removeBugInd{scanNum,colorNum});
                 for i=1:3
                     set(hP{i},'XData', locData{i}(1,:));
                     set(hP{i}, 'YData', locData{i}(2,:));
                 end
                 if(~isempty(removeBugInd))
-                    locData{4} = xyz(:, removeBugInd{scanNum, colorNum});
+                    locData{4} = xyz(:, thisZRemBug);
                     
                     set(hP{4},'XData', locData{4}(1,:));
                     set(hP{4}, 'YData', locData{4}(2,:));
@@ -768,7 +791,7 @@ hContrast = imcontrast(imageRegion);
        switch value
            case 'Add scroll bar to image display'
                
-               apiScroll.setMagnification(1);
+               apiScroll.setMagnification(0.6);
                set(hMenuScroll, 'Label','Remove scroll bar');
                
            case 'Remove scroll bar'
@@ -1062,7 +1085,7 @@ hContrast = imcontrast(imageRegion);
         prevtimer = timerfind('tag', 'zCropTimer');
         delete(prevtimer);
        if(isempty(zCropBoxHandle))
-           zCropBoxHandle{1}(1) =imrect(imageRegion);
+           zCropBoxHandle{1}(1) = imrect(imageRegion);
        else
            zCropBoxHandle{end+1}(1) = imrect(imageRegion);
        end

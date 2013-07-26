@@ -1,4 +1,4 @@
-%countSingleBacteria: Count the numbe of single bacteria in this region
+%countSingleBacteria: Count the number of single bacteria in this region
 %using a wavelet-based filtering scheme. Several features of the predicted
 %spots will be calculated, allowing post-filtering of the spots to remove
 %ones that were incorrectly labelled.
@@ -47,41 +47,42 @@ fprintf(1, 'Filtering image and segmenting.');
 
 thisFrame = zeros(size(im,1), size(im,2));
 for nZ=1:size(im,3)
+    
     thisFrame(:) = 0;
     %Find minimum and maximum extent of the region that needs to have spots
     %located in.
     thisMask = ~isnan(im(:,:,nZ));
     
     if(sum(thisMask(:))==0)
-       %Note sure why we're seeing blank frames-should look at load
-       %3dvolume code-this gets around it though.
-        continue;
+        %Note sure why we're seeing blank frames-should look at load
+        %3dvolume code-this gets around it though.
+        % continue;
     end
     xMin = find(sum(thisMask,1)>0, 1,'first');
     xMax = find(sum(thisMask,1)>0, 1, 'last');
     yMin = find(sum(thisMask,2)>0, 1, 'first');
     yMax = find(sum(thisMask,2)>0, 1, 'last');
-   [~,thisFrame(yMin:yMax, xMin:xMax)] = spotDetector(double(im(yMin:yMax,xMin:xMax,nZ)));
-   
-   %mask = uint8(mask);
-   %mask(thisFrame>maxThresh) =1;
-   %mask(thisFrame>minThresh) = mask(thisFrame>minThresh)+1;
-   
-  % maskAll(:,:,nZ)= mask;
-
-  
-%Using a median filter on each frame to remove salt and pepper noise
-thisFrame = medfilt2(thisFrame, [5 5]);
-
-  if(inPlace==false)
-      imSeg(:,:,nZ) = thisFrame;
-  else
-      im(:,:,nZ) = thisFrame;
-      
-  end
- 
-   fprintf(1, '.');
-
+    
+    [~,thisFrame(yMin:yMax, xMin:xMax)] = spotDetector(double(im(yMin:yMax,xMin:xMax,nZ)));
+    
+    %mask = uint8(mask);
+    %mask(thisFrame>maxThresh) =1;
+    %mask(thisFrame>minThresh) = mask(thisFrame>minThresh)+1;
+    
+    % maskAll(:,:,nZ)= mask;
+    
+    %Using a median filter on each frame to remove salt and pepper noise
+    thisFrame(yMin:yMax, xMin:xMax) = medfilt2(thisFrame(yMin:yMax, xMin:xMax), [5 5]);
+    
+    if(inPlace==false)
+        imSeg(:,:,nZ) = thisFrame;
+    else
+        im(:,:,nZ) = thisFrame;
+        
+    end
+    
+    fprintf(1, '.');
+    
 end
 
 fprintf(1, '\n');
