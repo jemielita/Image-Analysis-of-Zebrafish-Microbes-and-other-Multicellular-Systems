@@ -141,7 +141,6 @@ end
             
             cL = param.centerLineAll{nS};
             for nC=1:length(colorList)
-
             
             %Load data
             %spotLoc = load(['BacteriaCount', num2str(nS), '.mat']);

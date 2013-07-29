@@ -29,11 +29,11 @@ end
 minThresh = 100;
 
 %mlj: maxThresh = 200 is decent for green, maxThresh = 30 should work for
-%red-we'll see tomorro
+%red-we'll see tomorrow
 if(isempty(spotFeatures))
     maxThresh = 200;
 else
-    maxThresh = spotFeatures(colorNum);
+    maxThresh = spotFeatures(colorNum).intenThresh;
 end
 
 if(inPlace==false)
@@ -56,7 +56,7 @@ for nZ=1:size(im,3)
     if(sum(thisMask(:))==0)
         %Note sure why we're seeing blank frames-should look at load
         %3dvolume code-this gets around it though.
-        % continue;
+         continue;
     end
     xMin = find(sum(thisMask,1)>0, 1,'first');
     xMax = find(sum(thisMask,1)>0, 1, 'last');

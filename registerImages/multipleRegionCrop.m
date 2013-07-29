@@ -703,7 +703,16 @@ hContrast = imcontrast(imageRegion);
         colorNum = get(hColorSlider, 'Value');
         colorNum = ceil(colorNum);
         colorNum = int16(colorNum);
-        rProp = rProp{colorNum};
+        
+        if(strcmp(get(hMenuOverlapImages, 'Checked'), 'on'))
+            rPropComb = rProp{1};
+            for i=1:length(rProp{2});
+                rPropComb(end+1) = rProp{2}(i);
+            end
+        else
+            rProp = rProp{colorNum};
+
+        end
         
         if(isempty(hP{1}))
             hold on
@@ -723,8 +732,19 @@ hContrast = imcontrast(imageRegion);
         xyz = [rProp.CentroidOrig];
         xyz= reshape(xyz,3,length(xyz)/3);
         
-        inAutoFluor = [rProp.gutRegion]==5;
-        xyz = xyz(:, inAutoFluor);
+        %In the display apply a harsher threshold for the spots found in
+        %the autofluorescent region.
+        if(isfield(rProp, 'gutRegion'))
+            inAutoFluor = [rProp.gutRegion]==3;
+            outsideAutoFluor = ~inAutoFluor;
+            %Remove low intensity points in this region
+            autoFluorMaxInten  = 300; %According the pixel values, most of these are fake
+            inAutoFluorRem = [rProp.MeanIntensity]>autoFluorMaxInten;
+            inAutoFluor = and(inAutoFluor,inAutoFluorRem);
+            
+            keptSpots = or(outsideAutoFluor, inAutoFluor);
+            xyz = xyz(:, keptSpots);
+        end
         switch projectionType
             case 'mip'
                 
@@ -2855,7 +2875,7 @@ hContrast = imcontrast(imageRegion);
                     %has already been calculated.
                     param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
                     im = selectProjection(param, 'mip', 'true', scanNum,color, zNum,recalcProj);
-                    fprintf(1, 'done!\n');
+                    
                 end
                 
                 %Check to see if we're doing a z-cropping procedure. If so,
