@@ -698,6 +698,8 @@ hContrast = imcontrast(imageRegion);
         rProp = rProp.rProp;
         
         
+        
+
         scanNum = get(hScanSlider, 'Value');
         scanNum = int16(scanNum);
         colorNum = get(hColorSlider, 'Value');
@@ -712,6 +714,13 @@ hContrast = imcontrast(imageRegion);
         else
             rProp = rProp{colorNum};
 
+        end
+        %Not really the correct place to do this, but find empty gut
+        %locations and set them to 6-a.k.a undefiniable at this point
+        for i=1:length(rProp)
+            if(isempty(rProp(i).gutRegion))
+                rProp(i).gutRegion = 6;
+            end
         end
         
         if(isempty(hP{1}))
@@ -3243,6 +3252,7 @@ function [data, param] = loadParameters()
                         param.micronPerPixel = 0.1625; %For the 40X objective.
                         
                         param.imSize = [2160 2560];
+                 
                         
                         expData = load(parameterFile);
                         param.expData = expData.parameters;

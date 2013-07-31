@@ -56,6 +56,9 @@ analysisNum = find(analysisNum==1);
 colorList = analysisParameters.scanParam.color;
 param.centerLineAll = analysisParameters.param.centerLineAll;
 
+
+colorList = {'488nm', '568nm'};
+
 switch analysisType 
     case 'all'
         
@@ -72,6 +75,7 @@ end
 
     function [] = bacCountFirstPass()
         %Directory to save single bacteria count analysis
+
         for nS=minS:maxS
             
             fprintf(1, ['Processing scan ' num2str(nS) '...\n']);
@@ -84,21 +88,28 @@ end
             %spotLoc = spotLoc.spotLoc;
             
             %Load data-produced by analyzeGutTimeSeries
+            %if(nC==2)
             spotLoc = load(['Analysis_Scan', num2str(nS), '.mat']);
-            spotLoc = spotLoc.regFeatures;
-          %  spotLoc = spotLoc{nC, analysisNum};
+            %spotLoc = spotLoc{nC, analysisNum};
             %The current indexing is screwy-need to fix this up.
             %spotLoc = spotLoc{1};
             
-            
+            %else
+          %     spotLoc = load(['bacCount_analysis_all_highCutoff', filesep, 'Analysis_Scan', num2str(nS), '.mat']);
+            %end
+                        spotLoc = spotLoc.regFeatures;
+
+                   
             numBac{nS} = [];
            
             numReg = size(spotLoc,1);numReg = 2;
             for nR=1:numReg
                 %Again, the indexing is somewhat screwy.
-                
+             %   if(nC==1)
                 rProp = spotLoc{1}{nR}{analysisNum,nC};
-                
+              %  else
+               %    rProp = spotLoc{1}{nR}{1}; 
+                %end
                 [gutMask, xOffset, yOffset, gutMaskReg] = getMask(param, nS, nR, 'cutmask');
                 
                 rProp = cullFoundBacteria(rProp, gutMask, cullProp,xOffset, yOffset);
@@ -359,6 +370,10 @@ finalWidth = yMax-yMin+1;
 
 %Crop down the mask to the size of the cut region
 maxCut = size(cutVal,1);
+
+%MlJ: temporary cludge
+%thisCut{1}(2) = min([thisCut{1}(2), size(centerLine,1)-1]);
+%MLj: remove above line
 
 cutPosInit = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle', thisCut{1}(2));
 cutPosFinal = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle', thisCut{1}(1));
