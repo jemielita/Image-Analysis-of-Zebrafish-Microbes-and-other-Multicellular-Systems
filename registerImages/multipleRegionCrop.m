@@ -697,15 +697,12 @@ hContrast = imcontrast(imageRegion);
             filesep 'bacCount' num2str(scanNum) '.mat']);
         rProp = rProp.rProp;
         
-        
-        
-
         scanNum = get(hScanSlider, 'Value');
         scanNum = int16(scanNum);
         colorNum = get(hColorSlider, 'Value');
         colorNum = ceil(colorNum);
         colorNum = int16(colorNum);
-        
+      
         if(strcmp(get(hMenuOverlapImages, 'Checked'), 'on'))
             rPropComb = rProp{1};
             for i=1:length(rProp{2});
@@ -715,14 +712,7 @@ hContrast = imcontrast(imageRegion);
             rProp = rProp{colorNum};
 
         end
-        %Not really the correct place to do this, but find empty gut
-        %locations and set them to 6-a.k.a undefiniable at this point
-        for i=1:length(rProp)
-            if(isempty(rProp(i).gutRegion))
-                rProp(i).gutRegion = 6;
-            end
-        end
-        
+             
         if(isempty(hP{1}))
             hold on
             
@@ -735,11 +725,26 @@ hContrast = imcontrast(imageRegion);
             hold off
             
         end
+                
+        %Not really the correct place to do this, but find empty gut
+        %locations and set them to 6-a.k.a undefiniable at this point
+        for i=1:length(rProp)
+            if(isempty(rProp(i).gutRegion))
+                rProp(i).gutRegion = 6;
+            end
+        end
+        
+
         
         
+        %Remove spots that were manually segmented.
+        keptSpots = setdiff(1:length(rProp), removeBugInd{scanNum, colorNum});
         
-        xyz = [rProp.CentroidOrig];
-        xyz= reshape(xyz,3,length(xyz)/3);
+        %Cull out bacterial spots.-should have better spot for playing
+        %around with these numbers.
+        % cullProp.radCutoff(1) = ''; %Cutoff in the horizontal direction
+        % cullProp.radCutoff(2) = '';
+        rProp = rProp(keptSpots);
         
         %In the display apply a harsher threshold for the spots found in
         %the autofluorescent region.
@@ -747,20 +752,62 @@ hContrast = imcontrast(imageRegion);
             inAutoFluor = [rProp.gutRegion]==3;
             outsideAutoFluor = ~inAutoFluor;
             %Remove low intensity points in this region
-            autoFluorMaxInten  = 300; %According the pixel values, most of these are fake
+            autoFluorMaxInten  = 350; %According the pixel values, most of these are fake
             inAutoFluorRem = [rProp.MeanIntensity]>autoFluorMaxInten;
             inAutoFluor = and(inAutoFluor,inAutoFluorRem);
             
             keptSpots = or(outsideAutoFluor, inAutoFluor);
-            xyz = xyz(:, keptSpots);
+        
+            rProp = rProp(keptSpots);
+            %xyz = xyz(:, keptSpots);
         end
+        
+        %Remove spots that are past the autofluorescent region
+        insideGut = find([rProp.gutRegion]<=3);
+        rProp = rProp(insideGut);
+        switch colorNum
+            case 1
+                cullProp.radCutoff = [10 3 ];
+                cullProp.minRadius = 2;
+                cullProp.minInten = 200;
+                cullProp.minArea = 5;
+                rProp = cullFoundBacteria(rProp, '', cullProp, '', '');
+                
+            case 2
+                cullProp.radCutoff = [5 2 ];
+                cullProp.minRadius = 2;
+                cullProp.minInten = 34;
+                cullProp.minArea = 5;
+                
+                %Use a classifier to reduce down the identified spots
+                  b = load(['D:\HM21_Aeromonas_July3_EarlyTimeInoculation\fish2\gutOutline\cullProp' filesep 'rProp.mat']);
+                  trainingList = b.allData;
+                 rProp = bacteriaLinearClassifier(rProp, trainingList);
+                %rProp = cullFoundBacteria(rProp, '', cullProp, '', '');               
+        end
+        
+        xyz = [rProp.CentroidOrig];
+        xyz = reshape(xyz,3,length(xyz)/3);
+        
+        
+        
+        %keptSpots = logical(keptSpots.*(~outsideGut));
+        %xyz = xyz(:, keptSpots);
+        
+        
+        length(keptSpots)
+        
+        
+        %ind = xyz(1,:)<5200;
+        %xyz = xyz(:,ind);
+        
         switch projectionType
             case 'mip'
                 
-                ind = setdiff(1:size(xyz,2), removeBugInd{scanNum, colorNum});
+                %ind = setdiff(1:size(xyz,2), keptSpots);
                 %Set all bug outlines to be one color
-                set(hP{1}, 'XData', xyz(1,ind));
-                set(hP{1}, 'YData', xyz(2,ind));
+                set(hP{1}, 'XData', xyz(1,:));
+                set(hP{1}, 'YData', xyz(2,:));
                 
                 set(hP{2}, 'XData',[]);
                 set(hP{2}, 'YData', []);
@@ -783,8 +830,7 @@ hContrast = imcontrast(imageRegion);
                 locData{2} = xyz(:,loc==0);
                 locData{3} = xyz(:, loc==1);
                 
-                
-                thisZRemBug = intersect(find(loc==0), removeBugInd{scanNum,colorNum});
+                thisZRemBug = intersect(find(loc==0),keptSpots);
                 for i=1:3
                     set(hP{i},'XData', locData{i}(1,:));
                     set(hP{i}, 'YData', locData{i}(2,:));
