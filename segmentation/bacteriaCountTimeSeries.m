@@ -33,6 +33,8 @@ scanParam = load([param.dataSaveDirectory filesep 'analysisParam.mat']);
 scanParam = scanParam.scanParam;
 
 minS = 1;
+
+minS = 21;
 maxS = param.expData.totalNumberScans;
 
 numColor = length(scanParam.color);

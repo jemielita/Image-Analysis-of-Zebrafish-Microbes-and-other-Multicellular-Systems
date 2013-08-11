@@ -740,11 +740,16 @@ hContrast = imcontrast(imageRegion);
         %Remove spots that were manually segmented.
         keptSpots = setdiff(1:length(rProp), removeBugInd{scanNum, colorNum});
         
+        %Construct list of removed spots
+        xyzRem = [rProp.CentroidOrig];
+        xyzRem = reshape(xyzRem,3,length(xyzRem)/3);
+        xyzRem = xyzRem(:,removeBugInd{scanNum,colorNum});
+        
         %Cull out bacterial spots.-should have better spot for playing
         %around with these numbers.
         % cullProp.radCutoff(1) = ''; %Cutoff in the horizontal direction
         % cullProp.radCutoff(2) = '';
-        rProp = rProp(keptSpots);
+        %rProp = rProp(keptSpots);
         
         %In the display apply a harsher threshold for the spots found in
         %the autofluorescent region.
@@ -756,22 +761,31 @@ hContrast = imcontrast(imageRegion);
             inAutoFluorRem = [rProp.MeanIntensity]>autoFluorMaxInten;
             inAutoFluor = and(inAutoFluor,inAutoFluorRem);
             
-            keptSpots = or(outsideAutoFluor, inAutoFluor);
+            keptSpots = intersect(keptSpots, find(or(outsideAutoFluor, inAutoFluor)==1));
         
-            rProp = rProp(keptSpots);
+           % rProp = rProp(keptSpots);
             %xyz = xyz(:, keptSpots);
         end
         
         %Remove spots that are past the autofluorescent region
         insideGut = find([rProp.gutRegion]<=3);
-        rProp = rProp(insideGut);
+        keptSpots = intersect(keptSpots, insideGut);
+        
+        
+        %rProp = rProp(insideGut);
+        
+        %Not best place to put in index, but it'll do for now
+        for i=1:length(rProp)
+            rProp(i).ind = i;
+        end
+        
         switch colorNum
             case 1
-                cullProp.radCutoff = [10 3 ];
-                cullProp.minRadius = 2;
-                cullProp.minInten = 200;
-                cullProp.minArea = 5;
-                rProp = cullFoundBacteria(rProp, '', cullProp, '', '');
+                cullProp.radCutoff = [1 3 ];
+                cullProp.minRadius = 1;
+                cullProp.minInten = 50;
+                cullProp.minArea = 4;
+                rProp2 = cullFoundBacteria(rProp, '', cullProp, '', '');
                 
             case 2
                 cullProp.radCutoff = [5 2 ];
@@ -782,11 +796,12 @@ hContrast = imcontrast(imageRegion);
                 %Use a classifier to reduce down the identified spots
                   b = load(['D:\HM21_Aeromonas_July3_EarlyTimeInoculation\fish2\gutOutline\cullProp' filesep 'rProp.mat']);
                   trainingList = b.allData;
-                 rProp = bacteriaLinearClassifier(rProp, trainingList);
+                 rProp2 = bacteriaLinearClassifier(rProp, trainingList);
                 %rProp = cullFoundBacteria(rProp, '', cullProp, '', '');               
         end
+        keptSpots = intersect(keptSpots, [rProp2.ind]);
         
-        xyz = [rProp.CentroidOrig];
+        xyz = [rProp(keptSpots).CentroidOrig];
         xyz = reshape(xyz,3,length(xyz)/3);
         
         
@@ -830,13 +845,14 @@ hContrast = imcontrast(imageRegion);
                 locData{2} = xyz(:,loc==0);
                 locData{3} = xyz(:, loc==1);
                 
-                thisZRemBug = intersect(find(loc==0),keptSpots);
                 for i=1:3
                     set(hP{i},'XData', locData{i}(1,:));
                     set(hP{i}, 'YData', locData{i}(2,:));
                 end
                 if(~isempty(removeBugInd))
-                    locData{4} = xyz(:, thisZRemBug);
+                    
+                    remLoc = -1*(xyzRem(3,:)<zNum-bugWindow) + (xyzRem(3,:)>zNum+bugWindow);
+                    locData{4} = xyzRem(:,remLoc==0);
                     
                     set(hP{4},'XData', locData{4}(1,:));
                     set(hP{4}, 'YData', locData{4}(2,:));

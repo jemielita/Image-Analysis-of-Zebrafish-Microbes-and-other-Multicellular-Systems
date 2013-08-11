@@ -2,7 +2,7 @@
 %into one structure
 %
 % USAGE rProp = combineBacPop(takeData);
-% 
+%
 % INPUT
 %      takeData: nx1 structure containing the following fields"
 %               takeData(n).fileDir: directory containing single bacteria
@@ -20,18 +20,18 @@
 
 function rPropAll = combineBacPop(takeData,varargin)
 
-switch nargin 
+switch nargin
     case 1
         trainingList = load(['D:\HM21_Aeromonas_July3_EarlyTimeInoculation\fish2\gutOutline\cullProp' filesep 'rProp.mat']);
     case 2
-        trainingList = load(trainingListLoc);     
+        trainingList = load(trainingListLoc);
 end
 trainingList = trainingList.allData;
 
 scanAllNum = 1;
 
 for takeNum = 1:length(takeData)
-  
+    
     minS = takeData(takeNum).scanRange(1); maxS = takeData(takeNum).scanRange(2);
     maxC = takeData(takeNum).colorNum;
     fileDir = takeData(takeNum).fileDir;
@@ -53,7 +53,7 @@ for takeNum = 1:length(takeData)
                     rProp(i).gutRegion = 6;
                 end
             end
-        
+            
             
             %In the display apply a harsher threshold for the spots found in
             %the autofluorescent region.
@@ -70,7 +70,7 @@ for takeNum = 1:length(takeData)
                 
             end
             
-
+            
             
             switch colorNum
                 case 1
@@ -85,7 +85,7 @@ for takeNum = 1:length(takeData)
                     rProp = bacteriaLinearClassifier(rProp, trainingList);
             end
             
-                
+            
             %Not really the correct place to do this, but find empty gut
             %locations and set them to 6-a.k.a undefiniable at this point
             for i=1:length(rProp)
@@ -95,8 +95,12 @@ for takeNum = 1:length(takeData)
             end
             
             
-        rPropAll{scanAllNum, colorNum} = rProp;
-
+            %Remove spots that are past the autofluorescent region
+            insideGut = find([rProp.gutRegion]<=3);
+            rProp = rProp(insideGut);
+            
+            rPropAll{scanAllNum, colorNum} = rProp;
+            
         end
         scanAllNum = scanAllNum+1;
     end
