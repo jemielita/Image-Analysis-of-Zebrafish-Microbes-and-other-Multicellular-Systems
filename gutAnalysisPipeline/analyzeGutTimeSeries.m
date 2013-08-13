@@ -3,7 +3,15 @@
 %to maximize the flexibility of the possible analysis
 
 function [] = analyzeGutTimeSeries(analysisType, scanParam, param)
+%% If scanParam is empty, then populate it with values that span the range of scans taken
+
+if(isempty(scanParam))
+   scanParam = populateScanParam(param); 
+end
+
 %% Check inputs and pipeline to make sure it will all run properly
+
+
 error = checkInputs(analysisType, scanParam, param);
 
 if(error==1)
@@ -15,7 +23,9 @@ end
 %Should be a subfolder of param.dataSaveDirectory. We don't want to
 %directly write to this folder since we may run multiple analyses of the
 %same data set
-saveDir = scanParam.dataSaveDirectory; 
+saveDir = param.dataSaveDirectory; 
+
+
 
 %Integer list of which scans to analyze- don't want to just do a range in
 %case we want to do only a subset of scans.
@@ -38,7 +48,7 @@ createAllMasks(scanParam, param);
 %% Save meta-data
 %Including analysis parameters and the current version of the code
 
-error = checkCodeVersion(scanParam.codeDir, scanParam.dataSaveDirectory);
+error = checkCodeVersion(scanParam.codeDir, param.dataSaveDirectory);
 error = saveAnalysisSteps(analysisType, scanParam, param);
 if(error ==1)
     fprintf(2, 'Problem saving meta-data from analysis!');
@@ -85,7 +95,7 @@ end
 
 function error = saveAnalysisSteps(analysisType, scanParam, param)
 try
-    save([scanParam.dataSaveDirectory filesep 'analysisParam.mat'],...
+    save([param.dataSaveDirectory filesep 'analysisParam.mat'],...
         'analysisType', 'scanParam', 'param');
     error = 0;
 catch
@@ -94,6 +104,25 @@ catch
 end
 
 end
+
+function  scanParam = populateScanParam(param)
+
+scanParam.color = param.color;
+scanParam.scanList = 1:param.expData.totalNumberScans;
+
+%Just in case it wasn't reset somewhere
+scanParam.dataSaveDirectory = param.dataSaveDirectory;
+
+%Standard values
+scanParam.stepSize = 5;
+scanParam.regOverlap = 10;
+
+%This might change a little bit based on which computer we're running
+%things on
+scanParam.codeDir = 'C:\code\trunk';
+
+end
+
 
 function error = checkInputs(analysisType, scanParam, param)
 %write!

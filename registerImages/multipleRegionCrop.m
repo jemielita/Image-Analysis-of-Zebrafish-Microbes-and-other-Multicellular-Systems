@@ -99,7 +99,8 @@ outlineRect = '';
 
 %%%%%%%%%%%%%%%%
 % The GUI window
-fGui = figure('Name', 'Play the Outline the Gut Game!', 'Menubar', 'none', 'Tag', 'fGui',...
+figName = ['Play the Outline the Gut Game!   ', param.directoryName];
+fGui = figure('Name', figName, 'Menubar', 'none', 'Tag', 'fGui',...
     'Visible', 'off', 'Position', [50, 50, 2000, 900], 'Color', [0.925, 0.914, 0.847]);
 
 %Handle to GUI data-will be used to pass information out
@@ -757,7 +758,8 @@ hContrast = imcontrast(imageRegion);
             inAutoFluor = [rProp.gutRegion]==3;
             outsideAutoFluor = ~inAutoFluor;
             %Remove low intensity points in this region
-            autoFluorMaxInten  = 350; %According the pixel values, most of these are fake
+            autoFluorMaxInten  = 580; %According the pixel values, most of these are fake
+
             inAutoFluorRem = [rProp.MeanIntensity]>autoFluorMaxInten;
             inAutoFluor = and(inAutoFluor,inAutoFluorRem);
             
@@ -785,8 +787,12 @@ hContrast = imcontrast(imageRegion);
                 cullProp.minRadius = 1;
                 cullProp.minInten = 50;
                 cullProp.minArea = 4;
-                rProp2 = cullFoundBacteria(rProp, '', cullProp, '', '');
+                %rProp2 = cullFoundBacteria(rProp, '', cullProp, '', '');
                 
+                b = load('D:\HM21_Aeromonas_July3_EarlyTimeInoculation\fish3\gutOutline\cullProp\rProp.mat');
+                trainingList = b.allData;
+                
+                rProp2 = bacteriaLinearClassifier(rProp, trainingList);
             case 2
                 cullProp.radCutoff = [5 2 ];
                 cullProp.minRadius = 2;

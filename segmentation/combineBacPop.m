@@ -1,7 +1,7 @@
 %combineBacPop: Combine together data taken from different takes
 %into one structure
 %
-% USAGE rProp = combineBacPop(takeData);
+% USAGE rProp = combineBacPop(takeData, trainingList);
 %
 % INPUT
 %      takeData: nx1 structure containing the following fields"
@@ -10,6 +10,9 @@
 %               takeData(n).scanRange: [sMin, sMax]-range of scans to
 %               combine together
 %               takeDat(n).colorNum: number of colors
+%     trainingList: (optional) cell array with takeDat.colorNum of fields
+%     containing training data for the linear classifier for the different
+%     colors.
 %
 % OUTPUT
 %       rPropAll: combined # of Scans x by # of colors cell array containing
@@ -20,22 +23,36 @@
 
 function rPropAll = combineBacPop(takeData,varargin)
 
+
 switch nargin
     case 1
-        trainingList = load(['D:\HM21_Aeromonas_July3_EarlyTimeInoculation\fish2\gutOutline\cullProp' filesep 'rProp.mat']);
+        tlIn = load('D:\HM21_Aeromonas_July3_EarlyTimeInoculation\fish3\gutOutline\cullProp\rProp.mat');
+        trainingList{1} = tlIn.allData;
+        
+        tlIn = load(['D:\HM21_Aeromonas_July3_EarlyTimeInoculation\fish2\gutOutline\cullProp' filesep 'rProp.mat']);
+        trainingList{2} = tlIn.allData;
+        
     case 2
-        trainingList = load(trainingListLoc);
+        
+        for i=1:length(trainingListLoc)
+            tlIn = load(trainingListLoc{1});
+            trainingList{i} = tlIn.allData;
+        end
+        
 end
-trainingList = trainingList.allData;
 
 scanAllNum = 1;
+
+
+%Find threshold for autofluorescent cells based on what would cull 95% of
+%identified cells in this region.
+autoFluorMaxInten = findAutoFluorCutoff();
 
 for takeNum = 1:length(takeData)
     
     minS = takeData(takeNum).scanRange(1); maxS = takeData(takeNum).scanRange(2);
     maxC = takeData(takeNum).colorNum;
     fileDir = takeData(takeNum).fileDir;
-    
     
     for scanNum=minS:maxS
         
@@ -54,15 +71,13 @@ for takeNum = 1:length(takeData)
                 end
             end
             
-            
             %In the display apply a harsher threshold for the spots found in
             %the autofluorescent region.
             if(isfield(rProp, 'gutRegion'))
                 inAutoFluor = [rProp.gutRegion]==3;
                 outsideAutoFluor = ~inAutoFluor;
                 %Remove low intensity points in this region
-                autoFluorMaxInten  = 300; %According the pixel values, most of these are fake
-                inAutoFluorRem = [rProp.MeanIntensity]>autoFluorMaxInten;
+                inAutoFluorRem = [rProp.MeanIntensity]>autoFluorMaxInten(colorNum);
                 inAutoFluor = and(inAutoFluor,inAutoFluorRem);
                 
                 keptSpots = or(outsideAutoFluor, inAutoFluor);
@@ -70,21 +85,7 @@ for takeNum = 1:length(takeData)
                 
             end
             
-            
-            
-            switch colorNum
-                case 1
-                    cullProp.radCutoff = [10 3];
-                    cullProp.minRadius = 2;
-                    cullProp.minInten = 200;
-                    cullProp.minArea = 5;
-                    rProp = cullFoundBacteria(rProp, '', cullProp, '', '');
-                    
-                    
-                case 2
-                    rProp = bacteriaLinearClassifier(rProp, trainingList);
-            end
-            
+            rProp = bacteriaLinearClassifier(rProp, trainingList{colorNum});
             
             %Not really the correct place to do this, but find empty gut
             %locations and set them to 6-a.k.a undefiniable at this point
@@ -93,7 +94,6 @@ for takeNum = 1:length(takeData)
                     rProp(i).gutRegion = 6;
                 end
             end
-            
             
             %Remove spots that are past the autofluorescent region
             insideGut = find([rProp.gutRegion]<=3);
@@ -110,6 +110,35 @@ end
 
 
 
+
+    function autoFluorMaxInten = findAutoFluorCutoff()
+        %Go through scans and find only spots found in the autofluorescent region
+        %Use these to find a threshold that
+        takeNum = 1;
+        
+        minS = takeData(takeNum).scanRange(1);
+        maxC = takeData(takeNum).colorNum;
+        fileDir = takeData(takeNum).fileDir;
+        
+        scanNum = minS;
+        for colorNum=1:maxC
+            rProp = load([fileDir filesep 'singleBacCount'...
+                filesep 'bacCount' num2str(scanNum) '.mat']);
+            rProp = rProp.rProp;
+            
+            rProp = rProp{colorNum};
+            
+            rProp = bacteriaLinearClassifier(rProp, trainingList{colorNum});
+            rProp = rProp([rProp.gutRegion]==3);
+            
+            meanList = sort([rProp.MeanIntensity]);
+            ind = round(0.95*length(meanList));
+            
+            autoFluorMaxInten(colorNum) = meanList(ind);
+            
+        end
+        
+    end
 
 end
 

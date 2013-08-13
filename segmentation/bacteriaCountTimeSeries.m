@@ -34,7 +34,6 @@ scanParam = scanParam.scanParam;
 
 minS = 1;
 
-minS = 21;
 maxS = param.expData.totalNumberScans;
 
 numColor = length(scanParam.color);
@@ -105,6 +104,8 @@ end
             numBac{nS} = [];
            
             numReg = size(spotLoc,1);numReg = 2;
+            
+            
             for nR=1:numReg
                 %Again, the indexing is somewhat screwy.
              %   if(nC==1)
@@ -112,6 +113,7 @@ end
               %  else
                %    rProp = spotLoc{1}{nR}{1}; 
                 %end
+
                 [gutMask, xOffset, yOffset, gutMaskReg] = getMask(param, nS, nR, 'cutmask');
                 
                 rProp = cullFoundBacteria(rProp, gutMask, cullProp,xOffset, yOffset);
