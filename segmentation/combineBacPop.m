@@ -43,7 +43,6 @@ end
 
 scanAllNum = 1;
 
-
 %Find threshold for autofluorescent cells based on what would cull 95% of
 %identified cells in this region.
 autoFluorMaxInten = findAutoFluorCutoff();
@@ -98,7 +97,7 @@ for takeNum = 1:length(takeData)
             %Remove spots that are past the autofluorescent region
             insideGut = find([rProp.gutRegion]<=3);
             rProp = rProp(insideGut);
-            
+             
             rPropAll{scanAllNum, colorNum} = rProp;
             
         end

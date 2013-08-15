@@ -169,6 +169,10 @@ set(hMenuDenoise, 'Checked', 'off');
 hMenuMIP = uimenu(hMenuDisplay, 'Label', 'Maximum intensity projection', 'Callback', @mip_Callback);
 hMenuOverlapImages = uimenu(hMenuDisplay, 'Label', 'Overlap different colors', 'Callback', @overlapColors_Callback, 'Checked', 'off');
 
+hMenuShowSegmentation = uimenu(hMenuDisplay, 'Separator', 'on', 'Label', 'Show gut segmentation', ...
+    'Checked', 'off','Callback', @showSegmentation_Callback);
+hMenuSetSegementationType = uimenu(hMenuDisplay, 'Label', 'Choose segmentation type', 'Calback', @setSegmentation_Callback);
+
 overlapBugs = false;
 hP{1} = ''; %Handle to bugs located above, at the current (or near to) z-slice, and above.
 hP{2} = '';

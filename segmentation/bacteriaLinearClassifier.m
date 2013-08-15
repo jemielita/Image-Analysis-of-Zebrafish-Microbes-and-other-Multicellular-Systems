@@ -1,4 +1,4 @@
-%Classify bacteria using a linear classifier
+ %Classify bacteria using a linear classifier
 
 
 function rPropOut = bacteriaLinearClassifier(rProp, trainingList)
