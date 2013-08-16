@@ -171,7 +171,9 @@ hMenuOverlapImages = uimenu(hMenuDisplay, 'Label', 'Overlap different colors', '
 
 hMenuShowSegmentation = uimenu(hMenuDisplay, 'Separator', 'on', 'Label', 'Show gut segmentation', ...
     'Checked', 'off','Callback', @showSegmentation_Callback);
-hMenuSetSegementationType = uimenu(hMenuDisplay, 'Label', 'Choose segmentation type', 'Calback', @setSegmentation_Callback);
+hMenuSetSegementationType = uimenu(hMenuDisplay, 'Label', 'Choose segmentation type', 'Callback', @setSegmentation_Callback);
+segmentationType.List = {'none', 'Otsu'};
+segmentationType.Selection = 'none';
 
 overlapBugs = false;
 hP{1} = ''; %Handle to bugs located above, at the current (or near to) z-slice, and above.
@@ -605,6 +607,24 @@ hContrast = imcontrast(imageRegion);
         end
  
     end
+
+    function showSegmentation_Callback(hObject, eventdata)
+        
+        if strcmp(get(hMenuShowSegmentation, 'Checked'),'on')
+            set(hMenuShowSegmentation, 'Checked', 'off');
+        else
+            set(hMenuShowSegmentation, 'Checked', 'on');
+        end
+    end
+
+    function setSegmentation_Callback(hObject, eventdata)
+        [selection, ok] = listdlg('SelectionMode', 'single',...
+            'ListString', segmentationType.List,...
+            'PromptString', 'Choose segmentation type');
+        segmentationType.Selection = segmentationType.List{selection};
+    end
+
+
     function overlapBugs_Callback(hObject, eventdata)
        
         if strcmp(get(hMenuOverlapBugs, 'Checked'),'on')
@@ -2968,6 +2988,25 @@ hContrast = imcontrast(imageRegion);
                 
         end
         
+        
+        if(strcmp(get(hMenuShowSegmentation, 'Checked'), 'on'))
+            
+
+            poly = param.regionExtent.polyAll{scanNum};
+            cL = param.centerLineAll{scanNum};
+            
+            height = param.regionExtent.regImSize{1}(1);
+            width = param.regionExtent.regImSize{1}(2);
+            
+            gutMask = poly2mask(poly(:,1), poly(:,2), height,width);
+            imSeg = im; imSeg(~gutMask) = NaN;
+            segMask = segmentGutMIP(imSeg, segmentationType.Selection);
+            maskFeat.Type = 'perim';
+            maskFeat.seSize = 5;
+            im = segmentRegionShowMask(im, segMask, maskFeat);
+           % set(hIm, 'CData', im);
+        end
+        
         %If a single crop region (not region specific crop boxes) for the
         %whole image has been selected, then crop down to this size.
         if( isfield(param.regionExtent, 'singleCrop'))
@@ -2994,7 +3033,8 @@ hContrast = imcontrast(imageRegion);
         
         
         set(hIm, 'Visible', 'on');
-        
+                     %   set(hIm, 'CData', im);
+
         if(overlapBugs==true)
            displayOverlappedBugs(); 
         end

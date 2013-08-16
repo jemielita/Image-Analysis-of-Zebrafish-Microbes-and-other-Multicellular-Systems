@@ -12,7 +12,6 @@
 
 function segMask = segmentGutMIP(im, segmentType)
 
-
 switch lower(segmentType)
     case 'otsu'
         segMask = otsuSegment(im);
@@ -23,8 +22,8 @@ end
 
 
 function segMask = otsuSegment(im)
-im = mat2gray(im(:));
-gT = graythresh(im(:));
+im = mat2gray(im);
+gT = graythresh(im(im~=0));
 
 segMask = im > gT;
 
