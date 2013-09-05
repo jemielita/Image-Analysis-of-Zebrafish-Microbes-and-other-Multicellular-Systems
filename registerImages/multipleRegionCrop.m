@@ -2459,7 +2459,7 @@ hContrast = imcontrast(imageRegion);
                 
                 set(hZSlider, 'Value',double(zNum));
         end
-        
+         
         colorNum = get(hColorSlider, 'Value');
         colorNum = ceil(colorNum);
         colorNum = int16(colorNum);
@@ -3003,7 +3003,7 @@ hContrast = imcontrast(imageRegion);
             segMask = segmentGutMIP(imSeg, segmentationType.Selection);
             maskFeat.Type = 'perim';
             maskFeat.seSize = 5;
-            im = segmentRegionShowMask(im, segMask, maskFeat);
+              im = segmentRegionShowMask(im, segMask, maskFeat);
            % set(hIm, 'CData', im);
         end
         
@@ -3014,7 +3014,7 @@ hContrast = imcontrast(imageRegion);
                 im = imcrop(im, param.regionExtent.singleCrop);
             end
         end
-        
+         
         %If we're manually registering things then also update the cell
         %structure that contains the individual regions
         if strcmp(get(hMenuRegisterManual, 'Checked'),'on')
