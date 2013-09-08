@@ -9,10 +9,14 @@
 %
 
 
-function SliderPlot(data)
+function SliderPlot(data,title)
 
 numData = length(data);
-colorM = rand(3, numData);
+
+%Hard coded in for now, so that we can have the same color schemes across
+%fish.
+colorM(:,1) = [0.11 0.95 0.58];
+colorM(:,2) = [0.50 0.34 0.22];
 
 %~Dangerous assumption here-all entries in data have the same number of
 %fields.
@@ -24,7 +28,11 @@ else
 end
 
 hFig = figure('MenuBar', 'none');
+
+
+
 set(hFig, 'Position', [502, 302, 1108, 669]);
+set(hFig, 'Name', title.dataSet);
 
 hManipPanel = uipanel('Parent', hFig, 'Units', 'Normalized', ...
     'Position', [0.025 0.025 0.95 0.2]);
@@ -36,11 +44,12 @@ hShowImPanel = uipanel('Parent', hFig, 'Units', 'Normalized',...
     'Position', [0.025 0.250 0.95 0.7125]);
 hAxes = axes('Parent', hShowImPanel, 'Units', 'Normalized',...
     'Position', [0.025 0.025 0.95 0.95]);
-
+set(hAxes, 'YLim', [0 200]);
 for nD = 1:numData
     hL(nD) = line(1:length(data{nD}{1,1}),data{nD}{1,1},'Parent', hAxes, 'Color', colorM(:,nD));
 end
-legend(hL, {'1', '2'});
+
+legend(hL, {title.dataType{1}, title.dataType{2}});
 
 
 

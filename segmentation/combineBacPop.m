@@ -56,6 +56,9 @@ for takeNum = 1:length(takeData)
     for scanNum=minS:maxS
         
         for colorNum=1:maxC
+            
+            
+            
             rProp = load([fileDir filesep 'singleBacCount'...
                 filesep 'bacCount' num2str(scanNum) '.mat']);
             rProp = rProp.rProp;
@@ -110,34 +113,7 @@ end
 
 
 
-    function autoFluorMaxInten = findAutoFluorCutoff()
-        %Go through scans and find only spots found in the autofluorescent region
-        %Use these to find a threshold that
-        takeNum = 1;
-        
-        minS = takeData(takeNum).scanRange(1);
-        maxC = takeData(takeNum).colorNum;
-        fileDir = takeData(takeNum).fileDir;
-        
-        scanNum = minS;
-        for colorNum=1:maxC
-            rProp = load([fileDir filesep 'singleBacCount'...
-                filesep 'bacCount' num2str(scanNum) '.mat']);
-            rProp = rProp.rProp;
-            
-            rProp = rProp{colorNum};
-            
-            rProp = bacteriaLinearClassifier(rProp, trainingList{colorNum});
-            rProp = rProp([rProp.gutRegion]==3);
-            
-            meanList = sort([rProp.MeanIntensity]);
-            ind = round(0.95*length(meanList));
-            
-            autoFluorMaxInten(colorNum) = meanList(ind);
-            
-        end
-        
-    end
+ 
 
 end
 
