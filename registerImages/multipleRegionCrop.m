@@ -691,6 +691,8 @@ hContrast = imcontrast(imageRegion);
     end
 
     function removeBugBox(position)
+        zNum = get(hZSlider, 'Value');
+        zNum = int16(zNum);
         
         xyz = [rProp.CentroidOrig];
         xyz= reshape(xyz,3,length(xyz)/3);
@@ -702,10 +704,18 @@ hContrast = imcontrast(imageRegion);
         indY = find((xyz(2,:)>yMin) + (xyz(2,:)<yMax) ==2);
         
         bugWindow = 1;
-        loc = -1*(xyz(3,:)<zNum-bugWindow) + (xyz(3,:)>zNum+bugWindow);
-        indZ = find(loc==0);
         
-        indAll = intersect(indX, indY); indAll = intersect(indAll, indZ);
+        indAll = intersect(indX, indY);
+        %If looking at the MIP then remove all bugs in the entire z-stack.
+         switch projectionType
+            case 'mip'
+                %Do nothing further to the list.
+             case 'none'
+                 loc = -1*(xyz(3,:)<zNum-bugWindow) + (xyz(3,:)>zNum+bugWindow);
+                 indZ = find(loc==0);
+                 
+                 indAll = intersect(indAll, indZ);
+         end
         
        scanNum = get(hScanSlider, 'Value');
        scanNum = int16(scanNum);
@@ -715,6 +725,8 @@ hContrast = imcontrast(imageRegion);
        removeBugInd{scanNum, colorNum} =  [removeBugInd{scanNum, colorNum} ,indAll];
        
        getRegisteredImage(scanNum, color, zNum, im, data, param);
+       
+       
     end
 
     function displayOverlappedBugs()
@@ -757,12 +769,26 @@ hContrast = imcontrast(imageRegion);
         %Construct list of removed spots
         xyzRem = [rProp.CentroidOrig];
         xyzRem = reshape(xyzRem,3,length(xyzRem)/3);
+        
         xyzRem = xyzRem(:,removeBugInd{scanNum,colorNum});
-       
-        rProp = bacteriaCountFilter(rProp, scanNum, colorNum, param);
+        
+        if(strcmp(projectionType, 'none') || strcmp(get(hMenuRemoveBugs, 'Checked'),'on'))
+            %Only if we're
+            rPropClassified = rProp(keptSpots);
+        else
+            rPropClassified = rProp;
+        end
+%         
+         classifierType = 'svm';
+          useRemovedBugList = false;
+
+    %     classifierType = 'linear';
+%         useRemovedBugList = false;
+        
+        rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType);
         %keptSpots = intersect(keptSpots, [rProp.ind]);
 
-        xyz = [rProp.CentroidOrig];
+        xyz = [rPropClassified.CentroidOrig];
         xyz = reshape(xyz,3,length(xyz)/3);
         
         
@@ -778,6 +804,11 @@ hContrast = imcontrast(imageRegion);
         switch projectionType
             case 'mip'
                 
+%                 locData{4} = xyzRem;
+%                 
+%                 set(hP{4},'XData', locData{4}(1,:));
+%                 set(hP{4}, 'YData', locData{4}(2,:));
+%                 
                 %ind = setdiff(1:size(xyz,2), keptSpots);
                 %Set all bug outlines to be one color
                 set(hP{1}, 'XData', xyz(1,:));
@@ -787,6 +818,12 @@ hContrast = imcontrast(imageRegion);
                 set(hP{2}, 'YData', []);
                 set(hP{3}, 'XData', []);
                 set(hP{3}, 'YData', []);
+                
+                %Remove spots that were manually removed
+                set(hP{4}, 'XData', []);
+                set(hP{4}, 'YData', []);
+                
+                
                 
             case 'none'
                 

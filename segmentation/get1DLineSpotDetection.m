@@ -18,7 +18,8 @@
 %
 % OUTPUT lineDist (optional): line distribution code, with the same syntax
 % as given in the documentation for saveLine above.
-%
+%        popTot (optional): sum of the line distribution down the length of
+%        the gut.
 % AUTHOR Matthew Jemielita, Sep 4, 2013.
 
 function varargout = get1DLineSpotDetection(param, varargin)
@@ -69,7 +70,9 @@ for nS = minS:maxS
            rProp = inputVar.rProp;
            
            rProp = rProp{nC};
-           rProp = bacteriaCountFilter(rProp, nS, nC, param);           
+           classifierType = 'svm'; 
+           useRemovedBugList = false;
+           rProp = bacteriaCountFilter(rProp, nS, nC, param, useRemovedBugList, classifierType);           
        else
            rProp = rPropAll{nS,nC};
        end
@@ -81,9 +84,13 @@ for nS = minS:maxS
        numEl = arrayfun(@(y)sum(numBac==y),u);
    
        lineDist{nS,nC} = numEl; 
+       
+       popTot(nS, nC) = sum(numEl);
    end
    
     
+
+   
 end
 
 if(saveLine==true)
@@ -96,6 +103,9 @@ switch nargout
         %Do nothing
     case 1
         varargout{1} = lineDist;
+    case 2
+        varargout{1} = lineDist;
+        varargout{2} = popTot;
     otherwise
         frprintf(2, 'Functions takes 0 or 1 outputs!');
         return
@@ -106,27 +116,5 @@ end
 
 end
 
-% 
-% function rProp = cullBacteriaData(rProp)
-% 
-% autoFluorMaxInten = findAutoFluorCutoff();
-% 
-% for scanNum=minS:maxS
-%         
-%         for colorNum=1:maxC
-%             rProp = load([fileDir filesep 'singleBacCount'...
-%                 filesep 'bacCount' num2str(scanNum) '.mat']);
-%             rProp = rProp.rProp;
-%             
-%             rProp = rProp{colorNum};
-%             
-%             rProp = bacteriaCountFilter(rProp, scanNum, colorNum, param)
-%              
-%             rPropAll{scanAllNum, colorNum} = rProp;
-%             
-%         end
-%         scanAllNum = scanAllNum+1;
-%     end
-% 
-% end
+
 
