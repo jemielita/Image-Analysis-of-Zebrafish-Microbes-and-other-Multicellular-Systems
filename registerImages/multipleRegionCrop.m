@@ -3,6 +3,10 @@ function [param,data] = multipleRegionCrop(varargin)
 switch nargin
     case 0
         [data, param] = loadParameters();
+        if(strcmp(data, 'error'))
+            fprintf(2, 'No directory selected!\n');
+            return;
+        end
     case 3
         %global param
         param = varargin{1};
@@ -179,7 +183,10 @@ segmentationType.Selection = 'none';
 hMenuSpotSelectorMenu = uimenu('Label', 'Spot selector');
 hMenuSpot = uimenu(hMenuSpotSelectorMenu, 'Checked', 'off', 'Label', 'Add spots', 'Callback', @addSpots_Callback);
 hMenuSpotSave = uimenu(hMenuSpotSelectorMenu, 'Label', 'Save spot list', 'Callback', @saveSpots_Callback);
-spotList = [];
+spotList = cell(numScans, numColor);
+hMenuSpotRemove = uimenu(hMenuSpotSelectorMenu, 'Label', 'Remove last spot', 'Callback', @removeLastSpots_Callback);
+%% 
+hManualSpotPlot = [];
 hSpotSelect = [];
 
 overlapBugs = false;
@@ -631,8 +638,13 @@ hContrast = imcontrast(imageRegion);
         segmentationType.Selection = segmentationType.List{selection};
     end
 
-
     function addSpots_Callback(hObject, eventdata)
+        scanNum = get(hScanSlider, 'Value');
+        scanNum = int16(scanNum);
+        
+        colorNum = get(hColorSlider, 'Value');
+        colorNum = ceil(colorNum);
+        colorNum = int16(colorNum);
         
         if strcmp(get(hMenuSpot, 'Checked'),'on')
             set(hMenuSpot, 'Checked', 'off');
@@ -650,9 +662,40 @@ hContrast = imcontrast(imageRegion);
                spotList = inputVar.spotList;
             end 
             
-            hSpotSelect = impoint(imageRegion);
-            
+            while(strcmp(get(hMenuSpot, 'Checked'), 'on'))
+                hSpotSelect = impoint(imageRegion);
+                position = wait(hSpotSelect);
+                spotList{scanNum, colorNum} = [spotList{scanNum, colorNum}; position];
+                delete(hSpotSelect);
+                displayFoundSpots()
+            end
         end
+        
+    end
+
+    function  displayFoundSpots()
+         scanNum = get(hScanSlider, 'Value');
+         scanNum = int16(scanNum);
+         
+         colorNum = get(hColorSlider, 'Value');
+         colorNum = ceil(colorNum);
+         colorNum = int16(colorNum);
+         
+         if(isempty(hManualSpotPlot))
+             hold on
+             hManualSpotPlot = plot(1,1 ,'o', 'Color', [0.8 0.4 0.2]);
+             hold off
+         end
+         
+         
+         
+         if(isempty(spotList{scanNum, colorNum}))
+             set(hManualSpotPlot, 'XData', []);
+             set(hManualSpotPlot, 'YData', []);             
+         else
+             set(hManualSpotPlot, 'XData', spotList{scanNum, colorNum}(:,1)); 
+             set(hManualSpotPlot, 'YData', spotList{scanNum, colorNum}(:,2));
+         end
         
     end
 
@@ -663,9 +706,22 @@ hContrast = imcontrast(imageRegion);
             save(spotSaveFile, 'spotList');
     end
 
-    function updateSpots_Callback(hObject, eventdata)
+    function removeLastSpots_Callback(hObject, eventdata)
         
+        scanNum = get(hScanSlider, 'Value');
+        scanNum = int16(scanNum);
+        
+        colorNum = get(hColorSlider, 'Value');
+        colorNum = ceil(colorNum);
+        colorNum = int16(colorNum);
+        
+        %Remove the last spot in the list of spots we found for this scan
+        %and color
+        
+        spotList{scanNum, colorNum} = spotList{scanNum, colorNum}(1:end-1,:);
+        displayFoundSpots();
     end
+
 
     function overlapBugs_Callback(hObject, eventdata)
        
@@ -3049,6 +3105,11 @@ hContrast = imcontrast(imageRegion);
         end
         
         
+        %Update spots that were manually added to the images
+        if(strcmp(get(hMenuSpot, 'Checked'),'on'))
+           displayFoundSpots(); 
+        end
+        
         
     end
 
@@ -3317,6 +3378,14 @@ end
 
 function [data, param] = loadParameters()
                 dirName = uigetdir(pwd, 'Pick a directory to show the registered images from.');
+                
+                if(dirName==0)
+                    %User pressed cancel-exit program
+                    data = 'error';
+                    param = 'error';
+                    return;
+                end
+                    
                 paramFile = [dirName, filesep, 'gutOutline', filesep, 'param.mat'];
                 paramFileExist = exist(paramFile, 'file');
                 dataFile = [dirName, filesep, 'gutOutline', filesep, 'data.mat'];
@@ -3374,6 +3443,8 @@ function [data, param] = loadParameters()
                         
                         param.imSize = [2160 2560];
                  
+
+                        
                         
                         expData = load(parameterFile);
                         param.expData = expData.parameters;
