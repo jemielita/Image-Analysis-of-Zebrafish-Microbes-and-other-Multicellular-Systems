@@ -175,6 +175,13 @@ hMenuSetSegementationType = uimenu(hMenuDisplay, 'Label', 'Choose segmentation t
 segmentationType.List = {'none', 'Otsu'};
 segmentationType.Selection = 'none';
 
+%Neutrophil identification
+hMenuSpotSelectorMenu = uimenu('Label', 'Spot selector');
+hMenuSpot = uimenu(hMenuSpotSelectorMenu, 'Checked', 'off', 'Label', 'Add spots', 'Callback', @addSpots_Callback);
+hMenuSpotSave = uimenu(hMenuSpotSelectorMenu, 'Label', 'Save spot list', 'Callback', @saveSpots_Callback);
+spotList = [];
+hSpotSelect = [];
+
 overlapBugs = false;
 hP{1} = ''; %Handle to bugs located above, at the current (or near to) z-slice, and above.
 hP{2} = '';
@@ -625,6 +632,41 @@ hContrast = imcontrast(imageRegion);
     end
 
 
+    function addSpots_Callback(hObject, eventdata)
+        
+        if strcmp(get(hMenuSpot, 'Checked'),'on')
+            set(hMenuSpot, 'Checked', 'off');
+            
+        else
+            set(hMenuSpot, 'Checked', 'on');
+            
+            spotSaveDir = [param.dataSaveDirectory filesep 'manualSpotSelection'];
+            if(~isdir(spotSaveDir))
+                mkdir(spotSaveDir);
+            end
+            spotSaveFile = [spotSaveDir filesep 'spotSelectionList.mat'];
+            if(exist(spotSaveFile)==2)
+               inputVar = load(spotSaveFile);
+               spotList = inputVar.spotList;
+            end 
+            
+            hSpotSelect = impoint(imageRegion);
+            
+        end
+        
+    end
+
+    function saveSpots_Callback(hObject, eventdata)
+            spotSaveDir = [param.dataSaveDirectory filesep 'manualSpotSelection'];
+            spotSaveFile = [spotSaveDir filesep 'spotSelectionList.mat'];
+        
+            save(spotSaveFile, 'spotList');
+    end
+
+    function updateSpots_Callback(hObject, eventdata)
+        
+    end
+
     function overlapBugs_Callback(hObject, eventdata)
        
         if strcmp(get(hMenuOverlapBugs, 'Checked'),'on')
@@ -780,7 +822,7 @@ hContrast = imcontrast(imageRegion);
         end
 %         
          classifierType = 'svm';
-          useRemovedBugList = false;
+          useRemovedBugList = true;
 
     %     classifierType = 'linear';
 %         useRemovedBugList = false;
@@ -788,6 +830,7 @@ hContrast = imcontrast(imageRegion);
         rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType);
         %keptSpots = intersect(keptSpots, [rProp.ind]);
 
+        rPropClassified = rPropClassified([rPropClassified.MeanIntensity]<1000);
         xyz = [rPropClassified.CentroidOrig];
         xyz = reshape(xyz,3,length(xyz)/3);
         
