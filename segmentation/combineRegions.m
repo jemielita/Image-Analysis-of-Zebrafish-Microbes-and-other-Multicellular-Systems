@@ -57,10 +57,11 @@ for nR=1:maxNumReg
     %   thisDH = distH(:,nR);
     %  closeD = find(thisDH<radCutoffH |thisDV<radCutoffV); closeD(closeD==nR) = [];
    
-  
-  if(prod(val(1,nR)<val(1,closeD))==0)
-        remInd = [remInd, nR];
-    end 
+    if(~isempty(closeD))
+        if(prod(double(val(1,nR)<val(1,closeD)))==0)
+            remInd = [remInd, nR];
+        end
+    end
 end
 
 spotLoc(remInd) = [];

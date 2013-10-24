@@ -13,16 +13,24 @@
         
         for colorNum=1:maxC
             
-            inputVar = load(trainingListLocation{colorNum});
-            trainingList = inputVar.allData;
+%             if(iscell(trainingListLocation))
+%                 inputVar = load(trainingListLocation{colorNum});
+%             else
+%                 inputVar = load(trainingListLocation);
+%             end
+%             
+%             trainingList = inputVar.allData;
             
             rProp = load([fileDir filesep 'singleBacCount'...
                 filesep 'bacCount' num2str(scanNum) '.mat']);
             rProp = rProp.rProp;
             
-            rProp = rProp{colorNum};
+            if(iscell(rProp))
+                rProp = rProp{colorNum};
+            end
+               
             
-            rProp = bacteriaLinearClassifier(rProp, trainingList);
+           % rProp = bacteriaLinearClassifier(rProp, trainingList);
             rProp = rProp([rProp.gutRegion]==3);
             
             meanList = sort([rProp.MeanIntensity]);
