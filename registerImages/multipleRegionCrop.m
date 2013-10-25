@@ -704,6 +704,8 @@ hContrast = imcontrast(imageRegion);
             spotSaveFile = [spotSaveDir filesep 'spotSelectionList.mat'];
         
             save(spotSaveFile, 'spotList');
+            fprintf(1, 'Spot list saved!\n');
+            beep
     end
 
     function removeLastSpots_Callback(hObject, eventdata)
@@ -843,7 +845,7 @@ hContrast = imcontrast(imageRegion);
             for i=1:length(rProp{2});
                 rPropComb(end+1) = rProp{2}(i);
             end
-        else
+        elseif(iscell(rProp))
             rProp = rProp{colorNum};
 
         end
@@ -866,6 +868,7 @@ hContrast = imcontrast(imageRegion);
         
         %Construct list of removed spots
         xyzRem = [rProp.CentroidOrig];
+       
         xyzRem = reshape(xyzRem,3,length(xyzRem)/3);
         
         xyzRem = xyzRem(:,removeBugInd{scanNum,colorNum});
@@ -880,13 +883,18 @@ hContrast = imcontrast(imageRegion);
          classifierType = 'svm';
           useRemovedBugList = true;
 
-    %     classifierType = 'linear';
-%         useRemovedBugList = false;
+         classifierType = 'linear';
+         useRemovedBugList = false;
         
+         %Let's filter out all points with an intensity below 200
+        % rPropClassified =  rPropClassified([rPropClassified.MeanIntensity]>200);
+         %rPropClassified = rPropClassified([rPropClassified.Area]>40);
+         
         rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType);
         %keptSpots = intersect(keptSpots, [rProp.ind]);
 
-        rPropClassified = rPropClassified([rPropClassified.MeanIntensity]<1000);
+        %rPropClassified = rPropClassified([rPropClassified.MeanIntensity]<1000);
+        
         xyz = [rPropClassified.CentroidOrig];
         xyz = reshape(xyz,3,length(xyz)/3);
         
@@ -975,8 +983,8 @@ hContrast = imcontrast(imageRegion);
        value = get(hMenuScroll, 'Label');
        
        switch value
-           case 'Add scroll bar to image display'
-               
+           
+           case 'Add scroll bar to image display'             
                apiScroll.setMagnification(0.6);
                set(hMenuScroll, 'Label','Remove scroll bar');
                

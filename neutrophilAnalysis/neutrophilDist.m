@@ -1,6 +1,6 @@
-%neutrophilDist: Calculate properties of 
-
-function [spotDist, regLoc] = neutrophilDist(param, spotList, nC, nS, plotData)
+%neutrophilDist: Calculate properties of
+% USAGE [spotDist, regList] = neutrophilDist(param, spotList, nC, nS)
+function [spotDist, regList] = neutrophilDist(param, spotList, nC, nS)
 
 scanNum = nS;
 

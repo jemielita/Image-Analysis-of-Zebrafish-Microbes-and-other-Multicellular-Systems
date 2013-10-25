@@ -3,7 +3,7 @@
 
 function rPropNew = cullFoundBacteria(rProp, gutMask, cullProp,xOffset, yOffset)
 
-borderDist = 2/0.1625;
+borderDist = 10/0.1625;
 absoluteMinArea = cullProp.minArea;
 radCutoff = cullProp.radCutoff;
 

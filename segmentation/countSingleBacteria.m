@@ -17,6 +17,7 @@ if(nargin==5)
     
     %Replace elements in im as we go-to avoid creating new array in memory
     inPlace = true;
+   
 else
     inPlace = false;
 end
