@@ -1,4 +1,4 @@
-%neutrophilDist: Calculate properties of 
+%neutrophilDist: Calculate properties of
 % USAGE [spotDist, regList] = neutrophilDist(param, spotList, nC, nS)
 function [spotDist, regList] = neutrophilDist(param, spotList, nC, nS)
 
@@ -92,13 +92,12 @@ end
 
  
  %Testing code
-if(plotData==true)
-    figure; imshow(gutMask+ 2*regionMask(:,:,1)+ 3*regionMask(:,:,2) + 6*regionMask(:,:,3), [])
-    hold on
-    plot(spotList{1}(regLoc==2,1), spotList{1}(regLoc==2,2), '*')
-    plot(spotList{1}(regLoc==1,1), spotList{1}(regLoc==1,2), '*')
-    plot(spotList{1}(regLoc==1,1), spotList{1}(regLoc==1,2), 'k')
-    plot(spotList{1}(regLoc==3,1), spotList{1}(regLoc==3,2), 'k')
+ if(plotData==true)
+     figure; imshow(gutMask+ 2*regionMask(:,:,1)+ 3*regionMask(:,:,2) + 6*regionMask(:,:,3), [])
+     hold on
+     plot(spotList{1}(regLoc==1,1), spotList{1}(regLoc==1,2), '*')
+     plot(spotList{1}(regLoc==2,1), spotList{1}(regLoc==2,2), 'o')
+     plot(spotList{1}(regLoc==3,1), spotList{1}(regLoc==3,2), '*')
 end
     
 %% Get distance of each of the neutrophils in the gut from the gut itself
@@ -115,6 +114,9 @@ end
 
 
 end
+
+
+%%Over
 
 
 
