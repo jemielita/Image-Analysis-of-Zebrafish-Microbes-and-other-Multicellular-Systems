@@ -7,6 +7,7 @@ function [] = createAllMasks(scanParam, param)
 %Create a folder to save all the constructed masks...we don't want to store
 %all of these in memory!
 maskDir = [param.dataSaveDirectory filesep 'masks'];
+
 if(isdir(maskDir))
     fprintf(1, '\n Mask directory has already been made. No new masks will be made.\n');
     fprintf(1, 'If scan parameters have been changed delete or rename this directory of masks!\n');
