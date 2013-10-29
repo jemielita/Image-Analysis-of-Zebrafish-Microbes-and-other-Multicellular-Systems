@@ -312,7 +312,7 @@ for nR =1:length(allReg)
    end
    
     
-    
+   fprintf(1, '.'); 
 end
 
 

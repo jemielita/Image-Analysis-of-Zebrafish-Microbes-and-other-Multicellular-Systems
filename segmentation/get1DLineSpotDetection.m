@@ -69,7 +69,9 @@ for nS = minS:maxS
            inputVar = load(fileDir);
            rProp = inputVar.rProp;
            
-           rProp = rProp{nC};
+           if(iscell(rProp))
+               rProp = rProp{nC};
+           end
            classifierType = 'svm'; 
            
            %To deal with our manual removal of early time GFP spots.

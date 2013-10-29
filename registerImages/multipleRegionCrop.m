@@ -883,8 +883,8 @@ hContrast = imcontrast(imageRegion);
          classifierType = 'svm';
           useRemovedBugList = true;
 
-         classifierType = 'linear';
-         useRemovedBugList = false;
+         %classifierType = 'linear';
+         %useRemovedBugList = false;
         
          %Let's filter out all points with an intensity below 200
         % rPropClassified =  rPropClassified([rPropClassified.MeanIntensity]>200);
