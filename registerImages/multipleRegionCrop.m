@@ -7,6 +7,7 @@ switch nargin
             fprintf(2, 'No directory selected!\n');
             return;
         end
+        
     case 3
         %global param
         param = varargin{1};
