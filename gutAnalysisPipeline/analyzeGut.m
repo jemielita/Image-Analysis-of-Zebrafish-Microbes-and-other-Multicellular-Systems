@@ -40,6 +40,12 @@ for colorNum=1:totNumColor;
                 for cutNum=1:totNumCut
                    regFeatAll{colorNum, stepNum}{cutNum} = regFeat{cutNum}; 
                 end
+                
+                %Additionally transfer the result to the folder
+                %'singleBacCount' after doing slightly more processing.
+                bacteriaCountTimeSeries(param, 'firstpass', 'defaultCullProp', scanParam.scanNum, regFeat)
+                
+                
             otherwise
                 %Store entry as either a cell or an array
                 if(iscell(regFeat{1}{analInd(stepNum),colorNum}))

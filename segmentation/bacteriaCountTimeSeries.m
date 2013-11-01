@@ -1,5 +1,9 @@
-%Get population growth curves for early time experiments
+%bacteriaCountTimeSeries: Process spot detection code further to 
 function [numBac, bacProp] =  bacteriaCountTimeSeries(param, varargin)
+
+%Variables for doing in-place moving of the analysis.
+scanNum = 'all';
+inputSpotLoc = 'none';
 
 switch nargin
     case 1
@@ -26,17 +30,47 @@ switch nargin
     case 3
         analysisType = varargin{1};
         cullProp = varargin{2};
+        if(strcmp(cullProp, 'defaultCullProp'))
+            cullProp.radCutoff(1) = 40; %Cutoff in the horizontal direction
+            cullProp.radCutoff(2) = 3;
+            cullProp.minRadius = 2;
+            cullProp.minInten = 229;
+            cullProp.minArea = 1;
+        end
+        
+    case 5
+        analysisType = varargin{1};
+        cullProp = varargin{2};
+        if(strcmp(cullProp, 'defaultCullProp'))
+            cullProp.radCutoff(1) = 40; %Cutoff in the horizontal direction
+            cullProp.radCutoff(2) = 3;
+            cullProp.minRadius = 2;
+            cullProp.minInten = 229;
+            cullProp.minArea = 1;
+        end
+        
+        %Load in found bacterial spots from our analysis pipeline
+        scanNum = varargin{3};
+        inputSpotLoc = varargin{4};
+        
 end
 
 %Scan parameters
 scanParam = load([param.dataSaveDirectory filesep 'analysisParam.mat']);
 scanParam = scanParam.scanParam;
 
-minS = 1;
 
-maxS = param.expData.totalNumberScans;
+if(strcmp(scanNum, 'all'))
+    minS = 1;
+    maxS = param.expData.totalNumberScans;
+else
+    minS = scanNum;
+    maxS = scanNum;
+end
 
 numColor = length(scanParam.color);
+
+
 
 
 cd(param.dataSaveDirectory);
@@ -77,7 +111,7 @@ end
     function [] = bacCountFirstPass()
         %Directory to save single bacteria count analysis
 
-        for nS=minS:maxS-1
+        for nS=minS:maxS
             
             fprintf(1, ['Processing scan ' num2str(nS) '...\n']);
             rPropAll = cell(length(colorList),1);
@@ -90,7 +124,8 @@ end
             
             %Load data-produced by analyzeGutTimeSeries
             %if(nC==2)
-            spotLoc = load(['singleCountRaw', filesep, 'Analysis_Scan', num2str(nS), '.mat']);
+            if(strcmp(inputSpotLoc, 'none'))
+                spotLoc = load(['singleCountRaw', filesep, 'Analysis_Scan', num2str(nS), '.mat']);
             %spotLoc = spotLoc{nC, analysisNum};
             %The current indexing is screwy-need to fix this up.
             %spotLoc = spotLoc{1};
@@ -99,7 +134,10 @@ end
           %     spotLoc = load(['bacCount_analysis_all_highCutoff', filesep, 'Analysis_Scan', num2str(nS), '.mat']);
             %end
                         spotLoc = spotLoc.regFeatures;
-
+                        spotLoc = spotLoc{1}; %Why do we need this?
+            else
+                spotLoc = inputSpotLoc;
+            end
                    
             numBac{nS} = [];
            
@@ -113,13 +151,11 @@ end
               %  else
                %    rProp = spotLoc{1}{nR}{1}; 
                 %end
-                rProp = spotLoc{1}{nR}{nC};
+                rProp = spotLoc{nR}{nC};
                 [gutMask, xOffset, yOffset, gutMaskReg] = getMask(param, nS, nR, 'cutmask');
                 
                 rProp = cullFoundBacteria(rProp, gutMask, cullProp,xOffset, yOffset);
           
-                
-                
                 rProp = findBacLoc(rProp, gutMaskReg,param,nR,nS);
                 rProp = findGutRegion(rProp, nS,param);
                 rProp = getRotatedIndices(param,nR,nS,rProp,nC);

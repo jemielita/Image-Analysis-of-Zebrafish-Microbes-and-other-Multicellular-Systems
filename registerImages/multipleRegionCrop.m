@@ -894,10 +894,10 @@ hContrast = imcontrast(imageRegion);
         % rPropClassified =  rPropClassified([rPropClassified.MeanIntensity]>200);
          %rPropClassified = rPropClassified([rPropClassified.Area]>40);
          
-        rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType);
+        %rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType);
         %keptSpots = intersect(keptSpots, [rProp.ind]);
 
-        %rPropClassified = rPropClassified([rPropClassified.MeanIntensity]<1000);
+        rPropClassified = rPropClassified([rPropClassified.MeanIntensity]<1000);
         
         xyz = [rPropClassified.CentroidOrig];
         xyz = reshape(xyz,3,length(xyz)/3);
@@ -3388,6 +3388,7 @@ end
 
 end
 
+
 function [data, param] = loadParameters(varargin)
 switch nargin
     case 0
@@ -3551,6 +3552,7 @@ end
 if(dataFileExist~=2)
     save(paramFile, 'param');
 end
+
 end
 
 %For a given polygon, smooth out the polygon using spline interpolation
