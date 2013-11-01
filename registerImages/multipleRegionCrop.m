@@ -7,7 +7,10 @@ switch nargin
             fprintf(2, 'No directory selected!\n');
             return;
         end
+    case 1
+        fileDir = varargin{1};
         
+        [data, param] = loadParameters(fileDir);
     case 3
         %global param
         param = varargin{1};
@@ -3385,165 +3388,169 @@ end
 
 end
 
-function [data, param] = loadParameters()
-                dirName = uigetdir(pwd, 'Pick a directory to show the registered images from.');
-                
-                if(dirName==0)
-                    %User pressed cancel-exit program
-                    data = 'error';
-                    param = 'error';
-                    return;
-                end
-                    
-                paramFile = [dirName, filesep, 'gutOutline', filesep, 'param.mat'];
-                paramFileExist = exist(paramFile, 'file');
-                dataFile = [dirName, filesep, 'gutOutline', filesep, 'data.mat'];
-                
-                dataFileExist = exist(dataFile, 'file');
-                %If work has been done on this file already, load in the results
-                
-                %Go to the directory above this one-useful for quickly
-                %going through different fish.
-                cd([pwd filesep '..']);
-                
-                switch paramFileExist
-                    case 2
-                        disp('Parameters for this scan have already been (partially?) calculated. Loading them into the workspace.');
-                        
-                        paramTemp = load(paramFile);
-                        param = paramTemp.param;
-                        if(dataFileExist==2)
-                            dataTemp = load(dataFile);
-                            data = dataTemp.data;
-                        else
-                            data = ''; %We don't use it anyway...we need to cull this from our code!
-                        end
-                        %Check to see if the directory listed in the param
-                        %variable matches the directory we choose-if not
-                        %this suggests that the volume name has been
-                        %changes. If this is the case prompt the user to
-                        %see if they want to change the name of the
-                        %directory or quit
-                        
-                        if(~strcmp(param.directoryName, dirName))
-                            answer = inputdlg('The directory name in the param variable does not match the selected directory! Do you want to change the directory name (1) or quit the program (2)?');
-                            answer = answer{1};
-                            answer = str2num(answer);
-                            
-                            switch answer
-                                case 1
-                                    param.directoryName = dirName;
-                                    if(isfield(param, 'dataSaveDirectory'))
-                                        param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
-                                    end
-                                case 2
-                                    return
-                            end
-                        end
-                        
-                        
-                        
-                    case 0
-                        
-                        parameterFile = [dirName, filesep, 'ExperimentData.mat'];
-                        %Load in information about this scan...this information should be
-                        %passed in, or stored in one place on the computer.
-                        param.micronPerPixel = 0.1625; %For the 40X objective.
-                        
-                        param.imSize = [2160 2560];
-                 
+function [data, param] = loadParameters(varargin)
+switch nargin
+    case 0
+        dirName = uigetdir(pwd, 'Pick a directory to show the registered images from.');
+    case  1
+        dirName = varargin{1};
+end
+if(dirName==0)
+    %User pressed cancel-exit program
+    data = 'error';
+    param = 'error';
+    return;
+end
 
-                        
-                        
-                        expData = load(parameterFile);
-                        param.expData = expData.parameters;
-                        param.expData.timeData = expData.timeData;
-                        
-                        param.directoryName = dirName;
-                        
-                        %Load in the number of scans. Default will be for all of the
-                        %scans...might want to make this an interactive thing at some point.
-                        param.scans = 1:param.expData.totalNumberScans;
-                        %Number of regions in be analyzed. Hardcoded to be all of them
-                        param.regions = 'all';
-                        
-                        %Find all the colors in the scan. Semi-clumsy b/c
-                        %the expData file doesn't contain a nice list of
-                        %colors used.
-                        allColors = {param.expData.Scan.color};
-                        
-                        param.color = [];
-                        
-                        %See if 488 nm is present;
-                        isGreen = strcmp(allColors, '488 nm: GFP');
-                        
-                        nColor = length(param.color);
-                        
-                        if(sum(isGreen)>0)
-                        param.color= {'488nm'};
-                        end
-                        
-                        nColor = length(param.color);
-                        %See if 568 nm is present;
-                        isGreen = strcmp(allColors, '568 nm: RFP');
-                        
-                        if(sum(isGreen)>0)
-                            if(nColor>0)
-                                param.color(nColor+1)= {'568nm'};
-                            else
-                                
-                                param.color= {'568nm'};
-                            end
-                        end
-                        
-                        %For the parameters above construct a structure that will contain all the
-                        %results of this calculation.
-                        
-                        data = '';%I think we can slowly remove this variable from the code.
-                        
-                        disp('Parameters succesfully loaded.');
-                        
-                        
-                        % Calculate the overlap between different regions
-                        
-                        fprintf(2,'Calculating information needed to register the images...');
-                        [data,param] = registerImagesXYData('original', data,param);
-                        
-                        %Only register in z-direction if we've ssved the
-                        %full 3-d scans
-                        if(~isfield(param.expData, 'saveScan')||strcmp(param.expData.saveScan,'true'))
-                            [data,param] = registerImagesZData('original', data,param);
-                        end
-                            
-                        %Store the result in a backup structure, since .regionExtent will be
-                        %modified by cropping.
-                        param.regionExtentOrig = param.regionExtent;
-                        fprintf(2, 'done!\n');
-                        
-                end
-                
-                
-                %The number of scans might not equal the number reported
-                %if the scan was halted early...manually updating this 
+paramFile = [dirName, filesep, 'gutOutline', filesep, 'param.mat'];
+paramFileExist = exist(paramFile, 'file');
+dataFile = [dirName, filesep, 'gutOutline', filesep, 'data.mat'];
 
-                scanDir = dir([param.directoryName filesep 'Scans']);
-                numScans = regexp({scanDir.name}, 'scan_\d+');
-                numScans = sum([numScans{:}]);
-                param.expData.totalNumberScans = numScans;
+dataFileExist = exist(dataFile, 'file');
+%If work has been done on this file already, load in the results
+
+%Go to the directory above this one-useful for quickly
+%going through different fish.
+cd([pwd filesep '..']);
+
+switch paramFileExist
+    case 2
+        disp('Parameters for this scan have already been (partially?) calculated. Loading them into the workspace.');
+        
+        paramTemp = load(paramFile);
+        param = paramTemp.param;
+        if(dataFileExist==2)
+            dataTemp = load(dataFile);
+            data = dataTemp.data;
+        else
+            data = ''; %We don't use it anyway...we need to cull this from our code!
+        end
+        %Check to see if the directory listed in the param
+        %variable matches the directory we choose-if not
+        %this suggests that the volume name has been
+        %changes. If this is the case prompt the user to
+        %see if they want to change the name of the
+        %directory or quit
+        
+        if(~strcmp(param.directoryName, dirName))
+            answer = inputdlg('The directory name in the param variable does not match the selected directory! Do you want to change the directory name (1) or quit the program (2)?');
+            answer = answer{1};
+            answer = str2num(answer);
+            
+            switch answer
+                case 1
+                    param.directoryName = dirName;
+                    if(isfield(param, 'dataSaveDirectory'))
+                        param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
+                    end
+                case 2
+                    return
+            end
+        end
+        
+        
+        
+    case 0
+        
+        parameterFile = [dirName, filesep, 'ExperimentData.mat'];
+        %Load in information about this scan...this information should be
+        %passed in, or stored in one place on the computer.
+        param.micronPerPixel = 0.1625; %For the 40X objective.
+        
+        param.imSize = [2160 2560];
+        
+        
+        
+        
+        expData = load(parameterFile);
+        param.expData = expData.parameters;
+        param.expData.timeData = expData.timeData;
+        
+        param.directoryName = dirName;
+        
+        %Load in the number of scans. Default will be for all of the
+        %scans...might want to make this an interactive thing at some point.
+        param.scans = 1:param.expData.totalNumberScans;
+        %Number of regions in be analyzed. Hardcoded to be all of them
+        param.regions = 'all';
+        
+        %Find all the colors in the scan. Semi-clumsy b/c
+        %the expData file doesn't contain a nice list of
+        %colors used.
+        allColors = {param.expData.Scan.color};
+        
+        param.color = [];
+        
+        %See if 488 nm is present;
+        isGreen = strcmp(allColors, '488 nm: GFP');
+        
+        nColor = length(param.color);
+        
+        if(sum(isGreen)>0)
+            param.color= {'488nm'};
+        end
+        
+        nColor = length(param.color);
+        %See if 568 nm is present;
+        isGreen = strcmp(allColors, '568 nm: RFP');
+        
+        if(sum(isGreen)>0)
+            if(nColor>0)
+                param.color(nColor+1)= {'568nm'};
+            else
                 
-                
-                %Set data save directory if not done already
-                if(~isfield(param, 'dataSaveDirectory'))
-                   param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
-                end
-                
-                
-                %Save the calculated parameters, unless they've been
-                %calculated befor.
-               
-                if(dataFileExist~=2)
-                   save(paramFile, 'param');
-                end
+                param.color= {'568nm'};
+            end
+        end
+        
+        %For the parameters above construct a structure that will contain all the
+        %results of this calculation.
+        
+        data = '';%I think we can slowly remove this variable from the code.
+        
+        disp('Parameters succesfully loaded.');
+        
+        
+        % Calculate the overlap between different regions
+        
+        fprintf(2,'Calculating information needed to register the images...');
+        [data,param] = registerImagesXYData('original', data,param);
+        
+        %Only register in z-direction if we've ssved the
+        %full 3-d scans
+        if(~isfield(param.expData, 'saveScan')||strcmp(param.expData.saveScan,'true'))
+            [data,param] = registerImagesZData('original', data,param);
+        end
+        
+        %Store the result in a backup structure, since .regionExtent will be
+        %modified by cropping.
+        param.regionExtentOrig = param.regionExtent;
+        fprintf(2, 'done!\n');
+        
+end
+
+
+%The number of scans might not equal the number reported
+%if the scan was halted early...manually updating this
+
+scanDir = dir([param.directoryName filesep 'Scans']);
+numScans = regexp({scanDir.name}, 'scan_\d+');
+numScans = sum([numScans{:}]);
+param.expData.totalNumberScans = numScans;
+
+
+%Set data save directory if not done already
+if(~isfield(param, 'dataSaveDirectory'))
+    param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
+end
+
+
+%Save the calculated parameters, unless they've been
+%calculated befor.
+
+if(dataFileExist~=2)
+    save(paramFile, 'param');
+end
 end
 
 %For a given polygon, smooth out the polygon using spline interpolation
