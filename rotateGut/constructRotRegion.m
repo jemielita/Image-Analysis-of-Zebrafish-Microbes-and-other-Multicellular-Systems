@@ -8,8 +8,11 @@
 %       scanNum: scan number to load
 %       color: color to load (ex. '488nm', '568nm'
 %       param: structure with experimental parameters
-%       onlyMask (optional): only calculate the center line and gut mask if
-%       true
+%       onlyMask (optional, default = false): If true, only calculate the
+%       center line and gut mask. Otherwise, if false also return image
+%       stack.
+%       segmentBulb (optional, default = false): If true use the user
+%       provided MIP segment of bulb to remove non-bacterial regions.
 %OUTPUT: imStack: (optional) 3D stack containing rotated gut
 %        rotCenterLine: points that pass through the center of the rotated
 %        gut
@@ -25,11 +28,25 @@ scanNum, color, param,varargin )
 imVar.color = color;
 imVar.zNum = ''; 
 imVar.scanNum = scanNum;
+
+segmentBulbMask = false;
+switch nargin 
+    case 4
+        onlyMask = false;
+        
+    case 5
+        onlyMask = varargin{1};
+        
+    case 6
+        onlyMask = varargin{1};
+        segmentBulbMask = varargin{2};
+        
+end
 %% Get gut mask and center line
-[rotMask, rotCenterLine] = getMaskAndLine(param, scanNum, cutNum,imVar.color);
+[rotMask, rotCenterLine] = getMaskAndLine(param, scanNum, cutNum,imVar.color,segmentBulbMask);
 
 %If we're only calculating the masks, then return at this point
-if(nargin==5 && varargin{1} ==true)
+if(onlyMask==true)
     varargout{1} = rotCenterLine;
     varargout{2} = rotMask;
     return
@@ -69,7 +86,7 @@ end
 fprintf(1, '\n');
 end
 
-function [rotMask, rotCenterLine] = getMaskAndLine(param, scanNum,cutNum,color)
+function [rotMask, rotCenterLine] = getMaskAndLine(param, scanNum,cutNum,color,segmentBulbMask)
 %% Calculate rotated masks
 cutVal = param.cutValAll{scanNum};
 %Get mask of rotated gut
@@ -114,25 +131,25 @@ rotMask = fillInMask(rotMask, cutMask);
 
 %See if we've also done a segmentation of the background fluorescence in
 %the gut. If so, then also include those points
-if(isfield(param.regionExtent, 'bulbMask'))
+%if(isfield(param.regionExtent, 'bulbMask'))
     
+if(segmentBulbMask==true)
     for nC=1:length(param.color)
         
-        % rotMaskAll{nC}{1} = rotMask;
-        %for nSeg = 2:length(param.regionExtent.bulbMask{nC})+1
-        rect = param.regionExtent.bulbRect;
-        rect = round(rect);
-        
+        inputVar = load([param.dataSaveDirectory filesep 'mipSegmentMask.mat']);
+        rect = inputVar.bulbRect; rect = round(rect);
+        bulbMask = inputVar.bulbMask;
+       
         colorNum = find(strcmp(color, param.color));
         thisMask = ones(height, width);
         
         sizeM = size(thisMask(rect(2):rect(2)+rect(4), rect(1):rect(1)+rect(3)));
-        sizeB = size(param.regionExtent.bulbMask{nC}(:,:,scanNum));
+        sizeB = size(bulbMask{nC}(:,:,scanNum));
         %If sizes are different, adjust height and width of the rectangle
         rect(4) = rect(4)+ sizeB(1)-sizeM(1);
         rect(3) = rect(3) + sizeB(2)-sizeM(2);
-
-        thisMask(rect(2):rect(2)+rect(4), rect(1):rect(1)+rect(3)) = param.regionExtent.bulbMask{nC}(:,:,scanNum);
+        
+        thisMask(rect(2):rect(2)+rect(4), rect(1):rect(1)+rect(3)) = bulbMask{nC}(:,:,scanNum);
         rotSegMask = imrotate(thisMask, theta);
         rotSegMask = rotSegMask(xMin:xMax,yMin:yMax);
         
@@ -143,7 +160,6 @@ if(isfield(param.regionExtent, 'bulbMask'))
             rotMaskAll{nC}(:,:,nM) = thisRegMask;
         end
         
-        % end
     end
     
     rotMask = rotMaskAll;

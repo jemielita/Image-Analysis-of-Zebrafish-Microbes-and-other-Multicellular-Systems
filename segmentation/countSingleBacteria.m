@@ -34,7 +34,7 @@ minThresh = 100;
 if(isempty(spotFeatures))
     maxThresh = 200;
 else
-    maxThresh = spotFeatures(colorNum).intenThresh;
+    maxThresh = spotFeatures.intenThresh(1);
 end
 
 if(inPlace==false)

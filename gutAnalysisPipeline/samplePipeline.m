@@ -17,9 +17,10 @@ analysisType(2).name = 'linearIntensityBkgSub';
 analysisType(2).return = true;
 analysisType(2).bkgList = 1:25:2000; %Need to get a sense of what size 
 
-analysisType(3).name = 'spotDetection';
-analysisType(3).return = true;
-analysisType(3).spotFeatures = ''; %Use default
+analysisType(1).name = 'spotDetection';
+analysisType(1).return = true;
+analysisType(1).spotFeatures.intenThresh = [200 30];%Decent cutoffs for the red/green channels.
+       
 %2. Calculate linear intensity down length of gut
 analysisType(1).name = 'linearIntensity';
 analysisType(1).return = true;

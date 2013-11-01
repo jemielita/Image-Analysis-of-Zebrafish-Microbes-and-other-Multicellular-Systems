@@ -2,7 +2,7 @@
 %The exact ordering of filtering and analysis is chosen by the user.
 %
 %USAGE regFeatures = analyzeGutSingleRegion(param, cutNum,analysisType,
-%                    scanNum, colorList, centerLine, gutMask)
+%                    scanNum, colorList, scanParam,centerLine, gutMask)
 %
 %INPUT param: experimental parameters
 %      cutNum: which cut of the gut to analyze (from param.cutVal)
@@ -14,9 +14,10 @@
 %      needed to do this filtering/analysis
 %      analysisType(i).return = true or false: return this part of the
 %      analysis. If not set then regFeatures{i} will be empty
-%      scanNum: which scan number to analyze
 %      colorList: cell array containing all colors to analyze. If colorList
 %      = 'all', then all colors will be analyzed
+%      scanNum: which scan number to analyze
+%      scanParam: scan parameter variable
 %      centerLine: (optional) cell array containing the center line for
 %      this particular cut region. If this is not an input it will be
 %      calculated.
@@ -33,7 +34,7 @@
 %AUTHOR: Matthew Jemielita, August 3, 2012
 
 function regFeatures = analyzeGutSingleRegion(param,cutNum,analysisType,...
-    scanNum, colorList,varargin)
+    scanNum, colorList,scanParam,varargin)
 
 %% Loading in parameters for analyzing this scan
 %Load in this region
@@ -45,7 +46,6 @@ totNumSteps = length(analysisType);
 
 regFeatures = cell(totNumSteps,length(colorList));
 
-
 %Load in images as double
 dataType = 'double';
 %Repeating analysis for each color.
@@ -55,10 +55,16 @@ for colorNum =1:length(colorList)
     clear imStack
     color = colorList{colorNum};
     %% Loading in image stack
-    if(nargin ==5)
-        [imStack, centerLine, gutMask] = constructRotRegion(cutNum, scanNum, color, param);
+    if(nargin ==6)
+        onlyMask = false;
+        if(isfield(scanParam, 'segmentBulb'))
+            segmentBulb = scanParam.segmentBulb;
+        else
+            segmentBulb = false;
+        end
+        [imStack, centerLine, gutMask] = constructRotRegion(cutNum, scanNum, color, param, onlyMask, segmentBulb);
         totNumSteps = length(analysisType);
-    elseif(nargin==7)
+    elseif(nargin==8)
         imVar.color = color;
         imVar.zNum = '';
         imVar.scanNum = scanNum;

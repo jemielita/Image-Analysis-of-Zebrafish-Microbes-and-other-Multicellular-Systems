@@ -19,12 +19,12 @@ necessaryFields = ...
 for nF =1:length(necessaryFields)
    if(~isfield(param, necessaryFields{nF}))
        fprintf(2, ['Param must contain the field: ', necessaryFields{nF}, '!']);
-       return;
+      % return;
    end
    
    if(ismember(0, param.(necessaryFields{nF})))
-      fprintf(2, ['Field ', necessaryFields{nF} ' has not been fully updated yet!']);
-      return;
+      %fprintf(2, ['Field ', necessaryFields{nF} ' has not been fully updated yet!']);
+      %return;
    end
 
        
@@ -37,7 +37,9 @@ centerLineAll = analysisParameters.param.centerLineAll;
 for nS = minS:maxS
     thisCL = centerLineAll{nS};
     
-    for nF =1:length(necessaryFields)
+    param.gutRegionsInd(nS,1) = 1;%Temporary for now May 29th data doesn't have beginGutPos field complete.
+    
+    for nF =2:length(necessaryFields)
         thisF = param.(necessaryFields{nF});
         thisF = thisF(nS,:);
         allDist = (thisCL(:,1)-thisF(1)).^2 + (thisCL(:,2)-thisF(2)).^2;

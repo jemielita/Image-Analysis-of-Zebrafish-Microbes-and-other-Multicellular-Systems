@@ -75,7 +75,7 @@ for thisScan=1:length(scanParam.scanList)
     
     regFeatures = analyzeGut(analysisType,scanParam,param,centerLine,gutMask);
     
-    error = saveAnalysis(regFeatures, scanParam,analysisType);
+    error = saveAnalysis(regFeatures, scanParam,param,analysisType);
     
     updateFinishedScanList(scanParam, error);
     
@@ -135,9 +135,17 @@ scanParam.scanNum = sN;
 scan
 end
 
-function error = saveAnalysis(regFeatures, scanParam,analysisType)
+function error = saveAnalysis(regFeatures, scanParam,param,analysisType)
+   param.dataSaveDirectorySubFolder = 'singleCountRaw';
+   
+   
+if(isfield(param, 'dataSaveDirectorySubFolder'))
+   analysisSaveDir = [param.dataSaveDirectory filesep 'singleCountRaw'];
+else
+    analysisSaveDir = param.dataSaveDirectory;
+end
 
-    fileName = [scanParam.dataSaveDirectory, filesep, 'Analysis_Scan', ...
+    fileName = [analysisSaveDir, filesep, 'Analysis_Scan', ...
         num2str(scanParam.scanNum), '.mat'];
     save(fileName, 'regFeatures', '-v7.3');
     error = 0;
@@ -227,7 +235,24 @@ end
 
 function scanParam = getFinishedScanList(scanParam)
 
+%See if we're going to be wiping out the locked scanlist
+
 fileName = [scanParam.dataSaveDirectory, filesep, 'scanlist_LOCK.mat'];
+if(isfield(scanParam, 'freshStart') && scanParam.freshStart==true)
+    fprintf(1, 'unsuccessful!\n Saving current scan list.');
+    
+    scanList = scanParam.scanList;
+    save(fileName, 'scanList');
+else
+    
+    fprintf(1, 'Trying to load in list of previously analyzed scan...');
+    scanList = load(fileName, 'scanList');
+    scanList = scanList.scanList;
+    scanParam.scanList = scanList; 
+end
+    
+
+
 
 try
     fprintf(1, 'Trying to load in list of previously analyzed scan...');

@@ -12,7 +12,7 @@ switch nargin
         cullProp.minArea = 1;
         
         
-        analysisType = 'all';
+        analysisType = 'firstpass';
     case 2
         analysisType = varargin{1};
         
@@ -77,7 +77,7 @@ end
     function [] = bacCountFirstPass()
         %Directory to save single bacteria count analysis
 
-        for nS=minS:maxS
+        for nS=minS:maxS-1
             
             fprintf(1, ['Processing scan ' num2str(nS) '...\n']);
             rPropAll = cell(length(colorList),1);
@@ -90,7 +90,7 @@ end
             
             %Load data-produced by analyzeGutTimeSeries
             %if(nC==2)
-            spotLoc = load(['Analysis_Scan', num2str(nS), '.mat']);
+            spotLoc = load(['singleCountRaw', filesep, 'Analysis_Scan', num2str(nS), '.mat']);
             %spotLoc = spotLoc{nC, analysisNum};
             %The current indexing is screwy-need to fix this up.
             %spotLoc = spotLoc{1};
@@ -109,24 +109,27 @@ end
             for nR=1:numReg
                 %Again, the indexing is somewhat screwy.
              %   if(nC==1)
-                rProp = spotLoc{1}{nR}{analysisNum,nC};
+               % rProp = spotLoc{1}{nR}{analysisNum,nC};
               %  else
                %    rProp = spotLoc{1}{nR}{1}; 
                 %end
-
+                rProp = spotLoc{1}{nR}{nC};
                 [gutMask, xOffset, yOffset, gutMaskReg] = getMask(param, nS, nR, 'cutmask');
                 
                 rProp = cullFoundBacteria(rProp, gutMask, cullProp,xOffset, yOffset);
+          
+                
                 
                 rProp = findBacLoc(rProp, gutMaskReg,param,nR,nS);
                 rProp = findGutRegion(rProp, nS,param);
-                rProp = getRotatedIndices(param,nR,nS,rProp);
+                rProp = getRotatedIndices(param,nR,nS,rProp,nC);
 
                 numBac{nS} = [numBac{nS}, length(rProp)];
                 
                 bacProp{nS,nR} = rProp;
-                
-                rPropAll{nC} = [rPropAll{nC} ; rProp];
+                if(~isempty(rProp))
+                    rPropAll{nC} = [rPropAll{nC} ; rProp];
+                end
             end
             
             fprintf(1, '.');
@@ -184,8 +187,9 @@ end
             %for nR=1:numReg
                 %Again, the indexing is somewhat screwy.
                 
-                rProp = spotLoc{1}{nR}{analysisNum,nC};
-                
+               % rProp = spotLoc{1}{nR}{analysisNum,nC};
+                                rProp = spotLoc{1}{nR}{nC};
+
                 [gutMask, xOffset, yOffset, gutMaskReg] = getMask(param, nS, nR, 'cutmask');
                 
                 rProp = cullFoundBacteria(rProp, gutMask, cullProp,xOffset, yOffset);
@@ -215,7 +219,7 @@ end
     end
 end
 
-function [gutMask, xOffset, yOffset, gutMaskReg] = getMask(param, nS,nR, loadType)
+function [gutMask, xOffset, yOffset, gutMaskReg] = getMask(param, nS,nR, loadType,nC)
 
 switch loadType
     
@@ -263,6 +267,11 @@ switch loadType
         gutMask = gutMask.gutMask{nR};
         xOffset = 1;
         yOffset = 1;
+        
+        %To deal with MIP gut segmentation code
+        if(iscell(gutMask))
+           gutMask = gutMask{nC};
+        end
         
         gutMaskReg = gutMask;
         %Make a solid mask from this mask
@@ -323,7 +332,7 @@ end
 
 end
 
-function rProp = getRotatedIndices(param,cutNumber,scanNum, rProp)
+function rProp = getRotatedIndices(param,cutNumber,scanNum, rProp,nC)
 %Find the rotated and original indices for the rotated cut region and add
 %in a centroid location in the original reference frame.
 
@@ -404,7 +413,7 @@ x(ind) = []; y(ind) = []; oI(ind) = []; rI(ind) = [];
 x = x-xMin+1; y = y-yMin+1;
 finalI = sub2ind([finalHeight, finalWidth], x,y);
 
-[gutMask, ~, ~, ~] = getMask(param, scanNum, cutNumber, 'cutmask');
+[gutMask, ~, ~, ~] = getMask(param, scanNum, cutNumber, 'cutmask',nC);
 % figure; 
 % imshow(gutMask); title(['Rot image: ' num2str(scanNum)]);
 % hold on
@@ -426,6 +435,7 @@ ind = sub2ind(size(gutMask),xy(:,2), xy(:,1));
 %distance to found indices
 %[xyInd(:,1), xyInd(:,2)] = ind2sub(size(gutMask), finalI);
 
+indR = [];
 for i=1:length(ind)
  [~,thisInd] = min(sqrt( (x-xy(i,2)).^2 + (y-xy(i,1)).^2));
  %thisInd
@@ -435,7 +445,9 @@ for i=1:length(ind)
  indR(i) = oI(thisInd);
 end
 
-[xyOr(:,1), xyOr(:,2)] = ind2sub(size(cutMask), indR);
+if(~isempty(indR))
+    [xyOr(:,1), xyOr(:,2)] = ind2sub(size(cutMask), indR);
+end
 
 for i=1:length(rProp)
    rProp(i).CentroidOrig(1:2) = [xyOr(i,2), xyOr(i,1)]; 

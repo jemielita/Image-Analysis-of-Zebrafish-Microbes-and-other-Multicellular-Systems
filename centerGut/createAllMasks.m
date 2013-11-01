@@ -2,21 +2,38 @@
 %save the result
 %
 %NOTE: should check to see if the masks have already been made
-function [] = createAllMasks(scanParam, param)
+function [] = createAllMasks(scanParam, param, varargin)
 
+switch nargin
+    case 2
+        remakeMasks = false;
+        findCut = true;
+    case 3
+        remakeMasks = varargin{1};
+        findCut = true;
+    case 4
+        remakeMasks = varargin{1};
+        findCut = varargin{2};
+end
+    
+    
+    
 %Create a folder to save all the constructed masks...we don't want to store
 %all of these in memory!
 maskDir = [param.dataSaveDirectory filesep 'masks'];
+
+
 if(isdir(maskDir))
-    fprintf(1, '\n Mask directory has already been made. No new masks will be made.\n');
-    fprintf(1, 'If scan parameters have been changed delete or rename this directory of masks!\n');
-    return
+    if(remakeMasks==false)
+        fprintf(1, '\n Mask directory has already been made. No new masks will be made.\n');
+        fprintf(1, 'If scan parameters have been changed delete or rename this directory of masks!\n');
+        return
+    end
 end
 mkdir(maskDir);
 
 maskInd = zeros(length(scanParam.scanList),1);
 
-findCut =true;
 
 if(findCut==true)
     fprintf(1, 'Finding optimal cuts for all scans');
@@ -53,6 +70,8 @@ else
     load([maskDir filesep 'cutVal.mat']);
     param.cutValAll = cutValAll;
 end
+
+
 cutValAll = param.cutValAll;
 
 save([maskDir filesep 'cutVal.mat'], 'cutValAll');
