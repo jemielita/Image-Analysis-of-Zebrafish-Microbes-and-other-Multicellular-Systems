@@ -23,7 +23,7 @@ end
 maskDir = [param.dataSaveDirectory filesep 'masks'];
 
 
-if(isdir(maskDir))
+if(isdir(maskDir)&&exist([maskDir filesep 'mask_' num2str(scanParam.scanList(end)) '.mat'])==2)
     if(remakeMasks==false)
         fprintf(1, '\n Mask directory has already been made. No new masks will be made.\n');
         fprintf(1, 'If scan parameters have been changed delete or rename this directory of masks!\n');
@@ -84,8 +84,17 @@ fprintf(1, 'Creating masks for all scans\n');
 
 for nS=1:length(scanParam.scanList)
     thisScan= scanParam.scanList(nS);
-    [centerLine, gutMask] = getThisMask(scanParam, param,thisScan);
     outFile = [maskDir filesep 'mask_', num2str(thisScan), '.mat'];
+
+    %If the masks have already been partly made
+    if(remakeMasks==false)
+       if(exist(outFile)==2)
+           fprintf(1, 'This mask already made!\n');
+           continue;
+       end
+    end
+    
+    [centerLine, gutMask] = getThisMask(scanParam, param,thisScan);
 
     save(outFile, 'centerLine', 'gutMask');
 fprintf(1, '.');
