@@ -49,6 +49,11 @@ createAllMasks(scanParam, param);
 %Including analysis parameters and the current version of the code
 
 error = checkCodeVersion(scanParam.codeDir, param.dataSaveDirectory);
+if(error==1)
+fprintf(2, 'Analysis will not continue until code is comitted!\n');
+return;
+end
+
 error = saveAnalysisSteps(analysisType, scanParam, param);
 if(error ==1)
     fprintf(2, 'Problem saving meta-data from analysis!');
@@ -137,7 +142,9 @@ end
 
 function error = saveAnalysis(regFeatures, scanParam,param,analysisType)
    param.dataSaveDirectorySubFolder = 'singleCountRaw';
-   
+   if(~isdir(param.dataSaveDirectorySubFolder))
+      mkdir([param.dataSaveDirectory filesep param.dataSaveDirectorySubFolder]); 
+   end
    
 if(isfield(param, 'dataSaveDirectorySubFolder'))
    analysisSaveDir = [param.dataSaveDirectory filesep 'singleCountRaw'];
@@ -246,9 +253,11 @@ if(isfield(scanParam, 'freshStart') && scanParam.freshStart==true)
 else
     
     fprintf(1, 'Trying to load in list of previously analyzed scan...');
-    scanList = load(fileName, 'scanList');
-    scanList = scanList.scanList;
-    scanParam.scanList = scanList; 
+    if(exist(fileName)==2)
+        scanList = load(fileName, 'scanList');
+        scanList = scanList.scanList;
+        scanParam.scanList = scanList;
+    end
 end
     
 
