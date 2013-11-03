@@ -38,13 +38,8 @@ for colorNum=1:totNumColor;
         switch analysisType(stepNum).name
             case 'spotDetection'
                 for cutNum=1:totNumCut
-                   regFeatAll{colorNum, stepNum}{cutNum} = regFeat{cutNum}; 
+                   regFeatAll{colorNum, stepNum}{cutNum} = regFeat{cutNum}{analInd(stepNum), colorNum}; 
                 end
-                
-                %Additionally transfer the result to the folder
-                %'singleBacCount' after doing slightly more processing.
-                bacteriaCountTimeSeries(param, 'firstpass', 'defaultCullProp', scanParam.scanNum, regFeat)
-                
                 
             otherwise
                 %Store entry as either a cell or an array
@@ -84,6 +79,28 @@ for colorNum=1:totNumColor;
 end
 
 
+
+%%Doing further processing of the data, if necessary
+
+for stepNum =1:totNumSteps
+     
+    switch analysisType(stepNum).name
+        case 'spotDetection'
+            %Collect together found bugs and put them through another step
+            %of analysis
+            for nC=1:totNumColor
+                for cutNum=1:totNumCut
+                    rP{cutNum}{nC} = regFeatAll{nC,stepNum}{cutNum};
+                end
+               
+            end
+            %Additionally transfer the result to the folder
+            %'singleBacCount' after doing slightly more processing.
+            bacteriaCountTimeSeries(param, 'firstpass', 'defaultCullProp', scanParam.scanNum, rP)
+            
+            
+     end
+end
 
 
 
