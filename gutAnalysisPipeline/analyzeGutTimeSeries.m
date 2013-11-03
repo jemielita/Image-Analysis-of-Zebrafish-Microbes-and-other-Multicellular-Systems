@@ -50,8 +50,8 @@ createAllMasks(scanParam, param);
 
 error = checkCodeVersion(scanParam.codeDir, param.dataSaveDirectory);
 if(error==1)
-fprintf(2, 'Analysis will not continue until code is comitted!\n');
-return;
+%fprintf(2, 'Analysis will not continue until code is comitted!\n');
+%return;
 end
 
 error = saveAnalysisSteps(analysisType, scanParam, param);

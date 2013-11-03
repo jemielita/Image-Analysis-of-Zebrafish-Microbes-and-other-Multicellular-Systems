@@ -15,7 +15,7 @@ if(isempty(rProp))
     rPropNew = rProp;
     return
 end
-
+% 
 fprintf(1, 'cullFoundBacteria: Remove small regions');
 ind = [rProp.Area]>absoluteMinArea;
 rProp = rProp(ind);

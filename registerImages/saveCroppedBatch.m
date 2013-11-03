@@ -87,8 +87,8 @@ end
 % 
 
 
-%for nS=1:totalNumScans
-for nS=23:24 
+for nS=1:totalNumScans
+
 mess = ['Cropping scan ', num2str(nS)];
     fprintf(2, mess);
 
