@@ -23,13 +23,15 @@ if(length(dirNames)==1)
     cd(dirNames{1});
     subDir= rdir('**\*param.mat');
     
+    dirNamesTemp = [];
     for i=1:length(subDir)
-        dirNames{i} = subDir(i).name;
+        dirNamesTemp{i} = subDir(i).name;
     end
+    dirNames = dirNamesTemp;
 else
    %Get the location of the param file for each of these entries
    for i=1:length(dirNames)
-      dirNames{i} = [dirNames{nF} filesep 'gutOutline' filesep 'param.mat']; 
+      dirNames{i} = [dirNames{i} filesep 'gutOutline' filesep 'param.mat']; 
    end
 end
 

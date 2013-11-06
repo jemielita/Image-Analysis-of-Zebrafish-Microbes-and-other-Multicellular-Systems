@@ -31,10 +31,6 @@ saveDir = param.dataSaveDirectory;
 %case we want to do only a subset of scans.
 scanParam = getFinishedScanList(scanParam);
 
-%% See if we've update the entry giving gut regions index. If not, calculate this and update the saved file
-if(isfield(param, 'gutRegionsInd'))
-    param.gutRegionsInd = findGutRegionMaskNumber(param, true); 
-end
 %% Declaring variables
 
 %We'll keep these from scan to scan, so that we can reuse the previous mask
@@ -47,6 +43,13 @@ gutMask = cell(3,1);
 %scanParam.stepSize
 
 param = resampleCenterLine(param, scanParam);
+
+
+%% See if we've update the entry giving gut regions index. If not, calculate this and update the saved file
+if(~isfield(param, 'gutRegionsInd'))
+    param.gutRegionsInd = findGutRegionMaskNumber(param, true); 
+end
+
 
 createAllMasks(scanParam, param);
 %% Save meta-data
