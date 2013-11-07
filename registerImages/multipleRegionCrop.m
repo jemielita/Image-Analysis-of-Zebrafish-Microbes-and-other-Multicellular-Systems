@@ -24,15 +24,15 @@ multipleRegionCropGUI(param,data);
 %to work.
 %If the third argument has been set to 'save Results', pause MATLAB until
 %the gui has been closed.
-if(nargin==3)
-    if(strcmpi(varargin{3}, 'save results'))
+if(nargin>0)
+    %if(strcmp(varargin{3}, 'save results')||nargin==1)
         while(~isempty(findobj('Tag', 'fGui')))
             handles = findobj('Tag', 'fGui');
             paramTemp = guidata(handles);
             param = paramTemp.param;
             pause(0.5);
         end
-    end
+   % end
 end
 
 end
@@ -1746,7 +1746,10 @@ rPropClassified = rProp(keptSpots);
            delete(hRect);
            outlineRegions();
        end
-       
+        %Display the new image
+        color = colorType(colorNum);
+        color = color{1};
+        getRegisteredImage(scanNum, color, zNum, im, data, param);
     end
 
 

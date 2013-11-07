@@ -87,8 +87,8 @@ end
 % 
 
 
-%for nS=1:totalNumScans
-for nS=23:24 
+for nS=1:totalNumScans
+
 mess = ['Cropping scan ', num2str(nS)];
     fprintf(2, mess);
 
@@ -153,9 +153,6 @@ mess = ['Cropping scan ', num2str(nS)];
 end
 
 
-%Recalculate the MIP for this new cropping region
-calcProjections(param);
-
 %Saving the new range of pixel locations
 for nC = 1:totalNumColors
     
@@ -182,6 +179,11 @@ param.directoryName = cropDir;
 
 save([cropDir filesep 'gutOutline', filesep 'param.mat'], 'param');
 save([cropDir filesep 'ExperimentData.mat'], 'parameters', 'timeData', 'param');
+
+
+%Recalculate the MIP for this new cropping region
+calcProjections(param);
+
 
     function [] = saveIndividualImages()
         
