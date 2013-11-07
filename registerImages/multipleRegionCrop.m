@@ -111,6 +111,12 @@ figName = ['Play the Outline the Gut Game!   ', param.directoryName];
 fGui = figure('Name', figName, 'Menubar', 'none', 'Tag', 'fGui',...
     'Visible', 'off', 'Position', [50, 50, 2000, 900], 'Color', [0.925, 0.914, 0.847]);
 
+
+%Set key press functions for the figure-will be used to interface with
+%touch screen monitor more efficiently
+set(fGui, 'KeyPressFcn', @(fGui, evt)keyPressGUI(fGui, evt));
+
+
 %Handle to GUI data-will be used to pass information out
 myhandles = guihandles(fGui);
 myhandles.param = param;
@@ -208,6 +214,7 @@ if(exist(remBugsSaveDir, 'file')==2)
    removeBugInd = removeBugInd.removeBugInd;
 end
 hMenuSaveRemovedBugs = uimenu(hMenuDisplay, 'Label', 'Save removed bug list', 'Callback', @saveRemovedBugs_Callback);
+hMenuShowAllBugs = uimenu(hMenuDisplay, 'Label', 'Show ALL found bugs', 'Callback', @showAllBugs_Callback);
 
 
 hMenuRegister = uimenu('Label', 'Registration');
@@ -464,7 +471,67 @@ hContrast = imcontrast(imageRegion);
 
 
 %%%%% Drop down menu callback
+    function keyPressGUI(hObject, eventdata)
+        eventdata.Key
+        switch eventdata.Key
+            case 'rightarrow'
+                %Go one scan forward
+                scanNum = get(hScanSlider, 'Value');
+                scanNum = int16(scanNum);
+                
+                if(scanNum<maxScan)
+                    scanNum = scanNum+1;
+                end
+                
+                %Update the displayed z level.
+                set(hScanTextEdit, 'String', scanNum);
+                set(hScanSlider, 'Value', scanNum);
+                scanSlider_Callback('', '');
+                
+            case 'leftarrow'
+                %Go one scan backward
+                %Go one scan forward
+                scanNum = get(hScanSlider, 'Value');
+                scanNum = int16(scanNum);
+                
+                if(scanNum>minScan)
+                    scanNum = scanNum-1;
+                end
+                
+                %Update the displayed z level.
+                set(hScanTextEdit, 'String', scanNum);
+                set(hScanSlider, 'Value', scanNum);
+                scanSlider_Callback('', '');
+                
+            case 'uparrow'
+                %Go one z-depth up
+                zNum = get(hZSlider, 'Value');
+                zNum = int16(zNum);
+                if(zNum<zMax)
+                    zNum = zNum+1;
+                end
+                %Update the displayed z level.
+                set(hZTextEdit, 'String', zNum);
+                set(hZSlider, 'Value',double(zNum));
 
+                z_Callback('','');
+            case 'downarrow'
+                %Go one z-depth down
+                %Go one z-depth up
+                zNum = get(hZSlider, 'Value');
+                zNum = int16(zNum);
+                
+                if(zNum>zMin)
+                    zNum = zNum-1;
+                end
+                %Update the displayed z level.
+                set(hZTextEdit, 'String', zNum);
+                set(hZSlider, 'Value',double(zNum));
+
+                z_Callback('','');
+        end
+        
+    end
 %Load in a new scan stack
     function loadScan_Callback(hObject, eventdata)
         fprintf(2, 'Loading in a new scan stack...');
@@ -793,7 +860,17 @@ hContrast = imcontrast(imageRegion);
         fprintf(1, 'List of bugs removed saved!\n');
       
     end
-
+    function showAllBugs_Callback(hObject, eventdata)
+        if strcmp(get(hMenuShowAllBugs, 'Checked'),'on')
+            set(hMenuShowAllBugs, 'Checked','off');
+        else
+            set(hMenuShowAllBugs, 'Checked', 'on');
+            set(hMenuOverlapBugs, 'Checked', 'on');
+            
+            overlapBugs_Callback();
+        end
+        
+    end
     function removeBugBox(position)
         zNum = get(hZSlider, 'Value');
         zNum = int16(zNum);
@@ -876,13 +953,14 @@ hContrast = imcontrast(imageRegion);
         xyzRem = reshape(xyzRem,3,length(xyzRem)/3);
         
         xyzRem = xyzRem(:,removeBugInd{scanNum,colorNum});
-        
-        if(strcmp(projectionType, 'none') || strcmp(get(hMenuRemoveBugs, 'Checked'),'on'))
-            %Only if we're
-            rPropClassified = rProp(keptSpots);
-        else
-            rPropClassified = rProp;
-        end
+rPropClassified = rProp(keptSpots);
+        %         
+%         if(strcmp(projectionType, 'none') || strcmp(get(hMenuRemoveBugs, 'Checked'),'on'))
+%             %Only if we're
+%             rPropClassified = rProp(keptSpots);
+%         else
+%             rPropClassified = rProp;
+%         end
 %         
          classifierType = 'svm';
           useRemovedBugList = true;
@@ -893,11 +971,22 @@ hContrast = imcontrast(imageRegion);
          %Let's filter out all points with an intensity below 200
         % rPropClassified =  rPropClassified([rPropClassified.MeanIntensity]>200);
          %rPropClassified = rPropClassified([rPropClassified.Area]>40);
-         
-        %rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType);
-        %keptSpots = intersect(keptSpots, [rProp.ind]);
+        
+        switch get(hMenuShowAllBugs, 'Checked')
+            case 'off'
+                %Use the filter that we've built to further classify the
+                %data
+                rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType);
+                %keptSpots = intersect(keptSpots, [rProp.ind]);
+            case 'on'
+                %Apply some harsh-ish threshold-Set this threshold in code
+                %for now.
+                colorThresh = [0,0];
+                areaThresh = [3,3];
+                rPropClassified = rPropClassified([rPropClassified.Area]>areaThresh(colorNum));
 
-        rPropClassified = rPropClassified([rPropClassified.MeanIntensity]<1000);
+                rPropClassified = rPropClassified([rPropClassified.MeanIntensity]>colorThresh(colorNum));
+        end
         
         xyz = [rPropClassified.CentroidOrig];
         xyz = reshape(xyz,3,length(xyz)/3);
@@ -2392,6 +2481,9 @@ hContrast = imcontrast(imageRegion);
             stop(cropTimer);
         end
         scanTag = get(hObject, 'tag');
+        if(isempty(scanTag))
+            scanTag = '';
+        end
         
         switch scanTag
             case 'scanSlider'
@@ -2406,6 +2498,11 @@ hContrast = imcontrast(imageRegion);
                 scanNum = int16(scanNum);
                 
                 set(hScanSlider, 'Value',double(scanNum));
+            case ''
+                %Do nothing-numbers already updated by key press callback
+                %function
+                
+                
         end
         
         colorNum = get(hColorSlider, 'Value');
@@ -2521,7 +2618,9 @@ hContrast = imcontrast(imageRegion);
     function z_Callback(hObject, eventData)
         
         zTag = get(hObject, 'tag');
-        
+        if(isempty(zTag))
+           zTag = ''; 
+        end
         switch zTag
             case 'zslider'
                 zNum = get(hZSlider, 'Value');
@@ -2535,6 +2634,9 @@ hContrast = imcontrast(imageRegion);
                 zNum = int16(zNum);
                 
                 set(hZSlider, 'Value',double(zNum));
+            case ''
+                %Do nothing-z position already updated by key press
+                %callback function.
         end
          
         colorNum = get(hColorSlider, 'Value');

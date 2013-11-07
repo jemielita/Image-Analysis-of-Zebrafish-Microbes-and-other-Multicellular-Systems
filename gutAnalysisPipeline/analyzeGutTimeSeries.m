@@ -245,10 +245,12 @@ if(isfield(scanParam, 'freshStart') && scanParam.freshStart==true)
     save(fileName, 'scanList');
 else
     
-    fprintf(1, 'Trying to load in list of previously analyzed scan...');
-    scanList = load(fileName, 'scanList');
-    scanList = scanList.scanList;
-    scanParam.scanList = scanList; 
+    if(exist(fileName)==2)
+        fprintf(1, 'Trying to load in list of previously analyzed scan...');
+        scanList = load(fileName, 'scanList');
+        scanList = scanList.scanList;
+        scanParam.scanList = scanList;
+    end
 end
     
 
