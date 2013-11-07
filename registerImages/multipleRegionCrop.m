@@ -174,6 +174,13 @@ uimenu(hMenuOutline, 'Label', 'Outline bulb region', 'Callback', @outlineBulbReg
 hShowBulbSeg = uimenu(hMenuOutline, 'Label', 'Show bulb segmentation', 'Callback', @showBulbSegmenatation_Callback, 'Checked', 'off');
 showBulb = false;
 
+hMenuOutlineEntireGut = uimenu(hMenuOutline, 'Label', 'Outline entire gut', 'Callback', @outlineEntireGut_Callback, 'Separator', 'on');
+hMenuSaveEntireGutOutline = uimenu(hMenuOutline, 'Label', 'Save entire gut outline', 'Callback', @saveEntireGut_Callback);
+entireGutOutline = cell(maxScan-minScan+1,zMax-zMin+1);
+hPolyEntireGut = [];
+
+
+
 hMenuDisplay = uimenu('Label', 'Display');
 hMenuContrast = uimenu(hMenuDisplay, 'Label', 'Adjust image contrast', 'Callback', @adjustContrast_Callback);
 hMenuBoundBox = uimenu(hMenuDisplay, 'Label', 'Remove region bounding boxes', 'Callback', @modifyBoundingBox_Callback);
@@ -503,25 +510,30 @@ hContrast = imcontrast(imageRegion);
                 set(hScanSlider, 'Value', scanNum);
                 scanSlider_Callback('', '');
                 
-            case 'uparrow'
+            case 'downarrow'
                 %Go one z-depth up
                 zNum = get(hZSlider, 'Value');
                 zNum = int16(zNum);
-                if(zNum<zMax)
+                if(zNum<zMax-1)
+                    zNum = zNum+2;
+                elseif(zNum==xMax-1);
                     zNum = zNum+1;
                 end
+                
                 %Update the displayed z level.
                 set(hZTextEdit, 'String', zNum);
                 set(hZSlider, 'Value',double(zNum));
 
                 z_Callback('','');
-            case 'downarrow'
+            case 'uparrow'
                 %Go one z-depth down
                 %Go one z-depth up
                 zNum = get(hZSlider, 'Value');
                 zNum = int16(zNum);
                 
-                if(zNum>zMin)
+                if(zNum>zMin+1)
+                    zNum = zNum-2;
+                elseif(zNum==zMin+1);
                     zNum = zNum-1;
                 end
                 %Update the displayed z level.
@@ -2650,11 +2662,29 @@ rPropClassified = rProp(keptSpots);
         color = colorType(colorNum);
         color = color{1};
         
+        %See if we're outlining the entire gut by hand
+        if(strcmp(get(hMenuOutlineEntireGut, 'Checked'),'on'))
+            hObj = findobj('Tag', 'entireGutOutline');
+            hOutlineEntireGut = iptgetapi(hObj);
+            entireGutOutline{scanNum, zLast} = hOutlineEntireGut.getPosition();
+            
+            delete(hObj);
+           
+        end
+        
+        
         %Get the desired image and display it
         getRegisteredImage(scanNum, color, zNum, im, data, param );
                 
         %Update the previous examined Z slice
         zLast = zNum;
+        
+        if(strcmp(get(hMenuOutlineEntireGut, 'Checked'),'on'))
+            hPolyEntireGut = impoly(imageRegion);
+            set(hPolyEntireGut, 'Tag', 'entireGutOutline');
+            hPolyEntireGut = iptgetapi(hPolyEntireGut);
+            hPolyEntireGut.setColor([0.5 0.5 0]);
+        end
     end
 
     function projectionType_Callback(hObject, eventdata)
@@ -2990,6 +3020,30 @@ rPropClassified = rProp(keptSpots);
                 showBulb = true;
             end
         end
+    end
+
+    function outlineEntireGut_Callback(hObject, eventdata)
+        if strcmp(get(hMenuOutlineEntireGut, 'Checked'),'on')
+            set(hMenuOutlineEntireGut, 'Checked', 'off');
+            
+        else
+            set(hMenuOutlineEntireGut, 'Checked', 'on');
+            hPolyEntireGut = impoly(imageRegion);
+            set(hPolyEntireGut, 'Tag', 'entireGutOutline');
+            hPolyEntireGut = iptgetapi(hPolyEntireGut);
+            hPolyEntireGut.setColor([0.5 0.5 0]);
+        end
+        
+    end
+
+
+    function saveEntireGut_Callback(hObject, eventdata)
+        spotSaveDir = [param.dataSaveDirectory];
+        spotSaveFile = [spotSaveDir filesep 'manualGutOutlining.mat'];
+        
+        save(spotSaveFile, 'entireGutOutline');
+        fprintf(1, 'Spot list saved!\n');
+        beep
     end
 
     function loadGutCenter_Callback(hObject, eventdata)
