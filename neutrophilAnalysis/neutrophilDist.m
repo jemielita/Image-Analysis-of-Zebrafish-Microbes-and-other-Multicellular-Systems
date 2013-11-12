@@ -111,6 +111,7 @@ for i=1:length(ind)
 end
 
 
+%% Get distance of neutrophil to the gut border.
 
 
 end

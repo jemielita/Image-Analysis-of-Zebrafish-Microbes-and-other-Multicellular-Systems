@@ -21,11 +21,13 @@
 %       distribution at that point in the gut. Currently not supported!
 %       
 % OUTPUT radDist: cell array of size (maxS-minS+1)x numColor that contains
-% the distance of each bacteria the center of the gut.
-%
+% the distance of each bacteria to the center of the gut.
+%       
+%        radDistGutRegion: cell array of size (maxS-minS+1)x numColor that contains
+%        the region in the gut of each found bacteria
 % AUTHOR Matthew Jemielita, October 1, 2013
 
-function [radDist, radDistGutRegion] = bacteriaRadialDistribution(param, varargin)
+function [radDist, radDistGutRegion, convHull, regArea] = bacteriaRadialDistribution(param, varargin)
 
 %% Loading in variables
 switch nargin
@@ -236,4 +238,6 @@ for nS= minS:maxS
 end
 fprintf(1, '\n');
 
+convHull = [];
+regArea = [];
 end
