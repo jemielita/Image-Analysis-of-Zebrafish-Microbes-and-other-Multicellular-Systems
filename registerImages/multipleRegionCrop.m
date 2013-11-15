@@ -515,7 +515,7 @@ hContrast = imcontrast(imageRegion);
                 zNum = get(hZSlider, 'Value');
                 zNum = int16(zNum);
                 if(zNum<zMax-1)
-                    zNum = zNum+2;
+                    zNum = zNum+3;
                 elseif(zNum==xMax-1);
                     zNum = zNum+1;
                 end
@@ -532,7 +532,7 @@ hContrast = imcontrast(imageRegion);
                 zNum = int16(zNum);
                 
                 if(zNum>zMin+1)
-                    zNum = zNum-2;
+                    zNum = zNum-3;
                 elseif(zNum==zMin+1);
                     zNum = zNum-1;
                 end
@@ -2665,11 +2665,16 @@ rPropClassified = rProp(keptSpots);
         %See if we're outlining the entire gut by hand
         if(strcmp(get(hMenuOutlineEntireGut, 'Checked'),'on'))
             hObj = findobj('Tag', 'entireGutOutline');
+            if(~isempty(hObj))
+                if(length(hObj)>1)
+                    delete(hObj(2));
+                    hObj = hObj(1);
+                end
             hOutlineEntireGut = iptgetapi(hObj);
             entireGutOutline{scanNum, zLast} = hOutlineEntireGut.getPosition();
             
             delete(hObj);
-           
+            end
         end
         
         
@@ -3173,7 +3178,19 @@ rPropClassified = rProp(keptSpots);
         %Check to see if we're going to be showing a projection instead
         switch projectionType
             case 'none'
-                im = registerSingleImage(scanNum,color, zNum,im, data,param);
+        
+                
+                  if(strcmp(get(hMenuOverlapImages, 'Checked'), 'on'));
+                     
+                      im = registerSingleImage(scanNum,param.color{1}, zNum,im, data,param);
+                      for nC=2:length(param.color)
+                          im = im+registerSingleImage(scanNum,param.color{nC}, zNum,im, data,param);
+                      end
+                  else
+                  
+                      im = registerSingleImage(scanNum,color, zNum,im, data,param);
+                      
+                  end
                 %Optionally denoise image
                 if strcmp(get(hMenuDenoise, 'Checked'),'on')
                     im = denoiseImage(im);
@@ -3183,6 +3200,7 @@ rPropClassified = rProp(keptSpots);
                 %crude. What we should really be doing is in nicer fashion.
                 im(im(:)>50000) = 0;
         
+                
             case 'mip'
                  set(hIm, 'Visible', 'off');drawnow;
                 param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];

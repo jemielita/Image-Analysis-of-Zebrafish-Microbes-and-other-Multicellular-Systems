@@ -34,7 +34,7 @@ function [rPropOut varargout] = bacteriaCountFilter(rProp, scanNum, colorNum, pa
 switch nargin
     case 4
         useRemovedBugList = false;
-        classifierType = 'svn';
+        classifierType = 'svm';
     case 5
         useRemovedBugList = varargin{1};
         classifierType = 'svm';

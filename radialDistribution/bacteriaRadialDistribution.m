@@ -20,12 +20,18 @@
 %       after current wedge to include in calculating the radial
 %       distribution at that point in the gut. Currently not supported!
 %       
+%       calcConvHull: (optional. Default = true) Return a cell array of
+%       size (maxS-minS+1) x numColor that contains the convex hull of
+%       points found in each wedge (if number of points is >=3, the minimum
+%       needed). Will be used to compare our found radial distributions to
+%       null hypotheses.
+%
 % OUTPUT radDist: cell array of size (maxS-minS+1)x numColor that contains
 % the distance of each bacteria the center of the gut.
 %
 % AUTHOR Matthew Jemielita, October 1, 2013
 
-function [radDist, radDistGutRegion] = bacteriaRadialDistribution(param, varargin)
+function [radDist, radDistGutRegion, convHullAll] = bacteriaRadialDistribution(param, varargin)
 
 %% Loading in variables
 switch nargin
@@ -34,10 +40,18 @@ switch nargin
         maxS = param.expData.totalNumberScans;
         
         windowSize = 10; %Each of our wedges has a width of 5 microns.
+        calcConvHull = true;
     case 4
         minS = varargin{1};
         maxS = varargin{2};
         windowSize = varargin{3};
+        calcConvHull = true;
+        
+    case 5
+        minS = varargin{1};
+        maxS = varargin{2};
+        windowSize = varargin{3};
+        calcConvHull = varargin{4};
     otherwise
         fprintf(2, 'Functions requires 1 or 4 inputs!\n');
         return;
@@ -46,7 +60,7 @@ fileDir = [param.dataSaveDirectory filesep 'singleBacCount'];
 numColor = length(param.color);
 
 radDist = cell(maxS-minS+1, numColor);
-
+convHullAll = radDist;
 %% Going through each scan
 fprintf(1, 'Finding radial distribution.');
 for nS= minS:maxS
@@ -120,7 +134,7 @@ for nS= minS:maxS
             pos = reshape(pos, 3,length(pos)/3);
             pos = pos';
             
-            if(~isempty(pos) &&size(pos,1)>1)
+            if(~isempty(pos) &&size(pos,1)>2)
                 %centroid = mean(pos);
                 
                 %Get plane of the gut at this point
@@ -154,42 +168,7 @@ for nS= minS:maxS
                 vecNew = planePerp;
                 planePerp = planePerp-centroid(n,:);
                 
-%                 %pos = [2.4,2.88,5.88];
-%                 vecCent = cL(end,:)-cL(1,:);
-%                 vecCentroid = centroid(1:2)-cL(1,:);
-%                 
-%                 vecNew = cL(1,:) + dot(vecCent, vecCentroid)*(1/norm(vecCent)^2)*vecCent;
-%                 
-%                 
-%                 %vecNew = cL(end,:)-vecNew;
-%                 vecNew = [vecNew, centroid(3)];
-%                 %vecNew = (1/norm(vecNew))*vecNew;
-%                 %vecNew = vecNew + centroid;
-%                 
-%                 planePerp = vecNew;
-%                 
-%                 
-%                 planePerp = planePerp-centroid;
-%                 
-%                 v1 = [cL(end,:)-vecNew(1:2), centroid(3)];
-%                 v2 = centroid -vecNew;
-%                 v3 = cross(v1, v2);
-%                 v3 = vecNew + v3/norm(v3);  
-%                 
-%                 %Find the vector perpendicular to centroid/center line
-%                 %plane, with origin at centroid
-%                 vp1 = centroid-v3;
-%                 vp2 = centroid - vecNew;
-%                 vp3 = cross(vp1, vp2);
-%                 
-%                 
-%                 vp1 = v3-centroid;
-%                 vp2 = v3-vecNew;
-%                 vp3 = cross(vp1,vp2);
-%                 
-%                 planePerp = (1/norm(vp3))*vp3 + centroid;
-               % planePerp = (1/norm(planePerp))*planePerp;
-                
+               
                 %Finding projection of all points onto this plane by
                 %removing the part parallel to the vector perpendicular to
                 %the plane
@@ -220,6 +199,25 @@ for nS= minS:maxS
                 bugDist =0.1625*bugDist; %microns per pixel
                 radDist{nS,nC}{n} = bugDist;
                 radDistGutRegion{nS,nC}{n} = [rProp{nC}(ind).gutRegion];
+                
+                
+                if(calcConvHull==true)
+                    %Save convex hull if desired
+                    theta  = -theta;
+                    for i=1:size(pos,1)
+                        posP2(i,1:2)=  [cos(theta), sin(theta); -sin(theta), cos(theta)]*posP(i,1:2)';
+                        posP2(i,3) = posP(i,3);
+                    end
+                    posP3 = posP2(:,[1,3]);
+                    
+                    %Find convex hull of these points
+                    k = convhull(posP3(:,1), posP3(:,2));
+                    
+                    posP3 = posP3(k,:);
+                    convHullAll{nS,nC}{n} = posP3;
+                end
+                
+                
             else
                 radDist{nS, nC}{n} = [];
                 
@@ -229,6 +227,7 @@ for nS= minS:maxS
             nL = nL+windowSize; n = n+1;
         end
         
+
     end
     
     
