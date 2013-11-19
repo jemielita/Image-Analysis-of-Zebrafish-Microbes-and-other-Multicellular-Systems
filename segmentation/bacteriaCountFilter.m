@@ -109,12 +109,18 @@ if(isfield(rProp, 'gutRegion'))
 end
 
 %Remove spots that are past the autofluorescent region
-insideGut = find([rProp.gutRegion]<=3);
-keptSpots = intersect(keptSpots, insideGut);
+%insideGut = find([rProp.gutRegion]<=3);
+%keptSpots = intersect(keptSpots, insideGut);
 
 %Remove spots that we've filtered to this point
-rProp = rProp(keptSpots);
+%rProp = rProp(keptSpots);
 
+
+%Check to make sure the list is non-empty, otherwise break here.
+if(length(rProp)<1)
+    rPropOut = rProp;
+    return
+end
 
 switch classifierType
     

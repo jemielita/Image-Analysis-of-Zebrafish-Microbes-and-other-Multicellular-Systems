@@ -479,7 +479,7 @@ hContrast = imcontrast(imageRegion);
 
 %%%%% Drop down menu callback
     function keyPressGUI(hObject, eventdata)
-        eventdata.Key
+        
         switch eventdata.Key
             case 'rightarrow'
                 %Go one scan forward
@@ -515,7 +515,7 @@ hContrast = imcontrast(imageRegion);
                 zNum = get(hZSlider, 'Value');
                 zNum = int16(zNum);
                 if(zNum<zMax-1)
-                    zNum = zNum+3;
+                    zNum = zNum+1;
                 elseif(zNum==xMax-1);
                     zNum = zNum+1;
                 end
@@ -532,7 +532,7 @@ hContrast = imcontrast(imageRegion);
                 zNum = int16(zNum);
                 
                 if(zNum>zMin+1)
-                    zNum = zNum-3;
+                    zNum = zNum-1;
                 elseif(zNum==zMin+1);
                     zNum = zNum-1;
                 end
@@ -939,8 +939,14 @@ hContrast = imcontrast(imageRegion);
                 rPropComb(end+1) = rProp{2}(i);
             end
         elseif(iscell(rProp))
-            rProp = rProp{colorNum};
-
+            if(length(rProp)==1)
+                %Not greatest way to deal with this since we'll have image
+                %overlaps on both channels...oh well.
+                
+                rProp = rProp{1};
+            else
+                rProp = rProp{colorNum};
+            end
         end
              
         if(isempty(hP{1}))
@@ -961,21 +967,21 @@ hContrast = imcontrast(imageRegion);
         
         %Construct list of removed spots
         xyzRem = [rProp.CentroidOrig];
-       
+        
         xyzRem = reshape(xyzRem,3,length(xyzRem)/3);
         
         xyzRem = xyzRem(:,removeBugInd{scanNum,colorNum});
-rPropClassified = rProp(keptSpots);
-        %         
-%         if(strcmp(projectionType, 'none') || strcmp(get(hMenuRemoveBugs, 'Checked'),'on'))
-%             %Only if we're
-%             rPropClassified = rProp(keptSpots);
-%         else
-%             rPropClassified = rProp;
-%         end
-%         
-         classifierType = 'svm';
-          useRemovedBugList = true;
+        rPropClassified = rProp(keptSpots);
+        %
+        %         if(strcmp(projectionType, 'none') || strcmp(get(hMenuRemoveBugs, 'Checked'),'on'))
+        %             %Only if we're
+        %             rPropClassified = rProp(keptSpots);
+        %         else
+        %             rPropClassified = rProp;
+        %         end
+        %
+        classifierType = 'svm';
+        useRemovedBugList = true;
 
          %classifierType = 'linear';
          %useRemovedBugList = false;
