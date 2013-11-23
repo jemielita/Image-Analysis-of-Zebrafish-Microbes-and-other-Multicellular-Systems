@@ -113,7 +113,7 @@ end
 %keptSpots = intersect(keptSpots, insideGut);
 
 %Remove spots that we've filtered to this point
-%rProp = rProp(keptSpots);
+rProp = rProp(keptSpots);
 
 
 %Check to make sure the list is non-empty, otherwise break here.
@@ -158,6 +158,10 @@ switch classifierType
         
 end
 
+
+%Filter based on proximity to adjacent spots
+radCutoff = (1/0.1625)*[0.5, 3];
+rProp = combineRegions(rProp, radCutoff);
 
 
 index.Correct = [rPropOut.ind];

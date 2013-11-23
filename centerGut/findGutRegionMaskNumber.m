@@ -38,8 +38,6 @@ centerLineAll = param.centerLineAll;
 for nS = minS:maxS
     thisCL = centerLineAll{nS};
     
-    param.gutRegionsInd(nS,1) = 1;%Temporary for now May 29th data doesn't have beginGutPos field complete.
-    
     for nF =2:length(necessaryFields)
         thisF = param.(necessaryFields{nF});
         thisF = thisF(nS,:);

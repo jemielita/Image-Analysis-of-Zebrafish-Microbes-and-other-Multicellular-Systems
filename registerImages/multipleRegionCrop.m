@@ -971,8 +971,9 @@ hContrast = imcontrast(imageRegion);
         xyzRem = reshape(xyzRem,3,length(xyzRem)/3);
         
         xyzRem = xyzRem(:,removeBugInd{scanNum,colorNum});
-        rPropClassified = rProp(keptSpots);
-        %
+       % rPropClassified = rProp(keptSpots);
+       rPropClassified = rProp; 
+       %
         %         if(strcmp(projectionType, 'none') || strcmp(get(hMenuRemoveBugs, 'Checked'),'on'))
         %             %Only if we're
         %             rPropClassified = rProp(keptSpots);
@@ -3730,7 +3731,7 @@ end
 
 
 %Save the calculated parameters, unless they've been
-%calculated befor.
+%calculated before.
 
 if(dataFileExist~=2)
     save(paramFile, 'param');

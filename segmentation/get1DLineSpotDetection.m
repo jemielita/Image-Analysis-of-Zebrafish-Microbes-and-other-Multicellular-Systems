@@ -76,12 +76,13 @@ for nS = minS:maxS
            classifierType = 'svm'; 
            
            %To deal with our manual removal of early time GFP spots.
-           if(nC==1)
-               useRemovedBugList = true;
-           else 
-               useRemovedBugList = false;
-           end
+           %if(nC==1)
+            %   useRemovedBugList = true;
+           %else 
+           %    useRemovedBugList = false;
+           %end
            
+           useRemovedBugList = true;
            rProp = bacteriaCountFilter(rProp, nS, nC, param, useRemovedBugList, classifierType);           
        else
            rProp = rPropAll{nS,nC};
