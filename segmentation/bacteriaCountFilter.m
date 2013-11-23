@@ -90,7 +90,7 @@ end
 %around with these numbers.
 % cullProp.radCutoff(1) = ''; %Cutoff in the horizontal direction
 % cullProp.radCutoff(2) = '';
-%rProp = rProp(keptSpots);
+rProp = rProp(keptSpots);
 
 %In the display apply a harsher threshold for the spots found in
 %the autofluorescent region.
