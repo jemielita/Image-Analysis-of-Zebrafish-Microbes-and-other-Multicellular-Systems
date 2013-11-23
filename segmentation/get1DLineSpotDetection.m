@@ -17,6 +17,8 @@
 %       syntax: lineDist{scanNum,colorNum}(linePos)-gives the number of
 %       points found for a given scan, color and position down the line.
 %
+%       numColor: number of colors to analyze-should be a better input than
+%       this.
 % OUTPUT lineDist (optional): line distribution code, with the same syntax
 % as given in the documentation for saveLine above.
 %        popTot (optional): sum of the line distribution down the length of
@@ -25,6 +27,7 @@
 
 function varargout = get1DLineSpotDetection(param, varargin)
 
+numColor = length(param.color);
 switch nargin 
     case 1
         saveLine = true;
@@ -36,15 +39,21 @@ switch nargin
         recalculate = false;
     case 3
         %mlj: bad way to do this...
-        recalculate = false;
+        recalculate = true;
         rPropAll = varargin{1};
         saveLine = varargin{2};
       %  dataDir = varargin{1};
     %case 3
     %    dataDir = varargin{1};
     %    saveLine = varargin{2};
+    case 4
+        recalculate = true;
+        dataDir = [param.dataSaveDirectory filesep 'singleBacCount'];
+        saveLine = varargin{2};
+        cList = varargin{3};
+        numColor = length(cList);
     otherwise
-        fprintf(2, 'Function requires 2 or 3 inputs!');
+        fprintf(2, 'Function requires 2 -4 inputs!');
         return
 end
 
@@ -53,7 +62,7 @@ end
 
 minS = 1;
 maxS = param.expData.totalNumberScans;
-numColor = length(param.color);
+
 
 for nS = minS:maxS
     
@@ -63,25 +72,32 @@ for nS = minS:maxS
    %rProp = cullBacteriaData(rProp);
    
    
-   for nC = 1:numColor
+   for i = 1:numColor
        
+       nC = cList(i);
        if(recalculate ==true)
            fileDir = [dataDir filesep 'bacCount' num2str(nS) '.mat'];
            inputVar = load(fileDir);
            rProp = inputVar.rProp;
            
            if(iscell(rProp))
-               rProp = rProp{nC};
+               if(length(rProp)>1)
+                   rProp = rProp{nC};
+               else
+                   rProp = rProp{1};
+               end
            end
            classifierType = 'svm'; 
            
            %To deal with our manual removal of early time GFP spots.
+
            %if(nC==1)
             %   useRemovedBugList = true;
            %else 
            %    useRemovedBugList = false;
            %end
            
+
            useRemovedBugList = true;
            rProp = bacteriaCountFilter(rProp, nS, nC, param, useRemovedBugList, classifierType);           
        else

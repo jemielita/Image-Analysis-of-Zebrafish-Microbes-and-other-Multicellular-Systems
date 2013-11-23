@@ -17,15 +17,28 @@ function bkgInten = estimateBkg(pAll, varargin)
 
 totNumP = length(pAll);
 
-if(nargin==2)
-   subDir = varargin{1};
-else
-    subDir = '';
+
+switch nargin
+    case 1
+        subDir = '';
+        colorList = 'all';
+    case 2
+        subDir = varargin{1};
+        colorList = 'all';
+    case 3
+        subDir = varargin{1};
+        colorList = varargin{2};
 end
 
 for nP = 1:length(pAll)
     param = pAll{nP};
-    numColor = length(param.color);
+    
+    if(strcmp(colorList, 'all'))
+        numColor = length(param.color);
+    else
+        numColor = length(colorList);
+    end
+    
     numScan = param.expData.totalNumberScans;
     
 
@@ -36,7 +49,8 @@ for nP = 1:length(pAll)
     end
     
     if(isdir(fileDir))
-       cd(fileDir);
+        cd(fileDir);
+        
         for nC=1:numColor
             
            maxBkg = smoothBkgData(param,nC,false, 1, numScan, [50,100]);
