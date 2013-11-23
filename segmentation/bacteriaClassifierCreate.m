@@ -76,31 +76,28 @@ end
 % end
 
 %% Use SVM for classifier
-
-nC = 2;
-figure;
-numKeptSpots = sum(Y{nC}==1);
-boxCon = [2*ones(numKeptSpots,1); 0.001*ones(size(tLAll{nC},1)-numKeptSpots,1)];
-if(displayData==true)
-    svmStruct = svmtrain(tLAll{nC}(:,1:2), Ynom{nC}, 'showplot', true, 'Kernel_Function', 'linear', 'boxconstraint', boxCon);
+for nC=1:2
+    figure;
+    numKeptSpots = sum(Y{nC}==1);
+    boxCon = [0.01*ones(numKeptSpots,1); 0.1*ones(size(tLAll{nC},1)-numKeptSpots,1)];
+    if(displayData==true)
+        svmStruct{nC} = svmtrain(tLAll{nC}(:,1:2), Ynom{nC}, 'showplot', true, 'Kernel_Function', 'linear', 'boxconstraint', boxCon);
+    end
+    
+    
+    svmStruct{nC} = svmtrain(tLAll{nC}(:,1:3), Ynom{nC}, 'showplot', true, 'Kernel_Function', 'linear', 'boxconstraint', boxCon);
+    
+    % Calculate the confusion matrix
+    
+    group = svmclassify(svmStruct{nC},tLAll{nC});
+    
+    N = length(group);
+    
+    bad = ~strcmp(group, Ynom{nC});
+    ldaResubErr  = sum(bad)/N;
+    
+    [ldaResubCM,grpOrder] = confusionmat(Ynom{nC},group)
 end
-
-
-svmStruct = svmtrain(tLAll{nC}(:,1:3), Ynom{nC}, 'showplot', true, 'Kernel_Function', 'linear', 'boxconstraint', boxCon);
-
-
-
-% Calculate the confusion matrix
-
-group = svmclassify(svmStruct,tLAll{nC});
-
-N = length(group);
-
-bad = ~strcmp(group, Ynom{nC});
-ldaResubErr  = sum(bad)/N;
-
-[ldaResubCM,grpOrder] = confusionmat(Ynom{nC},group)
-
 %% Save results
 if(saveData.value ==true)
    %Save the classifier
@@ -144,7 +141,7 @@ end
             for i = 1:length(cList)
                 nC= cList(i);
                 remInd = find(sClass(:,nC)==1);
-                
+             
                 for i=1:length(remInd)
                     nS = remInd(i);
                     fileRoot = [paramAll{nF}.dataSaveDirectory '\singleBacCount'];
@@ -152,9 +149,12 @@ end
                     rProp = load([fileRoot, '\bacCount', num2str(nS), '.mat']);
                     rProp = rProp.rProp;
                     
-                    %rProp = rProp{nC};
-                    rProp = rProp{1};
-                    
+                    if(length(cList))>1
+                        rProp = rProp{nC};
+                    else
+                        rProp = rProp{1};
+                    end
+                    ['Number spots: ', num2str(length([rProp.gutRegion]<3))]
                     %Remove spots that were manually segmented.
                     keptSpots = setdiff(1:length(rProp), removeBugIndAll{nF}{nS, nC});
                     length(keptSpots)
@@ -189,27 +189,27 @@ end
                     colorThresh = [0,0];
                     areaThresh = [3,3];
                     rPropClassified = rProp; %Don't use this further classifier for this data.
-                    %                     rPropClassified = rProp([rProp.Area]>areaThresh(nC));
+                                 %        rPropClassified = rProp([rProp.Area]>areaThresh(nC));
                     %
-                    %                     rPropClassified = rPropClassified([rPropClassified.MeanIntensity]>colorThresh(nC));
+                                  %       rPropClassified = rPropClassified([rPropClassified.MeanIntensity]>colorThresh(nC));
                     
                     %Finding out which spots were removed by the above thresholds
-                    %     keptSpots = intersect(keptSpots, [rPropClassified.ind]);
+                         keptSpots = intersect(keptSpots, [rPropClassified.ind]);
                     
-                    %   removedSpots = [removedSpots, setdiff([rProp.ind], [rPropClassified.ind])];
+                       removedSpots = [removedSpots, setdiff([rProp.ind], [rPropClassified.ind])];
                     
-                    %   removedSpots = unique(removedSpots);
+                       removedSpots = unique(removedSpots);
                     
                     
                     %Remove spots that are past the autofluorescent region
                     %from both classifiers
-                      insideGut = find([rProp.gutRegion]<=3);
+                      insideGut = find([rProp.gutRegion]<3);
                        keptSpots = intersect(keptSpots, insideGut);
                   % ['Kept spots: ', num2str(length(keptSpots))]
                   
                    %mlj: include all removed spots in our true negative
                     %classifier. Lot's of 5's for some reason.
-                     % removedSpots = intersect(removedSpots, insideGut);
+                      removedSpots = intersect(removedSpots, insideGut);
                     
                     
                     if(isempty(keptSpots))

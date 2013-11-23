@@ -143,6 +143,14 @@ switch classifierType
             svmStruct = inputVar.svmStruct;
         end
         
+        if(iscell(svmStruct))
+           if(length(svmStruct)>1)
+               svmStruct = svmStruct{colorNum};
+           else
+               svmStuct = svmStruct{1};
+           end
+        end
+        
         rPropOut = bacteriaSVMClassifier(rProp, svmStruct);
         
     case 'none'

@@ -1,3 +1,4 @@
+
 %get1DLineSpotDetection: Construct a 1-D line distribution for analysis
 %done using the spot detection code.
 %
@@ -99,6 +100,13 @@ for nS = minS:maxS
        else
            rProp = rPropAll{nS,nC};
        end
+       if(isempty(rProp))
+           lineDist{nS,nC} = [];
+           popTot(nS, nC) =0;
+           continue
+       end
+           
+       
        numBac = [rProp.sliceNum];
 
        
