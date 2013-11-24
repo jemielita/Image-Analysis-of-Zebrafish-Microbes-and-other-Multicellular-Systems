@@ -1,4 +1,5 @@
-%findGutSliceParticle: Find the slice in the gut that each of the found
+
+%findGutSliceParticle(param): Find the slice in the gut that each of the found
 %spots is located in. Updates the bacteria count list.
 % NOTE: I'm sure this code is written somewhere else also, but I can't seem
 % to find it.
@@ -35,7 +36,7 @@ for nS = minS:maxS
        clDist = dist(pos, cL');
        [minVal,ind] = min(clDist,[],2);
        
-       for i=1:length(rProp)
+       for i=1:length(rProp{nC})
            rProp{nC}(i).sliceNum = ind(i);
            
            ri = param.gutRegionsInd(nS,:);

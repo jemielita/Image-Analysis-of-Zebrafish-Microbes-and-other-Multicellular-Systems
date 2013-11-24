@@ -92,6 +92,7 @@ end
 
  
  %Testing code
+ plotData = false;
  if(plotData==true)
      figure; imshow(gutMask+ 2*regionMask(:,:,1)+ 3*regionMask(:,:,2) + 6*regionMask(:,:,3), [])
      hold on

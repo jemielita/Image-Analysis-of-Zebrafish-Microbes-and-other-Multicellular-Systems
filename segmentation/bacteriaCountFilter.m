@@ -22,6 +22,8 @@
 %          -'none': No classifier used. Can be useful when combined with
 %          removed bug list.
 %           
+%       distCutoff_combRegions (default= false). If true filter out regions
+%       based on proximity to each other.
 % OUTPUT rPropOut: Filtered version of rProp.
 %        index: (optional) The index in the original list of rProp of the found bacteria.
 %             Useful for applying multiple layers of analysis.
@@ -35,12 +37,20 @@ switch nargin
     case 4
         useRemovedBugList = false;
         classifierType = 'svm';
+        distCutoff_combRegions = false;
     case 5
         useRemovedBugList = varargin{1};
         classifierType = 'svm';
+        distCutoff_combRegions = false;
     case 6
         useRemovedBugList = varargin{1};
         classifierType = varargin{2};
+        distCutoff_combRegions = false;
+    case 7
+        useRemovedBugList = varargin{1};
+        classifierType = varargin{2};
+        distCutoff_combRegions = varargin{3};
+        
 end
     
 %Load in filtering parameters
@@ -159,10 +169,11 @@ switch classifierType
 end
 
 
-%Filter based on proximity to adjacent spots
-radCutoff = (1/0.1625)*[0.5, 3];
-rProp = combineRegions(rProp, radCutoff);
-
+if(distCutoff_combRegions ==true)
+    %Filter based on proximity to adjacent spots
+    radCutoff = (1/0.1625)*[0.5, 3];
+    rProp = combineRegions(rProp, radCutoff);
+end
 
 index.Correct = [rPropOut.ind];
 index.Incorrect = setdiff(keptSpots, [rPropOut.ind]);

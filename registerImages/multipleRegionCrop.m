@@ -995,7 +995,8 @@ hContrast = imcontrast(imageRegion);
             case 'off'
                 %Use the filter that we've built to further classify the
                 %data
-                rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType);
+                distCutoff_combRegions = false;
+                rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
                 %keptSpots = intersect(keptSpots, [rProp.ind]);
             case 'on'
                 %Apply some harsh-ish threshold-Set this threshold in code

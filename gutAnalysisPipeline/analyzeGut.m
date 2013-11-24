@@ -78,8 +78,6 @@ for colorNum=1:totNumColor;
     end
 end
 
-
-
 %%Doing further processing of the data, if necessary
 
 for stepNum =1:totNumSteps
