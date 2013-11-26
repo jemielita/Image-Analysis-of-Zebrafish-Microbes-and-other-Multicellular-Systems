@@ -135,7 +135,9 @@ end
           %     spotLoc = load(['bacCount_analysis_all_highCutoff', filesep, 'Analysis_Scan', num2str(nS), '.mat']);
             %end
                         spotLoc = spotLoc.regFeatures;
-                        spotLoc = spotLoc{3}; %Why do we need this?
+                
+                        spotLoc = spotLoc{nC,3};
+                     %  spotLoc = spotLoc{3}; %Why do we need this?
             else
                 spotLoc = inputSpotLoc;
             end
@@ -153,7 +155,7 @@ end
                %    rProp = spotLoc{1}{nR}{1}; 
                 %end
               %  rProp = spotLoc{nR}{nC};
-              rProp = spotLoc{nR}{3};
+              rProp = spotLoc{nR}{3,nC};
                 [gutMask, xOffset, yOffset, gutMaskReg] = getMask(param, nS, nR, 'cutmask');
                 
                 rProp = cullFoundBacteria(rProp, gutMask, cullProp,xOffset, yOffset);
