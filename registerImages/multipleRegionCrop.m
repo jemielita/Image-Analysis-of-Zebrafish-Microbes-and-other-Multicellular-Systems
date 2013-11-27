@@ -183,7 +183,7 @@ hPolyEntireGut = [];
 
 hMenuDisplay = uimenu('Label', 'Display');
 hMenuContrast = uimenu(hMenuDisplay, 'Label', 'Adjust image contrast', 'Callback', @adjustContrast_Callback);
-hMenuBoundBox = uimenu(hMenuDisplay, 'Label', 'Remove region bounding boxes', 'Callback', @modifyBoundingBox_Callback);
+hMenuBoundBox = uimenu(hMenuDisplay, 'Label', 'Add region bounding boxes', 'Callback', @modifyBoundingBox_Callback);
 hMenuScroll = uimenu(hMenuDisplay, 'Label', 'Add scroll bar to image display', 'Callback', @scrollBar_Callback);
 hMenuDenoise = uimenu(hMenuDisplay, 'Label', 'Denoise!', 'Callback', @denoiseIm_Callback);
 set(hMenuDenoise, 'Checked', 'off');
@@ -230,6 +230,13 @@ hMenuRegisterManual = uimenu(hMenuRegister, 'Label', 'Manually register images',
 set(hMenuRegisterManual, 'Checked', 'off');
 hMenuRegisterResize = uimenu(hMenuRegister, 'Label', 'Minimize total image size',...
     'Callback', @setMinImageSize_Callback);
+
+hMenuGlobalOffsetSave = uimenu(hMenuRegister, 'Label', 'Save global offset in registration',...
+    'Callback', @saveRegisterGlobalOffset_Callback, 'Separator', 'on');
+
+
+
+
 
 hMenuSeg = uimenu('Label', 'Segment');
 hMenuSurf = uimenu(hMenuSeg, 'Label', 'Remove surface cells', 'Callback', @segSurface_Callback, 'Checked', 'off', 'Visible', 'off');
@@ -466,7 +473,7 @@ initMag = apiScroll.findFitMag();
 apiScroll.setMagnification(initMag);
 
 
-outlineRegions(); %Outline the different regions that makes up the composite region.
+%outlineRegions(); %Outline the different regions that makes up the composite region.
 
 set(fGui, 'Visible', 'on');
 
@@ -971,8 +978,8 @@ hContrast = imcontrast(imageRegion);
         xyzRem = reshape(xyzRem,3,length(xyzRem)/3);
         
         xyzRem = xyzRem(:,removeBugInd{scanNum,colorNum});
-       % rPropClassified = rProp(keptSpots);
-       rPropClassified = rProp; 
+        rPropClassified = rProp(keptSpots);
+       %rPropClassified = rProp; 
        %
         %         if(strcmp(projectionType, 'none') || strcmp(get(hMenuRemoveBugs, 'Checked'),'on'))
         %             %Only if we're
@@ -1772,6 +1779,22 @@ hContrast = imcontrast(imageRegion);
         getRegisteredImage(scanNum, color, zNum, im, data, param);
     end
 
+    function saveRegisterGlobalOffset_Callback(hObject, eventdata)
+       %Load in current value
+
+       S = which('registerImagesXYData.m');
+       S = [S(1:end-22) 'globalOffset.mat'];
+       inputVar = load(S);
+       globalOffsetX = inputVar.globalOffsetX;
+       
+        answer =inputdlg('Set the new global offset in the image registration', '', 1, {num2str(globalOffsetX)});
+       answer = answer{1}; answer = str2num(answer);
+       
+       globalOffsetX = answer;
+       
+       save(S, 'globalOffsetX');
+        
+    end
 
 %%% Functions for doing removal of surface cells
     function segSurface_Callback(hObject, eventdata)
@@ -2760,6 +2783,7 @@ hContrast = imcontrast(imageRegion);
                     hPoly.setColor([0 1 0]);
                 else
                     disp('The gut has not been outlined yet!');
+                    beep
                 end               
         end
         
@@ -3599,6 +3623,7 @@ dataFileExist = exist(dataFile, 'file');
 %going through different fish.
 cd([pwd filesep '..']);
 
+paramFileExist = 0;
 switch paramFileExist
     case 2
         disp('Parameters for this scan have already been (partially?) calculated. Loading them into the workspace.');

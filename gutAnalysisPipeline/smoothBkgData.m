@@ -26,6 +26,7 @@ fprintf(1, 'Estimating background for this time series');
 for nS=minS:maxS
 fprintf(1, '.');
 
+
 load(['Analysis_Scan', num2str(nS), '.mat']);
 regT = regFeatures;
 clear regFeatures;

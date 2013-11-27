@@ -124,10 +124,19 @@ end
             
             %Load data-produced by analyzeGutTimeSeries
             %if(nC==2)
+        loadType = 1;
+        
+            
             if(strcmp(inputSpotLoc, 'none'))
-        %        spotLoc = load(['singleCountRaw', filesep, 'Analysis_Scan', num2str(nS), '.mat']);
-                 spotLoc = load(['Analysis_Scan', num2str(nS), '.mat']);
+        
+                if(loadType==1)
+                    spotLoc = load(['singleCountRaw', filesep, 'Analysis_Scan', num2str(nS), '.mat']);
+                else
+                    spotLoc = load(['Analysis_Scan', num2str(nS), '.mat']);
+                end
         %spotLoc = spotLoc{nC, analysisNum};
+        
+        
             %The current indexing is screwy-need to fix this up.
             %spotLoc = spotLoc{1};
             
@@ -155,7 +164,11 @@ end
                %    rProp = spotLoc{1}{nR}{1}; 
                 %end
               %  rProp = spotLoc{nR}{nC};
-              rProp = spotLoc{nR}{3,nC};
+           if(loadType==2)
+               rProp = spotLoc{nR}{3,nC};
+           elseif (loadType ==1)
+               rProp = spotLoc{1};
+           end
                 [gutMask, xOffset, yOffset, gutMaskReg] = getMask(param, nS, nR, 'cutmask');
                 
                 rProp = cullFoundBacteria(rProp, gutMask, cullProp,xOffset, yOffset);

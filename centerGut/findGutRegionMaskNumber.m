@@ -38,7 +38,7 @@ centerLineAll = param.centerLineAll;
 for nS = minS:maxS
     thisCL = centerLineAll{nS};
     
-    for nF =2:length(necessaryFields)
+    for nF =1:length(necessaryFields)
         thisF = param.(necessaryFields{nF});
         thisF = thisF(nS,:);
         allDist = (thisCL(:,1)-thisF(1)).^2 + (thisCL(:,2)-thisF(2)).^2;
