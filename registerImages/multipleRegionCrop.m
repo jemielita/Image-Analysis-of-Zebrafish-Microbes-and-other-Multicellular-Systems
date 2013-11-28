@@ -3623,7 +3623,6 @@ dataFileExist = exist(dataFile, 'file');
 %going through different fish.
 cd([pwd filesep '..']);
 
-paramFileExist = 0;
 switch paramFileExist
     case 2
         disp('Parameters for this scan have already been (partially?) calculated. Loading them into the workspace.');

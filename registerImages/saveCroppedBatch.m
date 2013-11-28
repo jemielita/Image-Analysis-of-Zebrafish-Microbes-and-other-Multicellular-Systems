@@ -29,6 +29,7 @@
 
 function saveCroppedBatch(param, cropDir, fileType,cropType, varargin)
 
+sList = 'all';
 switch nargin
     case 4
         minCrop = false;
@@ -38,10 +39,16 @@ switch nargin
     case 6
         minCrop = varargin{1};
         minCropBorderSize = varargin{2};
+    case 7
+        minCrop = varargin{1};
+        minCropBorderSize = varargin{2};
+        sList = varargin{3};
     otherwise
         fprintf(2, 'saveCroppedBatch takes 4-6 inputs!');
         return
 end
+
+
 
 %Auto crop down if desired.
 if(minCrop==true)
@@ -52,6 +59,16 @@ end
 totalNumRegions = length(unique([param.expData.Scan.region]));
 totalNumScans = param.expData.totalNumberScans;
 totalNumColors = size(param.color,2);
+
+%See if we're cropping a subset or all of the images otherwise use the
+%input scan list
+if(strcmp(sList, 'all'))
+    sList = 1:totalNumScans;
+end
+if(sList(end)>totalNumScans)
+    fprintf(2, 'Maximum number of scans exceeded!\n');
+    return
+end
 
 loadType = 'individual'; %This is a slightly faster way to do it than loading in each images individually
 allImages = [];
@@ -87,9 +104,11 @@ end
 % 
 
 
-for nS=1:totalNumScans
 
-mess = ['Cropping scan ', num2str(nS)];
+for thisS=1:length(sList);
+    nS = sList(thisS);
+    
+    mess = ['Cropping scan ', num2str(nS)];
     fprintf(2, mess);
 
    
