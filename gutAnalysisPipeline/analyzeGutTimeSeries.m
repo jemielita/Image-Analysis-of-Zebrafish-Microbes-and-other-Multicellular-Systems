@@ -158,7 +158,7 @@ if(isfield(param, 'dataSaveDirectorySubFolder'))
 else
     analysisSaveDir = param.dataSaveDirectory;
 end
-
+analysisSaveDir = [param.dataSaveDirectory filesep 'singleCountRaw'];
     fileName = [analysisSaveDir, filesep, 'Analysis_Scan', ...
         num2str(scanParam.scanNum), '.mat'];
     save(fileName, 'regFeatures', '-v7.3');
