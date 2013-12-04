@@ -92,7 +92,7 @@ colorList = analysisParameters.scanParam.color;
 param.centerLineAll = analysisParameters.param.centerLineAll;
 
 
-colorList = {'488nm', '568nm'};
+%colorList = {'488nm', '568nm'};
 
 switch analysisType 
     case 'all'
@@ -124,9 +124,19 @@ end
             
             %Load data-produced by analyzeGutTimeSeries
             %if(nC==2)
+        loadType = 1;
+        
+            
             if(strcmp(inputSpotLoc, 'none'))
-                spotLoc = load(['singleCountRaw', filesep, 'Analysis_Scan', num2str(nS), '.mat']);
-            %spotLoc = spotLoc{nC, analysisNum};
+        
+                if(loadType==1)
+                    spotLoc = load(['singleCountRaw', filesep, 'Analysis_Scan', num2str(nS), '.mat']);
+                else
+                    spotLoc = load(['Analysis_Scan', num2str(nS), '.mat']);
+                end
+        %spotLoc = spotLoc{nC, analysisNum};
+        
+        
             %The current indexing is screwy-need to fix this up.
             %spotLoc = spotLoc{1};
             
@@ -134,14 +144,16 @@ end
           %     spotLoc = load(['bacCount_analysis_all_highCutoff', filesep, 'Analysis_Scan', num2str(nS), '.mat']);
             %end
                         spotLoc = spotLoc.regFeatures;
-                        spotLoc = spotLoc{1}; %Why do we need this?
+                
+                        spotLoc = spotLoc{nC,3};
+                     %  spotLoc = spotLoc{3}; %Why do we need this?
             else
                 spotLoc = inputSpotLoc;
             end
                    
             numBac{nS} = [];
            
-            numReg = size(spotLoc,1);numReg = 2;
+            numReg = size(spotLoc,1);
             
             
             for nR=1:numReg
@@ -151,7 +163,12 @@ end
               %  else
                %    rProp = spotLoc{1}{nR}{1}; 
                 %end
-                rProp = spotLoc{nR}{nC};
+              %  rProp = spotLoc{nR}{nC};
+           if(loadType==2)
+               rProp = spotLoc{nR}{3,nC};
+           elseif (loadType ==1)
+               rProp = spotLoc{1};
+           end
                 [gutMask, xOffset, yOffset, gutMaskReg] = getMask(param, nS, nR, 'cutmask');
                 
                 rProp = cullFoundBacteria(rProp, gutMask, cullProp,xOffset, yOffset);

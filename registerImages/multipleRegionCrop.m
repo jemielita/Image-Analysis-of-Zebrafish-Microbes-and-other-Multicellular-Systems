@@ -183,7 +183,7 @@ hPolyEntireGut = [];
 
 hMenuDisplay = uimenu('Label', 'Display');
 hMenuContrast = uimenu(hMenuDisplay, 'Label', 'Adjust image contrast', 'Callback', @adjustContrast_Callback);
-hMenuBoundBox = uimenu(hMenuDisplay, 'Label', 'Remove region bounding boxes', 'Callback', @modifyBoundingBox_Callback);
+hMenuBoundBox = uimenu(hMenuDisplay, 'Label', 'Add region bounding boxes', 'Callback', @modifyBoundingBox_Callback);
 hMenuScroll = uimenu(hMenuDisplay, 'Label', 'Add scroll bar to image display', 'Callback', @scrollBar_Callback);
 hMenuDenoise = uimenu(hMenuDisplay, 'Label', 'Denoise!', 'Callback', @denoiseIm_Callback);
 set(hMenuDenoise, 'Checked', 'off');
@@ -230,6 +230,13 @@ hMenuRegisterManual = uimenu(hMenuRegister, 'Label', 'Manually register images',
 set(hMenuRegisterManual, 'Checked', 'off');
 hMenuRegisterResize = uimenu(hMenuRegister, 'Label', 'Minimize total image size',...
     'Callback', @setMinImageSize_Callback);
+
+hMenuGlobalOffsetSave = uimenu(hMenuRegister, 'Label', 'Save global offset in registration',...
+    'Callback', @saveRegisterGlobalOffset_Callback, 'Separator', 'on');
+
+
+
+
 
 hMenuSeg = uimenu('Label', 'Segment');
 hMenuSurf = uimenu(hMenuSeg, 'Label', 'Remove surface cells', 'Callback', @segSurface_Callback, 'Checked', 'off', 'Visible', 'off');
@@ -466,7 +473,7 @@ initMag = apiScroll.findFitMag();
 apiScroll.setMagnification(initMag);
 
 
-outlineRegions(); %Outline the different regions that makes up the composite region.
+%outlineRegions(); %Outline the different regions that makes up the composite region.
 
 set(fGui, 'Visible', 'on');
 
@@ -479,7 +486,7 @@ hContrast = imcontrast(imageRegion);
 
 %%%%% Drop down menu callback
     function keyPressGUI(hObject, eventdata)
-        eventdata.Key
+        
         switch eventdata.Key
             case 'rightarrow'
                 %Go one scan forward
@@ -515,7 +522,7 @@ hContrast = imcontrast(imageRegion);
                 zNum = get(hZSlider, 'Value');
                 zNum = int16(zNum);
                 if(zNum<zMax-1)
-                    zNum = zNum+2;
+                    zNum = zNum+1;
                 elseif(zNum==xMax-1);
                     zNum = zNum+1;
                 end
@@ -532,7 +539,7 @@ hContrast = imcontrast(imageRegion);
                 zNum = int16(zNum);
                 
                 if(zNum>zMin+1)
-                    zNum = zNum-2;
+                    zNum = zNum-1;
                 elseif(zNum==zMin+1);
                     zNum = zNum-1;
                 end
@@ -939,8 +946,14 @@ hContrast = imcontrast(imageRegion);
                 rPropComb(end+1) = rProp{2}(i);
             end
         elseif(iscell(rProp))
-            rProp = rProp{colorNum};
-
+            if(length(rProp)==1)
+                %Not greatest way to deal with this since we'll have image
+                %overlaps on both channels...oh well.
+                
+                rProp = rProp{1};
+            else
+                rProp = rProp{colorNum};
+            end
         end
              
         if(isempty(hP{1}))
@@ -961,21 +974,22 @@ hContrast = imcontrast(imageRegion);
         
         %Construct list of removed spots
         xyzRem = [rProp.CentroidOrig];
-       
+        
         xyzRem = reshape(xyzRem,3,length(xyzRem)/3);
         
         xyzRem = xyzRem(:,removeBugInd{scanNum,colorNum});
-rPropClassified = rProp(keptSpots);
-        %         
-%         if(strcmp(projectionType, 'none') || strcmp(get(hMenuRemoveBugs, 'Checked'),'on'))
-%             %Only if we're
-%             rPropClassified = rProp(keptSpots);
-%         else
-%             rPropClassified = rProp;
-%         end
-%         
-         classifierType = 'svm';
-          useRemovedBugList = true;
+        rPropClassified = rProp(keptSpots);
+       %rPropClassified = rProp; 
+       %
+        %         if(strcmp(projectionType, 'none') || strcmp(get(hMenuRemoveBugs, 'Checked'),'on'))
+        %             %Only if we're
+        %             rPropClassified = rProp(keptSpots);
+        %         else
+        %             rPropClassified = rProp;
+        %         end
+        %
+        classifierType = 'svm';
+        useRemovedBugList = true;
 
          %classifierType = 'linear';
          %useRemovedBugList = false;
@@ -988,7 +1002,8 @@ rPropClassified = rProp(keptSpots);
             case 'off'
                 %Use the filter that we've built to further classify the
                 %data
-                rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType);
+                distCutoff_combRegions = false;
+                rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
                 %keptSpots = intersect(keptSpots, [rProp.ind]);
             case 'on'
                 %Apply some harsh-ish threshold-Set this threshold in code
@@ -1764,6 +1779,22 @@ rPropClassified = rProp(keptSpots);
         getRegisteredImage(scanNum, color, zNum, im, data, param);
     end
 
+    function saveRegisterGlobalOffset_Callback(hObject, eventdata)
+       %Load in current value
+
+       S = which('registerImagesXYData.m');
+       S = [S(1:end-22) 'globalOffset.mat'];
+       inputVar = load(S);
+       globalOffsetX = inputVar.globalOffsetX;
+       
+        answer =inputdlg('Set the new global offset in the image registration', '', 1, {num2str(globalOffsetX)});
+       answer = answer{1}; answer = str2num(answer);
+       
+       globalOffsetX = answer;
+       
+       save(S, 'globalOffsetX');
+        
+    end
 
 %%% Functions for doing removal of surface cells
     function segSurface_Callback(hObject, eventdata)
@@ -2665,11 +2696,16 @@ rPropClassified = rProp(keptSpots);
         %See if we're outlining the entire gut by hand
         if(strcmp(get(hMenuOutlineEntireGut, 'Checked'),'on'))
             hObj = findobj('Tag', 'entireGutOutline');
+            if(~isempty(hObj))
+                if(length(hObj)>1)
+                    delete(hObj(2));
+                    hObj = hObj(1);
+                end
             hOutlineEntireGut = iptgetapi(hObj);
             entireGutOutline{scanNum, zLast} = hOutlineEntireGut.getPosition();
             
             delete(hObj);
-           
+            end
         end
         
         
@@ -2747,6 +2783,7 @@ rPropClassified = rProp(keptSpots);
                     hPoly.setColor([0 1 0]);
                 else
                     disp('The gut has not been outlined yet!');
+                    beep
                 end               
         end
         
@@ -3173,7 +3210,19 @@ rPropClassified = rProp(keptSpots);
         %Check to see if we're going to be showing a projection instead
         switch projectionType
             case 'none'
-                im = registerSingleImage(scanNum,color, zNum,im, data,param);
+        
+                
+                  if(strcmp(get(hMenuOverlapImages, 'Checked'), 'on'));
+                     
+                      im = registerSingleImage(scanNum,param.color{1}, zNum,im, data,param);
+                      for nC=2:length(param.color)
+                          im = im+registerSingleImage(scanNum,param.color{nC}, zNum,im, data,param);
+                      end
+                  else
+                  
+                      im = registerSingleImage(scanNum,color, zNum,im, data,param);
+                      
+                  end
                 %Optionally denoise image
                 if strcmp(get(hMenuDenoise, 'Checked'),'on')
                     im = denoiseImage(im);
@@ -3183,6 +3232,7 @@ rPropClassified = rProp(keptSpots);
                 %crude. What we should really be doing is in nicer fashion.
                 im(im(:)>50000) = 0;
         
+                
             case 'mip'
                  set(hIm, 'Visible', 'off');drawnow;
                 param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
@@ -3706,7 +3756,7 @@ end
 
 
 %Save the calculated parameters, unless they've been
-%calculated befor.
+%calculated before.
 
 if(dataFileExist~=2)
     save(paramFile, 'param');

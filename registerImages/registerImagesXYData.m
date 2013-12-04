@@ -189,11 +189,11 @@ for regNum=1:totalNumRegions
     end
     
     
-       regLoc(regNum,1) = -param.expData.Scan(regionIndex).xBegin;
+       regLoc(regNum,1) = param.expData.Scan(regionIndex).xBegin;
        
        
        
-       regLoc(regNum,1) = regLoc(regNum,1) +2*10*0.1625*(param.expData.Scan(regionIndex).cropRegion(1));
+      % regLoc(regNum,1) = regLoc(regNum,1) +2*10*0.1625*(param.expData.Scan(regionIndex).cropRegion(1));
 %  regLoc(regNum,1) = regLoc(regNum,1) + (10*0.1625)*(2160 -param.expData.Scan(regionIndex).cropRegion(1)-...
  %     param.expData.Scan(regionIndex).cropRegion(3));
   
@@ -208,8 +208,13 @@ for regNum=1:totalNumRegions
     regLoc(regNum,:) = (1.0/param.micronPerPixel)*0.1*regLoc(regNum,:);
 
     
-    globalOffsetX = -150;
-    regLoc(regNum,1) = regLoc(regNum,1) - globalOffsetX*(regNum-1);
+    %Load in global offset
+    %Located in the same file as the function registerImagesXYData.m
+    S = which('registerImagesXYData.m');
+    S = [S(1:end-22) 'globalOffset.mat'];
+    inputVar = load(S);
+    globalOffsetX = inputVar.globalOffsetX;
+    regLoc(regNum,1) = regLoc(regNum,1) + globalOffsetX*(regNum-1);
     
     %Get the size of the images in this region, if it's different from the
     %total field of view (which will happen if the cropped image was saved

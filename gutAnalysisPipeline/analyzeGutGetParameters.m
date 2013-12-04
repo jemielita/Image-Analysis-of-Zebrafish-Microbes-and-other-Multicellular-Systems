@@ -21,7 +21,7 @@ codeDir = uigetdir('C:\code', 'Select location of code to be used in analysis');
 %If only one entry then, look for subfolders containing param files
 if(length(dirNames)==1)
     cd(dirNames{1});
-    subDir= rdir('**\*param.mat');
+    subDir= rdir('**\param.mat');
     
     dirNamesTemp = [];
     for i=1:length(subDir)
@@ -68,7 +68,7 @@ for nF =1:length(dirNames)
    sAll{nF}.color = pAll{nF}.color;
    sAll{nF}.dataSaveDirectory = pAll{nF}.dataSaveDirectory;
    analysisAll{nF} = analysisType;
-   
+   sAll{nF}.freshStart = true;
 end
 
 

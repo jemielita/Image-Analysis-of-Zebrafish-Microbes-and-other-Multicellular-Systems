@@ -78,8 +78,6 @@ for colorNum=1:totNumColor;
     end
 end
 
-
-
 %%Doing further processing of the data, if necessary
 
 for stepNum =1:totNumSteps
@@ -96,7 +94,7 @@ for stepNum =1:totNumSteps
             end
             %Additionally transfer the result to the folder
             %'singleBacCount' after doing slightly more processing.
-            bacteriaCountTimeSeries(param, 'firstpass', 'defaultCullProp', scanParam.scanNum, rP)
+        %    bacteriaCountTimeSeries(param, 'firstpass', 'defaultCullProp', scanParam.scanNum, rP)
             
             
      end

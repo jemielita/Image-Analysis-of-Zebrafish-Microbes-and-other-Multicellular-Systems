@@ -22,6 +22,8 @@
 %          -'none': No classifier used. Can be useful when combined with
 %          removed bug list.
 %           
+%       distCutoff_combRegions (default= false). If true filter out regions
+%       based on proximity to each other.
 % OUTPUT rPropOut: Filtered version of rProp.
 %        index: (optional) The index in the original list of rProp of the found bacteria.
 %             Useful for applying multiple layers of analysis.
@@ -34,13 +36,21 @@ function [rPropOut varargout] = bacteriaCountFilter(rProp, scanNum, colorNum, pa
 switch nargin
     case 4
         useRemovedBugList = false;
-        classifierType = 'svn';
+        classifierType = 'svm';
+        distCutoff_combRegions = false;
     case 5
         useRemovedBugList = varargin{1};
         classifierType = 'svm';
+        distCutoff_combRegions = false;
     case 6
         useRemovedBugList = varargin{1};
         classifierType = varargin{2};
+        distCutoff_combRegions = false;
+    case 7
+        useRemovedBugList = varargin{1};
+        classifierType = varargin{2};
+        distCutoff_combRegions = varargin{3};
+        
 end
     
 %Load in filtering parameters
@@ -90,7 +100,7 @@ end
 %around with these numbers.
 % cullProp.radCutoff(1) = ''; %Cutoff in the horizontal direction
 % cullProp.radCutoff(2) = '';
-%rProp = rProp(keptSpots);
+rProp = rProp(keptSpots);
 
 %In the display apply a harsher threshold for the spots found in
 %the autofluorescent region.
@@ -109,12 +119,18 @@ if(isfield(rProp, 'gutRegion'))
 end
 
 %Remove spots that are past the autofluorescent region
-insideGut = find([rProp.gutRegion]<=3);
-keptSpots = intersect(keptSpots, insideGut);
+%insideGut = find([rProp.gutRegion]<=3);
+%keptSpots = intersect(keptSpots, insideGut);
 
 %Remove spots that we've filtered to this point
 rProp = rProp(keptSpots);
 
+
+%Check to make sure the list is non-empty, otherwise break here.
+if(length(rProp)<1)
+    rPropOut = rProp;
+    return
+end
 
 switch classifierType
     
@@ -137,6 +153,14 @@ switch classifierType
             svmStruct = inputVar.svmStruct;
         end
         
+        if(iscell(svmStruct))
+           if(length(svmStruct)>1)
+               svmStruct = svmStruct{colorNum};
+           else
+               svmStuct = svmStruct{1};
+           end
+        end
+        
         rPropOut = bacteriaSVMClassifier(rProp, svmStruct);
         
     case 'none'
@@ -145,6 +169,11 @@ switch classifierType
 end
 
 
+if(distCutoff_combRegions ==true)
+    %Filter based on proximity to adjacent spots
+    radCutoff = (1/0.1625)*[0.5, 3];
+    rProp = combineRegions(rProp, radCutoff);
+end
 
 index.Correct = [rPropOut.ind];
 index.Incorrect = setdiff(keptSpots, [rPropOut.ind]);

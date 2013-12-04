@@ -11,6 +11,8 @@ bacInten, bkgInten, bkgOffset,varargin)
 
 
 singleBacCount = '';
+
+numColor = length(param.color);
 switch nargin
     case 6
         subDir = '';
@@ -19,6 +21,11 @@ switch nargin
     case 8
         subDir = varargin{1};
         singleBacCount = varargin{2};
+    case 9
+        subDir = varargin{1};
+        singleBacCount = varargin{2};
+        cList = varargin{3};
+        numColor = length(cList);
 end
     
 %% Getting parameters and preallocating arrays
@@ -56,7 +63,7 @@ for j=1:NtimePoints
     %Position down the length of the gut
     xpos = boxWidth*((1:gutLength)' - 0.5); % position along gut, microns (column vector)
     
-    for nC=1:length(param.color)
+    for nC=1:numColor
         %The background is the product of the mean background value and the
         %total volume of this box
         meanBkg{nC} = bkgOffset*bkgInten{nC}{j}(1:gutLength)';
