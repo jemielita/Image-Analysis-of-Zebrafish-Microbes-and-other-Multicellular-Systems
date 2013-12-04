@@ -31,8 +31,9 @@ for nF =1:length(necessaryFields)
 end
 
 
-analysisParameters = load([param.dataSaveDirectory filesep 'analysisParam.mat']);
-centerLineAll = analysisParameters.param.centerLineAll;
+%analysisParameters = load([param.dataSaveDirectory filesep 'analysisParam.mat']);
+%centerLineAll = analysisParameters.param.centerLineAll;
+centerLineAll = param.centerLineAll;
 
 for nS = minS:maxS
     thisCL = centerLineAll{nS};

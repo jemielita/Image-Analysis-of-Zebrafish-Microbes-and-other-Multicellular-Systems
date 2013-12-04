@@ -18,6 +18,23 @@ dirNames = uipickfiles();
 
 codeDir = uigetdir('C:\code', 'Select location of code to be used in analysis');
 
+%If only one entry then, look for subfolders containing param files
+if(length(dirNames)==1)
+    cd(dirNames{1});
+    subDir= rdir('**\*param.mat');
+    
+    dirNamesTemp = [];
+    for i=1:length(subDir)
+        dirNamesTemp{i} = subDir(i).name;
+    end
+    dirNames = dirNamesTemp;
+else
+   %Get the location of the param file for each of these entries
+   for i=1:length(dirNames)
+      dirNames{i} = [dirNames{i} filesep 'gutOutline' filesep 'param.mat']; 
+   end
+end
+
 %For now let's have the analysis type be default
 
 %1. Calculate a histogram of pixel values near background
@@ -39,7 +56,7 @@ analysisType(3).spotFeatures = ''; %Use default
 
 
 for nF =1:length(dirNames)
-   inputVar = load([dirNames{nF} filesep 'gutOutline' filesep 'param.mat']);
+   inputVar = load(dirNames{nF});
    pAll{nF} = inputVar.param;
    
    sAll{nF}.scanList = 1:pAll{nF}.expData.totalNumberScans;

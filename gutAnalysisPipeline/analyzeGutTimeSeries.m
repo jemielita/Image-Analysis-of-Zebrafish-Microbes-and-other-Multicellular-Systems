@@ -44,6 +44,13 @@ gutMask = cell(3,1);
 
 param = resampleCenterLine(param, scanParam);
 
+
+%% See if we've update the entry giving gut regions index. If not, calculate this and update the saved file
+if(~isfield(param, 'gutRegionsInd'))
+    param.gutRegionsInd = findGutRegionMaskNumber(param, true); 
+end
+
+
 createAllMasks(scanParam, param);
 %% Save meta-data
 %Including analysis parameters and the current version of the code
@@ -252,8 +259,8 @@ if(isfield(scanParam, 'freshStart') && scanParam.freshStart==true)
     save(fileName, 'scanList');
 else
     
-    fprintf(1, 'Trying to load in list of previously analyzed scan...');
     if(exist(fileName)==2)
+
         scanList = load(fileName, 'scanList');
         scanList = scanList.scanList;
         scanParam.scanList = scanList;

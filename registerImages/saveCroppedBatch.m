@@ -153,9 +153,6 @@ mess = ['Cropping scan ', num2str(nS)];
 end
 
 
-%Recalculate the MIP for this new cropping region
-calcProjections(param);
-
 %Saving the new range of pixel locations
 for nC = 1:totalNumColors
     
@@ -182,6 +179,11 @@ param.directoryName = cropDir;
 
 save([cropDir filesep 'gutOutline', filesep 'param.mat'], 'param');
 save([cropDir filesep 'ExperimentData.mat'], 'parameters', 'timeData', 'param');
+
+
+%Recalculate the MIP for this new cropping region
+calcProjections(param);
+
 
     function [] = saveIndividualImages()
         
