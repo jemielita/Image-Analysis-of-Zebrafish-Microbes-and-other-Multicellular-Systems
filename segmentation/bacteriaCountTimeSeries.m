@@ -145,7 +145,7 @@ end
             %end
                         spotLoc = spotLoc.regFeatures;
                 
-                        spotLoc = spotLoc{nC,3};
+                     %   spotLoc = spotLoc{nC,3};
                      %  spotLoc = spotLoc{3}; %Why do we need this?
             else
                 spotLoc = inputSpotLoc;
@@ -167,7 +167,8 @@ end
            if(loadType==2)
                rProp = spotLoc{nR}{3,nC};
            elseif (loadType ==1)
-               rProp = spotLoc{1};
+               %rProp = spotLoc{1};
+               rProp = spotLoc{nC,3}{nR};
            end
                 [gutMask, xOffset, yOffset, gutMaskReg] = getMask(param, nS, nR, 'cutmask');
                 

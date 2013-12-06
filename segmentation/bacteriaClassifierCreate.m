@@ -8,7 +8,9 @@
 %       saveData: structure containing .value (if true then save data, if false don't)
 %                 and .saveLocation-location to save the data. If
 %                 saveData.value = false, then no save location needs to be
-%                 assigned.
+%                 assigned. saveData can alternatively be the boolean
+%                 false, in which case no data will be saved
+%                 
 %        displayData: if true then show a plot of the SVM for each color.
 %        colorList: cell array containing which colors to analyze.
 
@@ -18,7 +20,27 @@
 
 function [trainingList, svmStruct] = bacteriaClassifierCreate(paramAll, saveData, displayData, colorList)
 
-%Find out which colors to calculate a training list for (sometimes we only
+%% Check the inputs
+% if(xor(~islogical(saveData),~isstruct(saveData)))
+%     fprintf(2, 'Variable saveData must be either a boolean or a structure!\n');
+%     return
+% end
+% 
+% if(islogical(saveData)&& saveData==true)
+%     fprintf(2, 'saveData must be a structure if true (to also give the save location for the training list)!\n');
+%     return
+% end
+% 
+% if(isstruct(saveData))
+%    if(~isfield(saveData, 'value') || ~isfield(saveData,'saveLocation'))
+%       fprintf(2, 'saveData structure must contain fields value and saveLocation!\n');
+%       return
+%    end
+%     
+% end
+
+
+%% Find out which colors to calculate a training list for (sometimes we only
 %have spots in some of the channels).
 cList = [];
 for nC=1:length(colorList)
@@ -76,10 +98,14 @@ end
 % end
 
 %% Use SVM for classifier
+    boxVal{1} = [0.2, 0.1];
+    boxVal{2} = [0.7, 0.8];
+    
 for nC=1:2
     figure;
     numKeptSpots = sum(Y{nC}==1);
-    boxCon = [0.01*ones(numKeptSpots,1); 0.1*ones(size(tLAll{nC},1)-numKeptSpots,1)];
+
+    boxCon = [boxVal{nC}(1)*ones(numKeptSpots,1); boxVal{nC}(2)*ones(size(tLAll{nC},1)-numKeptSpots,1)];
     if(displayData==true)
         svmStruct{nC} = svmtrain(tLAll{nC}(:,1:2), Ynom{nC}, 'showplot', true, 'Kernel_Function', 'linear', 'boxconstraint', boxCon);
     end
@@ -114,7 +140,7 @@ if(saveData.value ==true)
          trainingListLocation{1} = saveData.saveLocation;
          trainingListLocation{2} = saveData.saveLocation;
          
-        save(fileName, 'autoFluorMaxInten', 'cullProp', 'trainingListLocation');
+        save(fileName, 'autoFluorMaxInten', 'cullProp', 'trainingListLocation', 'boxVal');
     end
 end
 

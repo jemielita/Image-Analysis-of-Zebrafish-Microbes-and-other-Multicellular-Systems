@@ -60,7 +60,7 @@ for nP = 1:length(pAll)
            for nS=1:numScan
 
                
-               load(['Analysis_Scan', num2str(nS), '.mat']);
+               load(['singleCountRaw', filesep, 'Analysis_Scan', num2str(nS), '.mat']);
                allBkg = regFeatures{nC,1};
                
                minL = 1;

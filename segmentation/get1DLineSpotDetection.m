@@ -27,8 +27,10 @@
 
 function varargout = get1DLineSpotDetection(param, varargin)
 
+           
+classifierType = 'svm';
 numColor = length(param.color);
-switch nargin 
+switch nargin
     case 1
         saveLine = true;
         dataDir = [param.dataSaveDirectory filesep 'singleBacCount'];
@@ -52,6 +54,15 @@ switch nargin
         saveLine = varargin{2};
         cList = varargin{3};
         numColor = length(cList);
+        
+    case 5
+        recalculate = true;
+        dataDir = [param.dataSaveDirectory filesep 'singleBacCount'];
+        saveLine = varargin{2};
+        cList = varargin{3};
+        numColor = length(cList);
+        classifierTypeList = varargin{4};
+        
     otherwise
         fprintf(2, 'Function requires 2 -4 inputs!');
         return
@@ -75,6 +86,7 @@ for nS = minS:maxS
    for i = 1:numColor
        
        nC = cList(i);
+       classifierType = classifierTypeList{nC};
        if(recalculate ==true)
            fileDir = [dataDir filesep 'bacCount' num2str(nS) '.mat'];
            inputVar = load(fileDir);
@@ -87,7 +99,7 @@ for nS = minS:maxS
                    rProp = rProp{1};
                end
            end
-           classifierType = 'svm'; 
+
            
            %To deal with our manual removal of early time GFP spots.
 
@@ -99,7 +111,12 @@ for nS = minS:maxS
            
 
            useRemovedBugList = true;
-           rProp = bacteriaCountFilter(rProp, nS, nC, param, useRemovedBugList, classifierType);           
+           
+           if(~strcmp(classifierType, 'none'))
+               rProp = bacteriaCountFilter(rProp, nS, nC, param, useRemovedBugList, classifierType);
+           else
+               disp('Not using a classifier! Just the manually removed spots.');
+           end
        else
            rProp = rPropAll{nS,nC};
        end

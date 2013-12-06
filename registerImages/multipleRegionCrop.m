@@ -3643,7 +3643,7 @@ switch paramFileExist
         %directory or quit
         
         if(~strcmp(param.directoryName, dirName))
-            answer = inputdlg('The directory name in the param variable does not match the selected directory! Do you want to change the directory name (1) or quit the program (2)?');
+            answer = inputdlg('The directory name in the param variable does not match the selected directory! Do you want to change the directory name and save (1), change the directory name and dont save (2) or quit the program (3)?');
             answer = answer{1};
             answer = str2num(answer);
             
@@ -3653,8 +3653,13 @@ switch paramFileExist
                     if(isfield(param, 'dataSaveDirectory'))
                         param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
                     end
-                case 2
+                    saveParamFile = true;
+                case 2 
+                    param.directoryName = dirName;
+                    saveParamFile = false;
+                case 3
                     return
+                    
             end
         end
         
@@ -3758,7 +3763,7 @@ end
 %Save the calculated parameters, unless they've been
 %calculated before.
 
-if(dataFileExist~=2)
+if(dataFileExist~=2 &&saveParamFile ==true)
     save(paramFile, 'param');
 end
 
