@@ -112,11 +112,9 @@ for nS = minS:maxS
 
            useRemovedBugList = true;
            
-           if(~strcmp(classifierType, 'none'))
-               rProp = bacteriaCountFilter(rProp, nS, nC, param, useRemovedBugList, classifierType);
-           else
-               disp('Not using a classifier! Just the manually removed spots.');
-           end
+       
+           rProp = bacteriaCountFilter(rProp, nS, nC, param, useRemovedBugList, classifierType);
+       
        else
            rProp = rPropAll{nS,nC};
        end

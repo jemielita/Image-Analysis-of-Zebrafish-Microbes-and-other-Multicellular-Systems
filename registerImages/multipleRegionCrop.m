@@ -114,6 +114,8 @@ fGui = figure('Name', figName, 'Menubar', 'none', 'Tag', 'fGui',...
 
 %Set key press functions for the figure-will be used to interface with
 %touch screen monitor more efficiently
+zIncr = 1; %Amount to increment the z direction when arrow is pressed. 
+%Can be changed by the user in File/change key-stroke value
 set(fGui, 'KeyPressFcn', @(fGui, evt)keyPressGUI(fGui, evt));
 
 
@@ -132,6 +134,9 @@ uimenu(hMenuFile, 'Label', 'Load scan stack', 'Callback', @loadScan_Callback);
 uimenu(hMenuFile, 'Label', 'Save single image', 'Callback', @saveImage_Callback);
 uimenu(hMenuFile, 'Label', 'Save scan stack', 'Callback', @saveScan_Callback);
 uimenu(hMenuFile, 'Label', 'Save param file', 'Callback', @saveParam_Callback);
+
+uimenu(hMenuFile, 'Separator', 'on', 'Label', 'Change key-stroke value', 'Callback', @changeKeystroke_Callback);
+uimenu(hMenuFile, 'Label', 'Set default GUI screen location', 'Callback', @saveWindowLocation_Calback);
 
 hMenuCrop = uimenu('Label','Crop Images');
 uimenu(hMenuCrop,'Label','Create cropping boxes','Callback',@createCropBox_Callback);
@@ -397,8 +402,18 @@ set(hMenuProjectionType, 'SelectionChangeFcn', @projectionType_Callback);
 set([fGui,  hZSlider, imageRegion],...
     'Units', 'normalized');
 
-movegui(fGui, 'center');
 
+%Move multipleRegionCrop window to a location that works best for this
+%computer.
+S = which('multipleRegionCrop.m');
+S = [S(1:end-20) 'windowLocation.mat'];
+if(exist(S)==2)
+    inputVar = load(S);
+    windowPos = inputVar.windowPos;
+    set(fGui, 'Position', windowPos);
+else
+    movegui(fGui, 'center');
+end
 
 %Show the bottom image in the stack
 im = zeros(param.regionExtent.regImSize{1}(1), param.regionExtent.regImSize{1}(2));
@@ -521,8 +536,8 @@ hContrast = imcontrast(imageRegion);
                 %Go one z-depth up
                 zNum = get(hZSlider, 'Value');
                 zNum = int16(zNum);
-                if(zNum<zMax-1)
-                    zNum = zNum+1;
+                if(zNum<zMax-zIncr)
+                    zNum = zNum+zIncr;
                 elseif(zNum==xMax-1);
                     zNum = zNum+1;
                 end
@@ -538,8 +553,8 @@ hContrast = imcontrast(imageRegion);
                 zNum = get(hZSlider, 'Value');
                 zNum = int16(zNum);
                 
-                if(zNum>zMin+1)
-                    zNum = zNum-1;
+                if(zNum>zMin+zIncr)
+                    zNum = zNum-zIncr;
                 elseif(zNum==zMin+1);
                     zNum = zNum-1;
                 end
@@ -627,6 +642,25 @@ hContrast = imcontrast(imageRegion);
        
        
     end
+
+    function changeKeystroke_Callback(hObject, eventdata)
+        answer = inputdlg('Change z-increment value', '',1, {num2str(zIncr)});
+        
+        zIncr = num2str(answer{1});
+    end
+
+    function saveWindowLocation_Calback(hObject, eventdata)
+        
+       S = which('multipleRegionCrop.m');
+       S = [S(1:end-20) 'windowLocation.mat'];
+       
+       windowPos = get(fGui, 'Position');
+       
+       save(S, 'windowPos');
+       
+    end
+
+
     function saveScan_Callback(hObject, eventdata)
         prompt = {'Scan range: initial', 'Scan range: final',...
             'Z depth: initial', 'Z depth: final'};
@@ -2501,6 +2535,8 @@ hContrast = imcontrast(imageRegion);
     end
 
     function colorSlider_Callback(hObject, eventData)
+
+        
         colorNum = get(hColorSlider, 'Value');
         colorNum = ceil(colorNum);
         colorNum = int16(colorNum);
@@ -3623,6 +3659,7 @@ dataFileExist = exist(dataFile, 'file');
 %going through different fish.
 cd([pwd filesep '..']);
 
+paramFileExist
 switch paramFileExist
     case 2
         disp('Parameters for this scan have already been (partially?) calculated. Loading them into the workspace.');
@@ -3762,7 +3799,7 @@ end
 
 %Save the calculated parameters, unless they've been
 %calculated before.
-
+saveParamFile = true;
 if(dataFileExist~=2 &&saveParamFile ==true)
     save(paramFile, 'param');
 end

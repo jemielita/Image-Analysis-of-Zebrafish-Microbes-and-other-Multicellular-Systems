@@ -53,19 +53,6 @@ switch nargin
         
 end
     
-%Load in filtering parameters
-inputVar = load([param.dataSaveDirectory filesep 'singleBacCount' filesep 'bacteriaClassifier.mat']);
-
-autoFluorMaxInten = inputVar.autoFluorMaxInten;
-cullProp = inputVar.cullProp;
-trainingListLocation = inputVar.trainingListLocation;
-
-if(isfield(inputVar, 'scanCutoff'))
-   scanCutoff = inputVar.scanCutoff; 
-else
-    scanCutoff =[];
-end
-    
 
 if(useRemovedBugList==true)
     
@@ -101,6 +88,26 @@ end
 % cullProp.radCutoff(1) = ''; %Cutoff in the horizontal direction
 % cullProp.radCutoff(2) = '';
 rProp = rProp(keptSpots);
+
+if(strcmp(classifierType, 'none'))
+    rPropOut = rProp;
+    return
+end
+    
+%Load in filtering parameters
+inputVar = load([param.dataSaveDirectory filesep 'singleBacCount' filesep 'bacteriaClassifier.mat']);
+
+autoFluorMaxInten = inputVar.autoFluorMaxInten;
+cullProp = inputVar.cullProp;
+trainingListLocation = inputVar.trainingListLocation;
+
+if(isfield(inputVar, 'scanCutoff'))
+   scanCutoff = inputVar.scanCutoff; 
+else
+    scanCutoff =[];
+end
+    
+
 
 %In the display apply a harsher threshold for the spots found in
 %the autofluorescent region.
