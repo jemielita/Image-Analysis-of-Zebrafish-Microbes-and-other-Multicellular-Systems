@@ -101,7 +101,7 @@ end
     boxVal{1} = [0.2, 0.1];
     boxVal{2} = [0.7, 0.8];
     
-for nC=1:2
+for nC=1:length(colorList)
     figure;
     numKeptSpots = sum(Y{nC}==1);
 
@@ -140,6 +140,7 @@ if(saveData.value ==true)
          trainingListLocation{1} = saveData.saveLocation;
          trainingListLocation{2} = saveData.saveLocation;
          
+         %Also save the classifier type: If the classifier was not
         save(fileName, 'autoFluorMaxInten', 'cullProp', 'trainingListLocation', 'boxVal');
     end
 end

@@ -100,6 +100,8 @@ inputVar = load([param.dataSaveDirectory filesep 'singleBacCount' filesep 'bacte
 autoFluorMaxInten = inputVar.autoFluorMaxInten;
 cullProp = inputVar.cullProp;
 trainingListLocation = inputVar.trainingListLocation;
+classifierType = inputVar.classifierType;
+classifierType = classifierType{colorNum};
 
 if(isfield(inputVar, 'scanCutoff'))
    scanCutoff = inputVar.scanCutoff; 
@@ -164,7 +166,7 @@ switch classifierType
            if(length(svmStruct)>1)
                svmStruct = svmStruct{colorNum};
            else
-               svmStuct = svmStruct{1};
+               svmStruct = svmStruct{1};
            end
         end
         

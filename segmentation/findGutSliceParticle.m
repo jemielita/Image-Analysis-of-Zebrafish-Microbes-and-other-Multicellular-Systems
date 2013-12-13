@@ -26,6 +26,9 @@ for nS = minS:maxS
    rProp = inputVar.rProp;
    
    for nC=1:length(rProp)
+       if(isempty(rProp{nC}))
+           continue
+       end
        pos = [rProp{nC}.CentroidOrig];
        pos = reshape(pos, 3, length(pos)/3);
        pos = pos(1:2,:);
