@@ -149,22 +149,35 @@ if(nS~=1)
      
        %This isn't the best way to compare time points, because the fish
        %often drift-unavoidable for now, but keeep in mind.
+       
+       %If previous time series entry was empty (which might happen if
+       %there was an error with a particular scan, go back farther in
+       %time to compare background intensities
+       
+       compScan = nS-1;
+       while(isempty(locMaster{compScan}))
+           compScan = compScan-1;
+       end
+       
        if(i>size(locMaster{nS-1},2))
-          ind = size(locMaster{nS-1},2);
-           valDiff(i) = (0.01)*(locMaster{nS-1}(1,ind)-locMaster{nS}(1,i))/locMaster{nS}(1,i);
+          ind = size(locMaster{compScan},2);
+          
+       
+          
+           valDiff(i) = (0.01)*(locMaster{compScan}(1,ind)-locMaster{nS}(1,i))/locMaster{nS}(1,i);
        else
-           valDiff(i) = (0.01)*(locMaster{nS-1}(1,i)-locMaster{nS}(1,i))/locMaster{nS}(1,i);
+           valDiff(i) = (0.01)*(locMaster{compScan}(1,i)-locMaster{nS}(1,i))/locMaster{nS}(1,i);
        end
      %Different cutoffs, for percentage of difference in signal, for going
      %positive and negative from previous points. Might also want to have
      %different cutoffs for increasing/decreasing intensity differences
      if(valDiff(i)>0)
          if(valDiff(i)>timeCut(1))
-             locMaster{nS}(1,i) = locMaster{nS-1}(1,i);
+             locMaster{nS}(1,i) = locMaster{compScan}(1,i);
          end
      elseif(valDiff(i)<0)
          if(valDiff(i)>timeCut(2))
-             locMaster{nS}(1,i) = locMaster{nS-1}(1,i);
+             locMaster{nS}(1,i) = locMaster{compScan}(1,i);
          end
      end
      
@@ -176,6 +189,13 @@ end
 %Resmooth out line after replacing entries
 locMaster{nS}(1,:) = smooth(indAll,locMaster{nS}(1,:), 51, 'sgolay',3);
 locMaster{nS}(2,:) = indAll;
+
+%mlj: TEMPORARY!!! FOR DEALING WITH DROPPED FRAME ON THIS DAT
+if(nS==23)
+    locMaster{nS} = [];
+locMaster{nS}(1,:) = locMaster{nS-1}(1,:);
+locMaster{nS}(2,:) = locMaster{nS-1}(2,:);
+end
 
 if(plotData==true)
     figure;

@@ -153,7 +153,7 @@ end
                    
             numBac{nS} = [];
            
-            numReg = size(spotLoc,1);
+            numReg = size(spotLoc{nC,3},1);
             
             
             for nR=1:numReg

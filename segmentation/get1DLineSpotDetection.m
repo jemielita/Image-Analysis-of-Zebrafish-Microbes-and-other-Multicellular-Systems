@@ -119,7 +119,7 @@ for nS = minS:maxS
            rProp = rPropAll{nS,nC};
        end
        if(isempty(rProp))
-           lineDist{nS,nC} = [];
+           lineDist{nS,nC} = zeros(1, bugArraySize);
            popTot(nS, nC) =0;
            continue
        end
@@ -133,6 +133,10 @@ for nS = minS:maxS
        numEl = arrayfun(@(y)sum(numBac==y),u);
    
        lineDist{nS,nC} = numEl; 
+       
+       if(isempty(numEl))
+           lineDist{nS,nC} = zeros(1, bugArraySize);
+       end
        
        popTot(nS, nC) = sum(numEl);
    end

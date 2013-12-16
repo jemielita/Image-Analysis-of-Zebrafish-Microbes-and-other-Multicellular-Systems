@@ -89,11 +89,23 @@ end
 % cullProp.radCutoff(2) = '';
 rProp = rProp(keptSpots);
 
+
 if(strcmp(classifierType, 'none'))
+    %
+    %     colorThresh = [0,0];
+    %     areaThresh = [3,3];
+    % if(~isempty(rProp))
+    %     rPropOut = rProp([rProp.Area]>areaThresh(colorNum));
+    %
+    %     rPropOut = rPropOut([rPropOut.MeanIntensity]>colorThresh(colorNum));
+    %     rPropOut = rProp;
+    % else
     rPropOut = rProp;
+    
+    
     return
 end
-    
+
 %Load in filtering parameters
 inputVar = load([param.dataSaveDirectory filesep 'singleBacCount' filesep 'bacteriaClassifier.mat']);
 
@@ -134,6 +146,22 @@ end
 %Remove spots that we've filtered to this point
 rProp = rProp(keptSpots);
 
+if(strcmp(classifierType, 'none'))
+%     
+%     colorThresh = [0,0];
+%     areaThresh = [3,3];
+% if(~isempty(rProp))
+%     rPropOut = rProp([rProp.Area]>areaThresh(colorNum));
+%     
+%     rPropOut = rPropOut([rPropOut.MeanIntensity]>colorThresh(colorNum));
+%     rPropOut = rProp;
+% else
+    rPropOut = rProp;
+
+
+    return
+end
+
 
 %Check to make sure the list is non-empty, otherwise break here.
 if(length(rProp)<1)
@@ -173,7 +201,9 @@ switch classifierType
         rPropOut = bacteriaSVMClassifier(rProp, svmStruct);
         
     case 'none'
-        rPropOut = rProp;
+    %    rPropOut = rProp;
+       
+        
         
 end
 

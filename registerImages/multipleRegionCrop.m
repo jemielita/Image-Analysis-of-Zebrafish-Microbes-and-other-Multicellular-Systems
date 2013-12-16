@@ -1040,13 +1040,23 @@ hContrast = imcontrast(imageRegion);
                 rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
                 %keptSpots = intersect(keptSpots, [rProp.ind]);
             case 'on'
-                %Apply some harsh-ish threshold-Set this threshold in code
-                %for now.
-                colorThresh = [0,0];
-                areaThresh = [3,3];
-                rPropClassified = rPropClassified([rPropClassified.Area]>areaThresh(colorNum));
+                %Apply some harsh-ish threshold-Set this threshold in
+                %bacteriaCountFilter.
+                %for now.distCutoff_combRegions = false;
+              %  classifierType = 'none';
+               % distCutoff_combRegions = false;
 
-                rPropClassified = rPropClassified([rPropClassified.MeanIntensity]>colorThresh(colorNum));
+                %rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
+                
+                
+                     colorThresh = [0,0];
+                     areaThresh = [3,3];
+                
+                     rPropClassified = rPropClassified([rPropClassified.Area]>areaThresh(colorNum));
+                
+                     rPropClassified = rPropClassified([rPropClassified.MeanIntensity]>colorThresh(colorNum));
+                  
+                
         end
         
         xyz = [rPropClassified.CentroidOrig];

@@ -55,8 +55,12 @@ for nP = 1:length(pAll)
             
            maxBkg = smoothBkgData(param,nC,false, 1, numScan, [50,100]);
           
+           if(numScan>22)
+           %MLJ: TEMPORARY CHANGE
+           maxBkg{23} = maxBkg{22};
+           maxBkg{24} = maxBkg{22};
            %Now calculate the mean pixel intensity below this cutoff
-           
+           end
            for nS=1:numScan
 
                
@@ -69,14 +73,15 @@ for nP = 1:length(pAll)
                ind = 1:2:2000;
                for nL=minL:maxL
                    minVal = 3;
-                   maxVal = maxBkg{nS}(1,nL);
+                   %mlj: temporary
+                   thisL = min([size(maxBkg{nS},2), nL]);
+                   maxVal = maxBkg{nS}(1,thisL);
                    maxVal = round(maxVal);
                    [~,maxInd] = min(abs(ind-maxVal));
                    thisInd = ind(minVal:maxInd);
                    
                    bkgInten{nP}{nC}{nS}(nL) = ...
-                 sum(allBkg(nL,minVal:maxInd).*thisInd)./sum(allBkg(nL,minVal:maxInd));
-               
+                       sum(allBkg(nL,minVal:maxInd).*thisInd)./sum(allBkg(nL,minVal:maxInd));
                end
                
                %Remove all NaN and replace them with the value of a line
@@ -85,7 +90,13 @@ for nP = 1:length(pAll)
                for nL=minL:maxL
                   if(isnan(bkgInten{nP}{nC}{nS}(nL)))
                      [~,ind] = min(abs(isVal-nL));
-                     bkgInten{nP}{nC}{nS}(nL) = bkgInten{nP}{nC}{nS}(ind);
+                     
+                     if(~isempty(ind))
+                         bkgInten{nP}{nC}{nS}(nL) = bkgInten{nP}{nC}{nS}(ind);
+                     else
+                          bkgInten{nP}{nC}{nS}(nL) = 0;
+                     end
+
                   end
                end
                
