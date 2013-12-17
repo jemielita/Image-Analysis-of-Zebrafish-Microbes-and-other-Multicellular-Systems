@@ -11,6 +11,9 @@
 %
 % Output
 % N : population (can be an array)
+%
+% Raghuveer Parthasarathy
+% Dec. 10, 2013
 
 function N = logistic_N_t(t, r, K, N0, t_lag)
 
