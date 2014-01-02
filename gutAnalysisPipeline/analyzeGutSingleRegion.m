@@ -179,8 +179,10 @@ switch analysisType(stepNum).name
         
     case 'test'
         thisRegFeatures = 1:length(centerLine);
+    
     case 'projection'
         %Get a particular projection of this region.
+        
     case 'correlation'
         %Calculate the 3D correlation function for each box down the length
         %of the gut
@@ -196,7 +198,6 @@ switch analysisType(stepNum).name
         
 end
 
-%mlj: need to deal with saving the results appropriately.
 
 end
 
@@ -204,7 +205,7 @@ function intenR = radDistPar(radIm, centerLine, analParam)
 
 end
 
-    function intenR = radDistAll(radIm, centerLine, analParam)
+function intenR = radDistAll(radIm, centerLine, analParam)
 fprintf(1, '\n Calculating radial distribution...');
 radBin = analParam.binSize;
 

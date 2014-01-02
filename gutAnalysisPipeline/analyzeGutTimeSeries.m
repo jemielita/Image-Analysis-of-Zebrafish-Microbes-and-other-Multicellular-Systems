@@ -1,17 +1,59 @@
 %analyzeGutTimeSeries: Analyze a time series of gut images for a single
 %fish. This is *the* master function for our analysis, and will be written
-%to maximize the flexibility of the possible analysis
+%to maximize the flexibility of the possible analysis.
+%
+% USAGE analyseGutTimeSeries(analysisType, scanParam, param)
+% 
+% NOTE: 
+% 1. The inputs to this function can either all be structures giving the
+% analysis features for a single fish, or a cell array containing the
+% analysis features for a set of fish. The input must be one of these and
+% cannot be a combination of them.
+% 2. Quality control checks will be done on the input parameters to ensure
+% that the entire analysis pipeline will run sucessfully. If it doesn't the
+% function will not run.
+%
+% INPUT analysisType: Contains the series of analysis steps to take on this
+%                     data set.
+%       scanParam: Parameters giving details about which scans to run, etc.
+%       param: All the parameters relevant to the fish for which we've
+%       collected data.
+% AUTHOR Matthew Jemielita
 
-function [] = analyzeGutTimeSeries(analysisType, scanParam, param)
-%% If scanParam is empty, then populate it with values that span the range of scans taken
+function [] = analyzeGutTimeSeries(analysisTypeAll, scanParamAll, paramAll)
 
-if(isempty(scanParam))
-   scanParam = populateScanParam(param); 
+%% Check inputs
+
+checkStruct = [isstruct(analysisTypeAll), isstruct(scanParamAll), isstruct(paramAll)];
+checkStruct = sum(checkStruct)==3;
+
+checkCell = [iscell(analysisTypeAll), iscell(scanParamAll), iscell(paramAll)];
+checkCell = sum(checkCell)==3;
+
+if(~xor(checkCell, checkStruct))
+   fprintf(2, 'Inputs must either all be structures or all cell arrays!\n');
+   return
 end
 
+%If input is a single structure, convert to a cell array of size 1
+if(checkStruct==1)
+   temp =  analysisTypeAll;
+   analysisTypeAll  = cell(1,1);
+   analysisTypeAll{1} = temp;
+   
+   temp =  scanParamAll;
+   scanParamAll  = cell(1,1);
+   scanParamAll{1} = temp;
+   
+   temp =  paramAll;
+   paramAll  = cell(1,1);
+   paramAll{1} = temp;
+   
+end
+
+
+
 %% Check inputs and pipeline to make sure it will all run properly
-
-
 error = checkInputs(analysisType, scanParam, param);
 
 if(error==1)
@@ -19,13 +61,37 @@ if(error==1)
     return
 end
 
+%% Run analysis on each of the data sets
+totNumFish = length(paramAll);
+for nF=1:totNumFish
+    param = paramAll{nF};
+    scanParam = scanParamAll{nF};
+    analysisType = analysisTypeAll{nF};
+    
+    analyzeGutTimeSeriesSingleFish(analysisType, scanParam, param);
+    
+    %mlj: need to write.
+    postProcessTimeSeries(analysisType, scanParam, param)
+   
+    %Garbage collect
+    clearvars -except paramAll scanParamAll analysisTypeAll;
+        
+end
+
+
+%mlj: Need to write. Collecting together results from all of our different
+%experiments.
+postProcessAllData(analysisTypeAll, scanParamAll, paramAll);
+
+end
+
+
+function error = analyzeGutTimeSeriesSingleFish(analysisType, scanParam, param)
 %% Load in scan parameters
 %Should be a subfolder of param.dataSaveDirectory. We don't want to
 %directly write to this folder since we may run multiple analyses of the
 %same data set
-saveDir = param.dataSaveDirectory; 
-
-
+saveDir = param.dataSaveDirectory;
 
 %Integer list of which scans to analyze- don't want to just do a range in
 %case we want to do only a subset of scans.
@@ -47,7 +113,7 @@ param = resampleCenterLine(param, scanParam);
 
 %% See if we've update the entry giving gut regions index. If not, calculate this and update the saved file
 if(~isfield(param, 'gutRegionsInd'))
-    param.gutRegionsInd = findGutRegionMaskNumber(param, true); 
+    param.gutRegionsInd = findGutRegionMaskNumber(param, true);
 end
 
 
@@ -57,8 +123,8 @@ createAllMasks(scanParam, param);
 
 error = checkCodeVersion(scanParam.codeDir, param.dataSaveDirectory);
 if(error==1)
-%fprintf(2, 'Analysis will not continue until code is comitted!\n');
-%return;
+    %fprintf(2, 'Analysis will not continue until code is comitted!\n');
+    %return;
 end
 
 error = saveAnalysisSteps(analysisType, scanParam, param);
@@ -79,10 +145,10 @@ for thisScan=1:length(scanParam.scanList)
     
     fprintf(1, '\n');
     fprintf(1, ['Analyzing scan: ', num2str(scanParam.scanNum)]);
-            
-    [param, centerLine,gutMask] = getScanMasks(scanParam,... 
+    
+    [param, centerLine,gutMask] = getScanMasks(scanParam,...
         param,centerLine, gutMask,thisScan);
-        
+    
     param.cutValAll{scanParam.scanNum} = param.cutVal;
     
     regFeatures = analyzeGut(analysisType,scanParam,param,centerLine,gutMask);
@@ -93,18 +159,11 @@ for thisScan=1:length(scanParam.scanList)
     
     %Convert the image stack if desired
     % error = convertImageFormat(scanParam, param);
-    clearvars -except param scanParam analysisType;
     clear regFeatures centerLine gutMask
     toc
 end
 
-%% Analysis/graphing of the entire data set
-
-
-
-clear all
 end
-
 function error = saveAnalysisSteps(analysisType, scanParam, param)
 try
     save([param.dataSaveDirectory filesep 'analysisParam.mat'],...
@@ -116,25 +175,6 @@ catch
 end
 
 end
-
-function  scanParam = populateScanParam(param)
-
-scanParam.color = param.color;
-scanParam.scanList = 1:param.expData.totalNumberScans;
-
-%Just in case it wasn't reset somewhere
-scanParam.dataSaveDirectory = param.dataSaveDirectory;
-
-%Standard values
-scanParam.stepSize = 5;
-scanParam.regOverlap = 10;
-
-%This might change a little bit based on which computer we're running
-%things on
-scanParam.codeDir = 'C:\code\trunk';
-
-end
-
 
 function error = checkInputs(analysisType, scanParam, param)
 %write!

@@ -2,7 +2,7 @@
 % images of zebrafish gut. This program is written so that it should be
 % possible to easily add in different analysis protocols later in time.
 %
-%
+
 
 function regFeatAll = analyzeGut(analysisType, scanParam, param,...
     centerLine, gutMask)
@@ -20,7 +20,7 @@ for cutNum=1:totNumCut
 end
 %% Unpack the results
 
-%Find number of saved analysis steps
+%Find number of saved analysifs steps
 analInd = find([analysisType.return]==true);
 totNumSteps = length(analInd);
 totNumColor = length(scanParam.color);
@@ -29,6 +29,10 @@ lineLength = size(param.centerLineAll{scanParam.scanNum},1);
 regFeatAll = cell(totNumColor,totNumSteps);
 
 %% Save the results
+
+%mlj: This saving of the results needs to be fixed up-I find the current code
+%very confusing to read.
+
 
 for colorNum=1:totNumColor;
     for stepNum=1:totNumSteps
@@ -77,30 +81,6 @@ for colorNum=1:totNumColor;
         
     end
 end
-
-%%Doing further processing of the data, if necessary
-
-for stepNum =1:totNumSteps
-     
-    switch analysisType(stepNum).name
-        case 'spotDetection'
-            %Collect together found bugs and put them through another step
-            %of analysis
-            for nC=1:totNumColor
-                for cutNum=1:totNumCut
-                    rP{cutNum}{nC} = regFeatAll{nC,stepNum}{cutNum};
-                end
-               
-            end
-            %Additionally transfer the result to the folder
-            %'singleBacCount' after doing slightly more processing.
-        %    bacteriaCountTimeSeries(param, 'firstpass', 'defaultCullProp', scanParam.scanNum, rP)
-            
-            
-     end
-end
-
-
 
 clearvars -except regFeatAll;
 end
