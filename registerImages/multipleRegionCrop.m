@@ -227,8 +227,9 @@ if(exist(remBugsSaveDir, 'file')==2)
 end
 hMenuSaveRemovedBugs = uimenu(hMenuDisplay, 'Label', 'Save removed bug list', 'Callback', @saveRemovedBugs_Callback);
 hMenuShowAllBugs = uimenu(hMenuDisplay, 'Label', 'Show ALL found bugs', 'Callback', @showAllBugs_Callback);
-
-
+hMenuVariableZ = uimenu(hMenuDisplay, 'Label', 'Only z slices with found bugs', 'Callback', @variableZ_Callback);
+useSubsetZList = false;
+zSubsetList = [];
 hMenuRegister = uimenu('Label', 'Registration');
 hMenuRegisterManual = uimenu(hMenuRegister, 'Label', 'Manually register images',...
     'Callback', @getImageArray_Callback);
@@ -878,6 +879,48 @@ hContrast = imcontrast(imageRegion);
         
     end
 
+    function findBugZLocation
+        rProp = load([param.dataSaveDirectory filesep 'singleBacCount'...
+            filesep 'bacCount' num2str(scanNum) '.mat']);
+        rProp = rProp.rProp;
+        
+        scanNum = get(hScanSlider, 'Value');
+        scanNum = int16(scanNum);
+        colorNum = get(hColorSlider, 'Value');
+        colorNum = ceil(colorNum);
+        colorNum = int16(colorNum);
+      
+        if(strcmp(get(hMenuOverlapImages, 'Checked'), 'on'))
+            rPropComb = rProp{1};
+            for i=1:length(rProp{2});
+                rPropComb(end+1) = rProp{2}(i);
+            end
+        elseif(iscell(rProp))
+            if(length(rProp)==1)
+                %Not greatest way to deal with this since we'll have image
+                %overlaps on both channels...oh well.
+                
+                rProp = rProp{1};
+            else
+                rProp = rProp{colorNum};
+            end
+        end
+        
+        
+        %Find the z location of all the bugs
+        
+        xyz = [rProp.CentroidOrig];
+        xyz= reshape(xyz,3,length(xyz)/3);
+
+        %Give a nice bit of space around each bug
+        zSubsetList = [floor(xyz(3,:)), ceil(xyz(3,:))];
+        zSubsetList = sort(unique(zSubsetList));
+        zSubsetList(zSubsetList>zMax) = [];
+        zSubsetList(zSubsetList<zMin) = [];
+        
+        
+    end
+
     function removeBugs_Callback(hObject, eventdata)
         %Until unchecked produce rectangles that the user can place down on
         %the image. All bacteria in the box are turned pink.
@@ -924,7 +967,19 @@ hContrast = imcontrast(imageRegion);
         end
         
     end
-    function removeBugBox(position)
+
+
+    function variableZ_Callback(hObject, eventdata)
+        if(strcmp(get(hMenuVariableZ, 'Checked'), 'on'))
+            set(hMenuVariableZ, 'Checked', 'off');
+            useSubsetZList = false;
+        else
+            set(hMenuVariableZ, 'Checked', 'on');
+            useSubsetZList = true;
+            
+        end
+    end
+        function removeBugBox(position)
         zNum = get(hZSlider, 'Value');
         zNum = int16(zNum);
         
@@ -959,7 +1014,6 @@ hContrast = imcontrast(imageRegion);
        removeBugInd{scanNum, colorNum} =  [removeBugInd{scanNum, colorNum} ,indAll];
        
        getRegisteredImage(scanNum, color, zNum, im, data, param);
-       
        
     end
 
@@ -1075,11 +1129,6 @@ hContrast = imcontrast(imageRegion);
         switch projectionType
             case 'mip'
                 
-%                 locData{4} = xyzRem;
-%                 
-%                 set(hP{4},'XData', locData{4}(1,:));
-%                 set(hP{4}, 'YData', locData{4}(2,:));
-%                 
                 %ind = setdiff(1:size(xyz,2), keptSpots);
                 %Set all bug outlines to be one color
                 set(hP{1}, 'XData', xyz(1,:));
@@ -1105,7 +1154,7 @@ hContrast = imcontrast(imageRegion);
                 if(showBugsZ==true)
                     %Only display bacteria in the ~ vicinity of the found
                     %z-location.
-                   loc(loc~=0) = 2; 
+                    loc(loc~=0) = 2;
                 end
                 
                 locData{1} = xyz(:,loc==-1);
@@ -2563,6 +2612,12 @@ hContrast = imcontrast(imageRegion);
             delete(hRect);
             outlineRegions();
         end
+        
+        
+        if(useSubsetZList ==true)
+            findBugZLocation();
+            
+        end
     end
 
     function scanSlider_Callback(hObject, eventData)
@@ -2705,6 +2760,11 @@ hContrast = imcontrast(imageRegion);
            set(hThresh, 'CData', threshIm);
            set(hThresh, 'AlphaData', 0.8*sum(threshIm,3));
        end
+       
+       if(useSubsetZList ==true)
+           findBugZLocation();
+           
+       end
     end
 
     function z_Callback(hObject, eventData)
@@ -2731,6 +2791,36 @@ hContrast = imcontrast(imageRegion);
                 %callback function.
         end
          
+        %If we're only going through a subset of z values. For example,
+        %this is useful if we want to quickly screen a set of found
+        %bacteria spots by hand.
+
+        if(useSubsetZList==true)
+            if(~ismember(zNum, zSubsetList))
+                
+               switch zLast-zNum>0
+                   case 1
+                       %Going down in z direction
+                       smallerZ = zSubsetList(zSubsetList<=zNum);
+                       newzVal  = max(smallerZ);
+                   case 0
+                       %Going up in z direction
+                       largerZ = zSubsetList(zSubsetList>=zNum);
+                       newzVal = min(largerZ);
+                       
+               end
+            
+               zNum = newzVal;
+               
+               set(hZSlider, 'Value',double(zNum));
+               set(hZTextEdit, 'String', zNum);
+
+            end
+            
+            
+        end
+        
+        
         colorNum = get(hColorSlider, 'Value');
         colorNum = ceil(colorNum);
         colorNum = int16(colorNum);
