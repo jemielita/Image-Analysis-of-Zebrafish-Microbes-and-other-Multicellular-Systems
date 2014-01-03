@@ -27,9 +27,13 @@
 
 function varargout = get1DLineSpotDetection(param, varargin)
 
-           
-classifierType = 'svm';
 numColor = length(param.color);
+
+for nC=1:numColor
+    classifierTypeList{nC} = 'svm';
+end
+
+
 switch nargin
     case 1
         saveLine = true;

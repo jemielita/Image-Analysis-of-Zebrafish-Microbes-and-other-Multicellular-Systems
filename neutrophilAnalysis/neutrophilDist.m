@@ -6,7 +6,7 @@ scanNum = nS;
 
 cL = param.centerLineAll{scanNum};
 
-
+regList = [];
 
 height = param.regionExtent.regImSize{1}(1);
 width = param.regionExtent.regImSize{1}(2);
