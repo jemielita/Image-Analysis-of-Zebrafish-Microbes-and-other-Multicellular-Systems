@@ -17,8 +17,11 @@
 %       syntax: lineDist{scanNum,colorNum}(linePos)-gives the number of
 %       points found for a given scan, color and position down the line.
 %
-%       numColor: number of colors to analyze-should be a better input than
-%       this.
+%       colorList: (Optional. default: all) List of which colors to analyze
+%       (e.g. [1,2]). Should change syntax to take in wavelengths instead.
+%       classifierTypeList (Optional. Default: 'svm'). Type of classifier
+%       to run on data (e.g. 'svm', 'none').
+
 % OUTPUT lineDist (optional): line distribution code, with the same syntax
 % as given in the documentation for saveLine above.
 %        popTot (optional): sum of the line distribution down the length of

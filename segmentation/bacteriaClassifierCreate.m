@@ -102,6 +102,9 @@ end
     boxVal{2} = [0.7, 0.8];
     
 for nC=1:length(colorList)
+    
+        boxVal{2} = [10, 200];
+
     figure;
     numKeptSpots = sum(Y{nC}==1);
 
@@ -139,9 +142,10 @@ if(saveData.value ==true)
          autoFluorMaxInten = [900 900];
          trainingListLocation{1} = saveData.saveLocation;
          trainingListLocation{2} = saveData.saveLocation;
-         
+         classifierType{1} = 'svm';
+         classifierType{2} = 'svm';
          %Also save the classifier type: If the classifier was not
-        save(fileName, 'autoFluorMaxInten', 'cullProp', 'trainingListLocation', 'boxVal');
+        save(fileName, 'autoFluorMaxInten', 'cullProp', 'trainingListLocation', 'boxVal', 'classifierType');
     end
 end
 
@@ -187,7 +191,13 @@ end
                     length(keptSpots)
                     removedSpots = removeBugIndAll{nF}{nS, nC};
                     
-                    
+                    for nP =1:length(rProp)
+                       if(isempty(rProp(nP).gutRegion)) 
+                          rProp(nP).gutRegion = 6; 
+                          6
+                       end
+                        
+                    end
                     if(isfield(rProp, 'gutRegion'))
                         inAutoFluor = [rProp.gutRegion]==3;
                         outsideAutoFluor = ~inAutoFluor;

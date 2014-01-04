@@ -913,7 +913,7 @@ hContrast = imcontrast(imageRegion);
         xyz= reshape(xyz,3,length(xyz)/3);
 
         %Give a nice bit of space around each bug
-        zSubsetList = [floor(xyz(3,:)), ceil(xyz(3,:))];
+        zSubsetList = round(xyz(3,:));
         zSubsetList = sort(unique(zSubsetList));
         zSubsetList(zSubsetList>zMax) = [];
         zSubsetList(zSubsetList<zMin) = [];
@@ -2794,7 +2794,9 @@ hContrast = imcontrast(imageRegion);
         %If we're only going through a subset of z values. For example,
         %this is useful if we want to quickly screen a set of found
         %bacteria spots by hand.
-
+        if(isempty(zLast))
+            zLast = zNum;
+        end
         if(useSubsetZList==true)
             if(~ismember(zNum, zSubsetList))
                 
@@ -2803,15 +2805,20 @@ hContrast = imcontrast(imageRegion);
                        %Going down in z direction
                        smallerZ = zSubsetList(zSubsetList<=zNum);
                        newzVal  = max(smallerZ);
+                       if(isempty(newzVal))
+                           newzVal = min(zSubsetList);
+                       end
                    case 0
                        %Going up in z direction
                        largerZ = zSubsetList(zSubsetList>=zNum);
                        newzVal = min(largerZ);
+                       if(isempty(newzVal))
+                           newzVal = max(zSubsetList);
+                       end
                        
                end
-            
                zNum = newzVal;
-               
+            
                set(hZSlider, 'Value',double(zNum));
                set(hZTextEdit, 'String', zNum);
 
