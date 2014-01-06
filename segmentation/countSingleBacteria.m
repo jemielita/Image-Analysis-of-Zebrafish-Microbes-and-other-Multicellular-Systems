@@ -32,10 +32,11 @@ minThresh = 100;
 %mlj: maxThresh = 200 is decent for green, maxThresh = 30 should work for
 %red-we'll see tomorrow
 if(isempty(spotFeatures))
-    maxThresh = 200;
+    maxThresh = 30;
 else
-    maxThresh = spotFeatures.intenThresh(1);
+    maxThresh = spotFeatures.intenThresh(colorNum);
 end
+
 
 if(inPlace==false)
     imSeg = zeros(size(im), 'double');

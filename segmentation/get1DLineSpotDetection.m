@@ -36,7 +36,6 @@ for nC=1:numColor
     classifierTypeList{nC} = 'svm';
 end
 
-
 switch nargin
     case 1
         saveLine = true;

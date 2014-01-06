@@ -976,7 +976,7 @@ hContrast = imcontrast(imageRegion);
         else
             set(hMenuVariableZ, 'Checked', 'on');
             useSubsetZList = true;
-            
+            findBugZLocation();
         end
     end
         function removeBugBox(position)

@@ -51,7 +51,7 @@ analysisType(2).bkgList = 1:25:2000; %Need to get a sense of what size
 
 analysisType(3).name = 'spotDetection';
 analysisType(3).return = true;
-analysisType(3).spotFeatures = ''; %Use default
+analysisType(3).spotFeatures = [30, 30]; %Use default
 
 
 
