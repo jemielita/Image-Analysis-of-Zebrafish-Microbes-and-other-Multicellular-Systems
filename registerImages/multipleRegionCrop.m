@@ -879,7 +879,8 @@ hContrast = imcontrast(imageRegion);
         
     end
 
-    function findBugZLocation
+    function findBugZLocation        
+
         rProp = load([param.dataSaveDirectory filesep 'singleBacCount'...
             filesep 'bacCount' num2str(scanNum) '.mat']);
         rProp = rProp.rProp;
@@ -889,7 +890,6 @@ hContrast = imcontrast(imageRegion);
         colorNum = get(hColorSlider, 'Value');
         colorNum = ceil(colorNum);
         colorNum = int16(colorNum);
-      
         if(strcmp(get(hMenuOverlapImages, 'Checked'), 'on'))
             rPropComb = rProp{1};
             for i=1:length(rProp{2});
@@ -906,11 +906,8 @@ hContrast = imcontrast(imageRegion);
             end
         end
         
-        
         %Find the z location of all the bugs
-        
-        xyz = [rProp.CentroidOrig];
-        xyz= reshape(xyz,3,length(xyz)/3);
+        [xyz, ~, ~] = getBugList(rProp);
 
         %Give a nice bit of space around each bug
         zSubsetList = round(xyz(3,:));
@@ -1013,6 +1010,10 @@ hContrast = imcontrast(imageRegion);
        
        removeBugInd{scanNum, colorNum} =  [removeBugInd{scanNum, colorNum} ,indAll];
        
+       
+       %Remove these bugs from the list of z-depths to go to.
+       findBugZLocation();
+       
        getRegisteredImage(scanNum, color, zNum, im, data, param);
        
     end
@@ -1057,74 +1058,7 @@ hContrast = imcontrast(imageRegion);
             
         end
         
-        %Remove spots that were manually segmented.
-        keptSpots = setdiff(1:length(rProp), removeBugInd{scanNum, colorNum});
-        
-        %Construct list of removed spots
-        xyzRem = [rProp.CentroidOrig];
-        
-        xyzRem = reshape(xyzRem,3,length(xyzRem)/3);
-        
-        xyzRem = xyzRem(:,removeBugInd{scanNum,colorNum});
-        rPropClassified = rProp(keptSpots);
-       %rPropClassified = rProp; 
-       %
-        %         if(strcmp(projectionType, 'none') || strcmp(get(hMenuRemoveBugs, 'Checked'),'on'))
-        %             %Only if we're
-        %             rPropClassified = rProp(keptSpots);
-        %         else
-        %             rPropClassified = rProp;
-        %         end
-        %
-        classifierType = 'svm';
-        useRemovedBugList = true;
-
-         %classifierType = 'linear';
-         %useRemovedBugList = false;
-        
-         %Let's filter out all points with an intensity below 200
-        % rPropClassified =  rPropClassified([rPropClassified.MeanIntensity]>200);
-         %rPropClassified = rPropClassified([rPropClassified.Area]>40);
-        
-        switch get(hMenuShowAllBugs, 'Checked')
-            case 'off'
-                %Use the filter that we've built to further classify the
-                %data
-                distCutoff_combRegions = false;
-                rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
-                %keptSpots = intersect(keptSpots, [rProp.ind]);
-            case 'on'
-                %Apply some harsh-ish threshold-Set this threshold in
-                %bacteriaCountFilter.
-                %for now.distCutoff_combRegions = false;
-              %  classifierType = 'none';
-               % distCutoff_combRegions = false;
-
-                %rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
-                
-                
-                     colorThresh = [0,0];
-                     areaThresh = [3,3];
-                
-                     rPropClassified = rPropClassified([rPropClassified.Area]>areaThresh(colorNum));
-                
-                     rPropClassified = rPropClassified([rPropClassified.MeanIntensity]>colorThresh(colorNum));
-                  
-                
-        end
-        
-        xyz = [rPropClassified.CentroidOrig];
-        xyz = reshape(xyz,3,length(xyz)/3);
-        
-        
-        
-        %keptSpots = logical(keptSpots.*(~outsideGut));
-        %xyz = xyz(:, keptSpots);
-        
-        
-        
-        %ind = xyz(1,:)<5200;
-        %xyz = xyz(:,ind);
+        [xyz, xyzRem, rPropClassified] = getBugList(rProp);
         
         switch projectionType
             case 'mip'
@@ -1142,8 +1076,6 @@ hContrast = imcontrast(imageRegion);
                 %Remove spots that were manually removed
                 set(hP{4}, 'XData', []);
                 set(hP{4}, 'YData', []);
-                
-                
                 
             case 'none'
                 
@@ -1174,10 +1106,69 @@ hContrast = imcontrast(imageRegion);
                     set(hP{4}, 'YData', locData{4}(2,:));
                 end
         end
+        
+    end
+
+
+
+    function [xyz, xyzRem, rPropClassified] = getBugList(rProp)
+        
+        %Remove spots that were manually segmented.
+        keptSpots = setdiff(1:length(rProp), removeBugInd{scanNum, colorNum});
+        
+        %Construct list of removed spots
+        xyzRem = [rProp.CentroidOrig];
+        
+        xyzRem = reshape(xyzRem,3,length(xyzRem)/3);
+        
+        xyzRem = xyzRem(:,removeBugInd{scanNum,colorNum});
+        rPropClassified = rProp(keptSpots);
+
+        classifierType = 'svm';
+        useRemovedBugList = true;
+        
+        %classifierType = 'linear';
+        %useRemovedBugList = false;
+        
+        %Let's filter out all points with an intensity below 200
+        % rPropClassified =  rPropClassified([rPropClassified.MeanIntensity]>200);
+        %rPropClassified = rPropClassified([rPropClassified.Area]>40);
+        
+        switch get(hMenuShowAllBugs, 'Checked')
+            case 'off'
+                %Use the filter that we've built to further classify the
+                %data
+                distCutoff_combRegions = false;
+                rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
+                %keptSpots = intersect(keptSpots, [rProp.ind]);
+            case 'on'
+                %Apply some harsh-ish threshold-Set this threshold in
+                %bacteriaCountFilter.
+                %for now.distCutoff_combRegions = false;
+                %  classifierType = 'none';
+                % distCutoff_combRegions = false;
                 
+                %rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
+                
+                colorThresh = [0,0];
+                areaThresh = [3,3];
+                
+                rPropClassified = rPropClassified([rPropClassified.Area]>areaThresh(colorNum));
+                
+                rPropClassified = rPropClassified([rPropClassified.MeanIntensity]>colorThresh(colorNum));
+                
+                
+        end
+        
+        xyz = [rPropClassified.CentroidOrig];
+        xyz = reshape(xyz,3,length(xyz)/3);
+        
+        %keptSpots = logical(keptSpots.*(~outsideGut));
+        %xyz = xyz(:, keptSpots);
         
         
     end
+
 
     function denoiseIm_Callback(hObject, eventdata)
         
