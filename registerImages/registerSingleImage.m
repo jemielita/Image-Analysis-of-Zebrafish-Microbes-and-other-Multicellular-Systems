@@ -180,15 +180,48 @@ end
                 switch loadType
                     
                     case 'fullDirectory'
-                        imFileName = ...
+                        imFileNameTiff = ...
                             strcat(scanDir,  'region_', num2str(regNum),filesep,...
                             colorType, filesep,'pco', num2str(imNum(regNum)),'.tif');
                         
-                        im(xOutI:xOutF,yOutI:yOutF) = imread(imFileName,...
-                            'PixelRegion', {[xInI xInF], [yInI yInF]}) + ...
-                            im(xOutI:xOutF,yOutI:yOutF);
+                        imFileNamePng = ...
+                            strcat(scanDir,  'region_', num2str(regNum),filesep,...
+                            colorType, filesep,'pco', num2str(imNum(regNum)),'.png');
+                        
+                        typeList = [exist(imFileNameTiff, 'file') exist(imFileNamePng, 'file')];
+                        %See if we have a png or tiff type of file. If we
+                        %have both return an error-we should only have one
+                        %of these in the directory
+                        whichType = find(typeList==2, 2);
+                        if(length(whichType)==2)
+                           fprintf(2, 'Directory can only contain png or tiff versions of the images!\n');
+                           return
+                        end
+                        
+                        switch whichType
+                            case 1
+                                %Images saved as tiff files
+                                im(xOutI:xOutF,yOutI:yOutF) = imread(imFileNameTiff,...
+                                    'PixelRegion', {[xInI xInF], [yInI yInF]}) + ...
+                                    im(xOutI:xOutF,yOutI:yOutF);
+                            case 2                     
+                                %Images saved as png files-note the png
+                                %format doesn't support loading in
+                                %particular pixel regions directly (a
+                                %consequence of how the image is
+                                %compressed).
+                                inputImage = imread(imFileNamePng);
+                                im(xOutI:xOutF,yOutI:yOutF) = inputImage(xInI:xInF, yInI:yInF) + ...
+                                    im(xOutI:xOutF,yOutI:yOutF);
+                        end
+                                
+                        
                     case 'flatDirectory'
+                        %flat directory only supports tiffs-I don't think
+                        %png has support for multipage storage
                         imFileName = [param.directoryName '_S', num2str(nScan),'nR', num2str(regNum),'_', colorType, '.tif'];
+                        
+                        
                         im(xOutI:xOutF, yOutI:yOutF) = imread(imFileName,...
                             'PixelRegion', {[xInI xInF], [yInI yInF]},...
                             'Index', imNum(regNum)+1) + ...
