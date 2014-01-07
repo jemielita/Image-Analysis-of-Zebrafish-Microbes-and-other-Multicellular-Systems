@@ -104,14 +104,20 @@ end
         for nZ = 1:totalZ
             imNum = zList(nZ);
             
-            imFileName = ...
-                strcat(scanDir,  'region_', num2str(regNum),filesep,...
-                param.color(colorNum), filesep,'pco', num2str(imNum),'.tif');
-            try
-                im(:,:,nZ)= imread(imFileName{1},'PixelRegion', {[xInI xInF], [yInI yInF]});
-            catch
-                disp('This image doesnt exist-fix up your code!!!!');
+            
+            [whichType, imFileName] = whichImageFileType(scanDir, regNum, param, imNum,colorNum);
+            switch whichType
+                case 1
+                    try
+                        im(:,:,nZ)= imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]});
+                    catch
+                        disp('This image doesnt exist-fix up your code!!!!');
+                    end
+                case 2
+                    inputImage = imread(imFileName);
+                    im(:,:,nZ) = inputImage(xInI:xInF, yInI:yInF);
             end
+                    
         end
         
         %Load in mask showing variable maximum z-heights for different parts of the
@@ -284,22 +290,48 @@ for nZ=minZ:maxZ
        yInF = yOutF - yOutI +yInI;
        
        %Load in the image
-       imFileName = ...
-           strcat(scanDir,  'region_', num2str(regNum),filesep,...
-           param.color(colorNum), filesep,'pco', num2str(imNum),'.tif');
-       try         
-           switch dataType
-               case 'uint16'
-                   imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
-                       uint16(imread(imFileName{1},'PixelRegion', {[xInI xInF], [yInI yInF]}));
-               case 'double'
-                   imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
-                       double(imread(imFileName{1},'PixelRegion', {[xInI xInF], [yInI yInF]}));
+       
+       %Find out how we've stored the images
+       [whichType, imFileName] = whichImageFileType(scanDir, regNum, param, imNum,colorNum);
+       
+       try
+           
+           switch whichType
+               case 1
+                   %Load tiff image
+                   
+                   switch dataType
+                       case 'uint16'
+                           imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
+                               uint16(imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]}));
+                       case 'double'
+                           imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
+                               double(imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]}));
+                   end
+                   
+                   
+               case 2
+                   %Load png image
+                   inputImage = imread(imFileName);
+                   
+                   switch dataType
+                       case 'uint16'
+                           
+                           imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
+                               uint16(inputImage(xInI:xInF, yInI:yInF));
+                       case 'double'
+                           imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
+                               double(imread(inputImage(xInI:xInF, yInI:yInF)));
+                   end
+                   
+                   
            end
+           
        catch
            disp('This image doesnt exist-fix up your code!!!!');
        end
-         
+    
+    
     end   
     
     imNum = param.regionExtent.Z(nZ, indReg);
@@ -401,17 +433,61 @@ end
             for nZ = 1:totalZ
                 imNum = zList(nZ);
                 
-                imFileName = ...
-                    strcat(scanDir,  'region_', num2str(regNum),filesep,...
-                    param.color(colorNum), filesep,'pco', num2str(imNum),'.tif');
-                try
-                    im(:,:,nZ)= imread(imFileName{1},'PixelRegion', {[xInI xInF], [yInI yInF]});
-                catch
-                    disp('This image doesnt exist-fix up your code!!!!');
+                [whichType, imFileName] = whichImageFileType(scanDir, regNum, param, imNum,colorNum);
+                switch whichType
+                    case 1
+                        %Load tiff image
+                        try
+                            im(:,:,nZ)= imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]});
+                        catch
+                            disp('This image doesnt exist-fix up your code!!!!');
+                        end
+                        
+                    case 2
+                        try
+                        %Load png image
+                        inputImage = imread(imFileName);
+                        im(:,:,nZ) = inputImage(xInI:xInF, yInI:yInF);
+                        catch
+                             disp('This image doesnt exist-fix up your code!!!!');
+                        end
                 end
+                        
+                        
             end
             
         end
         
+    end
+    
+    function  [whichType, imFileName] = whichImageFileType(scanDir, regNum, param, imNum, colorNum)
+    imFileNameTiff = ...
+        strcat(scanDir,  'region_', num2str(regNum),filesep,...
+        param.color(colorNum), filesep,'pco', num2str(imNum),'.tif');
+    
+    imFileNamePng = ...
+        strcat(scanDir,  'region_', num2str(regNum),filesep,...
+        param.color(colorNum), filesep,'pco', num2str(imNum),'.png');
+    
+    typeList = [exist(imFileNameTiff{1}, 'file') exist(imFileNamePng{1}, 'file')];
+    
+    
+    %See if we have a png or tiff type of file. If we
+    %have both return an error-we should only have one
+    %of these in the directory
+    whichType = find(typeList==2, 2);
+    if(length(whichType)==2)
+        fprintf(2, 'Directory can only contain png or tiff versions of the images!\n');
+        whichType = 0;
+    end
+    
+    switch whichType
+        case 1
+            imFileName = imFileNameTiff{1};
+        case 2
+            imFileName = imFileNamePng{1};
+    end
+            
+    
     end
 

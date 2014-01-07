@@ -221,7 +221,6 @@ end
                         %png has support for multipage storage
                         imFileName = [param.directoryName '_S', num2str(nScan),'nR', num2str(regNum),'_', colorType, '.tif'];
                         
-                        
                         im(xOutI:xOutF, yOutI:yOutF) = imread(imFileName,...
                             'PixelRegion', {[xInI xInF], [yInI yInF]},...
                             'Index', imNum(regNum)+1) + ...
@@ -232,8 +231,7 @@ end
             
         end
         
-        %Dealing with overlap regions
-        
+        %Dealing with overlap regions        
         for regNum = 2:totalNumRegions
             %Overlapping regions
             %This is potentially slow (however we need to be as quick as possible with this type of thing).
