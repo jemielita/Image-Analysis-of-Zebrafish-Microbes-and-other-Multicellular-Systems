@@ -230,6 +230,11 @@ hMenuShowAllBugs = uimenu(hMenuDisplay, 'Label', 'Show ALL found bugs', 'Callbac
 hMenuVariableZ = uimenu(hMenuDisplay, 'Label', 'Only z slices with found bugs', 'Callback', @variableZ_Callback);
 useSubsetZList = false;
 zSubsetList = [];
+
+hMenuManualParticleThresh = uimenu(hMenuDisplay, 'Label', 'Manual thresholding for particles','Callback', @manualThresh_Callback);
+useManualParticleThresh = false;
+manualParticleThresh = zeros(numScans, numColor,2);
+hMenuManualParticleThreshChange = uimenu(hMenuDisplay, 'Label', 'Change manual threshold value', 'Callback', @changeManualThresh_Callback);
 hMenuRegister = uimenu('Label', 'Registration');
 hMenuRegisterManual = uimenu(hMenuRegister, 'Label', 'Manually register images',...
     'Callback', @getImageArray_Callback);
@@ -502,7 +507,7 @@ hContrast = imcontrast(imageRegion);
 
 %%%%% Drop down menu callback
     function keyPressGUI(hObject, eventdata)
-        
+        eventdata.Key
         switch eventdata.Key
             case 'rightarrow'
                 %Go one scan forward
@@ -564,6 +569,9 @@ hContrast = imcontrast(imageRegion);
                 set(hZSlider, 'Value',double(zNum));
 
                 z_Callback('','');
+                
+            case 't'
+               updateManualThresholdValues();
         end
         
     end
@@ -976,13 +984,75 @@ hContrast = imcontrast(imageRegion);
             findBugZLocation();
         end
     end
-        function removeBugBox(position)
+
+    function manualThresh_Callback(hObject, eventdata)
+       
+        
+        if(strcmp(get(hMenuManualParticleThresh, 'Checked'), 'on'))
+            set(hMenuManualParticleThresh, 'Checked', 'off');
+            useManualParticleThresh = false;
+        else
+            set(hMenuManualParticleThresh, 'Checked', 'on');
+            useManualParticleThresh = true;
+        end
+        
+    end
+    function changeManualThresh_Callback(hObject, eventdata)
+       updateManualThresholdValues(); 
+    end
+    function updateManualThresholdValues()
+        %Set the manual threshold for this scan and color
+        scanNum = get(hScanSlider, 'Value');
+        scanNum = int16(scanNum);
+        prompt = {'Minimum intensity','Minimum area'};
+        name = 'Manual thresholding for particles';
+        numlines = 1;
+        defaultanswer = {num2str(manualParticleThresh(scanNum, colorNum,1)), ...
+            num2str(manualParticleThresh(scanNum, colorNum,2))};
+        answer = inputdlg(prompt, name, numlines, defaultanswer);
+        manualParticleThresh(scanNum, colorNum,1) = str2num(answer{1});
+        manualParticleThresh(scanNum, colorNum,2) = str2num(answer{2});
+        
+        removeBugBox('')
+    end
+
+
+    function removeBugBox(position)
+        scanNum = get(hScanSlider, 'Value');
+        scanNum = int16(scanNum);
+        color = colorType(colorNum);
+        color = color{1};
+        
         zNum = get(hZSlider, 'Value');
         zNum = int16(zNum);
         
-        xyz = [rProp.CentroidOrig];
-        xyz= reshape(xyz,3,length(xyz)/3);
+        %Apply a user defined harsh threshold for all bacteria, different
+        %for different scan numbers and intensities
+        if(useManualParticleThresh==true)
+           intenThresh = manualParticleThresh(scanNum, colorNum,1);
+           sizeThresh = manualParticleThresh(scanNum, colorNum,2);
+           indI = find([rProp.CentroidOrig]<intenThresh);
+           indA = find([rProp.Area]<sizeThresh);
+           
+           indAll = union(indI, indA);
        
+           if(isempty(position))
+               removeBugInd{scanNum,colorNum} =  unique([removeBugInd{scanNum, colorNum} ,indAll]);
+               %Remove these bugs from the list of z-depths to go to.
+               findBugZLocation();
+               displayOverlappedBugs()
+               return;
+           end
+            xyz = [rProp.CentroidOrig];
+            xyz = reshape(xyz,3,length(xyz)/3);
+           
+        else
+            
+            xyz = [rProp.CentroidOrig];
+            xyz = reshape(xyz,3,length(xyz)/3);
+        end
+        
+        
         xMin = position(1); xMax = position(1) + position(3);
         yMin = position(2); yMax = position(2) + position(4);
         
@@ -993,29 +1063,25 @@ hContrast = imcontrast(imageRegion);
         
         indAll = intersect(indX, indY);
         %If looking at the MIP then remove all bugs in the entire z-stack.
-         switch projectionType
+        switch projectionType
             case 'mip'
                 %Do nothing further to the list.
-             case 'none'
-                 loc = -1*(xyz(3,:)<zNum-bugWindow) + (xyz(3,:)>zNum+bugWindow);
-                 indZ = find(loc==0);
-                 
-                 indAll = intersect(indAll, indZ);
-         end
+            case 'none'
+                loc = -1*(xyz(3,:)<zNum-bugWindow) + (xyz(3,:)>zNum+bugWindow);
+                indZ = find(loc==0);
+                
+                indAll = intersect(indAll, indZ);
+        end
         
-       scanNum = get(hScanSlider, 'Value');
-       scanNum = int16(scanNum);
-       color = colorType(colorNum);
-       color = color{1};
-       
-       removeBugInd{scanNum, colorNum} =  [removeBugInd{scanNum, colorNum} ,indAll];
-       
-       
-       %Remove these bugs from the list of z-depths to go to.
-       findBugZLocation();
-       
-       getRegisteredImage(scanNum, color, zNum, im, data, param);
-       
+        
+        removeBugInd{scanNum, colorNum} =  [removeBugInd{scanNum, colorNum} ,indAll];
+        
+        
+        %Remove these bugs from the list of z-depths to go to.
+        findBugZLocation();
+        
+        getRegisteredImage(scanNum, color, zNum, im, data, param);
+        
     end
 
     function displayOverlappedBugs()

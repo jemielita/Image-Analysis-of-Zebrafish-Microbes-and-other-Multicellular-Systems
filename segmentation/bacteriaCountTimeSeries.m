@@ -153,8 +153,12 @@ end
                    
             numBac{nS} = [];
            
-            numReg = size(spotLoc{nC,3},1);
             
+            %mlj:temporary
+            %numReg = size(spotLoc{nC,3},1);
+            
+            %mlj: temporary
+            numReg = size(spotLoc{1},2);
             
             for nR=1:numReg
                 %Again, the indexing is somewhat screwy.
@@ -168,7 +172,10 @@ end
                rProp = spotLoc{nR}{3,nC};
            elseif (loadType ==1)
                %rProp = spotLoc{1};
-               rProp = spotLoc{nC,3}{nR};
+               %rProp = spotLoc{nC,3}{nR};
+               
+               %mlj:temporary
+               rProp = spotLoc{1}{nR};
            end
                 [gutMask, xOffset, yOffset, gutMaskReg] = getMask(param, nS, nR, 'cutmask');
                 
@@ -189,13 +196,18 @@ end
             fprintf(1, '.');
             end
         
-        %greenBug = load([bacSaveDir filesep 'bacCount' num2str(nS) '.mat']);
-        %greenBug = greenBug.rProp{1};
-        %rProp = cell(2,1);
-        %rProp{1} = greenBug;
-       % rProp{2} = rPropAll{1};
+            rProp = rPropAll;
+            loadSingleColor = true;
+            if(loadSingleColor)
+                greenBug = load([bacSaveDir filesep 'bacCount' num2str(nS) '.mat']);
+                greenBug = greenBug.rProp{1};
+                rProp = cell(2,1);
+                rProp{1} = greenBug;
+                rProp{2} = rPropAll{1};
+            end
+       
         %Save first pass of analysis
-        rProp = rPropAll;
+
         fileName = [bacSaveDir filesep 'bacCount' num2str(nS) '.mat'];
         save(fileName, 'rProp');
         
