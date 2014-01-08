@@ -225,6 +225,15 @@ if(exist(remBugsSaveDir, 'file')==2)
    removeBugInd = load(remBugsSaveDir); 
    removeBugInd = removeBugInd.removeBugInd;
 end
+hMenuKeepBugs = uimenu(hMenuDisplay, 'Label', 'Label bugs (instead of removing)', 'Callback', @keepBugs_Callback, 'Checked', 'off');
+keepBugInd = cell(numScans, numColor); %Variable to save culled bacteria points.
+keepBugsSaveDir = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'saveddBugs.mat'];
+if(exist(keepBugsSaveDir, 'file')==2)
+   keepBugInd = load(keepBugsSaveDir); 
+   keepBugInd = keepBugInd.removeBugInd;
+end
+
+
 hMenuSaveRemovedBugs = uimenu(hMenuDisplay, 'Label', 'Save removed bug list', 'Callback', @saveRemovedBugs_Callback);
 hMenuShowAllBugs = uimenu(hMenuDisplay, 'Label', 'Show ALL found bugs', 'Callback', @showAllBugs_Callback);
 hMenuVariableZ = uimenu(hMenuDisplay, 'Label', 'Only z slices with found bugs', 'Callback', @variableZ_Callback);
@@ -234,7 +243,7 @@ zSubsetList = [];
 hMenuManualParticleThresh = uimenu(hMenuDisplay, 'Label', 'Manual thresholding for particles','Callback', @manualThresh_Callback);
 useManualParticleThresh = false;
 manualParticleThresh = zeros(numScans, numColor,2);
-hMenuManualParticleThreshChange = uimenu(hMenuDisplay, 'Label', 'Change manual threshold value', 'Callback', @changeManualThresh_Callback);
+% hMenuManualParticleThreshChange = uimenu(hMenuDisplay, 'Label', 'Change manual threshold value', 'Callback', @changeManualThresh_Callback);
 hMenuRegister = uimenu('Label', 'Registration');
 hMenuRegisterManual = uimenu(hMenuRegister, 'Label', 'Manually register images',...
     'Callback', @getImageArray_Callback);
@@ -915,7 +924,7 @@ hContrast = imcontrast(imageRegion);
         end
         
         %Find the z location of all the bugs
-        [xyz, ~, ~] = getBugList(rProp);
+        [xyz, ~, ~,~] = getBugList(rProp);
 
         %Give a nice bit of space around each bug
         zSubsetList = round(xyz(3,:));
@@ -943,7 +952,7 @@ hContrast = imcontrast(imageRegion);
                 set(hRemBug, 'Tag', 'removeBug');
                 
                 %position = wait(hRemBug);
-                pause(1);
+                pause(0.5);
                 hRemBugAPI =iptgetapi(hRemBug);
                 
                 position = hRemBugAPI.getPosition();
@@ -955,10 +964,39 @@ hContrast = imcontrast(imageRegion);
         end
     end
 
+
+    function keepBugs_Callback(hObject, eventdata)
+         %Until unchecked produce rectangles that the user can place down on
+        %the image. All bacteria in the box are turned pink.
+        if strcmp(get(hMenuKeepBugs, 'Checked'),'on')
+            keepBugs = false;
+            set(hMenuKeepBugs, 'Checked','off');
+            hKeepBug = findobj('Tag', 'keepBug');
+            delete(hKeepBug);
+        else
+            keepBugs = true;
+            set(hMenuKeepBugs, 'Checked', 'on');
+            
+            while(strcmp(get(hMenuKeepBugs, 'Checked'),'on'))
+                hKeepBug = imrect(imageRegion);
+                set(hKeepBug, 'Tag', 'keepBug');
+                
+                %position = wait(hRemBug);
+                pause(0.5);
+                hKeepBugAPI =iptgetapi(hKeepBug);
+                
+                position = hKeepBugAPI.getPosition();
+                
+                delete(hKeepBug)
+                drawnow;
+                keepBugBox(position)
+            end
+        end
+    end
     function saveRemovedBugs_Callback(hObject, eventdata)
         remBugsSaveDir = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'removedBugs.mat'];
-        save(remBugsSaveDir, 'removeBugInd');
-        fprintf(1, 'List of bugs removed saved!\n');
+        save(remBugsSaveDir, 'removeBugInd', 'keepBugInd');
+        fprintf(1, 'List of bugs removed (or kept) saved!\n');
       
     end
     function showAllBugs_Callback(hObject, eventdata)
@@ -1045,23 +1083,14 @@ hContrast = imcontrast(imageRegion);
            end
             xyz = [rProp.CentroidOrig];
             xyz = reshape(xyz,3,length(xyz)/3);
-           
+            
         else
             
             xyz = [rProp.CentroidOrig];
             xyz = reshape(xyz,3,length(xyz)/3);
         end
-        
-        
-        xMin = position(1); xMax = position(1) + position(3);
-        yMin = position(2); yMax = position(2) + position(4);
-        
-        indX = find((xyz(1,:)>xMin) + (xyz(1,:)<xMax) ==2);
-        indY = find((xyz(2,:)>yMin) + (xyz(2,:)<yMax) ==2);
-        
         bugWindow = 1;
-        
-        indAll = intersect(indX, indY);
+        indAll = findBugsBox(position, xyz);
         %If looking at the MIP then remove all bugs in the entire z-stack.
         switch projectionType
             case 'mip'
@@ -1072,8 +1101,7 @@ hContrast = imcontrast(imageRegion);
                 
                 indAll = intersect(indAll, indZ);
         end
-        
-        
+      
         removeBugInd{scanNum, colorNum} =  [removeBugInd{scanNum, colorNum} ,indAll];
         
         
@@ -1083,6 +1111,56 @@ hContrast = imcontrast(imageRegion);
         getRegisteredImage(scanNum, color, zNum, im, data, param);
         
     end
+
+    function keepBugBox(position)
+        %Option to pick bugs to keep instead of remove-useful if we have
+        %very few bugs and lots of background signal.
+        scanNum = get(hScanSlider, 'Value');
+        scanNum = int16(scanNum);
+        color = colorType(colorNum);
+        color = color{1};
+        
+        zNum = get(hZSlider, 'Value');
+        zNum = int16(zNum);
+        
+        xyz = [rProp.CentroidOrig];
+        xyz = reshape(xyz,3,length(xyz)/3);
+        
+        indAll = findBugsBox(position, xyz);
+        bugWindow = 1;
+        %If looking at the MIP then remove all bugs in the entire z-stack.
+        switch projectionType
+            case 'mip'
+                %Do nothing further to the list.
+            case 'none'
+                loc = -1*(xyz(3,:)<zNum-bugWindow) + (xyz(3,:)>zNum+bugWindow);
+                indZ = find(loc==0);
+                
+                indAll = intersect(indAll, indZ);
+        end
+      
+        keepBugInd{scanNum, colorNum} =  [keepBugInd{scanNum, colorNum} ,indAll];
+        
+        keepBugInd{scanNum, colorNum}
+          
+        %Remove these bugs from the list of z-depths to go to.
+        findBugZLocation();
+        
+        getRegisteredImage(scanNum, color, zNum, im, data, param);
+    end
+
+    function ind = findBugsBox(position, xyz)
+               
+        xMin = position(1); xMax = position(1) + position(3);
+        yMin = position(2); yMax = position(2) + position(4);
+        
+        indX = find((xyz(1,:)>xMin) + (xyz(1,:)<xMax) ==2);
+        indY = find((xyz(2,:)>yMin) + (xyz(2,:)<yMax) ==2);
+        
+        ind = intersect(indX, indY); 
+    end
+
+
 
     function displayOverlappedBugs()
         rProp = load([param.dataSaveDirectory filesep 'singleBacCount'...
@@ -1124,7 +1202,7 @@ hContrast = imcontrast(imageRegion);
             
         end
         
-        [xyz, xyzRem, rPropClassified] = getBugList(rProp);
+        [xyz, xyzRem, xyzKept,rPropClassified] = getBugList(rProp);
         
         switch projectionType
             case 'mip'
@@ -1142,6 +1220,20 @@ hContrast = imcontrast(imageRegion);
                 %Remove spots that were manually removed
                 set(hP{4}, 'XData', []);
                 set(hP{4}, 'YData', []);
+                
+                
+                if(~isempty(keepBugInd{scanNum, colorNum}))
+                    %Use same color for removed and kept bugs, depending on
+                    %what we do.
+                    locData{4} = xyzKept;
+                    
+                    set(hP{4},'XData', locData{4}(1,:));
+                    set(hP{4}, 'YData', locData{4}(2,:));
+                    
+                    set(hP{1}, 'XData', []);
+                    set(hP{1}, 'YData', []);
+                end
+                
                 
             case 'none'
                 
@@ -1171,13 +1263,26 @@ hContrast = imcontrast(imageRegion);
                     set(hP{4},'XData', locData{4}(1,:));
                     set(hP{4}, 'YData', locData{4}(2,:));
                 end
+                
+                if(~isempty(keepBugInd))
+                    %Use same color for removed and kept bugs, depending on
+                    %what we do.
+                    remLoc = -1*(xyzKept(3,:)<zNum-bugWindow) + (xyzKept(3,:)>zNum+bugWindow);
+                    locData{4} = xyzKept(:,remLoc==0);
+                    
+                    set(hP{4},'XData', locData{4}(1,:));
+                    set(hP{4}, 'YData', locData{4}(2,:));
+                end
         end
         
     end
 
-
-
-    function [xyz, xyzRem, rPropClassified] = getBugList(rProp)
+    function [xyz, xyzRem,  xyzKept,rPropClassified] = getBugList(rProp)
+        
+        xyzKeptInd = keepBugInd{scanNum, colorNum};
+        xyzKept = [rProp.CentroidOrig];
+        xyzKept = reshape(xyzKept,3,length(xyzKept)/3);
+        xyzKept = xyzKept(:, xyzKeptInd);
         
         %Remove spots that were manually segmented.
         keptSpots = setdiff(1:length(rProp), removeBugInd{scanNum, colorNum});
