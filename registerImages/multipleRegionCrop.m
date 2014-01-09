@@ -227,12 +227,12 @@ if(exist(remBugsSaveDir, 'file')==2)
 end
 hMenuKeepBugs = uimenu(hMenuDisplay, 'Label', 'Label bugs (instead of removing)', 'Callback', @keepBugs_Callback, 'Checked', 'off');
 keepBugInd = cell(numScans, numColor); %Variable to save culled bacteria points.
-keepBugsSaveDir = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'saveddBugs.mat'];
+keepBugsSaveDir = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'removedBugs.mat'];
 if(exist(keepBugsSaveDir, 'file')==2)
    keepBugInd = load(keepBugsSaveDir); 
-   keepBugInd = keepBugInd.removeBugInd;
+   keepBugInd = keepBugInd.keepBugInd;
 end
-
+keepBugInd
 
 hMenuSaveRemovedBugs = uimenu(hMenuDisplay, 'Label', 'Save removed bug list', 'Callback', @saveRemovedBugs_Callback);
 hMenuShowAllBugs = uimenu(hMenuDisplay, 'Label', 'Show ALL found bugs', 'Callback', @showAllBugs_Callback);
