@@ -114,7 +114,6 @@ fGui = figure('Name', figName, 'Menubar', 'none', 'Tag', 'fGui',...
 
 %Set key press functions for the figure-will be used to interface with
 %touch screen monitor more efficiently
-zIncr = 1; %Amount to increment the z direction when arrow is pressed. 
 %Can be changed by the user in File/change key-stroke value
 set(fGui, 'KeyPressFcn', @(fGui, evt)keyPressGUI(fGui, evt));
 
@@ -195,6 +194,9 @@ set(hMenuDenoise, 'Checked', 'off');
 hMenuMIP = uimenu(hMenuDisplay, 'Label', 'Maximum intensity projection', 'Callback', @mip_Callback);
 hMenuOverlapImages = uimenu(hMenuDisplay, 'Label', 'Overlap different colors', 'Callback', @overlapColors_Callback, 'Checked', 'off');
 
+hMenuChangeVariableZStep = uimenu(hMenuDisplay, 'Label', 'Change variable z-step', 'Callback', @changeVarZ_Callback, 'Tag', '1');
+multiZSliceMax = 1;
+
 hMenuShowSegmentation = uimenu(hMenuDisplay, 'Separator', 'on', 'Label', 'Show gut segmentation', ...
     'Checked', 'off','Callback', @showSegmentation_Callback);
 hMenuSetSegementationType = uimenu(hMenuDisplay, 'Label', 'Choose segmentation type', 'Callback', @setSegmentation_Callback);
@@ -230,9 +232,14 @@ keepBugInd = cell(numScans, numColor); %Variable to save culled bacteria points.
 keepBugsSaveDir = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'removedBugs.mat'];
 if(exist(keepBugsSaveDir, 'file')==2)
    keepBugInd = load(keepBugsSaveDir); 
-   keepBugInd = keepBugInd.keepBugInd;
+   if(isfield(keepBugInd, 'keepBugInd'))
+       keepBugInd = keepBugInd.keepBugInd;
+   else 
+       keepBugInd  = cell(numScans, numColor);
+   end
+else
+    keepBugInd  = cell(numScans, numColor);
 end
-keepBugInd
 
 hMenuSaveRemovedBugs = uimenu(hMenuDisplay, 'Label', 'Save removed bug list', 'Callback', @saveRemovedBugs_Callback);
 hMenuShowAllBugs = uimenu(hMenuDisplay, 'Label', 'Show ALL found bugs', 'Callback', @showAllBugs_Callback);
@@ -383,7 +390,7 @@ hProj2 = uicontrol('Parent', hMenuProjectionType,'Style', 'Radio', 'String', 'mi
     'Position', [0.1 0.40 0.9 0.25]);
 hProj3 = uicontrol('Parent', hMenuProjectionType,'Style', 'Radio', 'String', 'none','Units', 'Normalized',...
     'Position', [0.1 0.70 0.9 0.25]);
-hProj1 = uicontrol('Parent', hMenuProjectionType,'Style', 'Radio', 'String', '','Units', 'Normalized',...
+hProj1 = uicontrol('Parent', hMenuProjectionType,'Style', 'Radio', 'String', 'multiZSlice','Units', 'Normalized',...
     'Position', [0.1 0.05 0.9 0.25]);
 
 
@@ -550,13 +557,19 @@ hContrast = imcontrast(imageRegion);
             case 'downarrow'
                 %Go one z-depth up
                 zNum = get(hZSlider, 'Value');
-                zNum = int16(zNum);
+                
+                zIncr = str2num(get(hMenuChangeVariableZStep, 'Tag'));
                 if(zNum<zMax-zIncr)
                     zNum = zNum+zIncr;
-                elseif(zNum==xMax-1);
+                    ['this']
+                elseif(zNum>=xMax-zIncr);
                     zNum = zNum+1;
+                   
+                    ['that']
                 end
-                
+                  [zNum zIncr]
+                zNum = int16(zNum);
+
                 %Update the displayed z level.
                 set(hZTextEdit, 'String', zNum);
                 set(hZSlider, 'Value',double(zNum));
@@ -566,13 +579,18 @@ hContrast = imcontrast(imageRegion);
                 %Go one z-depth down
                 %Go one z-depth up
                 zNum = get(hZSlider, 'Value');
-                zNum = int16(zNum);
+                
+                
+                zIncr = str2num(get(hMenuChangeVariableZStep, 'Tag'));
                 
                 if(zNum>zMin+zIncr)
                     zNum = zNum-zIncr;
-                elseif(zNum==zMin+1);
+                elseif(zNum<=zMin+zIncr);
                     zNum = zNum-1;
                 end
+                [zNum zIncr]
+                zNum = int16(zNum);
+
                 %Update the displayed z level.
                 set(hZTextEdit, 'String', zNum);
                 set(hZSlider, 'Value',double(zNum));
@@ -763,6 +781,18 @@ hContrast = imcontrast(imageRegion);
         end
  
     end
+    function changeVarZ_Callback(hObject, eventdata)
+        prompt = 'Change variable z step size';
+        name = 'Variable z';
+        numlines = 1;
+        defaultanswer = {num2str(multiZSliceMax)};
+        answer = inputdlg(prompt, name, numlines, defaultanswer);
+        multiZSliceMax = str2num(answer{1});
+        zStepSmall = multiZSliceMax/(zMax-zMin);
+        set(hZSlider, 'SliderStep', [zStepSmall, zStepBig]);
+        set(hMenuChangeVariableZStep, 'Tag', num2str(multiZSliceMax+1));
+    end
+
 
     function showSegmentation_Callback(hObject, eventdata)
         
@@ -1100,6 +1130,11 @@ hContrast = imcontrast(imageRegion);
                 indZ = find(loc==0);
                 
                 indAll = intersect(indAll, indZ);
+            case 'multiZSlice'
+                loc = -1*(xyz(3,:)<zNum-bugWindow) + (xyz(3,:)>zNum+bugWindow+multiZSliceMax);
+                indZ = find(loc==0);
+                
+                indAll = intersect(indAll, indZ);
         end
       
         removeBugInd{scanNum, colorNum} =  [removeBugInd{scanNum, colorNum} ,indAll];
@@ -1134,6 +1169,11 @@ hContrast = imcontrast(imageRegion);
                 %Do nothing further to the list.
             case 'none'
                 loc = -1*(xyz(3,:)<zNum-bugWindow) + (xyz(3,:)>zNum+bugWindow);
+                indZ = find(loc==0);
+                
+                indAll = intersect(indAll, indZ);
+            case 'multiZSlice'
+                loc = -1*(xyz(3,:)<zNum-bugWindow) + (xyz(3,:)>zNum+bugWindow+multiZSliceMax);
                 indZ = find(loc==0);
                 
                 indAll = intersect(indAll, indZ);
@@ -1273,6 +1313,48 @@ hContrast = imcontrast(imageRegion);
                     set(hP{4},'XData', locData{4}(1,:));
                     set(hP{4}, 'YData', locData{4}(2,:));
                 end
+            case 'multiZSlice'
+                 bugWindow = 1;
+                 %Only difference between this code and the code for 'none'
+                 %is that the window now extends up to bugWindow +
+                 %multiZSliceMax
+                loc = -1*(xyz(3,:)<zNum-bugWindow) + (xyz(3,:)>zNum+bugWindow+multiZSliceMax);
+  
+                showBugsZ=true;
+                if(showBugsZ==true)
+                    %Only display bacteria in the ~ vicinity of the found
+                    %z-location.
+                    loc(loc~=0) = 2;
+                end
+                
+                locData{1} = xyz(:,loc==-1);
+                locData{2} = xyz(:,loc==0);
+                locData{3} = xyz(:, loc==1);
+                locData{2}(3,:)
+                for i=1:3
+                    set(hP{i},'XData', locData{i}(1,:));
+                    set(hP{i}, 'YData', locData{i}(2,:));
+                end
+                if(~isempty(removeBugInd))
+                    
+                    remLoc = -1*(xyzRem(3,:)<zNum-bugWindow) + (xyzRem(3,:)>zNum+bugWindow+multiZSliceMax);
+                    locData{4} = xyzRem(:,remLoc==0);
+                    
+                    set(hP{4},'XData', locData{4}(1,:));
+                    set(hP{4}, 'YData', locData{4}(2,:));
+                end
+                
+                if(~isempty(keepBugInd))
+                    %Use same color for removed and kept bugs, depending on
+                    %what we do.
+                    remLoc = -1*(xyzKept(3,:)<zNum-bugWindow) + (xyzKept(3,:)>zNum+bugWindow+multiZSliceMax);
+                    locData{4} = xyzKept(:,remLoc==0);
+                    
+                    set(hP{4},'XData', locData{4}(1,:));
+                    set(hP{4}, 'YData', locData{4}(2,:));
+                end
+                
+                
         end
         
     end
@@ -2947,6 +3029,7 @@ hContrast = imcontrast(imageRegion);
                 zNum = str2double(zNum);
                 zNum = int16(zNum);
                 
+                
                 set(hZSlider, 'Value',double(zNum));
             case ''
                 %Do nothing-z position already updated by key press
@@ -3037,6 +3120,12 @@ hContrast = imcontrast(imageRegion);
                  projectionType = 'none';
              case 'mip'
                  projectionType = 'mip';
+             case 'multiZSlice'
+                 projectionType = 'multiZSlice';
+                 zStepSmall = multiZSliceMax/(zMax-zMin);
+                 set(hZSlider, 'SliderStep', [zStepSmall, zStepBig]);
+                 set(hMenuChangeVariableZStep, 'Tag', num2str(multiZSliceMax+1));
+
          end
         
          if(~strcmp(oldValue,newValue))
@@ -3537,7 +3626,6 @@ hContrast = imcontrast(imageRegion);
                 %crude. What we should really be doing is in nicer fashion.
                 im(im(:)>50000) = 0;
         
-                
             case 'mip'
                  set(hIm, 'Visible', 'off');drawnow;
                 param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
@@ -3575,6 +3663,42 @@ hContrast = imcontrast(imageRegion);
               %mlj: NOTE temporarilly removed to use this code for
               %calculating the background instead
                 %  im = removeZCroppedRegions(im);
+              
+            case 'multiZSlice'
+                %Display multiple z-slices on top of each other-like a
+                %mini-MIP
+                
+
+                  if(strcmp(get(hMenuOverlapImages, 'Checked'), 'on'));
+                      
+                      im = registerSingleImage(scanNum,param.color{1}, zNum,im, data,param);
+                      for nC=2:length(param.color)
+                          im = im+registerSingleImage(scanNum,param.color{nC}, zNum,im, data,param);
+                      end
+                      for numZslices = 1:multiZSliceMax
+                          nextIm = registerSingleImage(scanNum,param.color{1}, zNum+numZSlices,im, data,param);
+                          for nC=2:length(param.color)
+                              nextIm = im+registerSingleImage(scanNum,param.color{nC}, zNum+numZSlices,im, data,param);
+                          end
+                          im = max(im, nextIm);
+                      end
+                  else
+                      im = registerSingleImage(scanNum,color, zNum,im, data,param);
+                      for numZSlices = 1:multiZSliceMax
+                          nextIm = registerSingleImage(scanNum,color, zNum+numZSlices,im, data,param);
+                          numZSlices
+                      end
+                      im = max(im, nextIm);
+                  
+                  end
+                %Optionally denoise image
+                if strcmp(get(hMenuDenoise, 'Checked'),'on')
+                    im = denoiseImage(im);
+                end
+                %Get rid of really bright pixels. WARNING: if the image is bright
+                %to begin with this will mess things up. This approach is somewhat
+                %crude. What we should really be doing is in nicer fashion.
+                im(im(:)>50000) = 0;
                 
                 
         end
