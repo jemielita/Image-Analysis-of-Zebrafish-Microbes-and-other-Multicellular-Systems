@@ -191,6 +191,7 @@ if(~isdir([cropDir filesep 'gutOutline']))
 end
 
 param.directoryName = cropDir;
+param.dataSaveDirectory = [cropDir filesep 'gutOutline'];
 
 save([cropDir filesep 'gutOutline', filesep 'param.mat'], 'param');
 save([cropDir filesep 'ExperimentData.mat'], 'parameters', 'timeData', 'param');
