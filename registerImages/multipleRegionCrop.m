@@ -1246,7 +1246,7 @@ hContrast = imcontrast(imageRegion);
         
         switch projectionType
             case 'mip'
-                
+               
                 %ind = setdiff(1:size(xyz,2), keptSpots);
                 %Set all bug outlines to be one color
                 set(hP{1}, 'XData', xyz(1,:));
