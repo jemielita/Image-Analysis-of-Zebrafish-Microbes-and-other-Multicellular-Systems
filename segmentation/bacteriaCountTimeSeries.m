@@ -1,4 +1,35 @@
-%bacteriaCountTimeSeries: Process spot detection code further to 
+%bacteriaCountTimeSeries: Process spot detection code further to get
+%possible bacteria spots, before passing these spots on to further
+%classifiers.
+%
+% USAGE       bacteriaCountTimeSeries(param)
+%             bacteriaCountTimeSeries(param, analysisType)
+%             bacteriaCountTimeSeries(param, analysisType, cullProp)
+%             bacteriaCountTimeSeries(param, analysisType, cullProp, scanNum, inputSpotLoc)
+% INPUT       param: parameter file for thish fish.
+% 
+%             analysisType: (optional. Default: 'firstpass') Type of analysis 
+%               to run on fish. 'firstpass': first culling down of the data. 
+%               'updateGutPosNumber': updates the location of the bacteria
+%               in the gut.
+%
+%             cullProp:(optional) Structure containing spot features to cull
+%               potentital spots by. Default:
+%                       cullProp.radCutoff(1,2) = [40,3]-cutoffin the
+%                           horizontal and vertical direction
+%                       cullProp.minRadius = 2;
+%                       cullProp.minInten = 229; %mlj: should probably have
+%                       this be different for different color channels-not
+%                       sure why it's working so well now.
+%                       cullProp.minArea = 1;
+%
+%             scanNum: (optional. Default: all) Scan number to analyze. 
+%                 If not given, function will loop over all scans taken.
+%             inputSpotLoc: (optional. Defaults to loading from
+%             singleCountRaw directoyr) Location of spot data to cull.
+%
+% AUTHOR Matthew Jemielita
+
 function [numBac, bacProp] =  bacteriaCountTimeSeries(param, varargin)
 
 %Variables for doing in-place moving of the analysis.
