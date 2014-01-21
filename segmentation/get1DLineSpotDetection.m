@@ -126,6 +126,8 @@ end
 function [numColor, classifierTypeList,saveLine, dataDir, recalculate, rPropAll, cList, minS, maxS] = ...
     get1DLineSpotDetection_parameters(param, varargin)
 %% Collecting together all inputs
+varargin = varargin{1};
+nArg = length(varargin) +1; %To deal with screwy way of passing in varargin variable
 numColor = length(param.color);
 cList = zeros(numColor,1);
 
@@ -135,7 +137,7 @@ end
 
 rPropAll = []; %Empty unless used.
 
-switch nargin
+switch nArg
     case 1
         saveLine = true;
         dataDir = [param.dataSaveDirectory filesep 'singleBacCount'];

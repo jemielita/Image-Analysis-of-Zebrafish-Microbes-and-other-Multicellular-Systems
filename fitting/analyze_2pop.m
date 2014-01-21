@@ -1,5 +1,15 @@
 % analyze_2pop.m
 %
+% USAGE analyze_2pop(totPop)
+%       analyze_2pop(totPop,colorScheme)
+% INPUT totPop: cell array containing the total population for a number of
+%               different fish. Each of these cell arrays contains an array of size
+%               number Scans X number Colors containing the total population for each
+%               color and time point.
+%        colorScheme: (optional, default: 'unique'). Use a different color
+%        scheme for each time series ('unique') or use a red and green
+%        color scheme for each fish data ('redgreen').
+% NOTES
 % Script for plotting, analyzing bacterial population data from
 % two group "early time" Aeromonas colonization experiments of Summer 2013
 % Population numbers from combination of single-particle analysis (early 
@@ -21,9 +31,16 @@
 % load forRaghu_totalPopulation.mat
 % Also in "allParamVariables.mat"
 
-function analyze_2pop(totPop)
+function analyze_2pop(totPop,varargin)
 %% 
-
+switch nargin
+    case 1
+    colorScheme = 'unique';
+    case 2
+    colorScheme = varargin{1};
+    otherwise
+        fprintf(2, 'Analyze_2pop take 1 or 2 inputs!\n');
+end
 
 Nfish = length(totPop);
 
@@ -53,7 +70,7 @@ popFitParam(1).alt_fit = [false false];
 for nF=1:length(totPop)
    Nscans(nF) = size(totPop{nF},1);
    t{nF} = (1:Nscans(nF))*dt; % time from the start of imaging, hours
-    
+    t{nF} = t{nF}';
 end
 
 halfboxsize = 5;  % +/- 2 time points for boxcar standard deviation for logistic growth fit
@@ -80,18 +97,37 @@ end
 
 logslope = NaN(Nfish, length(t),numColor);
 
-for nC=1:numColor
-    colors{nC} = zeros(Nfish,3);
+
+switch colorScheme
     
-    for nF=1:Nfish
-        switch nC
-            case 1
-                colors{1}(nF,:) =0.8*[1, mod(nF,4)/3, mod(nF,2)];
-            case 2
-                colors{2}(nF,:) =0.8*[mod(nF,3)/2, 1-mod(nF,4)/3, mod(nF,2)];
+    case 'unique'
+        for nC=1:numColor
+            colors{nC} = zeros(Nfish,3);
+            
+            for nF=1:Nfish
+                switch nC
+                    case 1
+                        colors{1}(nF,:) =0.8*[1, mod(nF,4)/3, mod(nF,2)];
+                    case 2
+                        colors{2}(nF,:) =0.8*[mod(nF,3)/2, 1-mod(nF,4)/3, mod(nF,2)];
+                end
+                
+            end
         end
         
-    end
+    case 'redgreen'
+        for nF=1:Nfish
+            for nC=1:numColor
+                switch nC
+                    case 1
+                        %green
+                        colors{1}(nF,:) = [0.2 0.7 0.4];
+                    case 2
+                        colors{2}(nF,:) = [0.8 0.2 0.4];
+                end
+            end
+        end
+                        
 end
 
 
@@ -179,7 +215,7 @@ for nF=1:Nfish
         semilogy(t{nF}, NthLV(2,:), ':', 'color', 0.75*colors1(2,:));
     end
     
-    if 1==1
+    if 2==1
         % time-varying growth rate
         t_window = 3.1*dt;  % +/- time window size
         for k=1:length(t{nF})
@@ -262,8 +298,8 @@ if displayvalues
         
         %fs = sprintf('         Nucleation size N0 %.1f and %.1f', N0(nF,1), N0(nF,2)); disp(fs);
         
-        if(numColor==2)
-            fs = sprint('         Lotka-Volterra alpha: ');
+        if(numColor==2 &&  fitLotkaVolterra ==true)
+            fs = sprintf('         Lotka-Volterra alpha: ');
             for nC=1:2
                 fs = [fs sprintf(' %.1e', alpha(nF, nC))];
             end

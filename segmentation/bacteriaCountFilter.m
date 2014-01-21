@@ -93,21 +93,26 @@ end
 rProp = rProp(keptSpots);
 
 
-if(strcmp(classifierType, 'none'))
-    %
-    %     colorThresh = [0,0];
-    %     areaThresh = [3,3];
-    % if(~isempty(rProp))
-    %     rPropOut = rProp([rProp.Area]>areaThresh(colorNum));
-    %
-    %     rPropOut = rPropOut([rPropOut.MeanIntensity]>colorThresh(colorNum));
-    %     rPropOut = rProp;
-    % else
-    rPropOut = rProp;
-    
-    
-    return
+%Run filters that don't need the use of any type of classifier
+
+switch classifierType
+    case 'none'
+        rPropOut = rProp;
+        return
+    case 'manualSelection'
+        %Use the manually selected found spots from the list in
+        %singleBacCount
+        inputVar = load([param.dataSaveDirectory filesep 'singleBacCount' filesep 'removedBugs.mat']);
+        keepBugInd = inputVar.keepBugInd;
+        ind = keepBugInd{scanNum, colorNum};
+        rPropOut = rProp(ind);
+        return
+    otherwise
+        %continue with analysis
 end
+
+
+
 
 %Load in filtering parameters
 inputVar = load([param.dataSaveDirectory filesep 'singleBacCount' filesep 'bacteriaClassifier.mat']);
@@ -207,12 +212,7 @@ switch classifierType
     %    rPropOut = rProp;
        
     case 'manualSelection'
-        %Use the manually selected found spots from the list in
-        %singleBacCount
-        inputVar = load([param.dataSaveDirectory 'singleBacCount' filesep 'removedBugs.mat']);
-        keepBugInd = inputVar.keepBugInd;
-        ind = keepBugInd{scanNum, colorNum};
-        rPropOut = rProp(ind);
+        %This analysis type is run above.
         
 end
 
