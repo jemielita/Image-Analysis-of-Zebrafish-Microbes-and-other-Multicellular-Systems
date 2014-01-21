@@ -70,14 +70,36 @@ if(v==0)
 end
 
 
-%Go through each of the analysis steps and make sure the values for the
-%parameters are all right
+% %Go through each of the analysis steps and make sure the values for the
+% %parameters are all right
+% initValue = cell(length(s),1);
+% analysisType = struct('name',initValue, 'return', initValue,'binSize',initValue,...
+%     'bkgList', initValue, 'spotFeatures', initValue);
+% 
+% analysisType = cell(length(s),1);
+% for aNum=1:length(s)
+%     analysisType= updateAndCheckAnalysis(analysisList, aNum, analysisType);
+%    
+% end
 
-for aNum=1:length(s)
-    analysisType(aNum) = checkAnalysis(analysisList, aNum);
-end
+%1. Calculate a histogram of pixel values near background
+analysisType(1).name = 'backgroundHistogram';
+analysisType(1).return = true;
+analysisType(1).binSize = 1:2:2000; 
 
 
+%Calculate the linear intensity down the length of the gut after
+%subtracting the background intensity at those regions
+analysisType(2).name = 'linearIntensityBkgSub';
+analysisType(2).return = true;
+analysisType(2).bkgList = 1:25:2000; %Need to get a sense of what size 
+
+analysisType(3).name = 'spotDetection';
+analysisType(3).return = true;
+analysisType(3).spotFeatures.intenThresh = [100 30];%Decent cutoffs for the red/green channels.
+       
+
+analysisAll = analysisType;
 
 for nF =1:length(dirNames)
    %Check the inputs for all of the scan parameters
@@ -97,7 +119,7 @@ for nF =1:length(dirNames)
    end
    colorList = [colorList '}'];
        
-   colorList = pAll{nF}.color;
+   %colorList = pAll{nF}.color;
    dataSaveDirectory = pAll{nF}.dataSaveDirectory;
    freshStart = 'true';
    
@@ -105,6 +127,8 @@ for nF =1:length(dirNames)
    'Color list', 'Save directory', 'Restart all analysis'};
    numlines = 1;
    name = ['Scan parameters for fish ', num2str(nF)];
+   
+   
    defaultanswer = {scanList, stepSize, regOverlap, colorList, dataSaveDirectory, freshStart};
    answer = inputdlg(prompt, name, numlines, defaultanswer);
    
@@ -139,61 +163,61 @@ varargout{2} = analysisAll;
 
 end
 
-function analysisType = checkAnalysis(analysisList, aNum)
+function analysisType = updateAndCheckAnalysis(analysisList, aNum, analysisType)
 
 thisAnalysis = analysisList(aNum);
 
 
-switch thisAnalysis
+switch thisAnalysis{1}
     
-    case 'backGroundHistogram'
+    case 'backgroundHistogram'
         %1. Calculate a histogram of pixel values near background
-        analysisType.name = 'backgroundHistogram';
-        analysisType.return = 'true';
-        analysisType.binSize = '1:2:2000';
+        analysisType(aNum).name = 'backgroundHistogram';
+        analysisType(aNum).return = 'true';
+        analysisType(aNum).binSize = '1:2:2000';
         
         prompt = {'Name', 'return value', 'bin size'};
-        name = getfield(analysisType, 'name');
+        name = getfield(analysisType(aNum), 'name');
         numlines = 1;
-        defaultanswer = cellfun(@(x)getfield(analysisType, x), fieldnames(analysisType), 'UniformOutput', false);
+        defaultanswer = cellfun(@(x)getfield(analysisType(aNum), x), fieldnames(analysisType(aNum)), 'UniformOutput', false);
         answer = inputdlg(prompt, name, numlines, defaultanswer);
         
-        analysisType.return = str2num(answer{2});
-        analysisType.binSize = str2num(answer{3});
+        analysisType(aNum).return = str2num(answer{2});
+        analysisType(aNum).binSize = str2num(answer{3});
         
     case 'linearIntensityBkgSub'
         %Calculate the linear intensity down the length of the gut after
         %subtracting the background intensity at those regions
-        analysisType.name = 'linearIntensityBkgSub';
-        analysisType.return = 'true';
-        analysisType.bkgList = '1:25:2000'; %Need to get a sense of what size
+        analysisType(aNum).name = 'linearIntensityBkgSub';
+        analysisType(aNum).return = 'true';
+        analysisType(aNum).bkgList = '1:25:2000'; %Need to get a sense of what size
 
-        name = getfield(analysisType, 'name');
-        defaultanswer = cellfun(@(x)getfield(analysisType, x), fieldnames(analysisType), 'UniformOutput', false);
+        prompt = {'Name', 'return value', 'background intensity list'};
+        name = getfield(analysisType(aNum), 'name');
+        defaultanswer = cellfun(@(x)getfield(analysisType(aNum), x), fieldnames(analysisType(aNum)), 'UniformOutput', false);
         numlines = 1;
         answer = inputdlg(prompt, name, numlines, defaultanswer);
 
-        analysisType.return = str2num(answer{2});
-        analysisType.bkgList = str2num(answer{3});
+        analysisType(aNum).return = str2num(answer{2});
+        analysisType(aNum).bkgList = str2num(answer{3});
         
     case 'spotDetection'
-        analysisType.name = 'spotDetection';
-        analysisType.return = 'true';
+        analysisType(aNum).name = 'spotDetection';
+        analysisType(aNum).return = 'true';
         intenThresh = '[30 30]';
-        analysisType.spotFeatures.intenThresh = intenThresh; %Use default
+        analysisType(aNum).spotFeatures.intenThresh = intenThresh; %Use default
         
         name = getfield(analysisType, 'name');
         numlines = 1;
         prompt = {'Name', 'return value', 'intensity threshold'};
-        defaultanswer = {analysisType.name, analysisType.return,intenThresh};
+        defaultanswer = {analysisType(aNum).name, analysisType(aNum).return,intenThresh};
         answer = inputdlg(prompt, name, numlines, defaultanswer);
 
-        analysisType.return = str2num(answer{2});
-        analysisType.spotFeatures.intenThresh = str2num(answer{3});
+        analysisType(aNum).return = str2num(answer{2});
+        analysisType(aNum).spotFeatures.intenThresh = str2num(answer{3});
         
         
 end
-
 
 
 end
