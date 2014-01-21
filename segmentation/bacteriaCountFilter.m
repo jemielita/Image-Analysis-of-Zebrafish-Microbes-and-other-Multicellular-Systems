@@ -1,7 +1,10 @@
 %bacteriaCountFilter: Filters bacteria counts in /singleBacCount/ using the
 %variables in /singleBacCount/bacteriaClassifier.mat
 %
-% USAGE rPropOut = bacteriaCountFilter(rProp, scanNum, colorNum, param, useRemovedBugList)
+% USAGE    rPropOut = bacteriaCountFilter(rProp, scanNum, colorNum, param)
+%          rPropOut = bacteriaCountFilter(rProp, scanNum, colorNum, param, useRemovedBugList)
+%          rPropOut = bacteriaCountFilter(rProp, scanNum, colorNum, param, useRemovedBugList, classifierType)
+%          rPropOut = bacteriaCountFilter(rProp, scanNum, colorNum, param, useRemovedBugList, classifierType, distCutoff_combRegions)
 %
 % INPUT -rProp: structure containing information about each found spot.
 %       -param: parameter file for this fish. Will be used to point towards
@@ -31,7 +34,7 @@
 %           index.InCorrect: incorrectly labelled bacteria.
 % AUTHOR Matthew Jemielita, Sep. 6, 2013
 
-function [rPropOut varargout] = bacteriaCountFilter(rProp, scanNum, colorNum, param, varargin)
+function [rPropOut, varargout] = bacteriaCountFilter(rProp, scanNum, colorNum, param, varargin)
 
 switch nargin
     case 4
@@ -90,21 +93,26 @@ end
 rProp = rProp(keptSpots);
 
 
-if(strcmp(classifierType, 'none'))
-    %
-    %     colorThresh = [0,0];
-    %     areaThresh = [3,3];
-    % if(~isempty(rProp))
-    %     rPropOut = rProp([rProp.Area]>areaThresh(colorNum));
-    %
-    %     rPropOut = rPropOut([rPropOut.MeanIntensity]>colorThresh(colorNum));
-    %     rPropOut = rProp;
-    % else
-    rPropOut = rProp;
-    
-    
-    return
+%Run filters that don't need the use of any type of classifier
+
+switch classifierType
+    case 'none'
+        rPropOut = rProp;
+        return
+    case 'manualSelection'
+        %Use the manually selected found spots from the list in
+        %singleBacCount
+        inputVar = load([param.dataSaveDirectory filesep 'singleBacCount' filesep 'removedBugs.mat']);
+        keepBugInd = inputVar.keepBugInd;
+        ind = keepBugInd{scanNum, colorNum};
+        rPropOut = rProp(ind);
+        return
+    otherwise
+        %continue with analysis
 end
+
+
+
 
 %Load in filtering parameters
 inputVar = load([param.dataSaveDirectory filesep 'singleBacCount' filesep 'bacteriaClassifier.mat']);
@@ -203,7 +211,8 @@ switch classifierType
     case 'none'
     %    rPropOut = rProp;
        
-        
+    case 'manualSelection'
+        %This analysis type is run above.
         
 end
 
@@ -211,7 +220,7 @@ end
 if(distCutoff_combRegions ==true)
     %Filter based on proximity to adjacent spots
     radCutoff = (1/0.1625)*[0.5, 3];
-    rProp = combineRegions(rProp, radCutoff);
+    rPropOut = combineRegions(rPropOut, radCutoff);
 end
 
 index.Correct = [rPropOut.ind];

@@ -194,7 +194,8 @@ switch analysisType(stepNum).name
     case 'spotDetection'
         %Estimate the location of single bacteria in these images
         spotFeatures = analysisType(stepNum).spotFeatures;
-          thisRegFeatures = countSingleBacteria(imStack, spotFeatures, colorNum, param,gutMask);
+
+        thisRegFeatures = countSingleBacteria(imStack, spotFeatures, colorNum, param,gutMask);
         
 end
 
