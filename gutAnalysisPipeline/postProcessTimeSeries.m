@@ -19,15 +19,18 @@ function postProcessTimeSeries(analysisType, scanParam, pAll, processType)
 numFish = length(pAll);
 
 
-%% Unpack found bacteria spots
-fprintf(1, 'postProcess step 1: Unpacking all found bacterial spots\n');
 
-for nF=1:numFish
-    bacteriaCountTimeSeries(pAll{nF}, 'firstpass', 'defaultCullProp')
-    
-    pAll{nF}.gutRegionsInd = findGutRegionMaskNumber(pAll{nF}, true);
-    %Update lables for each bacteria
-    findGutSliceParticle(pAll{nF});
+
+%% Go through different processing types
+
+for nP =1:length(processType)
+   
+    switch processType{nP}
+        case 'spot'
+            %First level of processing for bacterial spots
+            pAll = processBacteriaSpots(pAll)
+            
+    end
 end
 
 
@@ -140,5 +143,22 @@ for nF= 2:6
 end
     
 
-
 end
+
+
+    function pAll = processBacteriaSpots(pAll)        
+        %% Unpack found bacteria spots
+        fprintf(1, 'postProcess: Unpacking all found bacterial spots\n');
+        
+        numFish = length(pAll);
+        for nF=1:numFish
+            bacteriaCountTimeSeries(pAll{nF}, 'firstpass', 'defaultCullProp')
+
+        end            
+            pAll{nF}.gutRegionsInd = findGutRegionMaskNumber(pAll{nF}, true);
+            %Update lables for each bacteria
+            findGutSliceParticle(pAll{nF});
+ 
+    end
+
+

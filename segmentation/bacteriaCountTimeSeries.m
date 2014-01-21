@@ -94,6 +94,7 @@ param.centerLineAll = analysisParameters.param.centerLineAll;
 
 %colorList = {'488nm', '568nm'};
 
+colorList = {'568nm'};
 switch analysisType 
     case 'all'
         
@@ -124,28 +125,28 @@ end
             
             %Load data-produced by analyzeGutTimeSeries
             %if(nC==2)
-        loadType = 1;
-        
+            loadType = 1;
+            
             
             if(strcmp(inputSpotLoc, 'none'))
-        
+                
                 if(loadType==1)
                     spotLoc = load(['singleCountRaw', filesep, 'Analysis_Scan', num2str(nS), '.mat']);
                 else
                     spotLoc = load(['Analysis_Scan', num2str(nS), '.mat']);
                 end
-        %spotLoc = spotLoc{nC, analysisNum};
-        
-        
-            %The current indexing is screwy-need to fix this up.
-            %spotLoc = spotLoc{1};
-            
-            %else
-          %     spotLoc = load(['bacCount_analysis_all_highCutoff', filesep, 'Analysis_Scan', num2str(nS), '.mat']);
-            %end
-                        spotLoc = spotLoc.regFeatures;
+                %spotLoc = spotLoc{nC, analysisNum};
                 
-                     %   spotLoc = spotLoc{nC,3};
+                
+                %The current indexing is screwy-need to fix this up.
+                %spotLoc = spotLoc{1};
+                
+                %else
+                %     spotLoc = load(['bacCount_analysis_all_highCutoff', filesep, 'Analysis_Scan', num2str(nS), '.mat']);
+                %end
+                spotLoc = spotLoc.regFeatures;
+                
+                %   spotLoc = spotLoc{nC,3};
                      %  spotLoc = spotLoc{3}; %Why do we need this?
             else
                 spotLoc = inputSpotLoc;
@@ -175,7 +176,7 @@ end
                %rProp = spotLoc{nC,3}{nR};
                
                %mlj:temporary
-               rProp = spotLoc{1}{nR};
+               rProp = spotLoc{2}{nR};
            end
                 [gutMask, xOffset, yOffset, gutMaskReg] = getMask(param, nS, nR, 'cutmask');
                 
