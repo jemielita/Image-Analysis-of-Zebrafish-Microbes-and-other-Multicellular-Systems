@@ -133,7 +133,7 @@ for nF =1:length(dirNames)
    answer = inputdlg(prompt, name, numlines, defaultanswer);
    
    sAll{nF}.scanList = str2num(answer{1});
-   sAll{nF}.stepsize = str2num(answer{2});
+   sAll{nF}.stepSize = str2num(answer{2});
    sAll{nF}.regOverlap = str2num(answer{3});
    sAll{nF}.colorList = answer{4};
    sAll{nF}.dataSaveDirectory = answer{5};
