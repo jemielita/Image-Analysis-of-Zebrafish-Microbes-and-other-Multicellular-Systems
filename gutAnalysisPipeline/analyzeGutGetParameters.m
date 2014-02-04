@@ -139,6 +139,7 @@ for nF =1:length(dirNames)
    sAll{nF}.dataSaveDirectory = answer{5};
    sAll{nF}.freshStart = str2num(answer{6});
 
+   sAll{nF}.codeDir = codeDir;
 %    
 %    sAll{nF}.scanList = 1:pAll{nF}.expData.totalNumberScans;
 %    sAll{nF}.codeDir = codeDir;
