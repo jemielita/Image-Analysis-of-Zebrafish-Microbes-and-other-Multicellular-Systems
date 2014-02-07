@@ -1243,7 +1243,8 @@ hContrast = imcontrast(imageRegion);
         end
         
         [xyz, xyzRem, xyzKept,rPropClassified] = getBugList(rProp);
-        
+        length(xyz)
+        size(xyz)
         switch projectionType
             case 'mip'
                

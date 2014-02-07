@@ -117,7 +117,7 @@ if(~isfield(param, 'gutRegionsInd'))
 end
 
 
-createAllMasks(scanParam, param);
+%createAllMasks(scanParam, param);
 %% Save meta-data
 %Including analysis parameters and the current version of the code
 

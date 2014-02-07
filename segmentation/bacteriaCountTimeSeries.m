@@ -123,9 +123,9 @@ colorList = analysisParameters.scanParam.color;
 param.centerLineAll = analysisParameters.param.centerLineAll;
 
 
-%colorList = {'488nm', '568nm'};
+colorList = {'488nm', '568nm'};
 
-colorList = {'568nm'};
+%colorList = {'568nm'};
 switch analysisType 
     case 'all'
         
@@ -143,10 +143,15 @@ end
     function [] = bacCountFirstPass()
         %Directory to save single bacteria count analysis
 
+  
+        
         for nS=minS:maxS
             
             fprintf(1, ['Processing scan ' num2str(nS) '...\n']);
             rPropAll = cell(length(colorList),1);
+            
+       
+            
             for nC=1:length(colorList)
 
             
@@ -162,7 +167,7 @@ end
             if(strcmp(inputSpotLoc, 'none'))
                 
                 if(loadType==1)
-                    spotLoc = load(['singleCountRaw', filesep, 'Analysis_Scan', num2str(nS), '.mat']);
+                     spotLoc = load(['singleCountRaw', filesep, 'Analysis_Scan', num2str(nS), '.mat']);
                 else
                     spotLoc = load(['Analysis_Scan', num2str(nS), '.mat']);
                 end
@@ -187,32 +192,34 @@ end
            
             
             %mlj:temporary
-            %numReg = size(spotLoc{nC,3},1);
+            numReg = size(spotLoc{nC,3},1);
             
             %mlj: temporary
-            numReg = size(spotLoc{1},2);
+            %numReg = size(spotLoc{1},2);
+            
             
             for nR=1:numReg
                 %Again, the indexing is somewhat screwy.
-             %   if(nC==1)
-               % rProp = spotLoc{1}{nR}{analysisNum,nC};
-              %  else
-               %    rProp = spotLoc{1}{nR}{1}; 
+                %   if(nC==1)
+                % rProp = spotLoc{1}{nR}{analysisNum,nC};
+                %  else
+                %    rProp = spotLoc{1}{nR}{1};
                 %end
-              %  rProp = spotLoc{nR}{nC};
-           if(loadType==2)
-               rProp = spotLoc{nR}{3,nC};
-           elseif (loadType ==1)
-               %rProp = spotLoc{1};
-               %rProp = spotLoc{nC,3}{nR};
-               
-               %mlj:temporary
-               rProp = spotLoc{2}{nR};
-           end
+                %  rProp = spotLoc{nR}{nC};
+                if(loadType==2)
+                    rProp = spotLoc{nR}{3,nC};
+                elseif (loadType ==1)
+                    %rProp = spotLoc{1};
+                    rProp = spotLoc{nC,3}{nR};
+                    
+                    %mlj:temporary
+                    % rProp = spotLoc{2}{nR};
+                end
                 [gutMask, xOffset, yOffset, gutMaskReg] = getMask(param, nS, nR, 'cutmask');
                 
+                
                 rProp = cullFoundBacteria(rProp, gutMask, cullProp,xOffset, yOffset);
-          
+                
                 rProp = findBacLoc(rProp, gutMaskReg,param,nR,nS);
                 rProp = findGutRegion(rProp, nS,param);
                 rProp = getRotatedIndices(param,nR,nS,rProp,nC);
@@ -229,7 +236,7 @@ end
             end
         
             rProp = rPropAll;
-            loadSingleColor = true;
+            loadSingleColor = false;
             if(loadSingleColor)
                 greenBug = load([bacSaveDir filesep 'bacCount' num2str(nS) '.mat']);
                 greenBug = greenBug.rProp{1};

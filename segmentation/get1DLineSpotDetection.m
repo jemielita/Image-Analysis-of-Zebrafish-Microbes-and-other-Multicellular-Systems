@@ -130,6 +130,7 @@ varargin = varargin{1};
 nArg = length(varargin) +1; %To deal with screwy way of passing in varargin variable
 numColor = length(param.color);
 cList = zeros(numColor,1);
+cList = 1:numColor;
 
 for nC=1:numColor
     classifierTypeList{nC} = 'svm';
