@@ -1378,6 +1378,7 @@ hContrast = imcontrast(imageRegion);
         xyzRem = xyzRem(:,removeBugInd{scanNum,colorNum});
         rPropClassified = rProp(keptSpots);
 
+        rPropClassified = rProp;
         classifierType = 'svm';
         useRemovedBugList = true;
         
@@ -1394,7 +1395,9 @@ hContrast = imcontrast(imageRegion);
                 %data
                 distCutoff_combRegions = false;
                 rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
+                rPropClassified
                 %keptSpots = intersect(keptSpots, [rProp.ind]);
+                
             case 'on'
                 %Apply some harsh-ish threshold-Set this threshold in
                 %bacteriaCountFilter.
@@ -1406,6 +1409,10 @@ hContrast = imcontrast(imageRegion);
                 
                 colorThresh = [0,0];
                 areaThresh = [3,3];
+                classifierType = 'none_plusAutoFluor';
+                distCutoff_combRegions = false;
+                rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
+                
                 
                 rPropClassified = rPropClassified([rPropClassified.Area]>areaThresh(colorNum));
                 

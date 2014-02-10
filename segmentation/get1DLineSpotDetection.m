@@ -93,8 +93,9 @@ for nS = minS:maxS
        if(isempty(numEl))
            lineDist{nS,nC} = zeros(1, bugArraySize);
        end
-       
-       popTot(nS, nC) = sum(numEl);
+       %mlj: I'm not sure why this current form doesn't work
+%       popTot(nS, nC) = sum(numEl);
+popTot(nS, nC) = length(rProp);
    end
    
 end
