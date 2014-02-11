@@ -1376,9 +1376,9 @@ hContrast = imcontrast(imageRegion);
         xyzRem = reshape(xyzRem,3,length(xyzRem)/3);
         
         xyzRem = xyzRem(:,removeBugInd{scanNum,colorNum});
-        rPropClassified = rProp(keptSpots);
+       % rPropClassified = rProp(keptSpots);
 
-        rPropClassified = rProp;
+       rPropClassified = rProp;
         classifierType = 'svm';
         useRemovedBugList = true;
         
@@ -1410,13 +1410,16 @@ hContrast = imcontrast(imageRegion);
                 colorThresh = [0,0];
                 areaThresh = [3,3];
                 classifierType = 'none_plusAutoFluor';
+              
+                
                 distCutoff_combRegions = false;
+
                 rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
                 
                 
-                rPropClassified = rPropClassified([rPropClassified.Area]>areaThresh(colorNum));
+              %  rPropClassified = rPropClassified([rPropClassified.Area]>areaThresh(colorNum));
                 
-                rPropClassified = rPropClassified([rPropClassified.MeanIntensity]>colorThresh(colorNum));
+               % rPropClassified = rPropClassified([rPropClassified.MeanIntensity]>colorThresh(colorNum));
                 
                 
         end

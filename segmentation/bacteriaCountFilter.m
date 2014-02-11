@@ -14,7 +14,8 @@
 %       -useRemovedBugList: (optional. Default = false) before using a 
 %       classifier to filter data remove ones that have beeen manually
 %       removed. Classification error may be changed if object is
-%       pre-filtered.
+%       pre-filtered. If useRemovedBugList is an array then use this array
+%       as the list of spots to remove.
 %       -classifierType: (optional. Default = 'svn') Type of classifier to
 %       use. Currently supported:
 %           -'svn': support vector machine using a gaussian radial basis
@@ -59,21 +60,31 @@ switch nargin
 end
     
 
-if(useRemovedBugList==true)
+if(~islogical(useRemovedBugList))
+    keptSpots = useRemovedBugList;
+    useRemovedBugList = true;
     
-    %Load in list of removed bugs, if we manually removed some.
-    remBugsSaveDir = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'removedBugs.mat'];
-    if(exist(remBugsSaveDir, 'file')==2)
-        removeBugInd = load(remBugsSaveDir);
-        removeBugInd = removeBugInd.removeBugInd;
-        removeBugInd = removeBugInd{scanNum, colorNum};
-    else
-        removeBugInd = [];
-    end
-    keptSpots = setdiff(1:length(rProp), removeBugInd);
 else
-    keptSpots = 1:length(rProp);
+    
+    if(useRemovedBugList==true)
+        
+        %Load in list of removed bugs, if we manually removed some.
+        remBugsSaveDir = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'removedBugs.mat'];
+        if(exist(remBugsSaveDir, 'file')==2)
+            removeBugInd = load(remBugsSaveDir);
+            removeBugInd = removeBugInd.removeBugInd;
+            removeBugInd = removeBugInd{scanNum, colorNum};
+        else
+            removeBugInd = [];
+        end
+        keptSpots = setdiff(1:length(rProp), removeBugInd);
+    else
+        keptSpots = 1:length(rProp);
+    end
+    
 end
+
+
 
 %Not really the correct place to do this, but find empty gut
 %locations and set them to 6-a.k.a undefiniable at this point
@@ -92,6 +103,8 @@ end
 %around with these numbers.
 % cullProp.radCutoff(1) = ''; %Cutoff in the horizontal direction
 % cullProp.radCutoff(2) = '';
+
+
 rProp = rProp(keptSpots);
 
 
@@ -124,21 +137,33 @@ switch classifierType
         outsideAutoFluor = ~inAutoFluor;
         %Remove low intensity points in this region
         
-        autoFluorMaxInten(colorNum) = 200;
+        autoFluorMaxInten(colorNum) = 90;
         inAutoFluorRem = [rProp.MeanIntensity]<autoFluorMaxInten(colorNum);
         
         
-        inAutoFluor = inAutoFluor.*inAutoFluorRem;
+        removedSpots = and(inAutoFluor,inAutoFluorRem);
         
-        removedSpots = ~inAutoFluor;
+        keptSpots = or(~removedSpots, outsideAutoFluor);
+        
+        rProp = rProp(keptSpots);
+        
+        rProp = rProp([rProp.Area]>areaThresh(colorNum));
+        
+        rProp = rProp([rProp.MeanIntensity]>colorThresh(colorNum));
+        
+        rPropOut = rProp;
+        return;
+%        removedSpots = inAutoFluor;
         
         
         %keptSpots = find(or(outsideAutoFluor, inAutoFluor)==1);
         
-        rProp(removedSpots) = [];
-        
+        rProp = rProp(and(outsideAutoFluor,~removedSpots));
+        sum(removedSpots);
+       % rProp = rProp(logical(removedSpots));
         rPropOut = rProp;
         
+        return
     case 'manualSelection'
         %Use the manually selected found spots from the list in
         %singleBacCount
@@ -178,7 +203,7 @@ if(isfield(rProp, 'gutRegion'))
     outsideAutoFluor = ~inAutoFluor;
     %Remove low intensity points in this region
     
-    autoFluorMaxInten(colorNum) = 2000;
+    autoFluorMaxInten(colorNum) = 50;
     inAutoFluorRem = [rProp.MeanIntensity]>autoFluorMaxInten(colorNum);
     inAutoFluor = and(inAutoFluor,inAutoFluorRem);
     
