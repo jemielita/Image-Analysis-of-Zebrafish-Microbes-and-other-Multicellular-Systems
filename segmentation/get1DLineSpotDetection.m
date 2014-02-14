@@ -93,8 +93,9 @@ for nS = minS:maxS
        if(isempty(numEl))
            lineDist{nS,nC} = zeros(1, bugArraySize);
        end
-       
-       popTot(nS, nC) = sum(numEl);
+       %mlj: I'm not sure why this current form doesn't work
+%       popTot(nS, nC) = sum(numEl);
+popTot(nS, nC) = length(rProp);
    end
    
 end
@@ -130,6 +131,7 @@ varargin = varargin{1};
 nArg = length(varargin) +1; %To deal with screwy way of passing in varargin variable
 numColor = length(param.color);
 cList = zeros(numColor,1);
+cList = 1:numColor;
 
 for nC=1:numColor
     classifierTypeList{nC} = 'svm';

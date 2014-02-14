@@ -135,10 +135,29 @@ for nF =1:length(dirNames)
    sAll{nF}.scanList = str2num(answer{1});
    sAll{nF}.stepSize = str2num(answer{2});
    sAll{nF}.regOverlap = str2num(answer{3});
-   sAll{nF}.colorList = answer{4};
+   
+   
+   %Extract the colors from the list
+   cStr = answer{4};
+   brackLoc = regexp(cStr, '[{}]');
+   if(setdiff(brackLoc, [1, length(cStr)]))
+       fprintf(2, 'Color string must begin and end with curly brackets!\n');
+       return;
+   end
+   %Get locations that begin with a comma
+   el = regexp(cStr, '[,]');
+   %Add in locations of bracket and add one (to get location of
+   %beginning of string
+   el = [brackLoc(1), el, brackLoc(2)];
+   
+   for nC=1:length(el)-1
+      sAll{nF}.color{nC} = cStr(el(nC)+1:el(nC+1)-1); 
+   end
+   
    sAll{nF}.dataSaveDirectory = answer{5};
    sAll{nF}.freshStart = str2num(answer{6});
 
+   sAll{nF}.codeDir = codeDir;
 %    
 %    sAll{nF}.scanList = 1:pAll{nF}.expData.totalNumberScans;
 %    sAll{nF}.codeDir = codeDir;

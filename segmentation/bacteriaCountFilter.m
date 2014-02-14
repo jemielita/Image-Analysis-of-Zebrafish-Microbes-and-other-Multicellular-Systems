@@ -24,6 +24,8 @@
 %           used.
 %          -'none': No classifier used. Can be useful when combined with
 %          removed bug list.
+%          -'none_plusAutoFluor': No classifier used, except for intensity
+%          filter in the autofluorescent region of the gut.
 %           
 %       distCutoff_combRegions (default= false). If true filter out regions
 %       based on proximity to each other.
@@ -97,8 +99,46 @@ rProp = rProp(keptSpots);
 
 switch classifierType
     case 'none'
+        
+        colorThresh = [0,0];
+        areaThresh = [3,3];
+        
+        rProp = rProp([rProp.Area]>areaThresh(colorNum));
+        
+        rProp = rProp([rProp.MeanIntensity]>colorThresh(colorNum));
+        
+        
         rPropOut = rProp;
         return
+        
+    case 'none_plusAutoFluor'
+        colorThresh = [0,0];
+        areaThresh = [3,3];
+        
+        rProp = rProp([rProp.Area]>areaThresh(colorNum));
+        
+        rProp = rProp([rProp.MeanIntensity]>colorThresh(colorNum));
+        
+        
+        inAutoFluor = [rProp.gutRegion]==3;
+        outsideAutoFluor = ~inAutoFluor;
+        %Remove low intensity points in this region
+        
+        autoFluorMaxInten(colorNum) = 200;
+        inAutoFluorRem = [rProp.MeanIntensity]<autoFluorMaxInten(colorNum);
+        
+        
+        inAutoFluor = inAutoFluor.*inAutoFluorRem;
+        
+        removedSpots = ~inAutoFluor;
+        
+        
+        %keptSpots = find(or(outsideAutoFluor, inAutoFluor)==1);
+        
+        rProp(removedSpots) = [];
+        
+        rPropOut = rProp;
+        
     case 'manualSelection'
         %Use the manually selected found spots from the list in
         %singleBacCount
@@ -138,13 +178,18 @@ if(isfield(rProp, 'gutRegion'))
     outsideAutoFluor = ~inAutoFluor;
     %Remove low intensity points in this region
     
+    autoFluorMaxInten(colorNum) = 2000;
     inAutoFluorRem = [rProp.MeanIntensity]>autoFluorMaxInten(colorNum);
     inAutoFluor = and(inAutoFluor,inAutoFluorRem);
+    
+    
     
     keptSpots = intersect(keptSpots, find(or(outsideAutoFluor, inAutoFluor)==1));
     
     % rProp = rProp(keptSpots);
     %xyz = xyz(:, keptSpots);
+    
+    
 end
 
 %Remove spots that are past the autofluorescent region

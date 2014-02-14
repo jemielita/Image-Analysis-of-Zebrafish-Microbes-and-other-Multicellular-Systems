@@ -87,7 +87,7 @@ for nZ=1:size(im,3)
     
 end
 
-fprintf(1, '\n');
+ fprintf(1, '\n');
 
 if(inPlace==false)
     spotLoc = regionprops(imSeg>maxThresh, imSeg, 'Centroid', 'Area', 'MeanIntensity', 'BoundingBox');
