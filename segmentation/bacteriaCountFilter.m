@@ -203,7 +203,8 @@ if(isfield(rProp, 'gutRegion'))
     outsideAutoFluor = ~inAutoFluor;
     %Remove low intensity points in this region
     
-    autoFluorMaxInten(colorNum) = 50;
+    %mlj: Commenting out this line for now
+   % autoFluorMaxInten(colorNum) = 50;
     inAutoFluorRem = [rProp.MeanIntensity]>autoFluorMaxInten(colorNum);
     inAutoFluor = and(inAutoFluor,inAutoFluorRem);
     

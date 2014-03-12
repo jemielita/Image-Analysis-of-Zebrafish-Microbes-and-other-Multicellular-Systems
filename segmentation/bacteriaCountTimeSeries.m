@@ -192,7 +192,7 @@ end
            
             
             %mlj:temporary
-            numReg = size(spotLoc{nC,3},1);
+            numReg = size(spotLoc{nC,3},2);
             
             %mlj: temporary
             %numReg = size(spotLoc{1},2);

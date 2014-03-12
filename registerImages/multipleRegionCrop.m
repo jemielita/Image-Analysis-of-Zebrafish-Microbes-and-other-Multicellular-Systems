@@ -1243,8 +1243,7 @@ hContrast = imcontrast(imageRegion);
         end
         
         [xyz, xyzRem, xyzKept,rPropClassified] = getBugList(rProp);
-        length(xyz)
-        size(xyz)
+        disp(['Total num:'  num2str(sum([rPropClassified.gutRegion]<=7))])
         switch projectionType
             case 'mip'
                
@@ -1376,7 +1375,7 @@ hContrast = imcontrast(imageRegion);
         xyzRem = reshape(xyzRem,3,length(xyzRem)/3);
         
         xyzRem = xyzRem(:,removeBugInd{scanNum,colorNum});
-       % rPropClassified = rProp(keptSpots);
+        rPropClassified = rProp(keptSpots);
 
        rPropClassified = rProp;
         classifierType = 'svm';
@@ -1395,7 +1394,7 @@ hContrast = imcontrast(imageRegion);
                 %data
                 distCutoff_combRegions = false;
                 rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
-                rPropClassified
+                %rPropClassified
                 %keptSpots = intersect(keptSpots, [rProp.ind]);
                 
             case 'on'
