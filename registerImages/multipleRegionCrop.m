@@ -227,6 +227,8 @@ if(exist(remBugsSaveDir, 'file')==2)
    removeBugInd = load(remBugsSaveDir); 
    removeBugInd = removeBugInd.removeBugInd;
 end
+hMenuUseSavedRemBugList = uimenu(hMenuDisplay, 'Label', 'Use only saved removed bug list', 'Callback', @useSaveRemBug_Callback);
+
 hMenuKeepBugs = uimenu(hMenuDisplay, 'Label', 'Label bugs (instead of removing)', 'Callback', @keepBugs_Callback, 'Checked', 'off');
 keepBugInd = cell(numScans, numColor); %Variable to save culled bacteria points.
 keepBugsSaveDir = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'removedBugs.mat'];
@@ -994,6 +996,18 @@ hContrast = imcontrast(imageRegion);
         end
     end
 
+    function useSaveRemBug_Callback(hObject, eventdata)
+       %Check box indicates whether in getBugList(rProp) we will
+       %exclusively use the list of removed bugs that are saved in
+       %gutOutline/singleBacCount or if we will use the list in
+       %multipleRegionCrop that's updated by the user while removing false
+       %positive spots.
+        if(strcmp(get(hMenuUseSavedRemBugList, 'Checked'), 'on'))
+          set(hMenuUseSavedRemBugList, 'Checked', 'off'); 
+       else
+           set(hMenuUseSavedRemBugList, 'Checked', 'on')
+       end
+    end
 
     function keepBugs_Callback(hObject, eventdata)
          %Until unchecked produce rectangles that the user can place down on
@@ -1023,6 +1037,7 @@ hContrast = imcontrast(imageRegion);
             end
         end
     end
+
     function saveRemovedBugs_Callback(hObject, eventdata)
         remBugsSaveDir = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'removedBugs.mat'];
         save(remBugsSaveDir, 'removeBugInd', 'keepBugInd');
@@ -1375,14 +1390,17 @@ hContrast = imcontrast(imageRegion);
         xyzRem = reshape(xyzRem,3,length(xyzRem)/3);
         
         xyzRem = xyzRem(:,removeBugInd{scanNum,colorNum});
-        rPropClassified = rProp(keptSpots);
 
-       rPropClassified = rProp;
+        if(strcmp(get(hMenuUseSavedRemBugList, 'Checked'), 'on'))
+            useRemovedBugList = true;
+            rPropClassified = rProp;
+        else
+            rPropClassified = rProp(keptSpots);
+            useRemovedBugList = false;
+        end
+
         classifierType = 'svm';
-        useRemovedBugList = true;
         
-        %classifierType = 'linear';
-        %useRemovedBugList = false;
         
         %Let's filter out all points with an intensity below 200
         % rPropClassified =  rPropClassified([rPropClassified.MeanIntensity]>200);
