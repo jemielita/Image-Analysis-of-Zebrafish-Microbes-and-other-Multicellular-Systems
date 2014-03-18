@@ -188,8 +188,8 @@ scan
 end
 
 function error = saveAnalysis(regFeatures, scanParam,param,analysisType)
-   param.dataSaveDirectorySubFolder = 'singleCountRaw';
-   if(~isdir(param.dataSaveDirectorySubFolder))
+   param.dataSaveDirectorySubFolder = 'sumIntensityThresh';
+   if(~isdir([param.dataSaveDirectory filesep  param.dataSaveDirectorySubFolder]))
       mkdir([param.dataSaveDirectory filesep param.dataSaveDirectorySubFolder]); 
    end
    
@@ -199,9 +199,11 @@ else
     analysisSaveDir = param.dataSaveDirectory;
 end
 analysisSaveDir = [param.dataSaveDirectory filesep 'singleCountRaw'];
-    fileName = [analysisSaveDir, filesep, 'Analysis_Scan', ...
+
+analysisSaveDir = [param.dataSaveDirectory filesep param.dataSaveDirectorySubFolder];
+fileName = [analysisSaveDir, filesep, 'Analysis_Scan', ...
         num2str(scanParam.scanNum), '.mat'];
-    save(fileName, 'regFeatures', '-v7.3');
+     save(fileName, 'regFeatures', '-v7.3');
     error = 0;
 
 end

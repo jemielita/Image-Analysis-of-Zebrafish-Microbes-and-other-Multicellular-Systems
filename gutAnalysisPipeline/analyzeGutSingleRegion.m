@@ -107,11 +107,11 @@ for colorNum =1:length(colorList)
          if(iscell(gutMask))
              regFeatures{stepNum, colorNum} = ...
                  analysisStep(imStack, centerLine, gutMask{colorNum}, analysisType,regFeatures,...
-                 stepNum, colorNum,param);
+                 stepNum, colorNum,scanNum,cutNum, param);
          else
              regFeatures{stepNum, colorNum} = ...
                  analysisStep(imStack, centerLine, gutMask, analysisType,regFeatures,...
-                 stepNum, colorNum,param);
+                 stepNum, colorNum,scanNum,cutNum, param);
          end
          
      end
@@ -137,7 +137,7 @@ end
 %Large switch function that contains all the analysis functions that we've
 %worked on so far
 function thisRegFeatures = analysisStep(imStack, centerLine, gutMask,...
-    analysisType, regFeatures, stepNum,colorNum,param)
+    analysisType, regFeatures, stepNum,colorNum,scanNum,cutNum, param)
 
 switch analysisType(stepNum).name
         
@@ -158,6 +158,9 @@ switch analysisType(stepNum).name
     case 'linearIntensityBkgSub'
         bkgList = analysisType(stepNum).bkgList;
         thisRegFeatures = intensityBkgSubCurve(imStack, gutMask, centerLine, bkgList);
+        
+    case 'intensityThresh'
+        thisRegFeatures = totalIntenThresh(imStack, gutMask, scanNum,cutNum, centerLine, param);
         
     case 'radialDistribution'
         %Find the point in this analysis chain where we calculate the

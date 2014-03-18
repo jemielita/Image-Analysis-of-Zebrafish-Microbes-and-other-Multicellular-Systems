@@ -66,10 +66,14 @@ for nS = minS:maxS
                    rProp = rProp{1};
                end
            end
-
-           useRemovedBugList = true;       
-           rProp = bacteriaCountFilter(rProp, nS, nC, param, useRemovedBugList, classifierType);
-       
+           %mlj: Temporary cludge putting this here-not sure why we're
+           %having problems with our pipeline.
+           inputVar = load([param.dataSaveDirectory filesep 'singleBacCount' filesep 'removedBugs.mat']);
+           removeBugInd= inputVar.removeBugInd;
+           keptSpots = setdiff(1:length(rProp), removeBugInd{nS, nC});
+           rProp = rProp(keptSpots);
+           useRemovedBugList = false;      
+           rProp = bacteriaCountFilter(rProp, nS, nC, param, useRemovedBugList, classifierType);  
        else
            rProp = rPropAll{nS,nC};
        end
@@ -88,14 +92,14 @@ for nS = minS:maxS
       
        numEl = arrayfun(@(y)sum(numBac==y),u);
    
-       lineDist{nS,nC} = numEl; 
+       lineDist{nS,nC} = numEl;
        
        if(isempty(numEl))
            lineDist{nS,nC} = zeros(1, bugArraySize);
        end
        %mlj: I'm not sure why this current form doesn't work
-%       popTot(nS, nC) = sum(numEl);
-popTot(nS, nC) = length(rProp);
+       %popTot(nS, nC) = sum(numEl);
+       popTot(nS, nC) = length(rProp);
    end
    
 end

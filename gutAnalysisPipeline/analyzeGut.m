@@ -44,7 +44,11 @@ for colorNum=1:totNumColor;
                 for cutNum=1:totNumCut
                    regFeatAll{colorNum, stepNum}{cutNum} = regFeat{cutNum}{analInd(stepNum), colorNum}; 
                 end
-                
+            case 'intensityThresh'
+                %Deal with splitting things up after the fact
+                for cutNum =1:totNumCut
+                   regFeatAll{colorNum, stepNum}{cutNum} = regFeat{cutNum}{stepNum, colorNum};
+                end
             otherwise
                 %Store entry as either a cell or an array
                 if(iscell(regFeat{1}{analInd(stepNum),colorNum}))
@@ -77,6 +81,9 @@ for colorNum=1:totNumColor;
                     end
                     
                 end
+                
+                
+                
         end
         
     end

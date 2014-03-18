@@ -183,6 +183,15 @@ hMenuSaveEntireGutOutline = uimenu(hMenuOutline, 'Label', 'Save entire gut outli
 entireGutOutline = cell(maxScan-minScan+1,zMax-zMin+1);
 hPolyEntireGut = [];
 
+%Create outlines for each of the clumps found in the gut
+hMenuCreateClumpOutline = uimenu(hMenuOutline, 'Label', 'Show/add clump outline', 'Separator', 'on', ...
+    'Callback', @showClumpOutline_Callback);
+hMenuAddClumpOutline = uimenu(hMenuOutline, 'Label', 'Make new clump outline', 'Callback', @outlineClump_Callback);
+hMenuClearClumpOutline = uimenu(hMenuOutline, 'Label', 'Clear last clump outline', 'Callback', @clearClumpOutline_Callback);
+hMenuSaveClumpOutline = uimenu(hMenuOutline, 'Label', 'Save clump outline', 'Callback', @saveClumpOutline_Callback);
+clumpOutline = [];
+hClumpPoly = [];
+
 
 
 hMenuDisplay = uimenu('Label', 'Display');
@@ -601,6 +610,10 @@ hContrast = imcontrast(imageRegion);
                 
             case 't'
                updateManualThresholdValues();
+               
+            case 'n'
+                %Create a new gut clump cropping box
+                outlineClump_Callback('','');
         end
         
     end
@@ -1400,7 +1413,6 @@ hContrast = imcontrast(imageRegion);
         end
 
         classifierType = 'svm';
-        
         
         %Let's filter out all points with an intensity below 200
         % rPropClassified =  rPropClassified([rPropClassified.MeanIntensity]>200);
@@ -2877,6 +2889,11 @@ hContrast = imcontrast(imageRegion);
         %Display the new image
         color = colorType(colorNum);
         color = color{1};
+        
+        if(~isempty(clumpOutline))
+            displayClump_Callback('','');
+        end
+        
         getRegisteredImage(scanNum, color, zNum, im, data, param);
         
         hRect = findobj('Tag', 'outlineRect');
@@ -2931,6 +2948,12 @@ hContrast = imcontrast(imageRegion);
         if(~isempty(cropTimer))
             %Update the z-cropping rectangles when we go through the scan list
             updateCropBoxNewScan();
+        end
+        
+        %%%Update, if necessary, the position of manually selected boxes
+        %%%around clumps of bacteria
+        if(~isempty(clumpOutline))
+            displayClump_Callback('','');
         end
         %%% See if we're calculating the background intensity of the gut,
         %%% if so update the appropriate entry in param
@@ -3504,6 +3527,138 @@ hContrast = imcontrast(imageRegion);
         fprintf(1, 'Spot list saved!\n');
         beep
     end
+
+    function showClumpOutline_Callback(hObject, eventdata)
+        hClumpPoly = cell(maxScan, numColor);
+
+        if(isdir([param.dataSaveDirectory filesep 'clumpOutline']))
+            inputVar = load([param.dataSaveDirectory filesep 'clumpOutline' filesep 'clump.mat']);
+            clumpOutline = inputVar.clumpOutline;
+            %Update saved locations of all the polygons
+            for nS=1:size(clumpOutline,1)
+                for nC = 1:size(clumpOutline,2)
+                    for i=1:length(clumpOutline{nS, nC})
+                        
+                        hClumpPoly{nS, nC}(i) = impoly(imageRegion, clumpOutline{nS,nC}{i});
+                        
+                        set(hClumpPoly{nS, nC}(i), 'Tag', 'clumpOutline');
+                        hPoly = iptgetapi(hClumpPoly{nS, nC}(i));
+                        hPoly.setColor([0 1 0]);
+                        
+                        addNewPositionCallback(hClumpPoly{nS, nC}(i), @(p)updateClumpPosition);
+                        updateClumpPosition();
+                    end
+                end
+            end
+            displayClump_Callback('','');
+        else
+            clumpOutline = cell(maxScan, numColor);
+            mkdir([param.dataSaveDirectory filesep 'clumpOutline']);
+            
+        end
+        
+    end
+
+    function displayClump_Callback(~, ~)
+        %Update which clumps are shown
+        scanNum = get(hScanTextEdit, 'string');
+        scanNum = str2double(scanNum);
+        scanNum = int16(scanNum);
+        
+        colorNum = get(hColorSlider, 'Value');
+        colorNum = ceil(colorNum);
+        colorNum = int16(colorNum);
+
+        allPoly = findobj('Tag', 'clumpOutline');
+        set(allPoly, 'Visible', 'off');
+        for i=1:length(hClumpPoly{scanNum, colorNum})
+            set(hClumpPoly{scanNum, colorNum}(i), 'Visible', 'on');
+        end
+        
+    end
+
+    function outlineClump_Callback(~, ~)
+        
+        scanNum = get(hScanTextEdit, 'string');
+        scanNum = str2double(scanNum);
+        scanNum = int16(scanNum);
+        
+        colorNum = get(hColorSlider, 'Value');
+        colorNum = ceil(colorNum);
+        colorNum = int16(colorNum);
+        
+        if(isempty(clumpOutline{scanNum, colorNum}))
+            clumpNum = 1;
+        else
+           clumpNum = length(clumpOutline{scanNum, colorNum})+1; 
+        end
+        
+        hClumpPoly{scanNum, colorNum}(clumpNum) = impoly(imageRegion);
+        
+        set(hClumpPoly{scanNum, colorNum}(clumpNum), 'Tag', 'clumpOutline');
+        hPoly = iptgetapi(hClumpPoly{scanNum, colorNum}(clumpNum));
+        hPoly.setColor([0 1 0]);
+        
+        addNewPositionCallback(hClumpPoly{scanNum, colorNum}(clumpNum), @(p)updateClumpPosition);
+        updateClumpPosition();
+    end
+
+    function [] = updateClumpPosition(~,~)
+          
+        scanNum = get(hScanTextEdit, 'string');
+        scanNum = str2double(scanNum);
+        scanNum = int16(scanNum);
+        
+        colorNum = get(hColorSlider, 'Value');
+        colorNum = ceil(colorNum);
+        colorNum = int16(colorNum);
+        
+        
+        for i=1:length(hClumpPoly{scanNum,colorNum})
+            thisPoly = iptgetapi(hClumpPoly{scanNum, colorNum}(i));
+            clumpOutline{scanNum, colorNum}{i} = thisPoly.getPosition();
+        end
+        
+    end
+
+
+        
+    function clearClumpOutline_Callback(hObject, eventdata)
+        scanNum = get(hScanTextEdit, 'string');
+        scanNum = str2double(scanNum);
+        scanNum = int16(scanNum);
+        
+        colorNum = get(hColorSlider, 'Value');
+        colorNum = ceil(colorNum);
+        colorNum = int16(colorNum);
+        
+        %Clear the last element in the array for this scan#/color
+        cL = length( clumpOutline{scanNum, colorNum});
+        if(cL>0)
+            clumpOutline{scanNum, colorNum}(cL) = [];
+        end
+        %Clear the handle to this polygon
+        if(~isempty(hClumpPoly{scanNum, colorNum}(cL)))
+        delete(hClumpPoly{scanNum, colorNum}(cL));
+        hClumpPoly{scanNum, colorNum}(cL) = [];
+        end
+        
+    end
+
+    function saveClumpOutline_Callback(hObject, eventdata)
+        for nS=1:size(hClumpPoly,1)
+            for nC = 1:size(hClumpPoly,2)
+                for i=1:length(hClumpPoly{nS, nC})
+                    
+                    hThisClump = iptgetapi(hClumpPoly{nS, nC}(i));
+                    clumpOutline{scanNum, colorNum}{i} = hThisClump.getPosition();
+                end
+            end
+        end
+        
+        save([param.dataSaveDirectory filesep 'clumpOutline' filesep 'clump.mat'], 'clumpOutline');
+    end
+
 
     function loadGutCenter_Callback(hObject, eventdata)
         if(isfield(param, 'centerLineAll'))

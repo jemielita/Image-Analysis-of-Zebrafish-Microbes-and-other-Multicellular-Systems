@@ -85,7 +85,6 @@ else
 end
 
 
-
 %Not really the correct place to do this, but find empty gut
 %locations and set them to 6-a.k.a undefiniable at this point
 for i=1:length(rProp)
