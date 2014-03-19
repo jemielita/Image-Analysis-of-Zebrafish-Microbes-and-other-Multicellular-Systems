@@ -8,17 +8,26 @@
 %        imStack = load3dVolume(param, imVar, 'single', regionNumber);
 %        imStack = load3dVolume(param, imVar, 'multiple', cutNumber);
 %        imStack = load3dVolume(param, imVar, loadType, dataType, '32bit');
-%
+%        imStack = load3dVolume(param, imVar, 'crop', cropRect);
 % INPUT: -param: parameters associated with this scan
 %        -imVar structure containing the following elements
 %           imVar.color = color (ex. '488nm', '568nm');
 %           imvar.zNum = which z plane to use-currently not being used
 %           imVar.scanNum = which scan number to load in
-%        -loadType: 'single' or 'multiple'. If 'single', user must also
-%        provide a region to load in. If 'multiple', user must provide a
-%        a cut number which gives which cut region to load in. In addition
-%        the field param.cutRegion must be set. The function calcOptimalCut
+%        -loadType: 'single': User must provide a cut number which gives
+%                   which cut region to load in. In addition the field
+%                   param.cutRegion must be set. (mlj: I don't think this 
+%                   is true anymore...should check)The function calcOptimalCut
 %        must be used to find this cut.
+%        'multiple': User must provide a cut number which gives which cut
+%        region to load in.
+%        'crop': User must provide a cropping rectangle (cropRect), which
+%        gives the location of the particular region to load in.
+%        'polygonRegion': User must provide a polygonal region (poly) to load
+%        from. This polygon is used to calculate a minimum bounding box
+%        around this polygon and everthing in this box is loaded. Pixels
+%        that fall outside the polygon, but are still within this bounding
+%        box are set to NaN.
 %        -dataType:(optional) which type of array to make. Currently only
 %        support for uint16, uint32, and double. Default is double.
 %
@@ -49,6 +58,10 @@ elseif nargin==4
     if(strcmp(loadType, 'crop'))
         cropRect = varargin{1};
     end
+    if(strcmp(loadType, 'polygonRegion'))
+       regPoly = varargin{1}; 
+    end
+    
 else
     disp('Number of inputs must be either 4 or 6!');
     return
@@ -62,6 +75,9 @@ switch loadType
         imStack = loadCutRegion(param, imVar, cutNumber, scanNum,dataType);
     case 'crop'
         imStack = loadCroppedRegion(param, imVar, cropRect);
+    case 'polygonRegion'
+        imStack = loadPolygonRegion(param, imVar, regPoly);
+        
 end
 
 
@@ -103,7 +119,6 @@ end
         
         for nZ = 1:totalZ
             imNum = zList(nZ);
-            
             
             [whichType, imFileName] = whichImageFileType(scanDir, regNum, param, imNum,colorNum);
             switch whichType
@@ -459,6 +474,28 @@ end
         end
         
     end
+    
+    function im = loadPolygonRegion(param, imVar, regPoly)
+    
+    %Find the minimum bounding box for this region
+    minVal = min(regPoly);
+    maxVal = max(regPoly);
+    
+    cropRect = [minVal(1), minVal(2), maxVal(1)-minVal(1)+1, maxVal(2)-minVal(2)+1];
+    
+    
+    %Using this cropping rectangle, load in the region
+    im = loadCroppedRegion(param, imVar, cropRect);
+    
+    %Removing stuff outside the bounding box
+    regPoly(:,1) = regPoly(:,1)-minVal(1);
+    regPoly(:,2) = regPoly(:,2)-minVal(2);
+    mask = poly2mask(regPoly(:,1), regPoly(:,2), size(im,1), size(im,2));
+    mask = repmat(mask,[1,1,size(im,3)]);
+    
+    im(~mask) = NaN;
+    end
+    
     
     function  [whichType, imFileName] = whichImageFileType(scanDir, regNum, param, imNum, colorNum)
     imFileNameTiff = ...
