@@ -98,7 +98,7 @@ lsqoptions.Display = 'off'; % 'off' or 'final'; 'iter' for display at each itera
 % fit logistic growth, weighting by local standard deviation to avoid
     %   the fit being totally determined by the high-N points
 if length(alt_fit)==2
-    % user input No, tlag
+    % user input No, tlag 
     N0 = alt_fit(1);
     t_lag = alt_fit(2);
     fixparams = [N0 t_lag];
@@ -132,6 +132,11 @@ K = params(2);
 % http://www.ligo-wa.caltech.edu/~ehirose/work/andri_matlab_tools/fitting/MatlabJacobianDef.pdf
 varresid = var(residual);
 cv = full(inv(J'*J)*varresid); % ignore the warning; I think inv is necessary
+
+cv(1,1)
+cv(1,2)
+cv(2,1)
+cv(2,2)
 sigr = sqrt(cv(1,1));
 sigK = sqrt(cv(2,2));
 
@@ -150,7 +155,7 @@ end
 end
 
 
-    function resids = logisticfun(params,t,N,halfboxsize, fixparams)
+    function resids = logisticfun(params, t, N, halfboxsize, fixparams)
     % residual of fit to logistic growth curve, weighted by local std. 
     % in a sliding window
     % decides on various options (what to fit) by the length of the params

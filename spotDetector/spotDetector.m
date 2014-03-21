@@ -201,7 +201,7 @@ for n = 1:nComp
         mindist = min(dist2max,dist2com);
         
         % retain secondary maxima where mindist > threshold
-        idx2 = find(mindist > dthreshold);
+        idx2 = find(mindist >  );
         if ~isempty(idx2)
             xmax2{n} = xm(idx2);
             ymax2{n} = ym(idx2);

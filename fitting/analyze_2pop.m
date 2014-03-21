@@ -2,6 +2,9 @@
 %
 % USAGE analyze_2pop(totPop)
 %       analyze_2pop(totPop,colorScheme)
+%       analyze_2pop(totPop, colorScheme, plotStyle)
+%       analyze_2pop(totPop, colorScheme, plotStyle, fitParam)
+%
 % INPUT totPop: cell array containing the total population for a number of
 %               different fish. Each of these cell arrays contains an array of size
 %               number Scans X number Colors containing the total population for each
@@ -9,6 +12,12 @@
 %        colorScheme: (optional, default: 'unique'). Use a different color
 %        scheme for each time series ('unique') or use a red and green
 %        color scheme for each fish data ('redgreen').
+%        plotStyle: (optional, default style for figures, if empty use default). Contains a
+%        structure that will be used to adjust the features of the plots.
+%        Features will be added to this as we construct our figures.
+%        fitParam: (optional. default: Use default fit param). Allow the user to
+%        input the parameters for the logistic growth fit. Useful for
+%        forcing certain values of the fit. 
 % NOTES
 % Script for plotting, analyzing bacterial population data from
 % two group "early time" Aeromonas colonization experiments of Summer 2013
@@ -32,14 +41,38 @@
 % Also in "allParamVariables.mat"
 
 function analyze_2pop(totPop,varargin)
-%% 
+%%
+fitParam =[];
+plotStyle = [];
 switch nargin
     case 1
-    colorScheme = 'unique';
+        colorScheme = 'unique';
+        adjustStyle = false;
+        
+        adjustFitParam = false;
     case 2
-    colorScheme = varargin{1};
+        colorScheme = varargin{1};
+        adjustStyle = false;
+        adjustFitParam = false;
+    case 3
+        colorScheme = varargin{1};
+        adjustStyle = true;
+        plotStyle = varargin{2};
+        adjustFitParam = false;
+    case 4
+        
+        colorScheme = varargin{1};
+        adjustStyle = true;
+        plotStyle = varargin{2};
+        fitParam = varargin{3};
+        adjustFitParam  = true;
     otherwise
-        fprintf(2, 'Analyze_2pop take 1 or 2 inputs!\n');
+        fprintf(2, 'Analyze_2pop take 1 -3 inputs!\n');
+end
+
+
+if(isempty(plotStyle))
+    adjustStyle = false;
 end
 
 Nfish = length(totPop);
@@ -73,10 +106,12 @@ for nF=1:length(totPop)
     t{nF} = t{nF}';
 end
 
-halfboxsize = 5;  % +/- 2 time points for boxcar standard deviation for logistic growth fit
+
+[halfboxsize, alt_fit, tolN, params0, LB, UB, lsqoptions, fitRange] = getFitParameters(adjustFitParam, fitParam);
+
 
 tdelay = 3; % hours
-fs = sprintf('Using time delay %.1f hrs. for second inoculation', tdelay); disp(fs)
+fs = sprintf('Using time delay %.1f hrs. for second inoculation', tdelay); disp(fs);
 
 
 % row 1,2 = group 1,2
@@ -98,6 +133,10 @@ end
 logslope = NaN(Nfish, length(t),numColor);
 
 
+
+
+
+
 switch colorScheme
     
     case 'unique'
@@ -107,9 +146,9 @@ switch colorScheme
             for nF=1:Nfish
                 switch nC
                     case 1
-                        colors{1}(nF,:) =0.8*[1, mod(nF,4)/3, mod(nF,2)];
+                        colors{1}(nF,:) = 0.8*[1, mod(nF,4)/3, mod(nF,2)];
                     case 2
-                        colors{2}(nF,:) =0.8*[mod(nF,3)/2, 1-mod(nF,4)/3, mod(nF,2)];
+                        colors{2}(nF,:) = 0.8*[mod(nF,3)/2, 1-mod(nF,4)/3, mod(nF,2)];
                 end
                 
             end
@@ -133,77 +172,93 @@ end
 
 
 
-%Find some other way to set all these variables.
-%    manual_fit = true;
-%         if manual_fit
-%             if nF==3 && k==2
-%                 disp('Manually fixing N0, t_lag')
-%                 alt_fit = [80 2];  % t_lag, N0
-%                 fs = sprintf('  Fish %d, k==%d; t_lag = %.1f hrs., N0 = %d',...
-%                     nF, k, alt_fit(1), alt_fit(2)); disp(fs);
-%             elseif nF==4 && k==2
-%                 % Manually fix t_lag and N0 values; works better than trying to
-%                 % alter fit range or weights
-%                 disp('Manually fixing N0, t_lag')
-%                 alt_fit = [150 5.5];  % t_lag, N0
-%                 fs = sprintf('  Fish %d, k==%d; t_lag = %.1f hrs., N0 = %d',...
-%                     nF, k, alt_fit(1), alt_fit(2)); disp(fs);
-%             else
-%                 alt_fit = false;
-%             end
-%         else
-%             alt_fit = false;
-%         end
-        
-        
 %% 
 % Plot all data and fit to a logistic model with a carrying capacity.
 
-alt_fit = false;
+allT = t;
+
 for nF=1:Nfish
     figure('name', sprintf('Pop., Fish %d', nF), 'Position', [50 378 560 420]);
     
-    % load experimental data
-    p{nF}(:,:) = totPop{nF};
-
-    %Where the logistic curve fit is stored.
-    Nth = zeros(numColor,length(t{nF}));
-
+ 
     for nC=1:numColor
-        semilogy(t{nF},p{nF}(:,nC), 'o', 'color', 0.8*colors{nC}(nF,:), 'markerfacecolor', colors{nC}(nF,:))
-        hold on
+        % load experimental data
+        p{nF} = totPop{nF};
         
+        [p{nF},t{nF}] = removeDroppedFrames(p{nF}, allT{nF}, fitParam,nF,nC);
+        
+        %Where the logistic curve fit is stored.
+        Nth = zeros(numColor,length(t{nF}));
+        
+        
+        hLogPlot(nC) = semilogy(t{nF},p{nF}(:,nC), 'o', 'color', 0.8*colors{nC}(nF,:), 'markerfacecolor', colors{nC}(nF,:));
+        hold on
+   
         ax = axis;
         
+        if(iscell(alt_fit))
+            if(numColor==1)
+                thisAlt_fit = alt_fit{nF};
+            else
+                thisAlt_fit = alt_fit{nF,nC};
+            end
+        else
+            thisAlt_fit = alt_fit;
+        end
+        
+        
+        %Find range of data to fit over
+        if(~iscell(fitRange)||strcmp(fitRange{nF, nC},'all'))
+            minS = 1;
+            maxS = length(p{nF});
+        else
+            minS = fitRange{nF, nC}(1);
+            maxS = fitRange{nF, nC}(2);
+        end
+      
         % fit, using fit_logistic_growth.m
         [r(nF,nC), K(nF,nC), N0(nF,nC), t_lag(nF,nC), sigr(nF,nC), sigK(nF,nC), sigN0(nF,nC), sigt_lag(nF,nC)] = ...
-            fit_logistic_growth(t{nF},p{nF}(:,nC), alt_fit, halfboxsize);
+            fit_logistic_growth(t{nF}(minS:maxS),p{nF}(minS:maxS,nC), thisAlt_fit, halfboxsize, tolN, params0, LB, UB, lsqoptions);
         
         % Logistic fit curves, for each population
         Nth(nC,:) = logistic_N_t(t{nF}, r(nF,nC), K(nF,nC), N0(nF,nC), t_lag(nF,nC));
         
         % Plot
-        semilogy(t{nF}, Nth(nC,:), '-', 'color', 0.5*colors{nC}(nF,:));
+        lineFit(nC) = semilogy(t{nF}, Nth(nC,:), '-', 'color', 0.5*colors{nC}(nF,:));
     end
     
-    semilogy(t{nF}, N0(nF,1)*ones(size(t{nF})), ':', 'color', 0.7*[1 1 1])
-    semilogy(t{nF}, K(nF,1)*ones(size(t{nF})), '--', 'color', 0.7*[1 1 1])
-    if t_lag(nF,1)>0
-        semilogy(t_lag(nF,1)*[1 1], [1 ax(4)], 'k:')
-    end
+    
+    carrCapLine = semilogy(t{nF}, N0(nF,1)*ones(size(t{nF})), ':', 'color', 0.7*[1 1 1]);
+    initPopLine = semilogy(t{nF}, K(nF,1)*ones(size(t{nF})), '--', 'color', 0.7*[1 1 1]);
+    
+    %mlj: no longer necessary: Used for checking validity of fitting
+    %function
+    %if t_lag(nF,1)>0
+     % lagTimeLine = semilogy(t_lag(nF,1)*[1 1], [1 ax(4)], 'k:');
+    %end
+    
+    
     axis([ax(1) ax(2) 1 ax(4)])
-    xlabel('Time from start of imaging, hrs.','fontsize', 18)
-    ylabel('Number of bacteria','fontsize', 18)
-    title(sprintf('Fish %d', nF),'fontsize', 20, 'fontweight', 'bold');
+    xL = xlabel('Time from start of imaging, hrs.','fontsize', 18);
+    yL = ylabel('Number of bacteria','fontsize', 18);
+    tL = title(sprintf('Fish %d', nF),'fontsize', 20, 'fontweight', 'bold');
     set(gca, 'fontsize', 16)
+    
+    %Adjust the figure parameters
+    if(adjustStyle)
+        adjustIndivPlot();
+    end
+
     
     % Null model, use growth rate of largest (first) population and offset by time delay
     Ksum(nF) = sum(K(nF,:));  % sum of the two individual carrying capacities
     islargest = find(K(nF,:)==max(K(nF,:)));
     forN1 = [r(nF,islargest) K(nF,islargest), N0(nF,islargest), t_lag(nF,islargest)];
     % Nthoffset = logistic_growth_null_2ndpop(t, Ksum(j), forN1,  N0(j,3-islargest), t_lag(j,3-islargest));
-    Nthoffset = logistic_growth_null_2ndpop(t{nF}, Ksum(nF), forN1,  N0(nF,islargest), tdelay+t_lag(nF,islargest));
-    semilogy(t{nF}, Nthoffset, '--', 'color', 0.7*[1 1 1]);
+   % Nthoffset = logistic_growth_null_2ndpop(t{nF}, Ksum(nF), forN1,  N0(nF,islargest), tdelay+t_lag(nF,islargest));
+    
+    %mlj: don't need this anymore-this is for comparing to the null model.
+    %semilogy(t{nF}, Nthoffset, '--', 'color', 0.7*[1 1 1]);
     
     
     if( fitLotkaVolterra == true)     
@@ -241,7 +296,19 @@ for nF=1:Nfish
     
     % disp('Press enter')
     pause (0.25)
+    
+    
+    if(adjustStyle)
+       if(plotStyle.printFigure)
+           fileName = ['fish_', num2str(nF), '.eps'];
+           set(gcf, 'PaperPositionMode', 'auto');
+
+           print('-r600', '-depsc', fileName);
+       end
+    end
 end
+
+
 
 
 pause
@@ -260,7 +327,7 @@ if displayvalues
         disp(fs)
         
         
-        fs = sprintf('       Doubling time:  ');
+        fs = sprintf('    Doubling time:  ');
         for nC = 1:numColor
            fs = [fs sprintf(' %.2f +/- %.2f     ', log(2)/r(nF,nC), log(2)*sigr(nF,1)/(r(nF,1)^2))];
             
@@ -280,7 +347,7 @@ if displayvalues
         
         %fs = sprintf('         Carrying capacity %.2e and %.2e', K(nF,1), K(nF,2)); disp(fs);
         
-        fs = sprintf('   lag time:   ');
+        fs = sprintf('   Lag time:   ');
         for nC= 1:numColor
             fs = [fs sprintf('%.1f  ', t_lag(nF, nC))];
         end
@@ -288,7 +355,7 @@ if displayvalues
         
         %fs = sprintf('         lag time %.1f and %.1f', t_lag(nF,1), t_lag(nF,2)); disp(fs);
         
-        fs = sprintf('  Nucleaution size N0:  ');
+        fs = sprintf('  Nucleation size N0:  ');
         
         for nC = 1:numColor
             fs = [fs sprintf('%.1f  ', N0(nF, nC))];
@@ -317,39 +384,84 @@ switch numColor
         
         h{1} = figure;
         
-        xlabel('Time from start, hrs.','fontsize', 18)
-        ylabel('(Number of bacteria - N_0) / Capacity','fontsize', 18)
-        title('Second Group', 'fontsize', 20)
+        xLColl = xlabel('Time from start, hrs.','fontsize', 18);
+        xLColl = ylabel('(Number of bacteria - N_0) / Capacity','fontsize', 18);
+        title('Second Group', 'fontsize', 20);
         
     case 2
         h{1} = figure;
-        xlabel('Time from start, hrs.','fontsize', 18)
-        ylabel('(Number of bacteria - N_0) / Capacity','fontsize', 18)
-        title('Second Group', 'fontsize', 20)
+        xLColl = xlabel('Time from start, hrs.','fontsize', 18);
+        xLColl = ylabel('(Number of bacteria - N_0) / Capacity','fontsize', 18);
+        title('Second Group', 'fontsize', 20);
         h{2} = figure;
-        xlabel('Time from start, hrs.','fontsize', 18)
-        ylabel('(Number of bacteria - N_0) / Capacity','fontsize', 18)
-        title('First Group', 'fontsize', 20)
+        xLColl = xlabel('Time from start, hrs.','fontsize', 18);
+        xLColl = ylabel('(Number of bacteria - N_0) / Capacity','fontsize', 18);
+        title('First Group', 'fontsize', 20);
         
 end
 % Turn off negative numbers in semilogy warning:
 wid = 'MATLAB:Axes:NegativeDataInLogAxis';
 warning('off',wid)
 
+if(isfield(plotStyle, 'noTimeLagCollapsed')&&plotStyle.noTimeLagCollapsed==true)
+    t_lag = zeros(size(t_lag));
+end
 
-for nF=1:Nfish
+for nC=1:numColor
+    nCi = nC; %mlj: cludge-variable collision that I don't want to deal with now.
     
-    for nC=1:numColor
-        figure(h{nC})
+    figure(h{nC});
+    for nF=1:Nfish       
+        %        collPlot{nF, nC} = semilogy(t{nF}-t_lag(nF,1),(p{nF}(:,1)-N0(nF,1))/K(nF,1), 'o', 'color', 0.8*colors{nC}(nF,:), 'markerfacecolor', colors{nC}(nF,:))
+        collPlot{nF, 1} = semilogy(t{nF}-t_lag(nF,nC),(p{nF}(:,nC))/K(nF,nC), 'o', 'color', 0.8*colors{nC}(nF,:), 'markerfacecolor', colors{nC}(nF,:));
         
-        semilogy(t{nF}-t_lag(nF,1),(p{nF}(:,1)-N0(nF,1))/K(nF,1), 'o', 'color', 0.8*colors{nC}(nF,:), 'markerfacecolor', colors{nC}(nF,:))
         hold on
     end
-
+    
+    
+    if(isfield(plotStyle, 'collapsedAddLine')&&plotStyle.collapsedAddLine==true)
+        % Logistic fit curves, for each population
+        Nth(nC,:) = logistic_N_t(t{nF}, r(nF,nC), K(nF,nC), N0(nF,nC), t_lag(nF,nC));
+        
+        % Plot
+        lineFit(nC) = semilogy(t{nF}, Nth(nC,:), '-', 'color', 0.5*colors{nC}(nF,:));
+    end
+    
+     xLColl = xlabel('Time from start, hrs.','fontsize', 18);
+     yLColl = ylabel('(Number of bacteria - N_0) / Capacity','fontsize', 18);
+     
+     %Adjust the figure parameters
+     if(adjustStyle)
+         adjustCollapsedPlot();
+     end
+     
+     
+     pL = 10e-5:10e1;
+     timeLine = semilogy(zeros(length(pL),1), pL,'--', 'color', 0.3*[1 1 1], 'LineWidth', 3);
+     uistack(timeLine,'bottom');
+     
+     
+     if(adjustStyle)
+         if(plotStyle.printFigure)
+             fileName = ['collapsedData_color', num2str(nCi), '.eps'];
+             set(gcf, 'PaperPositionMode', 'auto');
+             
+             print('-r600', '-depsc', fileName);
+         end
+     end
+     
+     
 end
+
+
+
+
 % Turn on negative numbers in semilogy warning:
 wid = 'MATLAB:Axes:NegativeDataInLogAxis';
 warning('on',wid)
+
+
+%Adjust style, if desired
 
 %% Plot growth rate vs. lag time
 % column 2 is the first group; add tdelay to its lag times to approximage
@@ -363,6 +475,8 @@ if plot_lagtime_and_growthrate
     end
     xlabel('lag time, hrs.')
     ylabel('Growth rate, 1/hrs.')
+    
+    
 end
 
 %% Plot universal curves
@@ -376,5 +490,262 @@ if plotuniversal
     semilogy(t,1./(1 + (mean(K(:,2))-1).*exp(-mean(r(:,2))*t)), 'k--')
 end
 
+
+function [] = adjustIndivPlot()
+
+for nC=1:numColor
+    if(length(plotStyle.markerSize)>1)
+        set(hLogPlot(nC), 'markerSize', plotStyle.markerSize(nF));
+    else        
+        set(hLogPlot(nC), 'markerSize', plotStyle.markerSize);
+    end
+    
+    uistack(hLogPlot(nC),'top')
+end
+
+set(xL, 'FontSize', plotStyle.fontSize);
+set(gca, 'FontSize', plotStyle.fontSize);
+set(yL, 'FontSize', plotStyle.fontSize);
+
+
+set(xL, 'String', 'Time');
+set(yL, 'String', 'Number of bacteria');
+
+% set(xL, 'FontName', plotStyle.fontName);
+%set(yL, 'FontName', plotStyle.fontName);
+%set(gca, 'FontName', plotStyle.fontName);
+
+%Default for limit type is auto
+if(~isfield(plotStyle, 'limType'))
+    plotStyle.limType = 'auto';
+end
+
+switch plotStyle.limType
+    case 'auto'
+        %Do nothing
+    case 'maxVal'
+        %Set limit based on maximum value of population
+        maxPop = max([p{nF}(:,1); p{nF}(:,2)]);
+        
+        set(gca, 'YLim', [0 1.05*maxPop]);
+        
+    case 'manual'
+        %Set values outside this program
+        set(gca, 'YLim', plotStyle.yLim);
+        set(gca, 'YTick', plotStyle.yTick);
+        set(gca, 'XLim', plotStyle.xLim);
+        set(gca, 'XTick', plotStyle.xTick);
+    case 'manualIndiv'
+        %Set values outside this program-Use different limits for
+        %each fish
+        set(gca, 'YLim', plotStyle.yLim{nF});
+        set(gca, 'YTick', plotStyle.yTick{nF});
+        set(gca, 'XLim', plotStyle.xLim{nF});
+        set(gca, 'XTick', plotStyle.xTick{nF});
+end
+
+
+
+for nC=1:numColor
+    
+    set(lineFit(nC), 'LineWidth', plotStyle.lineWidth(nC));
+    set(lineFit(nC), 'LineStyle', plotStyle.lineStyle{nC});
+end
+%       set(lineFit(2), 'LineWidth', plotStyle.lineWidth);
+
+%      set(lineFit(2), 'LineStyle', plotStyle.lineStyle{2});
+
+%set(carrCapLine, 'LineWidth', plotStyle.lineWidth);
+%set(initPopLine, 'LineWidth', plotStyle.lineWidth);
+
+set(carrCapLine, 'Visible', 'off');
+set(initPopLine, 'Visible', 'off');
+set(gca, 'lineWidth', plotStyle.axisWidth);
+
+if(plotStyle.titleVisible==false)
+    set(tL, 'Visible', 'off')
+end
+
+
+if(isfield(plotStyle, 'color'))
+   set(hLogPlot(nC), 'Color', plotStyle.color{nF});
+   set(hLogPlot(nC), 'MarkerFaceColor', plotStyle.color{nF});
+   set(hLogPlot(nC), 'MarkerEdgeColor', plotStyle.color{nF});
+
+   %mlj: let's keep the color of the fit line black.
+   set(lineFit(1), 'Color', [0 0 0]);
+end
+
+if(isfield(plotStyle, 'markerStyle'))
+    set(hLogPlot(nC),'Marker', plotStyle.markerStyle{nF});
+end
+
+
+
+end
+
+    function [] = adjustCollapsedPlot()
+        for nC=1:numColor
+            
+            for nF=1:Nfish
+                if(length(plotStyle.markerSize)>1)
+                    
+                    set(collPlot{nF,1}, 'MarkerSize', plotStyle.markerSize(nF));
+                else
+                    set(collPlot{nF,1}, 'MarkerSize', plotStyle.markerSize);
+                end
+            end
+            if(isfield(plotStyle, 'color'))
+               for nF=1:Nfish
+                   set(collPlot{nF, 1}, 'MarkerFaceColor', plotStyle.color{nF});
+                   set(collPlot{nF, 1}, 'MarkerEdgeColor', plotStyle.color{nF});
+
+               end
+               
+                
+            end
+            
+            
+            if(isfield(plotStyle, 'markerStyle'))
+               for nF=1:Nfish
+                   set(collPlot{nF, 1}, 'Marker', plotStyle.markerStyle{nF});
+               end
+                
+            end
+            
+        end
+        
+        set(xLColl, 'FontSize', plotStyle.fontSize);
+        set(gca, 'FontSize', plotStyle.fontSize);
+        set(yLColl, 'FontSize', plotStyle.fontSize);
+        
+        set(xLColl, 'String', 'T-T_{lag}');
+       % set(xLColl, 'String', '');
+        
+        set(yLColl, 'String', 'N/K');
+
+        % set(xL, 'FontName', plotStyle.fontName);
+        %set(yL, 'FontName', plotStyle.fontName);
+        %set(gca, 'FontName', plotStyle.fontName);
+        
+        %Default for limit type is auto
+        if(~isfield(plotStyle, 'limTypeCollapsed'))
+            plotStyle.limTypeCollapsed = 'auto';
+        end
+        
+        switch plotStyle.limTypeCollapsed
+            case 'auto'
+                %Do nothing
+                
+            case 'manual'
+                %Set values outside this program
+                if(~iscell(plotStyle.yLimCollapsed))
+                    set(gca, 'YLim', plotStyle.yLimCollapsed);
+                    set(gca, 'YTick', plotStyle.yTickCollapsed);
+                    set(gca, 'XLim', plotStyle.xLimCollapsed);
+                    set(gca, 'XTick', plotStyle.xTickCollapsed);
+                else
+                    set(gca, 'YLim', plotStyle.yLimCollapsed{nC});
+                    set(gca, 'YTick', plotStyle.yTickCollapsed{nC});
+                    set(gca, 'XLim', plotStyle.xLimCollapsed{nC});
+                    set(gca, 'XTick', plotStyle.xTickCollapsed{nC});
+                end
+                
+        end
+        
+        
+        
+        %         for nC=1:numColor
+        %             set(lineFit(1), 'LineWidth', plotStyle.lineWidth);
+        %             set(lineFit(1), 'LineStyle', plotStyle.lineStyle{1});
+        %         end
+        %       set(lineFit(2), 'LineWidth', plotStyle.lineWidth);
+        
+        %      set(lineFit(2), 'LineStyle', plotStyle.lineStyle{2});
+        
+        %         set(carrCapLine, 'LineWidth', plotStyle.lineWidth);
+        %         set(initPopLine, 'LineWidth', plotStyle.lineWidth);
+        %
+        %         set(carrCapLine, 'Visible', 'off');
+        %         set(initPopLine, 'Visible', 'off');
+        %         set(gca, 'lineWidth', plotStyle.lineWidth);
+        
+        if(plotStyle.titleVisible==false)
+            set(tL, 'Visible', 'off')
+        end
+
+        %set(gca, 'XTick', []);
+        set(gca, 'lineWidth', plotStyle.axisWidth);
+
+    end
+
+
+end
+
+function [p,t ] = removeDroppedFrames(p, t,fitParam,nF,nC)
+%Find frames that we want to manually remove
+if(isfield(fitParam, 'droppedFrames'))
+    ind = fitParam.droppedFrames{nF,nC};
+    if(~isempty(ind))
+        %  indKeep = setdiff(1:length(t{nF}), ind);
+        t = removerows(t,'ind', ind);
+        p = removerows(p, 'ind', ind);
+        
+    end
+end
+
+
+end
+
+function [halfboxsize, alt_fit, tolN, params0, LB, UB, lsqoptions, fitRange] = getFitParameters(adjustFitParam,fitParam);
+
+%Parameters for fitting the logistic growth model
+halfboxsize = 5;  % +/- 2 time points for boxcar standard deviation for logistic growth fit
+alt_fit = true;
+tolN = 1e-4; %Use default value for tolernace in N for fitting of 1e-4
+params0 = []; %Use default value.
+LB = [0,0,1,0];
+%UB = [inf, inf, max(N), max(t)];
+UB = [];
+lsqoptions = optimset('lsqnonlin');
+
+fitRange = 'all';
+
+if(adjustFitParam== true)
+    %Get all parameters that we've manually set
+    userParam = fieldnames(fitParam);
+    
+    for nF = 1:length(userParam)
+        %Compare to list of fit parameters, if the user selection matches one, then update that.
+        %If the variable doesn't match anything in this list return an error
+        
+        switch userParam{nF}
+            case 'halfboxsize'
+                halfboxsize = getfield(fitParam, userParam{nF});
+            case 'alt_fit'
+                alt_fit = getfield(fitParam, userParam{nF});
+                
+            case 'tolN'
+                tolN = getfield(fitParam, userParam{nF});
+            case 'params0'
+                params0 = getfield(fitParam, userParam{nF});
+            case 'LB'
+                LB = getfield(fitParam, userParam{nF});
+            case 'UB'
+                UB = getfield(fitParam, userParam{nF});
+                
+            case 'fitRange'
+                fitRange = getfield(fitParam, userParam{nF});
+            otherwise
+                fprintf(2,'This parameter does not exist!\n');
+                return
+            
+        end
+         
+    end
+    
+    
+    
+end
 
 end
