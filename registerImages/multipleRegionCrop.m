@@ -209,8 +209,10 @@ multiZSliceMax = 1;
 hMenuShowSegmentation = uimenu(hMenuDisplay, 'Separator', 'on', 'Label', 'Show gut segmentation', ...
     'Checked', 'off','Callback', @showSegmentation_Callback);
 hMenuSetSegementationType = uimenu(hMenuDisplay, 'Label', 'Choose segmentation type', 'Callback', @setSegmentation_Callback);
-segmentationType.List = {'none', 'Otsu'};
+segmentationType.List = {'none', 'Otsu', 'estimated background'};
 segmentationType.Selection = 'none';
+hMenuShowFoundCoarseRegions = uimenu(hMenuDisplay, 'Label', 'Show coarse analysis results', 'Callback', @showCoarseResults_Callback);
+
 
 %Neutrophil identification
 hMenuSpotSelectorMenu = uimenu('Label', 'Spot selector');
@@ -818,6 +820,15 @@ hContrast = imcontrast(imageRegion);
         end
     end
 
+    function showCoarseResults_Callback(hObject, eventdata)
+       if(strcmp(get(hMenuShowFoundCoarseRegions, 'Checked'), 'on'))
+           set(hMenuShowFoundCoarseRegions, 'Checked', 'off');
+       else
+           set(hMenuShowFoundCoarseRegions, 'Checked', 'on');
+       end
+        
+    end
+
     function setSegmentation_Callback(hObject, eventdata)
         [selection, ok] = listdlg('SelectionMode', 'single',...
             'ListString', segmentationType.List,...
@@ -1271,7 +1282,7 @@ hContrast = imcontrast(imageRegion);
         end
         
         [xyz, xyzRem, xyzKept,rPropClassified] = getBugList(rProp);
-        disp(['Total num:'  num2str(sum([rPropClassified.gutRegion]<=7))])
+        disp(['Total num:'  num2str(sum([rPropClassified.gutRegion]<5))])
         switch projectionType
             case 'mip'
                
@@ -3898,11 +3909,34 @@ hContrast = imcontrast(imageRegion);
             
             gutMask = poly2mask(poly(:,1), poly(:,2), height,width);
             imSeg = im; imSeg(~gutMask) = NaN;
-            segMask = segmentGutMIP(imSeg, segmentationType.Selection);
+            segMask = segmentGutMIP(imSeg, segmentationType.Selection, param);
             maskFeat.Type = 'perim';
             maskFeat.seSize = 5;
               im = segmentRegionShowMask(im, segMask, maskFeat);
            % set(hIm, 'CData', im);
+        end
+        
+        if(strcmp(get(hMenuShowFoundCoarseRegions, 'Checked'), 'on'))
+           inputVar = load([param.dataSaveDirectory filesep 'coarseData.mat']);
+           colorNum = get(hColorSlider, 'Value');
+           colorNum = ceil(colorNum);
+           colorNum = int16(colorNum);
+           coarseData = inputVar.coarseData{scanNum, colorNum};
+           
+           %Find spots that have a non-zero population and throw a solid
+           %circle on the image at those points
+           coarseData = coarseData(1,:)>0;
+           
+           cL = param.centerLineAll{scanNum};
+           cL = cL(coarseData,:);
+           
+           p = findobj('Tag', 'coarseAnalysis');
+           delete(p);
+           hold on
+           p = plot(cL(:,1),cL(:,2) ,'o', 'Color', [0.2 0.4 1], 'MarkerSize', 10);
+           hold off
+           set(p, 'Tag', 'coarseAnalysis')
+           
         end
         
         %If a single crop region (not region specific crop boxes) for the

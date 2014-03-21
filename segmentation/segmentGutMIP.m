@@ -6,20 +6,28 @@
 %       segmentType: string giving the type of segmentation to use
 %              'otsu': intensity level thresholding with some morphological
 %              bell and whistles
+%              'estimated background': find segmented region based on our
+%              estimate of the background signal intensity from our coarse
+%              analysis.
 % OUTPUT segMask: binary mask with segmented regions given by 1s.
 %
 % AUTHOR: Matthew Jemielita, Aug 15, 2013
 
-function segMask = segmentGutMIP(im, segmentType)
+function segMask = segmentGutMIP(im, segmentType,  param)
 
 switch lower(segmentType)
     case 'otsu'
         segMask = otsuSegment(im);
+    case 'estimated background'
+        segMask = bkgSegment(im, param);
 end
 
 
 end
 
+function segMask = bkgSegment(im, param)
+
+end
 
 function segMask = otsuSegment(im)
 im = mat2gray(im);

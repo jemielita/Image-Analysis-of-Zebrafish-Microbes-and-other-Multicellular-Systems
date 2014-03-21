@@ -493,7 +493,7 @@ end
     mask = poly2mask(regPoly(:,1), regPoly(:,2), size(im,1), size(im,2));
     mask = repmat(mask,[1,1,size(im,3)]);
     
-    im(~mask) = NaN;
+    im(~mask) = 0;
     end
     
     
