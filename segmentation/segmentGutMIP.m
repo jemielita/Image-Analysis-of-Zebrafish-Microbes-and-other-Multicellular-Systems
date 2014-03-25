@@ -15,11 +15,11 @@
 
 function segMask = segmentGutMIP(im, segmentType,scanNum, colorNum,param)
 
-switch lower(segmentType)
+switch lower(segmentType.Selection)
     case 'otsu'
         segMask = otsuSegment(im);
     case 'estimated background'
-        segMask = showBkgSegment(im, scanNum, colorNum, param);
+        segMask = showBkgSegment(im, scanNum, colorNum, param, segmentType.bkgOffset);
 end
 
 

@@ -834,6 +834,14 @@ hContrast = imcontrast(imageRegion);
             'ListString', segmentationType.List,...
             'PromptString', 'Choose segmentation type');
         segmentationType.Selection = segmentationType.List{selection};
+        
+        if(strcmp(segmentationType.Selection, 'estimated background'))
+            name = 'Background offset value to use';
+            numlines = 1;
+            defaultanswer = {'1.8'};
+             answer=inputdlg(name,name,numlines,defaultanswer);
+           segmentationType.bkgOffset = str2num(answer{1});  
+        end
     end
 
     function addSpots_Callback(hObject, eventdata)
@@ -3909,7 +3917,7 @@ hContrast = imcontrast(imageRegion);
             
             gutMask = poly2mask(poly(:,1), poly(:,2), height,width);
             imSeg = im; imSeg(~gutMask) = NaN;
-            segMask = segmentGutMIP(imSeg, segmentationType.Selection, scanNum, colorNum, param);
+            segMask = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param);
             maskFeat.Type = 'perim';
             maskFeat.seSize = 5;
               im = segmentRegionShowMask(im, segMask, maskFeat);
