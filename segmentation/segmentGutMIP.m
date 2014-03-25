@@ -1,6 +1,6 @@
 %segmentGutMIP: high level function for segmenting the MIP image of the gut
 %
-% USAGE segMask = segmentGutMIP(im, segmentType)
+% USAGE segMask = segmentGutMIP(im, segmentType, scanNum, colorNum)
 %
 % INPUT im: maximum intensity image of the gut.
 %       segmentType: string giving the type of segmentation to use
@@ -13,19 +13,15 @@
 %
 % AUTHOR: Matthew Jemielita, Aug 15, 2013
 
-function segMask = segmentGutMIP(im, segmentType,  param)
+function segMask = segmentGutMIP(im, segmentType,scanNum, colorNum,param)
 
 switch lower(segmentType)
     case 'otsu'
         segMask = otsuSegment(im);
     case 'estimated background'
-        segMask = bkgSegment(im, param);
+        segMask = showBkgSegment(im, scanNum, colorNum, param);
 end
 
-
-end
-
-function segMask = bkgSegment(im, param)
 
 end
 

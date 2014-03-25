@@ -3909,7 +3909,7 @@ hContrast = imcontrast(imageRegion);
             
             gutMask = poly2mask(poly(:,1), poly(:,2), height,width);
             imSeg = im; imSeg(~gutMask) = NaN;
-            segMask = segmentGutMIP(imSeg, segmentationType.Selection, param);
+            segMask = segmentGutMIP(imSeg, segmentationType.Selection, scanNum, colorNum, param);
             maskFeat.Type = 'perim';
             maskFeat.seSize = 5;
               im = segmentRegionShowMask(im, segMask, maskFeat);

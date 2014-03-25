@@ -58,8 +58,7 @@ for i=2:length(xx)-1
             break
         end      
     end
-  
-        
+      
 end
 
 fprintf(2,'done!\n');
@@ -69,13 +68,3 @@ while(~any(mask(:,:,end)>0))
 end
 
 end
-
-%Get the orthogonal vectors to the points on the line. Can be called in one
-%of two values.
-%if type is 'rectangle', then each mask region will be a box that is
-%perpendicular to line at position 'i' along the curve.
-%If type is 'curved' then each region will be the area between the line
-%perpendicular to the line at position 'i' and 'i+1' along the curve. For
-%straight regions these two calls should return the same value, however, in
-%curved regions they will not.
-   
