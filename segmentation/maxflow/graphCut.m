@@ -37,6 +37,15 @@ if(nargin==1)
     posIn = wait(hPolyIn);
     maskSource = poly2mask(posIn(:,1), posIn(:,2), size(im,1), size(im,2));
     
+        %Weights for segmentation
+    lambda = 0.001;
+    bkgNoise = 0.01;
+        %Use inside marker to estimate the background intensity inside the opercle
+    %(should do this slightly different in the future)
+    isSource = find(maskSource==1);
+    isSink = find(maskSink==1);
+    [sourceHist, sinkHist] = regionIntensityEstimation(im, isSource, isSink);
+
 end
 
 if(nargin>=3)
@@ -58,8 +67,8 @@ if(nargin==3)
     [sourceHist, sinkHist] = regionIntensityEstimation(im, isSource, isSink);
 
     %Weights for segmentation
-    lambda = 0.1;
-    bkgNoise = 0.1;
+    lambda = 0.001;
+    bkgNoise = 0.01;
     
 end
 if(nargin==4)
@@ -97,7 +106,7 @@ A = sparse(E(:,1),E(:,2),V,N,N,4*N);
 
 %Set terminal weights.
 %Note: this will in the future we a user-chosen region, or  predict based
-%on previous images in the time seris.
+%on previous images in the time series.
 
 %1+maximum cost for any intensity pixel-pixel link on the image.
 %Used to assign the cost of a pixel to be in the source/sink when we've
@@ -111,7 +120,7 @@ T = setRegionPenalty(isSource, isSink, sourceHist, sinkHist,im,K,lambda);
 
 [flow, labels] = maxflow(A,T);
 labels = reshape(labels, [height width]);
-%figure;  imshow(4*double(labels)+3*im+maskSource,[]);
+figure;  imshow(4*double(labels)+3*im+maskSource,[]);
 
 if(nargout==1)
     varargout{1} = labels;
@@ -123,7 +132,7 @@ function [sourceHist, sinkHist] = regionIntensityEstimation(im, isSource, isSink
 
 %Return the probability of a pixel being within a certain intensity range
 %if it's in the source.
-[sourceHistProb, sourceHistVal]= hist(double(im(isSource)));
+[sourceHistProb, sourceHistVal]= hist(double(im(isSource)),50);
 sourceHist = sourceHistProb/sum(sourceHistProb(:));
 sourceHist = {sourceHist, sourceHistVal};
 
@@ -131,7 +140,7 @@ sourceHist = {sourceHist, sourceHistVal};
 
 %Use the region in isSink to set the background pixel-not really an optimal
 %way to do it if there is extra fluorescence signals out there
-[sinkHistProb, sinkHistVal]= hist(double(im(isSink)));
+[sinkHistProb, sinkHistVal]= hist(double(im(isSink)),50);
 sinkHist = sinkHistProb/sum(sinkHistProb(:));
 sinkHist = {sinkHist, sinkHistVal};
 
@@ -176,7 +185,7 @@ probSource = -log(probSource);
 
 %% Probability that a given pixel is in the sink
 %Index in sinkHist that each pixel intensity is closest to.
-indexSink= cell2mat(arrayfun(@(pixelInten)find(...
+indexSink = cell2mat(arrayfun(@(pixelInten)find(...
     abs(pixelInten-sinkHist{2})==min(abs(pixelInten-sinkHist{2})),...
     1,'first'), ...
     pixelInten,'UniformOutput', false));

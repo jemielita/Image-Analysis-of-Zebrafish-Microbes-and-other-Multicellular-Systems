@@ -18,7 +18,7 @@
 % Portions of this code were adapted by Matthew Jemielita to make it more
 % appropriate for the detection of fluorescent bacteria.
 
-function [mask, imgDenoised] = spotDetector(img, S, dthreshold, postProcLevel)
+function varargout = spotDetector(img, S, dthreshold, postProcLevel)
 
 if nargin<2
     S = 4;
@@ -54,23 +54,12 @@ frameInfo = 0;
 resDenoised = significantCoefficientDenoising(res, S);
 imgDenoised = imgDenoised + resDenoised; % add significant residuals
 
-%nansum(imgDenoised(:))
+if(nargout==1)
+   varargout{1} = imgDenoised; 
+   return
+end
 
-% 
-% while delta > 0.002
-%     resDenoised = significantCoefficientDenoising(res, S);
-%     imgDenoised = imgDenoised + resDenoised; % add significant residuals
-%     
-%     res = img - imgDenoised;
-%     sigma_res1 = std(res(:));
-%     delta = abs(sigma_res0/sigma_res1 - 1);
-%     sigma_res0 = sigma_res1;
-%    % figure; imshow(imgDenoised,[0 1000]);
-%     title(num2str(n));
-%     n = n+1;
-%     delta
-% end
-% 
+
 % %The code above is the only thing that uses the paper Olivo-Marin, Pattern
 % %Recognition, 2002.
 % 
@@ -110,6 +99,12 @@ mask = bwmorph(mask, 'spur');
 mask = bwmorph(mask, 'clean');
 
 mask = bwareaopen(mask, 70);
+
+if(nargout==2)
+   varargout{1} = imgDenoised;
+   varargout{2} = mask;
+end
+
 return
 
 
@@ -201,7 +196,7 @@ for n = 1:nComp
         mindist = min(dist2max,dist2com);
         
         % retain secondary maxima where mindist > threshold
-        idx2 = find(mindist >  );
+        idx2 = find(mindist >  1);
         if ~isempty(idx2)
             xmax2{n} = xm(idx2);
             ymax2{n} = ym(idx2);

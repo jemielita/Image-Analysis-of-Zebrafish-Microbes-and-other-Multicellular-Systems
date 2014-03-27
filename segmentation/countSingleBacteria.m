@@ -65,14 +65,8 @@ for nZ=1:size(im,3)
     yMin = find(sum(thisMask,2)>0, 1, 'first');
     yMax = find(sum(thisMask,2)>0, 1, 'last');
     
-    [~,thisFrame(yMin:yMax, xMin:xMax)] = spotDetector(double(im(yMin:yMax,xMin:xMax,nZ)));
-    
-    %mask = uint8(mask);
-    %mask(thisFrame>maxThresh) =1;
-    %mask(thisFrame>minThresh) = mask(thisFrame>minThresh)+1;
-    
-    % maskAll(:,:,nZ)= mask;
-    
+    thisFrame(yMin:yMax, xMin:xMax) = spotDetector(double(im(yMin:yMax,xMin:xMax,nZ)));
+
     %Using a median filter on each frame to remove salt and pepper noise
     thisFrame(yMin:yMax, xMin:xMax) = medfilt2(thisFrame(yMin:yMax, xMin:xMax), [5 5]);
     

@@ -12,8 +12,11 @@
 % INPUT: -param: parameters associated with this scan
 %        -imVar structure containing the following elements
 %           imVar.color = color (ex. '488nm', '568nm');
-%           imvar.zNum = which z plane to use-currently not being used
-%           imVar.scanNum = which scan number to load in
+%           imvar.zNum = if empty load in the entire z-stack. If single
+%           value load in just that plane. If contains two values then load
+%           in the z frames in that range. Currently variable z-load in is
+%           only supported for loadTypes of 'crop' or 'polygonRegion'.
+%           imVar.scanNum = which scan number to load in.
 %        -loadType: 'single': User must provide a cut number which gives
 %                   which cut region to load in. In addition the field
 %                   param.cutRegion must be set. (mlj: I don't think this 
@@ -22,7 +25,10 @@
 %        'multiple': User must provide a cut number which gives which cut
 %        region to load in.
 %        'crop': User must provide a cropping rectangle (cropRect), which
-%        gives the location of the particular region to load in.
+%        gives the location of the particular region to load in. If there
+%        are two values load in all images within the range of these
+%        values. Currently the error checking on the inputs isn't great so
+%        be careful!
 %        'polygonRegion': User must provide a polygonal region (poly) to load
 %        from. This polygon is used to calculate a minimum bounding box
 %        around this polygon and everthing in this box is loaded. Pixels
@@ -79,6 +85,7 @@ switch loadType
         imStack = loadPolygonRegion(param, imVar, regPoly);
         
 end
+
 
 
 %Deal with -1 put in to find regions outside gut
@@ -205,274 +212,304 @@ end
         end
         
     end
-
-%Load in all images in one particular cut of the gut
-
-function im  = loadCutRegion(param, imVar, cutNumber, scanNum,dataType)
-
-thisCut = cell(4,1);
-thisCut{1} = param.cutVal{cutNumber,1};
-thisCut{2} = param.cutVal{cutNumber,2};
-thisCut{3} = param.cutVal{cutNumber,3};
-thisCut{4} = param.cutVal{cutNumber,4};
-
-centerLine = param.centerLineAll{scanNum};
-
-colorNum = find(strcmp(param.color, imVar.color));
-indReg = find(thisCut{2}==1);
-
-%Get z extent that we need to load in
-zList = param.regionExtent.Z(:, indReg);
-zList = zList>0;
-zList = sum(zList,2);
-minZ = find(zList~=0, 1, 'first');
-maxZ = find(zList~=0, 1, 'last');
-finalDepth = maxZ-minZ+1;
-
-%Get mask of gut
-height = param.regionExtent.regImSize{1}(1);
-width = param.regionExtent.regImSize{1}(2);
-polyX = param.regionExtent.polyAll{scanNum}(:,1);
-polyY = param.regionExtent.polyAll{scanNum}(:,2);
-gutMask = poly2mask(polyX, polyY, height, width);
-
-imOrig = nan*zeros(height, width, dataType);
-
-%Size of pre-cropped rotated image
-imRotate = zeros(thisCut{4}(1), thisCut{4}(2), dataType);
-
-%Final image stack
-xMin =thisCut{4}(5); xMax = thisCut{4}(6);
-yMin = thisCut{4}(3); yMax = thisCut{4}(4);
-finalHeight = xMax-xMin+1;
-finalWidth = yMax-yMin+1;
-
-im = nan*zeros(finalHeight, finalWidth, finalDepth, dataType);
-
-%Crop down the mask to the size of the cut region
-maxCut = size(param.cutVal,1);
-
-cutPosInit = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle', thisCut{1}(2));
-cutPosFinal = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle', thisCut{1}(1));
-
-pos = [cutPosFinal(1:2,:); cutPosInit(2,:); cutPosInit(1,:)];
-
-cutMask = poly2mask(pos(:,1), pos(:,2), height, width);
-cutMask = cutMask.*gutMask;
-
-%Load in the entire volume
-baseDir = [param.directoryName filesep 'Scans' filesep];
-%Going through each scan
-scanDir = [baseDir, 'scan_', num2str(imVar.scanNum), filesep];
-
-%Find the indices to map the original image points onto the rotated image
-theta = thisCut{3};
-[oI, rI] = rotationIndex(cutMask, theta);
-[x,y] = ind2sub(size(imRotate), rI);
-
-%Remove indices beyond this range
-ind = [find(x<xMin); find(x>xMax); find(y<yMin); find(y>yMax)];
-ind = unique(ind);
-x(ind) = []; y(ind) = []; oI(ind) = []; rI(ind) = [];
-x = x-xMin+1; y = y-yMin+1;
-finalI = sub2ind([finalHeight, finalWidth], x,y);
-
-
-
-for nZ=minZ:maxZ
-
-    imOrig(:)=-1; %Can't use nan, because then we can't add up regions-deal with minus one at the end.
-    for i = 1:length(indReg)
-       regNum = indReg(i);
-       imNum = param.regionExtent.Z(nZ, regNum);
-      
-       if(imNum==-1)
-           %This region doesn't exist at this particular z-plane
-           continue
-       end
-           
-       %Get the extent of this region
-       xOutI = param.regionExtent.XY{colorNum}(regNum,1);
-       xOutF = param.regionExtent.XY{colorNum}(regNum,3)+xOutI-1;
-       
-       yOutI = param.regionExtent.XY{colorNum}(regNum,2);
-       yOutF = param.regionExtent.XY{colorNum}(regNum,4)+yOutI -1;
-       
-       xInI = param.regionExtent.XY{colorNum}(regNum,5);
-       xInF = xOutF - xOutI +xInI;
-       
-       yInI = param.regionExtent.XY{colorNum}(regNum,6);
-       yInF = yOutF - yOutI +yInI;
-       
-       %Load in the image
-       
-       %Find out how we've stored the images
-       [whichType, imFileName] = whichImageFileType(scanDir, regNum, param, imNum,colorNum);
-       
-       try
-           
-           switch whichType
-               case 1
-                   %Load tiff image
-                   
-                   switch dataType
-                       case 'uint16'
-                           imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
-                               uint16(imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]}));
-                       case 'double'
-                           imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
-                               double(imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]}));
-                   end
-                   
-                   
-               case 2
-                   %Load png image
-                   inputImage = imread(imFileName);
-                   
-                   switch dataType
-                       case 'uint16'
-                           
-                           imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
-                               uint16(inputImage(xInI:xInF, yInI:yInF));
-                       case 'double'
-                           imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
-                               double(imread(inputImage(xInI:xInF, yInI:yInF)));
-                   end
-                   
-                   
-           end
-           
-       catch
-           disp('This image doesnt exist-fix up your code!!!!');
-       end
+    
+    %Load in all images in one particular cut of the gut
+    
+    function im  = loadCutRegion(param, imVar, cutNumber, scanNum,dataType)
+    
+    thisCut = cell(4,1);
+    thisCut{1} = param.cutVal{cutNumber,1};
+    thisCut{2} = param.cutVal{cutNumber,2};
+    thisCut{3} = param.cutVal{cutNumber,3};
+    thisCut{4} = param.cutVal{cutNumber,4};
+    
+    centerLine = param.centerLineAll{scanNum};
+    
+    colorNum = find(strcmp(param.color, imVar.color));
+    indReg = find(thisCut{2}==1);
+    
+    %Get z extent that we need to load in
+    zList = param.regionExtent.Z(:, indReg);
+    zList = zList>0;
+    zList = sum(zList,2);
+    minZ = find(zList~=0, 1, 'first');
+    maxZ = find(zList~=0, 1, 'last');
+    finalDepth = maxZ-minZ+1;
+    
+    %Get mask of gut
+    height = param.regionExtent.regImSize{1}(1);
+    width = param.regionExtent.regImSize{1}(2);
+    polyX = param.regionExtent.polyAll{scanNum}(:,1);
+    polyY = param.regionExtent.polyAll{scanNum}(:,2);
+    gutMask = poly2mask(polyX, polyY, height, width);
+    
+    imOrig = nan*zeros(height, width, dataType);
+    
+    %Size of pre-cropped rotated image
+    imRotate = zeros(thisCut{4}(1), thisCut{4}(2), dataType);
+    
+    %Final image stack
+    xMin =thisCut{4}(5); xMax = thisCut{4}(6);
+    yMin = thisCut{4}(3); yMax = thisCut{4}(4);
+    finalHeight = xMax-xMin+1;
+    finalWidth = yMax-yMin+1;
+    
+    im = nan*zeros(finalHeight, finalWidth, finalDepth, dataType);
+    
+    %Crop down the mask to the size of the cut region
+    maxCut = size(param.cutVal,1);
+    
+    cutPosInit = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle', thisCut{1}(2));
+    cutPosFinal = getOrthVect(centerLine(:,1), centerLine(:,2), 'rectangle', thisCut{1}(1));
+    
+    pos = [cutPosFinal(1:2,:); cutPosInit(2,:); cutPosInit(1,:)];
+    
+    cutMask = poly2mask(pos(:,1), pos(:,2), height, width);
+    cutMask = cutMask.*gutMask;
+    
+    %Load in the entire volume
+    baseDir = [param.directoryName filesep 'Scans' filesep];
+    %Going through each scan
+    scanDir = [baseDir, 'scan_', num2str(imVar.scanNum), filesep];
+    
+    %Find the indices to map the original image points onto the rotated image
+    theta = thisCut{3};
+    [oI, rI] = rotationIndex(cutMask, theta);
+    [x,y] = ind2sub(size(imRotate), rI);
+    
+    %Remove indices beyond this range
+    ind = [find(x<xMin); find(x>xMax); find(y<yMin); find(y>yMax)];
+    ind = unique(ind);
+    x(ind) = []; y(ind) = []; oI(ind) = []; rI(ind) = [];
+    x = x-xMin+1; y = y-yMin+1;
+    finalI = sub2ind([finalHeight, finalWidth], x,y);
     
     
-    end   
     
-    imNum = param.regionExtent.Z(nZ, indReg);
-    %Deal with overlapping regions
-    for nR = 2:length(indReg)
-        thisReg = indReg(nR-1);
+    for nZ=minZ:maxZ
         
-        %Overlapping regions
-        %This is potentially slow (however we need to be as quick as possible with this type of thing).
-        %After we know this code works, we'll come back and write quicker code.
+        imOrig(:)=-1; %Can't use nan, because then we can't add up regions-deal with minus one at the end.
+        for i = 1:length(indReg)
+            regNum = indReg(i);
+            imNum = param.regionExtent.Z(nZ, regNum);
+            
+            if(imNum==-1)
+                %This region doesn't exist at this particular z-plane
+                continue
+            end
+            
+            %Get the extent of this region
+            xOutI = param.regionExtent.XY{colorNum}(regNum,1);
+            xOutF = param.regionExtent.XY{colorNum}(regNum,3)+xOutI-1;
+            
+            yOutI = param.regionExtent.XY{colorNum}(regNum,2);
+            yOutF = param.regionExtent.XY{colorNum}(regNum,4)+yOutI -1;
+            
+            xInI = param.regionExtent.XY{colorNum}(regNum,5);
+            xInF = xOutF - xOutI +xInI;
+            
+            yInI = param.regionExtent.XY{colorNum}(regNum,6);
+            yInF = yOutF - yOutI +yInI;
+            
+            %Load in the image
+            
+            %Find out how we've stored the images
+            [whichType, imFileName] = whichImageFileType(scanDir, regNum, param, imNum,colorNum);
+            
+            try
+                
+                switch whichType
+                    case 1
+                        %Load tiff image
+                        
+                        switch dataType
+                            case 'uint16'
+                                imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
+                                    uint16(imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]}));
+                            case 'double'
+                                imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
+                                    double(imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]}));
+                        end
+                        
+                        
+                    case 2
+                        %Load png image
+                        inputImage = imread(imFileName);
+                        
+                        switch dataType
+                            case 'uint16'
+                                
+                                imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
+                                    uint16(inputImage(xInI:xInF, yInI:yInF));
+                            case 'double'
+                                imOrig(xOutI:xOutF, yOutI:yOutF) = imOrig(xOutI:xOutF, yOutI:yOutF) +...
+                                    double(imread(inputImage(xInI:xInF, yInI:yInF)));
+                        end
+                        
+                        
+                end
+                
+            catch
+                disp('This image doesnt exist-fix up your code!!!!');
+            end
+            
+            
+        end
         
-        %Overlap for regNum>1
-        if(imNum(nR-1)>=0 &&imNum(nR)>=0)
-            imOrig(param.regionExtent.overlapIndex{colorNum,thisReg} )= ...
-                0.5*imOrig(param.regionExtent.overlapIndex{colorNum,thisReg});
+        imNum = param.regionExtent.Z(nZ, indReg);
+        %Deal with overlapping regions
+        for nR = 2:length(indReg)
+            thisReg = indReg(nR-1);
+            
+            %Overlapping regions
+            %This is potentially slow (however we need to be as quick as possible with this type of thing).
+            %After we know this code works, we'll come back and write quicker code.
+            
+            %Overlap for regNum>1
+            if(imNum(nR-1)>=0 &&imNum(nR)>=0)
+                imOrig(param.regionExtent.overlapIndex{colorNum,thisReg} )= ...
+                    0.5*imOrig(param.regionExtent.overlapIndex{colorNum,thisReg});
+            end
+            
+        end
+        
+        %Rotating the image by mapping to the appropriate pixels in the large
+        %image stack
+        im(finalI +finalHeight*finalWidth*(nZ-minZ)) = imOrig(oI);
+        
+        fprintf(1, '.');
+        
+    end
+    fprintf(1, '\n');
+    
+    end
+    
+    
+    
+    function im = loadCroppedRegion(param, imVar, cropRect)
+    colorNum =  find(strcmp(param.color, imVar.color));
+    
+    totalNumRegions = size(param.regionExtent.XY{colorNum},1);
+    %Get a list of the regions contained in this cropping rectangle
+    overlap = zeros(totalNumRegions,2);
+    
+    for nR=1:totalNumRegions
+        %x position
+        regOverlap(nR,1,1) = param.regionExtent.XY{colorNum}(nR,1);
+        regOverlap(nR,1,2) = regOverlap(nR,1,1)+param.regionExtent.XY{colorNum}(nR,3);
+        
+        %y position
+        regOverlap(nR,2,1) = param.regionExtent.XY{colorNum}(nR,2);
+        regOverlap(nR,2,2) = regOverlap(nR,2,1)+param.regionExtent.XY{colorNum}(nR,4);
+        
+        
+        %See if the position that we clicked on is in the range of one of
+        %these regions.
+        if(cropRect(2)>regOverlap(nR,1,1) &&...
+                cropRect(2)<regOverlap(nR,1,2))
+            overlap(nR,1) = 1;
+        end
+        
+        if(cropRect(1)>regOverlap(nR,2,1) &&...
+                cropRect(1)<regOverlap(nR,2,2))
+            overlap(nR,2) = 1;
+        end
+    end
+    
+    %Save a list of all the regions that are in the region clicked on. If we
+    %clicked outside of all regions then don't update anything
+    overlap = sum(overlap,2);
+    regList = find(overlap==2);
+    
+    if(isempty(regList))
+        fprintf(2, 'Region is empty! Returning an empty image');
+        im = [];
+    end
+    
+    for nR=1:length(regList)
+        regNum = regList(nR);
+        %Getting a list of all the image to load in
+        zList = param.regionExtent.Z(param.regionExtent.Z(:,regNum)~=-1,regNum);
+        
+        if(~isempty(imVar.zNum))
+            if(length(imVar.zNum)==1)
+                zList = imVar.zNum(1);
+            elseif(length(imVar.zNum)==2)
+                ind = find(zList>=imVar.zNum(1) & zList<=imVar.zNum(2));
+                zList = zList(ind);
+            end
+        end
+
+        totalZ = size(zList,1);
+        
+        %Get the extent of this region
+        xOutI = param.regionExtent.XY{colorNum}(regNum,1);
+        
+        yOutI = param.regionExtent.XY{colorNum}(regNum,2);
+        
+        xInI = param.regionExtent.XY{colorNum}(regNum,5)+cropRect(2)-xOutI;
+        
+        xInF = xInI+cropRect(4);
+        %Don't let anything go over the bounds of the image region
+        xInF = min([param.regionExtent.XY{colorNum}(regNum,3), xInF]);
+        
+        
+        yInI = param.regionExtent.XY{colorNum}(regNum,6)+cropRect(1)-yOutI;
+        yInF = yInI+cropRect(3);
+        yInF = min([param.regionExtent.XY{colorNum}(regNum,4),yInF]);
+        
+        xInI = round(xInI);xInF= round(xInF); yInI = round(yInI); yInF = round(yInF);
+        
+        
+        %Make sure that the region extents don't go beyond the range of
+        %this image
+        
+        
+        if(isempty(zList))
+            fprintf(2, 'No valid z positions for this found bug! Screwy...\n');
+            fprintf(2, 'Returning all-zero matrix.\n');
+            
+            im = zeros(xInF-xInI+1,yInF-yInI+1,1);
+            return;
+        end
+        
+        im = zeros(xInF-xInI+1,yInF-yInI+1, length(zList));
+        
+                
+        
+        baseDir = [param.directoryName filesep 'Scans' filesep];
+        %Going through each scan
+        scanDir = [baseDir, 'scan_', num2str(imVar.scanNum), filesep];
+        
+        
+        for nZ = 1:totalZ
+            imNum = zList(nZ);
+            
+            [whichType, imFileName] = whichImageFileType(scanDir, regNum, param, imNum,colorNum);
+            switch whichType
+                case 1
+                    %Load tiff image
+                    try
+                        im(:,:,nZ)= imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]});
+                    catch
+                        disp('This image doesnt exist-fix up your code!!!!');
+                    end
+                    
+                case 2
+                    try
+                        %Load png image
+                        inputImage = imread(imFileName);
+                        im(:,:,nZ) = inputImage(xInI:xInF, yInI:yInF);
+                    catch
+                        disp('This image doesnt exist-fix up your code!!!!');
+                    end
+            end
+            
+            
         end
         
     end
     
-    %Rotating the image by mapping to the appropriate pixels in the large
-    %image stack
-    im(finalI +finalHeight*finalWidth*(nZ-minZ)) = imOrig(oI);
-
-    fprintf(1, '.');   
-
-end
-fprintf(1, '\n');
-
-end
-
-
-
-    function im = loadCroppedRegion(param, imVar, cropRect)
-        colorNum =  find(strcmp(param.color, imVar.color));
-       
-        totalNumRegions = size(param.regionExtent.XY{colorNum},1);
-        %Get a list of the regions contained in this cropping rectangle  
-        overlap = zeros(totalNumRegions,2);
-        for nR=1:totalNumRegions
-            %x position
-            regOverlap(nR,1,1) = param.regionExtent.XY{colorNum}(nR,1);
-            regOverlap(nR,1,2) = regOverlap(nR,1,1)+param.regionExtent.XY{colorNum}(nR,3);
-            
-            %y position
-            regOverlap(nR,2,1) = param.regionExtent.XY{colorNum}(nR,2);
-            regOverlap(nR,2,2) = regOverlap(nR,2,1)+param.regionExtent.XY{colorNum}(nR,4);
-            
-            
-            %See if the position that we clicked on is in the range of one of
-            %these regions.
-            if(cropRect(2)>regOverlap(nR,1,1) &&...
-                    cropRect(2)<regOverlap(nR,1,2))
-                overlap(nR,1) = 1;
-            end
-            
-            if(cropRect(1)>regOverlap(nR,2,1) &&...
-                    cropRect(1)<regOverlap(nR,2,2))
-                overlap(nR,2) = 1;
-            end
-        end
-        
-        %Save a list of all the regions that are in the region clicked on. If we
-        %clicked outside of all regions then don't update anything
-        overlap = sum(overlap,2);
-        regList = find(overlap==2);
-        
-        if(isempty(regList))
-            fprintf(2, 'Region is empty! Returning an empty image');
-           im = []; 
-        end
-        for nR=1:length(regList)
-            regNum = regList(nR);
-            %Getting a list of all the image to load in
-            zList = param.regionExtent.Z(param.regionExtent.Z(:,regNum)~=-1,regNum);
-            totalZ = size(zList,1);
-            
-            %Get the extent of this region
-            xOutI = param.regionExtent.XY{colorNum}(regNum,1);
-            
-            yOutI = param.regionExtent.XY{colorNum}(regNum,2);
-            
-            xInI = param.regionExtent.XY{colorNum}(regNum,5)+cropRect(2)-xOutI;
-            xInF = xInI+cropRect(4);
-            
-            
-            yInI = param.regionExtent.XY{colorNum}(regNum,6)+cropRect(1)-yOutI;
-            yInF = yInI+cropRect(3);
-            
-            xInI = round(xInI);xInF= round(xInF); yInI = round(yInI); yInF = round(yInF);
-            
-            %Make sure that the region extents don't go beyond the range of
-            %this image
-            
-            baseDir = [param.directoryName filesep 'Scans' filesep];
-            %Going through each scan
-            scanDir = [baseDir, 'scan_', num2str(imVar.scanNum), filesep];
-            
-            
-            for nZ = 1:totalZ
-                imNum = zList(nZ);
-                
-                [whichType, imFileName] = whichImageFileType(scanDir, regNum, param, imNum,colorNum);
-                switch whichType
-                    case 1
-                        %Load tiff image
-                        try
-                            im(:,:,nZ)= imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]});
-                        catch
-                            disp('This image doesnt exist-fix up your code!!!!');
-                        end
-                        
-                    case 2
-                        try
-                        %Load png image
-                        inputImage = imread(imFileName);
-                        im(:,:,nZ) = inputImage(xInI:xInF, yInI:yInF);
-                        catch
-                             disp('This image doesnt exist-fix up your code!!!!');
-                        end
-                end
-                        
-                        
-            end
-            
-        end
-        
     end
     
     function im = loadPolygonRegion(param, imVar, regPoly)
