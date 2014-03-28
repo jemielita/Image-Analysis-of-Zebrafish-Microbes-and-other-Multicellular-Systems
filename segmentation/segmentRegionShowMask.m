@@ -2,7 +2,7 @@
 %on top of image
 
 
-function im = segmentRegionShowMask(im, mask, maskFeat)
+function mask = segmentRegionShowMask(mask, maskFeat)
 
 
 switch maskFeat.Type
@@ -14,11 +14,10 @@ switch maskFeat.Type
             radius = 5;
         end
         se = strel('disk', radius);
-        maxInten = max(im(:));
         
         mask = bwperim(mask);
         mask = imdilate(mask, se);
-        im = im+ maxInten*uint16(mask);
 end
+
 
 end

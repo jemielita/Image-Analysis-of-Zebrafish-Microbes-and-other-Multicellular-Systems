@@ -73,8 +73,11 @@ if(nargin==3)
 end
 if(nargin==4)
     intenEst = varargin{4};
-    sinkHist = intenEst{1,:};
-    sourceHist = intenEst{2,:};
+    sinkHist{1} = intenEst{1,1};
+    sinkHist{2} = intenEst{1,2};
+    
+    sourceHist{1} = intenEst{2,1};
+    sourceHist{2} = intenEst{2,2};
     
     %Weights for segmentation
     lambda = 0.1;
@@ -120,8 +123,15 @@ T = setRegionPenalty(isSource, isSink, sourceHist, sinkHist,im,K,lambda);
 
 [flow, labels] = maxflow(A,T);
 labels = reshape(labels, [height width]);
+
+displayData = false;
+if(displayData==true)
 figure;  imshow(4*double(labels)+3*im+maskSource,[]);
 
+figure; imshow(im,[]);
+alphamask(bwperim(maskSource),[1 0 0]);
+alphamask(bwperim(double(labels)),[0 1 0]);
+end
 if(nargout==1)
     varargout{1} = labels;
 end
@@ -169,7 +179,7 @@ pixelInd = setdiff(1:numElIm, [isSource;isSink]);
 %(source) pixel intensity
 pixelInten = im(pixelInd);
 
-%% Probability that a given pixel is the source
+%% Probability that a given pixel is in the source
 
 %Index in sourceHist that each pixel intensity is closest to.
 indexSource= cell2mat(arrayfun(@(pixelInten)find(...

@@ -209,7 +209,7 @@ multiZSliceMax = 1;
 hMenuShowSegmentation = uimenu(hMenuDisplay, 'Separator', 'on', 'Label', 'Show gut segmentation', ...
     'Checked', 'off','Callback', @showSegmentation_Callback);
 hMenuSetSegementationType = uimenu(hMenuDisplay, 'Label', 'Choose segmentation type', 'Callback', @setSegmentation_Callback);
-segmentationType.List = {'none', 'Otsu', 'estimated background'};
+segmentationType.List = {'none', 'Otsu', 'estimated background', 'final seg'};
 segmentationType.Selection = 'none';
 hMenuShowFoundCoarseRegions = uimenu(hMenuDisplay, 'Label', 'Show coarse analysis results', 'Callback', @showCoarseResults_Callback);
 
@@ -3920,8 +3920,28 @@ hContrast = imcontrast(imageRegion);
             segMask = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param);
             maskFeat.Type = 'perim';
             maskFeat.seSize = 5;
-              im = segmentRegionShowMask(im, segMask, maskFeat);
-           % set(hIm, 'CData', im);
+            
+            hRem = findobj('Tag', 'segMask');
+            delete(hRem);
+            rgbIm = segmentRegionShowMask(segMask, maskFeat);
+            hAlpha = alphamask(rgbIm, [1 0 0], 0.5, imageRegion);
+            set(hAlpha, 'Tag', 'segMask');
+            
+%             
+%             %Show marker for further segmentation
+%             segmentType.Selection = 'intenThresh';
+%             segMaskMark = segmentGutMIP(imSeg, segmentType, scanNum, colorNum, param);
+%             maskFeat.Type = 'perim';
+%             maskFeat.seSize = 5;
+%             
+%             rgbIm = segmentRegionShowMask(segMaskMark, maskFeat);
+%             hAlpha = alphamask(rgbIm, [0 1 0], 0.5, imageRegion);
+%             set(hAlpha, 'Tag', 'segMask');
+            
+            
+            
+            
+              % set(hIm, 'CData', im);
         end
         
         if(strcmp(get(hMenuShowFoundCoarseRegions, 'Checked'), 'on'))

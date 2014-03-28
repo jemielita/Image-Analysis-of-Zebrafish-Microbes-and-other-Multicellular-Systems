@@ -19,18 +19,18 @@ inputVar = load([param.dataSaveDirectory filesep 'bkgEst' filesep 'bkgEst_' para
 
 bkgMask = inputVar.segMask;
 
-%Remove regions outside gut
-poly = param.regionExtent.polyAll{scanNum};
-maskG = poly2mask(poly(:,1), poly(:,2), size(bkgMask,1), size(bkgMask,2));
-
 %Subtract background estimation from image
 segMask = (double(im)-(bkgMask*bkgOffset)>0);
-segMask(~maskG) = 0;
+
 
 %% Remove small spots and holes using morphological operations
 
 segMask = removeHoles(segMask);
 
+
+
+%% Make output
+segMask = (circMask+segMask) >0;
 
 
 end
