@@ -31,7 +31,7 @@ switch lower(segmentType.Selection)
         segMask = spotSegment(param, colorNum, scanNum, imSize);
         
     case 'final seg'
-        inputVar = load([param.dataSaveDirectory filesep 'bkgEst' filesep 'fin_' num2str(scanNum) '_' param.color{colorNum} '.mat']);
+        inputVar = load([param.dataSaveDirectory filesep 'bkgEst' filesep 'finv2_' num2str(scanNum) '_' param.color{colorNum} '.mat']);
         segMask = inputVar.segMask;
     
 end
@@ -41,9 +41,27 @@ end
 
 function segMask = mipSegmentSeries(im, scanNum, colorNum, param, segmentType)
 
+spotRad = 20;
 segMask = showBkgSegment(im, scanNum, colorNum, param, segmentType.bkgOffset);
 intenMask = intensitySegment(im, scanNum, colorNum, param);
-spotMask = spotSegment(param, colorNum, scanNum, size(segMask));
+spotMask = spotSegment(param, colorNum, scanNum, size(segMask),spotRad);
+
+
+
+
+fileName = [param.dataSaveDirectory, filesep, 'bkgEst', filesep, 'fin_', num2str(scanNum), '_', param.color{colorNum}, '.mat'];
+
+inputVar = load(fileName, 'segMask');
+segMask =inputVar.segMask;
+%segMask = graphCutSegment(im, segMask, spotMask, intenMask);
+
+
+segMask = removeSmallObj(segMask, spotMask);
+
+
+end
+
+function segMask = graphCutSegment(im, segMask, spotMask,intenMask)
 
 %Remove regions that don't have high intensity spots in it or single
 %bacteria
@@ -77,6 +95,7 @@ cc = bwconncomp(segMask);
 
 maskTot = zeros(size(segMask));
 imMaster = im;
+imMaster(~segMask) = NaN;
 for i=1:cc.NumObjects
     fprintf(1, '.');
     mask = zeros(size(segMask));
@@ -85,7 +104,7 @@ for i=1:cc.NumObjects
    [~,maskM,~] = minBoundBox(mask, intenMask);
    mask = mask2;
    
-   
+
    %To generate a histogram of potential intensities from source and
    %sink,dilate mask by a given amount and use that as the cutoff between
    %the two regions
@@ -105,6 +124,7 @@ for i=1:cc.NumObjects
    finMask = graphCut(im, maskM, ~maskD, intenEst);
    maskTot(range(1):range(3), range(2):range(4)) = double(finMask)+double(maskTot(range(1):range(3), range(2):range(4)));
    
+
 %    %Now seeing how well we can do at our segmentation
 %    imshow(im,[]);
 %    alphamask(bwperim(mask), [1 0 0]);
@@ -116,10 +136,37 @@ for i=1:cc.NumObjects
 end
 fprintf(1,'\n');
 
-segMask = maskTot;
+segMask = maskTot>0;
 
 end
 
+
+function segMask = removeSmallObj(segMask, spotMask)
+%Remove small objects that don't overlap with found spots
+
+cc = bwconncomp(segMask);
+
+for i=1:cc.NumObjects
+   
+    %Minimum size cutoff for graph cut
+   if(length(cc.PixelIdxList{i})>1000)
+       continue;
+   end
+   [x,y] = ind2sub(size(segMask), cc.PixelIdxList{i});
+   
+    bw = bwselect(spotMask, y, x, 4);
+    if(sum(bw(:))==0)
+       %No overlap between spot detection and graph cut-remove this small region
+       segMask(cc.PixelIdxList{i}) = 0;        
+    end
+    
+   
+    
+end
+
+
+
+end
 
 
 function segMask = otsuSegment(im)
@@ -131,15 +178,22 @@ segMask = im > gT;
 end
 
 function segMask = intensitySegment(im, scanNum, colorNum, param)
+
 colorInten = [1000,500];
 
 segMask = im>colorInten(colorNum);
+
+%Force everything outside the gut to be 0, regardless of intensity.
+poly = param.regionExtent.polyAll{scanNum};
+imSize = param.regionExtent.regImSize{1};
+gutMask = poly2mask(poly(:,1), poly(:,2), imSize(1), imSize(2));
+segMask(~gutMask) = 0;
 
 end
 
 
 
-function segMask = spotSegment(param, colorNum, scanNum, imSize)
+function segMask = spotSegment(param, colorNum, scanNum, imSize,spotRad)
 
 %% Remove regions around found bacterial spots
 rProp = load([param.dataSaveDirectory filesep 'singleBacCount'...
@@ -169,6 +223,6 @@ xyz = xyz(1:2,:);
 %Go through each of these spots and add a circle to to the mask around the
 %spot
 
-segMask = makeCircleMask(imSize, xyz, 20);
+segMask = makeCircleMask(imSize, xyz, spotRad);
 
 end
