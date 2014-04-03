@@ -97,9 +97,9 @@ end
         %Allocating a huge array for the entire image stack
         colorNum =  find(strcmp(param.color, imVar.color));
         
-        %Getting a list of all the image to load in
-        zList = param.regionExtent.Z(param.regionExtent.Z(:,regNum)~=-1,regNum);
-        totalZ = size(zList,1);
+        %Getting a list of all the image slices to load in.        
+        [~,totalZ, zList] = getZRange(param, 'region', regNum);
+        
         
         %The array will be of type dataType (double, etc.) to make it possible to
         %more efficiently use memory if possible (e.g. we don't need double
@@ -228,13 +228,16 @@ end
     colorNum = find(strcmp(param.color, imVar.color));
     indReg = find(thisCut{2}==1);
     
+    
     %Get z extent that we need to load in
-    zList = param.regionExtent.Z(:, indReg);
-    zList = zList>0;
-    zList = sum(zList,2);
-    minZ = find(zList~=0, 1, 'first');
-    maxZ = find(zList~=0, 1, 'last');
-    finalDepth = maxZ-minZ+1;
+%     zList = param.regionExtent.Z(:, indReg);
+%     zList = zList>0;
+%     zList = sum(zList,2);
+%     minZ = find(zList~=0, 1, 'first');
+%     maxZ = find(zList~=0, 1, 'last');
+%     finalDepth = maxZ-minZ+1;
+    [zList, finalDepth, zRange] = getZRange(param, 'multipleRegions', indReg);
+    minZ = zRange(1); maxZ = zRange(2);
     
     %Get mask of gut
     height = param.regionExtent.regImSize{1}(1);
@@ -389,37 +392,10 @@ end
     function im = loadCroppedRegion(param, imVar, cropRect)
     colorNum =  find(strcmp(param.color, imVar.color));
     
-    totalNumRegions = size(param.regionExtent.XY{colorNum},1);
-    %Get a list of the regions contained in this cropping rectangle
-    overlap = zeros(totalNumRegions,2);
-    
-    for nR=1:totalNumRegions
-        %x position
-        regOverlap(nR,1,1) = param.regionExtent.XY{colorNum}(nR,1);
-        regOverlap(nR,1,2) = regOverlap(nR,1,1)+param.regionExtent.XY{colorNum}(nR,3);
-        
-        %y position
-        regOverlap(nR,2,1) = param.regionExtent.XY{colorNum}(nR,2);
-        regOverlap(nR,2,2) = regOverlap(nR,2,1)+param.regionExtent.XY{colorNum}(nR,4);
-        
-        
-        %See if the position that we clicked on is in the range of one of
-        %these regions.
-        if(cropRect(2)>regOverlap(nR,1,1) &&...
-                cropRect(2)<regOverlap(nR,1,2))
-            overlap(nR,1) = 1;
-        end
-        
-        if(cropRect(1)>regOverlap(nR,2,1) &&...
-                cropRect(1)<regOverlap(nR,2,2))
-            overlap(nR,2) = 1;
-        end
-    end
-    
-    %Save a list of all the regions that are in the region clicked on. If we
-    %clicked outside of all regions then don't update anything
-    overlap = sum(overlap,2);
-    regList = find(overlap==2);
+  %  totalNumRegions = size(param.regionExtent.XY{colorNum},1);
+   
+    %Get regions to load in
+    [regList, overlap] = regionOverlap(param, cropRect);
     
     if(isempty(regList))
         fprintf(2, 'Region is empty! Returning an empty image');
@@ -429,7 +405,15 @@ end
     for nR=1:length(regList)
         regNum = regList(nR);
         %Getting a list of all the image to load in
-        zList = param.regionExtent.Z(param.regionExtent.Z(:,regNum)~=-1,regNum);
+        [zList, totalZ,~]  = getZRange(param, 'region', regNum);
+        if(isempty(zList))
+            fprintf(2, 'No valid z positions for this found bug! Screwy...\n');
+            fprintf(2, 'Returning all-zero matrix.\n');
+            
+            im = zeros(xInF-xInI+1,yInF-yInI+1,1);
+            return;
+        end
+%        zList = param.regionExtent.Z(param.regionExtent.Z(:,regNum)~=-1,regNum);
         
         if(~isempty(imVar.zNum))
             if(length(imVar.zNum)==1)
@@ -440,7 +424,6 @@ end
             end
         end
 
-        totalZ = size(zList,1);
         
         %Get the extent of this region
         xOutI = param.regionExtent.XY{colorNum}(regNum,1);
@@ -465,13 +448,7 @@ end
         %this image
         
         
-        if(isempty(zList))
-            fprintf(2, 'No valid z positions for this found bug! Screwy...\n');
-            fprintf(2, 'Returning all-zero matrix.\n');
-            
-            im = zeros(xInF-xInI+1,yInF-yInI+1,1);
-            return;
-        end
+
         
         im = zeros(xInF-xInI+1,yInF-yInI+1, length(zList));
         
