@@ -8,6 +8,6 @@ function [] = clump3dSegThreshTimeSeries(param)
 
 [sL, cL] = createSCList(param);
 
-arrayfun(@(x,y)clump3dSegThresh(param, x,y, true), sL, cL);
+arrayfun(@(x,y)clump3dSegThreshAll(param, x,y, true), sL, cL);
 
 end
