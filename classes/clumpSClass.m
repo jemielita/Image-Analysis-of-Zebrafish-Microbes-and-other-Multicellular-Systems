@@ -16,7 +16,7 @@ classdef clumpSClass
     
     methods
         
-        function obj = clumpSClass(param, scanNum, colorNum)
+        function obj = clumpSClass(param, scanNum, colorNum,varargin)
             
                % obj = obj@scanClass(param, scanNum,colorNum);
                % obj = obj@clumpAllClass(param);
@@ -25,10 +25,13 @@ classdef clumpSClass
                obj.scanNum = scanNum;
                obj.colorNum = colorNum;
                obj.colorStr = param.color{colorNum};
-%                
-%                if(nargin<=3)
-%                    obj = get(obj);
-%                end
+               
+               if(nargin==4)
+                   switch varargin{1}
+                       case 'get'
+                           obj = get(obj);
+                   end
+               end
            
         end
         

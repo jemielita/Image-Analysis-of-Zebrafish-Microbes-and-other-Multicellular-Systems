@@ -6,6 +6,7 @@ classdef scanClass
         colorStr = '';
         colorNum = NaN;
         
+        bkgEst = [];
         saveLoc = '';
         clumps = clumpSClass.empty(1,0);
     end
@@ -35,7 +36,7 @@ classdef scanClass
             if(nargin==1)
                im = imadjust(im); 
             end
-            figure; imshow(im,[]);
+            imshow(im,[]);
             
             if(nargin>1)
                 switch varargin{1}
@@ -61,6 +62,11 @@ classdef scanClass
             
         end
         
+        function obj = getBkgEst(obj)
+            
+        end
+        
+        
         function spots = foundSpots(obj)
             
         end
@@ -76,7 +82,7 @@ classdef scanClass
         function obj = getClumps(obj)
             inputVar = load([obj.saveLoc filesep 'param.mat']);
             param = inputVar.param;
-            temp = clumpSClass(param,obj.scanNum, obj.colorNum);
+            temp = clumpSClass(param,obj.scanNum, obj.colorNum, 'get');
             
             obj.clumps = temp;
         end

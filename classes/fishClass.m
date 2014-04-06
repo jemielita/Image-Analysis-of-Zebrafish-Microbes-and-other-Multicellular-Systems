@@ -73,7 +73,7 @@ classdef fishClass
                            end
                            totVol = [obj.scan(s,c).clumps.allData.volume];
                            
-                           gutInd = [obj.scan(s,c).clumps.allData.gutLoc];
+                           gutInd = [obj.scan(s,c).clumps.allData.sliceNum];
                            
                            gutInd = gutInd<param.gutRegionsInd(s,obj.totPopRegCutoff);
                            

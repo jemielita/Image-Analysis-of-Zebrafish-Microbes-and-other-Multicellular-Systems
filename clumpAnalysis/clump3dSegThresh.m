@@ -69,7 +69,8 @@ rp = regionprops(mask, 'Centroid');rp = rp.Centroid;
 cl = param.centerLineAll{scanNum};
 
 d = sqrt((cl(:,1)-rp(1)).^2 + (cl(:,2)-rp(2)).^2);
-[~,cc.gutLoc] =  min(d);
+[~,cc.sliceNum] =  min(d);
+cc.gutRegion  = find(cc.sliceNum > param.gutRegionsInd(cc.scanNum,:),1, 'last');
 
 
 cc.save;
