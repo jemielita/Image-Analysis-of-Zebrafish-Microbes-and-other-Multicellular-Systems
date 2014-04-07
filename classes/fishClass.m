@@ -48,7 +48,6 @@ classdef fishClass
             end
         end
         
-        
         function obj = getTotPop(obj, varargin)
            switch nargin
                case 1

@@ -6,7 +6,7 @@ classdef scanClass
         colorStr = '';
         colorNum = NaN;
         
-        bkgEst = [];
+        
         saveLoc = '';
         clumps = clumpSClass.empty(1,0);
     end

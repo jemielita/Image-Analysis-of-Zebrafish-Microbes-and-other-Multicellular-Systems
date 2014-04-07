@@ -3923,6 +3923,9 @@ hContrast = imcontrast(imageRegion);
             
             hRem = findobj('Tag', 'segMask');
             delete(hRem);
+            
+            %rgbIm = maskClass.showMask(segmask, 'perim', 5);
+            
             rgbIm = segmentRegionShowMask(segMask, maskFeat);
             hAlpha = alphamask(rgbIm, [1 0 0], 0.5, imageRegion);
             set(hAlpha, 'Tag', 'segMask');

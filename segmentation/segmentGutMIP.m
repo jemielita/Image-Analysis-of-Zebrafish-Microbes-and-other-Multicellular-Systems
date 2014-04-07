@@ -22,8 +22,6 @@ switch lower(segmentType.Selection)
         
         segMask = mipSegmentSeries(im, scanNum, colorNum, param, segmentType);
         
-        
-        
     case 'intenthresh'
         segMask = intensitySegment(im, scanNum, colorNum, param);
         
@@ -31,7 +29,7 @@ switch lower(segmentType.Selection)
         segMask = spotSegment(param, colorNum, scanNum, imSize);
         
     case 'final seg'
-        inputVar = load([param.dataSaveDirectory filesep 'bkgEst' filesep 'finv2_' num2str(scanNum) '_' param.color{colorNum} '.mat']);
+        inputVar = load([param.dataSaveDirectory filesep 'bkgEst' filesep 'fin_' num2str(scanNum) '_' param.color{colorNum} '.mat']);
         segMask = inputVar.segMask;
     
 end
@@ -160,11 +158,7 @@ for i=1:cc.NumObjects
        segMask(cc.PixelIdxList{i}) = 0;        
     end
     
-   
-    
 end
-
-
 
 end
 
