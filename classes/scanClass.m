@@ -7,8 +7,11 @@ classdef scanClass
         colorNum = NaN;
         
         
+        gutRegionsInd = NaN;
         saveLoc = '';
         clumps = clumpSClass.empty(1,0);
+        totVol = NaN;
+        totInten = NaN; 
     end
     
     methods
@@ -22,6 +25,8 @@ classdef scanClass
                 obj.colorNum = colorNum;
                 obj.colorStr = param.color{colorNum};
                 obj.saveLoc = param.dataSaveDirectory;
+                
+                obj.gutRegionsInd = param.gutRegionsInd(scanNum,:);
             end
         end
         
@@ -66,7 +71,6 @@ classdef scanClass
             
         end
         
-        
         function spots = foundSpots(obj)
             
         end
@@ -98,7 +102,6 @@ classdef scanClass
             
         end
         
-        
         function obj = calcClump(obj)
             inputVar = load([obj.saveLoc filesep 'param.mat']);
             param = inputVar.param;
@@ -106,6 +109,28 @@ classdef scanClass
             clump3dSegThreshAll(param, obj.scanNum, obj.colorNum, true);
         end
         
+        function obj = getTotPop(obj, regCutoff, type)
+            
+            switch type
+                case 'clump'
+                    if(isempty(obj.clumps.allData))
+                        obj.totVol = 0;
+                        obj.totInten = 0;
+                        return;
+                    end
+                    obj.totVol = [obj.clumps.allData.volume];
+                    obj.totInten = [obj.clumps.allData.totalInten];
+                    
+                    gutInd = [obj.clumps.allData.sliceNum];
+                    
+                    gutInd = gutInd<obj.gutRegionsInd(regCutoff);
+                    
+                    obj.totVol = sum(obj.totVol(gutInd));
+                    obj.totInten = sum(obj.totInten(gutInd));
+                    
+                    
+            end
+            end
         
         
         
