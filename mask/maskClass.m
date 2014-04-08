@@ -99,16 +99,17 @@ classdef maskClass
        function m = getGraphCutMask(param, scanNum, colorNum)
            segMask = maskClass.getBkgEstMask(param, scanNum, colorNum);
            spotMask = maskClass.getSpotMask(param, scanNum, colorNum);
-           intenMask = maskClass.getIntenMask(param, scanNum, colorNum);
+           recalcProj = false;
+           im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
            
+           inten = maskClass.getIntensityCutoff(im, spotMask);
+           
+           intenMask = maskClass.getIntenMask(param, scanNum, colorNum,inten);
            
            intenMask = maskClass.removeSmallObj(intenMask, spotMask);
            %Force the intensity mask to always include individual bacteria,
            %even if they fall below the intensity threshold.
            intenMask = (intenMask+spotMask)>0;
-           
-           recalcProj = false;
-           im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
            
            %Remove regions that don't have high intensity spots in it or single
            %bacteria.
@@ -150,17 +151,32 @@ classdef maskClass
                [~,maskM,~] = minBoundBox(mask, intenMask);
                mask = mask2;
                
-               
                %To generate a histogram of potential intensities from source and
-               %sink,dilate mask by a given amount and use that as the cutoff between
-               %the two regions
+               %sink, dilate mask by a given amount and use that as the cutoff
+               %between the two regions.
                se = strel('disk',10);
                
                maskD = imdilate(maskM,se);
                
-               [sourceHistProb, sourceHistVal]= hist(double(im(maskD)),50);
+               im = mat2gray(im);
+               val = double(im(maskD));val = val(:);
+               val(isnan(val)) = [];val(val==0) = [];
                
+               [sourceHistProb, sourceHistVal]= hist(double(im(maskD)),50);
+               dx = unique(sourceHistVal(2:end)-sourceHistVal(1:end-1));
+               dx = dx(1);
+               sourceHistProb = sourceHistProb/(dx*sum(sourceHistProb(:)));
+
+               val = double(im(~maskD));val = val(:);
+               val(isnan(val)) = []; val(val==0) = [];
                [sinkHistProb, sinkHistVal] = hist(double(im(~maskD)),50);
+               dx = unique(sinkHistVal(2:end)-sinkHistVal(1:end-1));
+               dx = dx(1);
+               sinkHistProb = sinkHistProb/(dx*sum(sinkHistProb));
+               
+               %[sinkHistProb, sinkHistVal] = hist(double(im(~maskD)),50);
+               
+               
                intenEst{1,1} = sinkHistProb;
                intenEst{1,2} = sinkHistVal;
                
@@ -186,10 +202,15 @@ classdef maskClass
            
        end
        
+       function inten = getIntensityCutoff(im, spotMask)
+            b  = im(spotMask==1);
+            inten = mean(b(:));
+            
+       end
+       
        function m = getFinalGutMask(param, scanNum, colorNum)
            
        end
-       
        
        function m = calcFinalMask(param,saveName, varargin)
            switch nargin
@@ -211,7 +232,6 @@ classdef maskClass
                end
            end
        end
-       
        
        function segMask = removeSmallObj(segMask, spotMask)
            %Remove small objects that don't overlap with found spots

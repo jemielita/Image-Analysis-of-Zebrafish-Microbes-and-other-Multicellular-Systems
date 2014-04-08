@@ -72,8 +72,9 @@ d = sqrt((cl(:,1)-rp(1)).^2 + (cl(:,2)-rp(2)).^2);
 [~,cc.sliceNum] =  min(d);
 cc.gutRegion  = find(cc.sliceNum > param.gutRegionsInd(cc.scanNum,:),1, 'last');
 
-
-cc.save;
+if(saveVal==true)
+    cc.save;
+end
 
 if(nargout==1)
     varargout{1} = cc;

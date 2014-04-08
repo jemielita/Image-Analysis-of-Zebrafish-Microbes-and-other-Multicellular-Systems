@@ -87,6 +87,24 @@ classdef scanClass
             obj.clumps = temp;
         end
         
+        function obj = calcMask(obj)
+            inputVar = load([obj.saveLoc filesep 'param.mat']);
+            param = inputVar.param;
+            
+            segMask = maskClass.getGraphCutMask(param, obj.scanNum, obj.colorNum);
+            
+            saveLoc = [obj.saveLoc filesep 'bkgEst' filesep 'fin_' num2str(obj.scanNum) '_' param.color{obj.colorNum} '.mat'];
+            save(saveLoc, 'segMask');
+            
+        end
+        
+        
+        function obj = calcClump(obj)
+            inputVar = load([obj.saveLoc filesep 'param.mat']);
+            param = inputVar.param;
+           
+            clump3dSegThreshAll(param, obj.scanNum, obj.colorNum, true);
+        end
         
         
         

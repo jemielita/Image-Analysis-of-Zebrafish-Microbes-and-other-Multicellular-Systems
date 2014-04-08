@@ -17,6 +17,13 @@ imMIP = imread([fileDir filesep 'FluoroScan_' num2str(scanNum) '_' param.color{c
 
 fprintf(1, ['Scan: ', num2str(scanNum) '  color: ', param.color{colorNum}]);
 
+%% If saveVal is true then delete everything that would be in the folder.
+%This avoids issues where additional clumps may accidentally be created
+sl = [fileDir filesep 'clump' filesep 'clump_' param.color{colorNum} '_nS' num2str(scanNum) ]; 
+if(isdir(sl))
+    rmdir(sl, 's');
+    mkdir(sl);
+end
 
 %% Finding connected components
 labelMatrix = bwlabel(maskAll);

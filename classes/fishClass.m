@@ -48,6 +48,17 @@ classdef fishClass
             end
         end
         
+        function obj = calcMasks(obj)
+           
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c).calcMask();
+                end
+                
+            end
+        end 
+        
+        
         function obj = getTotPop(obj, varargin)
            switch nargin
                case 1
@@ -94,6 +105,19 @@ classdef fishClass
                    
             
         end
+       
+        
+        function obj = calcClumps(obj)
+            
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c).calcClump;
+                end
+                
+            end
+            
+        end
+        
         
     end
     

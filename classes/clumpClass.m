@@ -4,7 +4,7 @@ classdef clumpClass < clumpSClass
        volume = NaN;
        intenCutoff = NaN;
        zRange = [NaN NaN];
-       gutLoc = NaN;
+       sliceNum = NaN;
        gutRegion = NaN;
        cropRect = [NaN NaN NaN NaN];
        removeObj = false;
