@@ -1949,7 +1949,7 @@ hContrast = imcontrast(imageRegion);
            paramTemp.regionExtent.Z = zList;
            
            imVar.color ={param.color{colorNum}};imVar.scanNum= scanNumPrev;
-           thisIm= load3dVolume(paramTemp, imVar, 'crop', thisPos);
+           thisIm = load3dVolume(paramTemp, imVar, 'crop', thisPos);
            thisIm = max(thisIm,[],3);
            im(thisPos(2):thisPos(2)+thisPos(4), thisPos(1):thisPos(1)+thisPos(3))=...
                thisIm;
@@ -3807,7 +3807,6 @@ hContrast = imcontrast(imageRegion);
         switch projectionType
             case 'none'
         
-                
                   if(strcmp(get(hMenuOverlapImages, 'Checked'), 'on'));
                      
                       im = registerSingleImage(scanNum,param.color{1}, zNum,im, data,param);
@@ -3992,11 +3991,8 @@ hContrast = imcontrast(imageRegion);
                 %Used for saving potentially modified images to a new
                 %folder
                 varargout{1} = im;
-        end
-        
-        
+        end        
         set(hIm, 'Visible', 'on');
-                     %   set(hIm, 'CData', im);
 
         if(overlapBugs==true)
            displayOverlappedBugs(); 

@@ -32,7 +32,6 @@ classdef clumpSClass
                            obj = get(obj);
                    end
                end
-           
         end
         
         function obj = save(obj)
@@ -66,7 +65,6 @@ classdef clumpSClass
            end
           
            %Otherwise recalculate data and load
-           construct(obj);
            obj.allData = loadClumps(obj, fileDir);
            obj.numClumps = length(obj.allData);
            
@@ -81,8 +79,12 @@ classdef clumpSClass
             b = b(e);
             obj.numClumps = length(b);
             
-            temp = cell2mat(arrayfun(@(x)load([fileDir filesep b(x).name], 'c'), 1:obj.numClumps, 'UniformOutput', false));
-            allData = [temp.c];
+            if(obj.numClumps~=0)
+                temp = cell2mat(arrayfun(@(x)load([fileDir filesep b(x).name], 'c'), 1:obj.numClumps, 'UniformOutput', false));
+                allData = [temp.c];
+            else
+                allData = [];
+            end
             
         end
         
@@ -162,6 +164,9 @@ classdef clumpSClass
             
         end
         
+        function cullClumps(obj, filtData)
+            %Remove clumps from list based
+        end
     end
     
 end

@@ -204,7 +204,10 @@ classdef maskClass
        
        function inten = getIntensityCutoff(im, spotMask)
             b  = im(spotMask==1);
-            inten = mean(b(:));
+            b = sort(b(:));
+            %Cutoff equal to intensity at which %80 of bacteria signal
+            %present-somewhat arbitrary
+            inten = b(round(0.2*length(b)));
             
        end
        

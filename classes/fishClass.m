@@ -135,7 +135,7 @@ classdef fishClass
         
         
         function plotTotPop(obj, type, varargin)
-            
+            figure;
             cM(1,:) = [0.2 0.8 0.1];
             cM(2,:) = [0.8 0.2 0.1];
             

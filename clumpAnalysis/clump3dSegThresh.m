@@ -11,13 +11,11 @@ function varargout = clump3dSegThresh(param, scanNum, colorNum, maskAll, imMIP,i
 
 switch nargin 
     case 7
-        
         cc = clumpClass(scanNum, colorNum, param,ind);
     case 8
         cc = varargin{1};
 end
 mask = maskAll==ind;
-
 
 if(sum(mask(:))<9)
     fprintf(1, 'Region too small! Skipping\n');
@@ -49,7 +47,18 @@ cc.totalInten = sum(temp(temp>cutoff));
 
 [~, ~,zRange] = getZRange(param, 'cropRect', cropRect);
 
-r = sum(sum(vol>cutoff,1),2); r = squeeze(r);
+bw = vol>cutoff;
+
+rp = bwconncomp(bw);
+
+if(length(rp)>1)
+   b = 0; 
+end
+
+
+r = sum(sum(bw,1),2); r = squeeze(r);
+
+
 if(sum(vol(:)>cutoff)==0)
     %If the spot isn't actually brighter than it's immediate
     %surroundings it's probably falsely labelled.
@@ -79,4 +88,5 @@ end
 if(nargout==1)
     varargout{1} = cc;
 end
+
 end
