@@ -19,8 +19,8 @@ fprintf(1, ['Scan: ', num2str(scanNum) '  color: ', param.color{colorNum}]);
 
 
 %% Finding connected components
-labelMatrix = labelmatrix(maskAll);
+labelMatrix = bwlabel(maskAll);
 ind = unique(labelMatrix(:)); ind(ind==0) = [];
-arrayfun(@(x)clump3dSegThresh(param, labelMatrix, x, true), ind);
+arrayfun(@(x)clump3dSegThresh(param, labelMatrix, x, saveVal), ind);
 
 end

@@ -29,7 +29,6 @@ end
 labelMatrix = bwlabel(maskAll);
 ind = unique(labelMatrix(:)); ind(ind==0) = [];
 
-ind = 167;
 arrayfun(@(x)clump3dSegThresh(param, scanNum, colorNum, labelMatrix, imMIP,x, saveVal), ind);
 
 end
