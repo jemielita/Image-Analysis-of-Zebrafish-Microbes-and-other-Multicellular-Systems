@@ -301,7 +301,7 @@ end
                 continue
             end
             
-            %Get the extent of this region
+            %Get the extent of this region            
             xOutI = param.regionExtent.XY{colorNum}(regNum,1);
             xOutF = param.regionExtent.XY{colorNum}(regNum,3)+xOutI-1;
             
@@ -426,24 +426,7 @@ end
 
         
         %Get the extent of this region
-        xOutI = param.regionExtent.XY{colorNum}(regNum,1);
-        
-        yOutI = param.regionExtent.XY{colorNum}(regNum,2);
-        
-        xInI = param.regionExtent.XY{colorNum}(regNum,5)+cropRect(2)-xOutI;
-        
-        xInF = xInI+cropRect(4);
-        %Don't let anything go over the bounds of the image region
-        xInF = min([param.regionExtent.XY{colorNum}(regNum,3), xInF]);
-        
-        
-        yInI = param.regionExtent.XY{colorNum}(regNum,6)+cropRect(1)-yOutI;
-        yInF = yInI+cropRect(3);
-        yInF = min([param.regionExtent.XY{colorNum}(regNum,4),yInF]);
-        
-        xInI = round(xInI);xInF= round(xInF); yInI = round(yInI); yInF = round(yInF);
-        
-        
+        [xInI, xInF, yInI, yInF] = getXYrange(param, colorNum, regNum,cropRect);
         %Make sure that the region extents don't go beyond the range of
         %this image
         
@@ -532,6 +515,8 @@ end
         whichType = 0;
     end
     
+    
+    
     switch whichType
         case 1
             imFileName = imFileNameTiff{1};
@@ -540,5 +525,38 @@ end
     end
             
     
+    end
+    
+    
+    function [xInI, xInF, yInI, yInF] = getXYrange(param, colorNum, regNum,varargin)
+    switch nargin
+        case 3
+            
+        case 4
+            cropRect = varargin{1};
+        otherwise
+            
+    end
+        
+        %Get the extent of this region
+        xOutI = param.regionExtent.XY{colorNum}(regNum,1);
+        
+        yOutI = param.regionExtent.XY{colorNum}(regNum,2);
+        
+        xInI = param.regionExtent.XY{colorNum}(regNum,5)+cropRect(2)-xOutI;
+        xInI = max([xInI, 1]);
+        
+        xInF = xInI+cropRect(4);
+        %Don't let anything go over the bounds of the image region
+        xInF = min([param.regionExtent.XY{colorNum}(regNum,3), xInF]);
+        
+        
+        yInI = param.regionExtent.XY{colorNum}(regNum,6)+cropRect(1)-yOutI;
+        yInI = max([yInI, 1]);
+        yInF = yInI+cropRect(3);
+        yInF = min([param.regionExtent.XY{colorNum}(regNum,4),yInF]);
+        
+        xInI = round(xInI);xInF= round(xInF); yInI = round(yInI); yInF = round(yInF);
+        
     end
 

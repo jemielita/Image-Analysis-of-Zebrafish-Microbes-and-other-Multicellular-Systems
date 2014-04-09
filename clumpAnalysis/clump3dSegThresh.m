@@ -34,6 +34,8 @@ cropRect = [yMin, xMin, yMax-yMin+1, xMax-xMin+1];
 imVar.zNum = '';imVar.scanNum = scanNum; imVar.color= param.color{colorNum};
 vol = load3dVolume(param, imVar, 'crop', cropRect);
 
+%Sanity check our regions-if something went wrong just return
+
 b = bwperim(bwmorph(mask, 'dilate')-bwperim(mask)); b = imMIP(b(:));
 
 cutoff = mean(b(:));
