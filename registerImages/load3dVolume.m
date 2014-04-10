@@ -433,11 +433,12 @@ end
                 case 1
                     %Load tiff image
                     try
-                        im(xOutI:xOutF,yOutI:yOutF,nZ)= im(xOutI:xOutF,yOutI:yOutF,nZ)+...
+                        im(xOutI:xOutF,yOutI:yOutF,nZ)=...
                             double(imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]}));
                     catch
                         disp('This image doesnt exist-fix up your code!!!!');
                     end
+                    
                     
                 case 2
                     try
@@ -582,76 +583,58 @@ end
         otherwise
             
     end
-%     
-%     %Get the appropriate locations of pixels in the output image
+    %Get the appropriate locations of pixels in the output image
     pos(1) = param.regionExtent.XY{colorNum}(regNum,1);
     pos(2) = pos(1) + param.regionExtent.XY{colorNum}(regNum,3);
     
     posC(1) = cropRect(2); posC(2) = cropRect(2)+cropRect(4);
     
-    if(pos(1)<posC(1))
-        xOutI = 1;
-    else
-        xOutI = pos(1)-posC(1)+1;
+    
+    xOutI = 1;
+    xOutF = 1+cropRect(4);
+    
+    l = posC(2)-posC(1);
+    
+    if(posC(1)<pos(1))
+        xOutI = xOutI + (pos(1)-posC(1));
+        l = l -(pos(1)-posC(1));
     end
     
-    if(posC(2)<pos(2))
-       xOutF = xOutI + cropRect(4); 
-    else
-        xOutF = pos(2) -cropRect(2)+1;
+    if(posC(2)>pos(2))
+        xOutF = xOutF - (posC(2)-pos(2));
+        l = l-(posC(2)-pos(2));
     end
-    xOutF = min([xOutF, height]);
     
+    xInI = param.regionExtent.XY{1}(regNum,5)+(posC(1)-pos(1));
+    xInI = max([1, xInI]);
+    
+    xInF = xInI +l;
+    
+    %Get the appropriate locations of pixels in the output image
+    %Y Range
     pos(1) = param.regionExtent.XY{colorNum}(regNum,2);
     pos(2) = pos(1) + param.regionExtent.XY{colorNum}(regNum,4);
     
     posC(1) = cropRect(1); posC(2) = cropRect(1)+cropRect(3);
+    yOutI = 1;
+    yOutF = 1+cropRect(3);
     
-    if(pos(1)<posC(1))
-        yOutI = 1;
-    else
-        yOutI = pos(1)-posC(1)+1;
+    l = posC(2)-posC(1);
+    
+    if(posC(1)<pos(1))
+        yOutI = yOutI + (pos(1)-posC(1));
+        l = l -(pos(1)-posC(1));
     end
     
-    if(posC(2)<pos(2))
-        yOutF = yOutI + cropRect(3);
-    else
-        yOutF = pos(2) - cropRect(1)+1;
+    if(posC(2)>pos(2))
+        yOutF = yOutF -(posC(2)-pos(2));
+        l = l-(posC(2)-pos(2));
     end
     
-    yOutF = min([yOutF, width]);
+    yInI = param.regionExtent.XY{1}(regNum,6)+(posC(1)-pos(1));
+    yInI = max([1, yInI]);
+    yInF = yInI +l;
     
     
-    %Get the extent of this region
-    %xOutI = param.regionExtent.XY{colorNum}(regNum,1);
-    
-    xInI = param.regionExtent.XY{colorNum}(regNum,5)-xOutI+cropRect(2);
-     
-    xInI = max([xInI, 1]);
-    
-  
-    %xInF = xInI+cropRect(4);
-    %Don't let anything go over the bounds of the image region
-    %xInF = min([param.regionExtent.XY{colorNum}(regNum,3)+1, xInF]);
-    
-    
-  %  yOutI = param.regionExtent.XY{colorNum}(regNum,2);
-    
-    
-    
-    yInI = param.regionExtent.XY{colorNum}(regNum,6)+cropRect(1)-yOutI;
-    yInI = max([yInI, 1]);
-    
-   % yInF = yInI+cropRect(3);
-   % yInF = min([param.regionExtent.XY{colorNum}(regNum,4)+1,yInF]);
-    
-    
-    
-    
-    xInF = xInI + (xOutF-xOutI);
-    yInF = yInI + (yOutF-yOutI);
-
-    xInI = round(xInI);xInF= round(xInF); yInI = round(yInI); yInF = round(yInF);
-
     end
 

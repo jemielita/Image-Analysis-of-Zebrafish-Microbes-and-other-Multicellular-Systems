@@ -32,7 +32,7 @@ yMax = find(y==1, 1, 'last');
 
 cropRect = [yMin, xMin, yMax-yMin+1, xMax-xMin+1];
 imVar.zNum = '';imVar.scanNum = scanNum; imVar.color= param.color{colorNum};
-vol = load3dVolume(param, imVar, 'crop', cropRect);
+ vol = load3dVolume(param, imVar, 'crop', cropRect);
 
 %Sanity check our regions-if something went wrong just return
 
@@ -82,6 +82,10 @@ cl = param.centerLineAll{scanNum};
 d = sqrt((cl(:,1)-rp(1)).^2 + (cl(:,2)-rp(2)).^2);
 [~,cc.sliceNum] =  min(d);
 cc.gutRegion  = find(cc.sliceNum > param.gutRegionsInd(cc.scanNum,:),1, 'last');
+% 
+% imshow(max(vol,[],3),[]);
+% pause
+fprintf(1, '.');
 
 if(saveVal==true)
     cc.save;
@@ -91,4 +95,5 @@ if(nargout==1)
     varargout{1} = cc;
 end
 
+clear all
 end
