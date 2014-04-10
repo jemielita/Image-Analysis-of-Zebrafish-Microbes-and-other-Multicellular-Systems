@@ -10,6 +10,9 @@ classdef clumpClass < clumpSClass
        removeObj = false;
        
        IND = NaN;%should be private
+       
+       surfaceArea = NaN;
+       
    end
    
    methods
@@ -29,6 +32,12 @@ classdef clumpClass < clumpSClass
            save([sl filesep num2str(c.IND) '.mat'], 'c');
        end
        
+       
+       function obj = calcSurfaceArea(obj)
+            
+       end
+           
+           
        
 %        function display(obj)
 %           %Display the MIP of this particular bug

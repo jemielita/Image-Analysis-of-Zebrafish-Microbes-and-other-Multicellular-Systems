@@ -391,66 +391,50 @@ end
     
     function im = loadCroppedRegion(param, imVar, cropRect)
     colorNum =  find(strcmp(param.color, imVar.color));
-    
-  %  totalNumRegions = size(param.regionExtent.XY{colorNum},1);
    
     %Get regions to load in
-    [regList, overlap] = regionOverlap(param, cropRect);
+    [regList, ~] = regionOverlap(param, cropRect);
     
     if(isempty(regList))
         fprintf(2, 'Region is empty! Returning an empty image');
         im = [];
     end
     
-    for nR=1:length(regList)
-        regNum = regList(nR);
-        %Getting a list of all the image to load in
-        [zList, totalZ,~]  = getZRange(param, 'region', regNum);
-        if(isempty(zList))
-            fprintf(2, 'No valid z positions for this found bug! Screwy...\n');
-            fprintf(2, 'Returning all-zero matrix.\n');
-            
-            im = zeros(xInF-xInI+1,yInF-yInI+1,1);
-            return;
-        end
-%        zList = param.regionExtent.Z(param.regionExtent.Z(:,regNum)~=-1,regNum);
-        
-        if(~isempty(imVar.zNum))
-            if(length(imVar.zNum)==1)
-                zList = imVar.zNum(1);
-            elseif(length(imVar.zNum)==2)
-                ind = find(zList>=imVar.zNum(1) & zList<=imVar.zNum(2));
-                zList = zList(ind);
+    
+    %Get z-range for this list of regions
+    [zList, depth, zRange] = getZRange(param, 'multipleRegions', regList);
+    minZ = zRange(1); maxZ = zRange(2);
+    
+    %Construct image array of appropriate size
+    height = cropRect(4)+1;
+    width = cropRect(3)+1;
+    
+    im = zeros(height, width, depth);
+    
+    baseDir = [param.directoryName filesep 'Scans' filesep];
+    %Going through each scan
+    scanDir = [baseDir, 'scan_', num2str(imVar.scanNum), filesep];
+    
+    %Go through z list step by step
+    for nZ=1:minZ:maxZ
+        for i = 1:length(regList)
+            regNum = regList(i);
+            imNum = param.regionExtent.Z(nZ, regNum);
+            if(imNum==-1)
+                %This region doesn't exist at this particular z-plane
+                continue
             end
-        end
-
-        
-        %Get the extent of this region
-        [xInI, xInF, yInI, yInF] = getXYrange(param, colorNum, regNum,cropRect);
-        %Make sure that the region extents don't go beyond the range of
-        %this image
-        
-        
-
-        
-        im = zeros(xInF-xInI+1,yInF-yInI+1, length(zList));
-        
-                
-        
-        baseDir = [param.directoryName filesep 'Scans' filesep];
-        %Going through each scan
-        scanDir = [baseDir, 'scan_', num2str(imVar.scanNum), filesep];
-        
-        
-        for nZ = 1:totalZ
-            imNum = zList(nZ);
-            
             [whichType, imFileName] = whichImageFileType(scanDir, regNum, param, imNum,colorNum);
+            
+            %Get the extent of this region
+            [xInI, xInF, yInI, yInF, xOutI, xOutF, yOutI, yOutF] = getXYrange(param, colorNum, regNum, height,width,cropRect);
+            
             switch whichType
                 case 1
                     %Load tiff image
                     try
-                        im(:,:,nZ)= imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]});
+                        im(xOutI:xOutF,yOutI:yOutF,nZ)= im(xOutI:xOutF,yOutI:yOutF,nZ)+...
+                            double(imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]}));
                     catch
                         disp('This image doesnt exist-fix up your code!!!!');
                     end
@@ -465,10 +449,69 @@ end
                     end
             end
             
-            
-        end
         
+        end
     end
+%     
+%     for nR=1:length(regList)
+%         regNum = regList(nR);
+%         %Getting a list of all the image to load in
+%         [zList, totalZ,~]  = getZRange(param, 'region', regNum);
+%         if(isempty(zList))
+%             fprintf(2, 'No valid z positions for this found bug! Screwy...\n');
+%             fprintf(2, 'Returning all-zero matrix.\n');
+%             
+%             im = zeros(xInF-xInI+1,yInF-yInI+1,1);
+%             return;
+%         end
+%         
+%         if(~isempty(imVar.zNum))
+%             if(length(imVar.zNum)==1)
+%                 zList = imVar.zNum(1);
+%             elseif(length(imVar.zNum)==2)
+%                 ind = find(zList>=imVar.zNum(1) & zList<=imVar.zNum(2));
+%                 zList = zList(ind);
+%             end
+%         end
+% 
+%         %Get the extent of this region
+%         [xInI, xInF, yInI, yInF, xOutI, xOutF, yOutI, yOutF] = getXYrange(param, colorNum, regNum,cropRect);
+%         %Make sure that the region extents don't go beyond the range of
+%         %this image
+%         
+%         im = zeros(xInF-xInI+1,yInF-yInI+1, length(zList));
+%         
+%         baseDir = [param.directoryName filesep 'Scans' filesep];
+%         %Going through each scan
+%         scanDir = [baseDir, 'scan_', num2str(imVar.scanNum), filesep];
+%         
+%         for nZ = 1:totalZ
+%             imNum = zList(nZ);
+%             
+%             [whichType, imFileName] = whichImageFileType(scanDir, regNum, param, imNum,colorNum);
+%             switch whichType
+%                 case 1
+%                     %Load tiff image
+%                     try
+%                         im(:,:,nZ)= imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]});
+%                     catch
+%                         disp('This image doesnt exist-fix up your code!!!!');
+%                     end
+%                     
+%                 case 2
+%                     try
+%                         %Load png image
+%                         inputImage = imread(imFileName);
+%                         im(:,:,nZ) = inputImage(xInI:xInF, yInI:yInF);
+%                     catch
+%                         disp('This image doesnt exist-fix up your code!!!!');
+%                     end
+%             end
+%             
+%             
+%         end
+%         
+%     end
     
     end
     
@@ -527,36 +570,88 @@ end
     
     end
     
+    function [xInI, xInF, yInI, yInF, xOutI, xOutF, yOutI, yOutF] ...
+        = getXYrange(param, colorNum, regNum,height, width,varargin)
     
-    function [xInI, xInF, yInI, yInF] = getXYrange(param, colorNum, regNum,varargin)
     switch nargin
-        case 3
+        case 5
             
-        case 4
+        case 6
             cropRect = varargin{1};
+            
         otherwise
             
     end
-        
-        %Get the extent of this region
-        xOutI = param.regionExtent.XY{colorNum}(regNum,1);
-        
-        yOutI = param.regionExtent.XY{colorNum}(regNum,2);
-        
-        xInI = param.regionExtent.XY{colorNum}(regNum,5)+cropRect(2)-xOutI;
-        xInI = max([xInI, 1]);
-        
-        xInF = xInI+cropRect(4);
-        %Don't let anything go over the bounds of the image region
-        xInF = min([param.regionExtent.XY{colorNum}(regNum,3), xInF]);
-        
-        
-        yInI = param.regionExtent.XY{colorNum}(regNum,6)+cropRect(1)-yOutI;
-        yInI = max([yInI, 1]);
-        yInF = yInI+cropRect(3);
-        yInF = min([param.regionExtent.XY{colorNum}(regNum,4),yInF]);
-        
-        xInI = round(xInI);xInF= round(xInF); yInI = round(yInI); yInF = round(yInF);
-        
+%     
+%     %Get the appropriate locations of pixels in the output image
+    pos(1) = param.regionExtent.XY{colorNum}(regNum,1);
+    pos(2) = pos(1) + param.regionExtent.XY{colorNum}(regNum,3);
+    
+    posC(1) = cropRect(2); posC(2) = cropRect(2)+cropRect(4);
+    
+    if(pos(1)<posC(1))
+        xOutI = 1;
+    else
+        xOutI = pos(1)-posC(1)+1;
+    end
+    
+    if(posC(2)<pos(2))
+       xOutF = xOutI + cropRect(4); 
+    else
+        xOutF = pos(2) -cropRect(2)+1;
+    end
+    xOutF = min([xOutF, height]);
+    
+    pos(1) = param.regionExtent.XY{colorNum}(regNum,2);
+    pos(2) = pos(1) + param.regionExtent.XY{colorNum}(regNum,4);
+    
+    posC(1) = cropRect(1); posC(2) = cropRect(1)+cropRect(3);
+    
+    if(pos(1)<posC(1))
+        yOutI = 1;
+    else
+        yOutI = pos(1)-posC(1)+1;
+    end
+    
+    if(posC(2)<pos(2))
+        yOutF = yOutI + cropRect(3);
+    else
+        yOutF = pos(2) - cropRect(1)+1;
+    end
+    
+    yOutF = min([yOutF, width]);
+    
+    
+    %Get the extent of this region
+    %xOutI = param.regionExtent.XY{colorNum}(regNum,1);
+    
+    xInI = param.regionExtent.XY{colorNum}(regNum,5)-xOutI+cropRect(2);
+     
+    xInI = max([xInI, 1]);
+    
+  
+    %xInF = xInI+cropRect(4);
+    %Don't let anything go over the bounds of the image region
+    %xInF = min([param.regionExtent.XY{colorNum}(regNum,3)+1, xInF]);
+    
+    
+  %  yOutI = param.regionExtent.XY{colorNum}(regNum,2);
+    
+    
+    
+    yInI = param.regionExtent.XY{colorNum}(regNum,6)+cropRect(1)-yOutI;
+    yInI = max([yInI, 1]);
+    
+   % yInF = yInI+cropRect(3);
+   % yInF = min([param.regionExtent.XY{colorNum}(regNum,4)+1,yInF]);
+    
+    
+    
+    
+    xInF = xInI + (xOutF-xOutI);
+    yInF = yInI + (yOutF-yOutI);
+
+    xInI = round(xInI);xInF= round(xInF); yInI = round(yInI); yInF = round(yInF);
+
     end
 
