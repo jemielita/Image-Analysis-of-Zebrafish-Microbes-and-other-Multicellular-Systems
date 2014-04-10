@@ -432,12 +432,12 @@ end
             switch whichType
                 case 1
                     %Load tiff image
-                    try
-                        im(xOutI:xOutF,yOutI:yOutF,nZ)=...
+              %      try
+                       im(xOutI:xOutF,yOutI:yOutF,nZ)=...
                             double(imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]}));
-                    catch
-                        disp('This image doesnt exist-fix up your code!!!!');
-                    end
+               %     catch
+                 %       disp('This image doesnt exist-fix up your code!!!!');
+                %    end
                     
                     
                 case 2
@@ -591,9 +591,8 @@ end
     
     
     xOutI = 1;
-    xOutF = 1+cropRect(4);
-    
-    l = posC(2)-posC(1);
+    l = cropRect(4);
+    xOutF = xOutI+l;
     
     if(posC(1)<pos(1))
         xOutI = xOutI + (pos(1)-posC(1));
@@ -601,8 +600,9 @@ end
     end
     
     if(posC(2)>pos(2))
-        xOutF = xOutF - (posC(2)-pos(2));
-        l = l-(posC(2)-pos(2));
+        %xOutF = xOutF - (posC(2)-pos(2));
+        l = l-(posC(2)-pos(2))-1;
+        xOutF = xOutI +l;
     end
     
     xInI = param.regionExtent.XY{1}(regNum,5)+(posC(1)-pos(1));
@@ -617,9 +617,10 @@ end
     
     posC(1) = cropRect(1); posC(2) = cropRect(1)+cropRect(3);
     yOutI = 1;
-    yOutF = 1+cropRect(3);
     
-    l = posC(2)-posC(1);
+    l = cropRect(3);
+    yOutF = yOutI+l;
+    
     
     if(posC(1)<pos(1))
         yOutI = yOutI + (pos(1)-posC(1));
@@ -627,14 +628,40 @@ end
     end
     
     if(posC(2)>pos(2))
-        yOutF = yOutF -(posC(2)-pos(2));
-        l = l-(posC(2)-pos(2));
+        %yOutF = yOutF -(posC(2)-pos(2));
+        
+        l = l-(posC(2)-pos(2))-1;
+        yOutF = yOutI + l;
+        
     end
     
     yInI = param.regionExtent.XY{1}(regNum,6)+(posC(1)-pos(1));
     yInI = max([1, yInI]);
     yInF = yInI +l;
     
+    if((xInF-xInI)~=(xOutF-xOutI) || (yInF-yInI)~=(yOutF-yOutI))
+       fprintf(2, 'Input and output ranges do not match!\n');
+       pause;
+       return
+    end
+    
+    if(yInF>param.regionExtent.XY{colorNum}(regNum,4)||xInF>param.regionExtent.XY{colorNum}(regNum,3))
+       fprintf(2, 'Input out of range for image!\n');
+       pause;
+       return;
+    end
+    
+    if(xOutI<1||xInI<1 ||yInI<1||yOutI<1)
+       fprintf(2, 'Negative values!\n');
+       pause
+       return
+    end
+    
+    if(xOutI>xOutF||xInI>xInF||yOutI>yOutF||yInI>yInF)
+       fprintf(2, 'Wrong order!\n');
+       pause
+       return
+    end
     
     end
 
