@@ -599,7 +599,7 @@ end
         l = l -(pos(1)-posC(1));
     end
     
-    if(posC(2)>pos(2))
+    if(posC(2)>=pos(2))
         %xOutF = xOutF - (posC(2)-pos(2));
         l = l-(posC(2)-pos(2))-1;
         xOutF = xOutI +l;
@@ -627,7 +627,7 @@ end
         l = l -(pos(1)-posC(1));
     end
     
-    if(posC(2)>pos(2))
+    if(posC(2)>=pos(2))
         %yOutF = yOutF -(posC(2)-pos(2));
         
         l = l-(posC(2)-pos(2))-1;

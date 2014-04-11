@@ -76,6 +76,15 @@ colorType = [param.color];
 colorNum = 1;
 
 
+%Load in fish analysis class-over time most of what we do in this program
+%that has a bearing on curating the *analysis* of our data should be moved
+%here (e.g. spot detection filtering, clump filtering, etc.). The param
+%structure should be used exclusively for parameters that affect region
+%features of the fish themselves (gut outline, etc.)
+f = fishClass(param);
+
+%Structure to hold all user manipulable objects on the gui
+userG = struct;
 
 %%%%%%%%%%%% variable that contains information about expected pixel
 %%%%%%%%%%%% intensity of background and different colors of bacteria
@@ -209,10 +218,9 @@ multiZSliceMax = 1;
 hMenuShowSegmentation = uimenu(hMenuDisplay, 'Separator', 'on', 'Label', 'Show gut segmentation', ...
     'Checked', 'off','Callback', @showSegmentation_Callback);
 hMenuSetSegementationType = uimenu(hMenuDisplay, 'Label', 'Choose segmentation type', 'Callback', @setSegmentation_Callback);
-segmentationType.List = {'none', 'Otsu', 'estimated background', 'final seg'};
+segmentationType.List = {'none', 'Otsu', 'estimated background', 'final seg', 'clump'};
 segmentationType.Selection = 'none';
 hMenuShowFoundCoarseRegions = uimenu(hMenuDisplay, 'Label', 'Show coarse analysis results', 'Callback', @showCoarseResults_Callback);
-
 
 %Neutrophil identification
 hMenuSpotSelectorMenu = uimenu('Label', 'Spot selector');
@@ -220,6 +228,9 @@ hMenuSpot = uimenu(hMenuSpotSelectorMenu, 'Checked', 'off', 'Label', 'Add spots'
 hMenuSpotSave = uimenu(hMenuSpotSelectorMenu, 'Label', 'Save spot list', 'Callback', @saveSpots_Callback);
 spotList = cell(numScans, numColor);
 hMenuSpotRemove = uimenu(hMenuSpotSelectorMenu, 'Label', 'Remove last spot', 'Callback', @removeLastSpots_Callback);
+
+hMenuRemoveClump = uimenu(hMenuSpotSelectorMenu, 'Separator', 'on', 'Label', 'Remove clumps','Checked', 'off','Callback', @removeClump_Callback);
+
 %% 
 hManualSpotPlot = [];
 hSpotSelect = [];
@@ -263,7 +274,10 @@ zSubsetList = [];
 hMenuManualParticleThresh = uimenu(hMenuDisplay, 'Label', 'Manual thresholding for particles','Callback', @manualThresh_Callback);
 useManualParticleThresh = false;
 manualParticleThresh = zeros(numScans, numColor,2);
-% hMenuManualParticleThreshChange = uimenu(hMenuDisplay, 'Label', 'Change manual threshold value', 'Callback', @changeManualThresh_Callback);
+%hMenuManualParticleThreshChange = uimenu(hMenuDisplay, 'Label', 'Change manual threshold value', 'Callback', @changeManualThresh_Callback);
+
+
+
 hMenuRegister = uimenu('Label', 'Registration');
 hMenuRegisterManual = uimenu(hMenuRegister, 'Label', 'Manually register images',...
     'Callback', @getImageArray_Callback);
@@ -930,6 +944,19 @@ hContrast = imcontrast(imageRegion);
         displayFoundSpots();
     end
 
+    function removeClump_Callback(hObject, eventdata)
+        if(strcmp(get(hMenuRemoveClump, 'Checked'), 'on'))
+            set(hMenuRemoveClump, 'Checked', 'off');
+        else
+            set(hMenuRemoveClump, 'Checked', 'on');
+            
+            %Create structure for storing data
+            newVal = true; %Click on different clumps for each time point
+            userG = createGraphicsHandle(userG, imageRegion, 'clumpRemove', 'point',newVal);
+            
+        end
+            
+    end
 
     function overlapBugs_Callback(hObject, eventdata)
        
@@ -3011,6 +3038,9 @@ hContrast = imcontrast(imageRegion);
         if(~isempty(beginGutHandle))
             updateGutBeginPosition();
         end
+        
+        
+    %    userG = updateGraphicsHandle(userG, scanNum, scanNumPrev, colorNum);
         
         %Display the new image
         color = colorType(colorNum);

@@ -31,7 +31,19 @@ switch lower(segmentType.Selection)
     case 'final seg'
         inputVar = load([param.dataSaveDirectory filesep 'bkgEst' filesep 'fin_' num2str(scanNum) '_' param.color{colorNum} '.mat']);
         segMask = inputVar.segMask;
-    
+
+    case 'clump'
+        inputVar = load([param.dataSaveDirectory filesep 'bkgEst' filesep 'fin_' num2str(scanNum) '_' param.color{colorNum} '.mat']);
+      
+        segMask = inputVar.segMask;
+        
+        if(isfield(segmentType, 'ind'))
+            %Remove indices that we've hand selected
+            segMask = bwlabel(segMask);
+            segMask(segMask==segmentType.ind) = 0;
+            segMask = segMask>0;
+        end
+        
 end
 
 
