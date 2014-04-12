@@ -11,6 +11,8 @@ classdef clumpSClass
         scanNum = NaN;
         colorNum = NaN;
         colorStr
+        
+        remInd = [];
     end
     
     
@@ -32,6 +34,24 @@ classdef clumpSClass
                            obj = get(obj);
                    end
                end
+        end
+        function ind = findRemovedClump(obj, loc)
+           %Update indices of clumps to remove 
+           ind = obj.remInd;
+           
+           cen = [obj.allData.cropRect];
+           cen = reshape(cen, 4, length(obj.allData));
+           
+           out = [cen(1,:) + (0.5*cen(3,:)) ; cen(2,:) + (0.5*(cen(4,:)))];
+           
+           d = cellfun(@(x)dist(x, out), loc, 'UniformOutput', false);
+           i = cellfun(@(x)find(x==min(x)), d);
+           
+           newInd = [obj.allData(i).IND];
+           
+           ind = [ind, newInd];
+           
+           ind = unique(ind);
         end
         
         function obj = save(obj)

@@ -12,7 +12,7 @@ classdef clumpClass < clumpSClass
        IND = NaN;%should be private
        
        surfaceArea = NaN;
-       
+       centroid = [NaN NaN NaN];
    end
    
    methods

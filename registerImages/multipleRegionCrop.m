@@ -83,8 +83,6 @@ colorNum = 1;
 %features of the fish themselves (gut outline, etc.)
 f = fishClass(param);
 
-%Structure to hold all user manipulable objects on the gui
-userG = struct;
 
 %%%%%%%%%%%% variable that contains information about expected pixel
 %%%%%%%%%%%% intensity of background and different colors of bacteria
@@ -141,7 +139,7 @@ hMenuFile = uimenu('Label', 'File');
 uimenu(hMenuFile, 'Label', 'Load scan stack', 'Callback', @loadScan_Callback);
 uimenu(hMenuFile, 'Label', 'Save single image', 'Callback', @saveImage_Callback);
 uimenu(hMenuFile, 'Label', 'Save scan stack', 'Callback', @saveScan_Callback);
-uimenu(hMenuFile, 'Label', 'Save param file', 'Callback', @saveParam_Callback);
+uimenu(hMenuFile, 'Label', 'Save param and fish file', 'Callback', @saveParam_Callback);
 
 uimenu(hMenuFile, 'Separator', 'on', 'Label', 'Change key-stroke value', 'Callback', @changeKeystroke_Callback);
 uimenu(hMenuFile, 'Label', 'Set default GUI screen location', 'Callback', @saveWindowLocation_Calback);
@@ -229,7 +227,9 @@ hMenuSpotSave = uimenu(hMenuSpotSelectorMenu, 'Label', 'Save spot list', 'Callba
 spotList = cell(numScans, numColor);
 hMenuSpotRemove = uimenu(hMenuSpotSelectorMenu, 'Label', 'Remove last spot', 'Callback', @removeLastSpots_Callback);
 
-hMenuRemoveClump = uimenu(hMenuSpotSelectorMenu, 'Separator', 'on', 'Label', 'Remove clumps','Checked', 'off','Callback', @removeClump_Callback);
+hMenuRemoveClump = uimenu(hMenuSpotSelectorMenu, 'Separator', 'on', 'Label', 'Begin removing clumps','Checked', 'off','Callback', @removeClump_Callback);
+hMenuAddRemoveClump = uimenu(hMenuSpotSelectorMenu,'Label', 'Remove clump', 'Callback', @removeThisClump_Callback);
+hMenuLoadClumpData = uimenu(hMenuSpotSelectorMenu, 'Label', 'Load clump data', 'Callback', @loadClump_Callback);
 
 %% 
 hManualSpotPlot = [];
@@ -372,6 +372,8 @@ hImPanel = uipanel('BackgroundColor', 'white', 'Position', [0.01, .18, .98, .8],
     'Units', 'Normalized');
 imageRegion = axes('Parent', hImPanel,'Tag', 'imageRegion', 'Position', [0, 0 , 1,1], 'Visible', 'on',...
     'XTick', [], 'YTick', [], 'DrawMode', 'fast');
+
+
 
 %Handle to the scroll panel, if we make it.
 hScroll = '';
@@ -545,6 +547,11 @@ set(fGui, 'Visible', 'on');
 hContrast = imcontrast(imageRegion);
 
 
+
+
+%Structure to hold all user manipulable objects on the gui
+userG = graphicsHandle(param, numScans, numColor, imageRegion);
+
 %%%%%%%%%%%%%%%%%%%%%% Callback Functions
 
 
@@ -706,7 +713,11 @@ hContrast = imcontrast(imageRegion);
        %Update param.dataSaveDirectory to where we are saving param
        param.dataSaveDirectory = saveDir;
        save(saveFile, 'param');
-       
+      
+       %Save the fish file (containing analysis stuff) also to the same
+       %directory
+       saveFishFile = [saveDir filesep 'fishAnalysis.mat'];
+       save(saveFishFile, 'f');
        
     end
 
@@ -952,10 +963,23 @@ hContrast = imcontrast(imageRegion);
             
             %Create structure for storing data
             newVal = true; %Click on different clumps for each time point
-            userG = createGraphicsHandle(userG, imageRegion, 'clumpRemove', 'point',newVal);
+            userG = newHandleList(userG, 'clumpRemove', 'point',newVal, 'fishClass');
             
         end
             
+    end
+
+    function removeThisClump_Callback(hObject, eventdata)
+        %Remove a new clump from the image
+        [scanNum, colorNum] = getScanAndColor();
+        userG = newObject(userG, 'clumpRemove', scanNum, colorNum);
+        [f, ~] = updateField(userG, f, param, scanNum, colorNum);
+    end
+
+    function loadClump_Callback(hObject, eventdata)
+       fprintf(1, 'Loading in clumps data.');
+        f= f.getClumps;
+        fprintf(1, '.succesful!\n');
     end
 
     function overlapBugs_Callback(hObject, eventdata)
@@ -2940,6 +2964,10 @@ hContrast = imcontrast(imageRegion);
             displayClump_Callback('','');
         end
         
+        userG = userG.saveG(scanNumPrev, colorNum);
+        userG = userG.newG(scanNum, scanNumPrev,colorNum);
+        [f, param] = updateField(userG, f, param, scanNum, colorNum);
+
         getRegisteredImage(scanNum, color, zNum, im, data, param);
         
         hRect = findobj('Tag', 'outlineRect');
@@ -2947,7 +2975,6 @@ hContrast = imcontrast(imageRegion);
             delete(hRect);
             outlineRegions();
         end
-        
         
         if(useSubsetZList ==true)
             findBugZLocation();
@@ -3040,8 +3067,10 @@ hContrast = imcontrast(imageRegion);
         end
         
         
-    %    userG = updateGraphicsHandle(userG, scanNum, scanNumPrev, colorNum);
-        
+         userG = userG.saveG(scanNumPrev, colorNum);
+         userG = userG.newG(scanNum, scanNumPrev,colorNum);
+         [f, param] = updateField(userG, f, param, scanNum, colorNum);
+
         %Display the new image
         color = colorType(colorNum);
         color = color{1};
@@ -3946,7 +3975,7 @@ hContrast = imcontrast(imageRegion);
             
             gutMask = poly2mask(poly(:,1), poly(:,2), height,width);
             imSeg = im; imSeg(~gutMask) = NaN;
-            segMask = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param);
+            segMask = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param,f);
             maskFeat.Type = 'perim';
             maskFeat.seSize = 5;
             
@@ -4248,6 +4277,17 @@ end
         
     end
 
+    function [scanNum, colorNum] = getScanAndColor()
+        
+        
+        scanNum = get(hScanSlider, 'Value');
+        scanNum = int16(scanNum);
+        
+        colorNum = get(hColorSlider, 'Value');
+        colorNum = ceil(colorNum);
+        colorNum = int16(colorNum);
+        
+    end
 
 end
 

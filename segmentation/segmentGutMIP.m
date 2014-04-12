@@ -13,7 +13,7 @@
 %
 % AUTHOR: Matthew Jemielita, Aug 15, 2013
 
-function segMask = segmentGutMIP(im, segmentType,scanNum, colorNum,param)
+function segMask = segmentGutMIP(im, segmentType,scanNum, colorNum,param,f)
 
 switch lower(segmentType.Selection)
     case 'otsu'
@@ -37,10 +37,11 @@ switch lower(segmentType.Selection)
       
         segMask = inputVar.segMask;
         
-        if(isfield(segmentType, 'ind'))
+        ind = f.scan(scanNum, colorNum).clumps.remInd;
+        if(~isempty(ind))
             %Remove indices that we've hand selected
             segMask = bwlabel(segMask);
-            segMask(segMask==segmentType.ind) = 0;
+            segMask(ismember(segMask,ind)) = 0;
             segMask = segMask>0;
         end
         
