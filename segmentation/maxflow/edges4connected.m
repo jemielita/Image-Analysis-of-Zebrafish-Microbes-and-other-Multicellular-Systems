@@ -1,4 +1,4 @@
-function E = edges4connected(height,width)
+function E = edges4connected(height,width, depth)
 
 % EDGE4CONNECTED Creates edges where each node
 %   is connected to its four adjacent neighbors on a 
@@ -9,23 +9,40 @@ function E = edges4connected(height,width)
 %   indices are taken column-major.
 %
 %   (c) 2008 Michael Rubinstein, WDI R&D and IDC
-%   $Revision$
-%   $Date$
+% Revised, April 1, 2014, by Matthew Jemielita to allow for 3D segmentation
 %
 
-N = height*width;
-I = []; J = [];
-% connect vertically (down, then up)
-is = [1:N]'; is([height:height:N])=[];
-js = is+1;
-I = [I;is;js];
-J = [J;js;is];
-% connect horizontally (right, then left)
-is = [1:N-height]';
-js = is+height;
-I = [I;is;js];
-J = [J;js;is];
-
-E = [I,J];
+switch nargin
+    case 2
+        N = height*width;
+        I = []; J = [];
+        % connect vertically (down, then up)
+        is = [1:N]'; is([height:height:N])=[];
+        js = is+1;
+        I = [I;is;js];
+        J = [J;js;is];
+        % connect horizontally (right, then left)
+        is = [1:N-height]';
+        js = is+height;
+        I = [I;is;js];
+        J = [J;js;is];
+        
+        E = [I,J];
+    case 3
+        N = height*width*depth;
+        I = []; J = []; K = [];
+        % connect vertically (down, then up)
+        is = [1:N]'; is([height:height:N])=[];
+        js = is+1;
+        I = [I;is;js];
+        J = [J;js;is];
+        % connect horizontally (right, then left)
+        is = [1:N-height]';
+        js = is+height;
+        I = [I;is;js];
+        J = [J;js;is];
+        
+        E = [I,J];
+end
 
 end

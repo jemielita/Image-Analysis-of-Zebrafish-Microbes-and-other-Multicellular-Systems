@@ -103,6 +103,7 @@ popFitParam(1).alt_fit = [false false];
 for nF=1:length(totPop)
    Nscans(nF) = size(totPop{nF},1);
    t{nF} = (1:Nscans(nF))*dt; % time from the start of imaging, hours
+   
     t{nF} = t{nF}';
 end
 
@@ -191,10 +192,7 @@ for nF=1:Nfish
         Nth = zeros(numColor,length(t{nF}));
         
         
-        hLogPlot(nC) = semilogy(t{nF},p{nF}(:,nC), 'o', 'color', 0.8*colors{nC}(nF,:), 'markerfacecolor', colors{nC}(nF,:));
-        hold on
-   
-        ax = axis;
+     
         
         if(iscell(alt_fit))
             if(numColor==1)
@@ -223,8 +221,18 @@ for nF=1:Nfish
         % Logistic fit curves, for each population
         Nth(nC,:) = logistic_N_t(t{nF}, r(nF,nC), K(nF,nC), N0(nF,nC), t_lag(nF,nC));
         
+        
+        
+        %Plotting the result
+        hLogPlot(nC) = semilogy(t{nF},p{nF}(:,nC), 'o', 'color', 0.8*colors{nC}(nF,:), 'markerfacecolor', colors{nC}(nF,:));
+        hold on
+   
+        ax = axis;
+        
         % Plot
         lineFit(nC) = semilogy(t{nF}, Nth(nC,:), '-', 'color', 0.5*colors{nC}(nF,:));
+        
+        
     end
     
     
@@ -270,6 +278,7 @@ for nF=1:Nfish
         semilogy(t{nF}, NthLV(2,:), ':', 'color', 0.75*colors1(2,:));
     end
     
+    
     if 2==1
         % time-varying growth rate
         t_window = 3.1*dt;  % +/- time window size
@@ -306,12 +315,11 @@ for nF=1:Nfish
            print('-r600', '-depsc', fileName);
        end
     end
+    
+    
 end
 
-
-
-
-pause
+close all
 %% Display fit values
 displayvalues = true;
 if displayvalues
@@ -404,7 +412,9 @@ wid = 'MATLAB:Axes:NegativeDataInLogAxis';
 warning('off',wid)
 
 if(isfield(plotStyle, 'noTimeLagCollapsed')&&plotStyle.noTimeLagCollapsed==true)
-    t_lag = zeros(size(t_lag));
+    t_lagPlot = zeros(size(t_lag));
+else
+    t_lagPlot = t_lag;
 end
 
 for nC=1:numColor
@@ -413,32 +423,35 @@ for nC=1:numColor
     figure(h{nC});
     for nF=1:Nfish       
         %        collPlot{nF, nC} = semilogy(t{nF}-t_lag(nF,1),(p{nF}(:,1)-N0(nF,1))/K(nF,1), 'o', 'color', 0.8*colors{nC}(nF,:), 'markerfacecolor', colors{nC}(nF,:))
-        collPlot{nF, 1} = semilogy(t{nF}-t_lag(nF,nC),(p{nF}(:,nC))/K(nF,nC), 'o', 'color', 0.8*colors{nC}(nF,:), 'markerfacecolor', colors{nC}(nF,:));
+        collPlot{nF} = semilogy(t{nF}-t_lagPlot(nF,nC),(p{nF}(:,nC))/K(nF,nC), 'o', 'color', 0.8*colors{nC}(nF,:), 'markerfacecolor', colors{nC}(nF,:));
         
         hold on
-    end
-    
-    
-    if(isfield(plotStyle, 'collapsedAddLine')&&plotStyle.collapsedAddLine==true)
-        % Logistic fit curves, for each population
-        Nth(nC,:) = logistic_N_t(t{nF}, r(nF,nC), K(nF,nC), N0(nF,nC), t_lag(nF,nC));
         
-        % Plot
-        lineFit(nC) = semilogy(t{nF}, Nth(nC,:), '-', 'color', 0.5*colors{nC}(nF,:));
-    end
+        
+        
+        if(isfield(plotStyle, 'collapsedAddLine')&&plotStyle.collapsedAddLine==true)
+            % Logistic fit curves, for each population
+            Nth = logistic_N_t(t{nF}, r(nF,nC), K(nF,nC), N0(nF,nC), t_lag(nF,nC));
+            
+            % Plot
+            lineFit(nF) = semilogy(t{nF}, Nth/K(nF,nC), '-', 'color', 0.5*colors{nC}(nF,:));
+        end
+        
+    
     
      xLColl = xlabel('Time from start, hrs.','fontsize', 18);
      yLColl = ylabel('(Number of bacteria - N_0) / Capacity','fontsize', 18);
      
+    end
      %Adjust the figure parameters
      if(adjustStyle)
-         adjustCollapsedPlot();
+         adjustCollapsedPlot(nCi);
      end
-     
+    
      
      pL = 10e-5:10e1;
-     timeLine = semilogy(zeros(length(pL),1), pL,'--', 'color', 0.3*[1 1 1], 'LineWidth', 3);
-     uistack(timeLine,'bottom');
+     %timeLine = semilogy(zeros(length(pL),1), pL,'--', 'color', 0.3*[1 1 1], 'LineWidth', 3);
+     %uistack(timeLine,'bottom');
      
      
      if(adjustStyle)
@@ -508,7 +521,7 @@ set(gca, 'FontSize', plotStyle.fontSize);
 set(yL, 'FontSize', plotStyle.fontSize);
 
 
-set(xL, 'String', 'Time');
+set(xL, 'String', 'Time (hours)');
 set(yL, 'String', 'Number of bacteria');
 
 % set(xL, 'FontName', plotStyle.fontName);
@@ -542,14 +555,27 @@ switch plotStyle.limType
         set(gca, 'YTick', plotStyle.yTick{nF});
         set(gca, 'XLim', plotStyle.xLim{nF});
         set(gca, 'XTick', plotStyle.xTick{nF});
+        
+        if(isfield(plotStyle, 'xTickLabel'))
+            set(gca, 'XTickLabel', plotStyle.xTickLabel);
+        end
 end
 
 
 
 for nC=1:numColor
     
-    set(lineFit(nC), 'LineWidth', plotStyle.lineWidth(nC));
-    set(lineFit(nC), 'LineStyle', plotStyle.lineStyle{nC});
+    if(isfield(plotStyle, 'lineWidth'))
+        set(lineFit(nC), 'LineWidth', plotStyle.lineWidth(nC));
+    end
+    
+    if(isfield(plotStyle, 'lineStyle'))
+        set(lineFit(nC), 'LineStyle', plotStyle.lineStyle{nC});
+    end
+    
+    if(isfield(plotStyle, 'lineColor'))
+        set(lineFit(nC),  'Color', plotStyle.lineColor{nF,nC});
+    end
 end
 %       set(lineFit(2), 'LineWidth', plotStyle.lineWidth);
 
@@ -568,12 +594,17 @@ end
 
 
 if(isfield(plotStyle, 'color'))
-   set(hLogPlot(nC), 'Color', plotStyle.color{nF});
-   set(hLogPlot(nC), 'MarkerFaceColor', plotStyle.color{nF});
-   set(hLogPlot(nC), 'MarkerEdgeColor', plotStyle.color{nF});
-
+    if(size(plotStyle.color,1)==1)
+        set(hLogPlot(nC), 'Color', plotStyle.color{nF});
+        set(hLogPlot(nC), 'MarkerFaceColor', plotStyle.color{nF});
+        set(hLogPlot(nC), 'MarkerEdgeColor', plotStyle.color{nF});
+    else
+       set(hLogPlot(nC), 'Color', plotStyle.color{nC,nF});
+        set(hLogPlot(nC), 'MarkerFaceColor', plotStyle.color{nC,nF});
+        set(hLogPlot(nC), 'MarkerEdgeColor', plotStyle.color{nC, nF}); 
+    end
    %mlj: let's keep the color of the fit line black.
-   set(lineFit(1), 'Color', [0 0 0]);
+  % set(lineFit(1), 'Color', [0 0 0]);
 end
 
 if(isfield(plotStyle, 'markerStyle'))
@@ -581,25 +612,39 @@ if(isfield(plotStyle, 'markerStyle'))
 end
 
 
+if(isfield(plotStyle, 'timeOffset'))
+    xTick = get(gca, 'XTick');
+    xTick = xTick+plotStyle.timeOffset;
+    xTickLabel = get(gca, 'XTickLabel');
+    
+    set(gca, 'XTick', xTick);
+    set(gca, 'XTickLabel', xTickLabel);
+end
+
 
 end
 
-    function [] = adjustCollapsedPlot()
-        for nC=1:numColor
+    function [] = adjustCollapsedPlot(thisColor)
             
             for nF=1:Nfish
                 if(length(plotStyle.markerSize)>1)
                     
-                    set(collPlot{nF,1}, 'MarkerSize', plotStyle.markerSize(nF));
+                    set(collPlot{nF}, 'MarkerSize', plotStyle.markerSize(nF));
                 else
-                    set(collPlot{nF,1}, 'MarkerSize', plotStyle.markerSize);
+                    set(collPlot{nF}, 'MarkerSize', plotStyle.markerSize);
                 end
             end
             if(isfield(plotStyle, 'color'))
                for nF=1:Nfish
-                   set(collPlot{nF, 1}, 'MarkerFaceColor', plotStyle.color{nF});
-                   set(collPlot{nF, 1}, 'MarkerEdgeColor', plotStyle.color{nF});
-
+                   
+                   if(size(plotStyle.color,1)==1)
+                       set(collPlot{nF}, 'MarkerFaceColor', plotStyle.color{nF});
+                       set(collPlot{nF}, 'MarkerEdgeColor', plotStyle.color{nF});
+                   else
+                       
+                       set(collPlot{nF}, 'MarkerFaceColor', plotStyle.color{thisColor,nF});
+                       set(collPlot{nF}, 'MarkerEdgeColor', plotStyle.color{thisColor, nF});
+                   end
                end
                
                 
@@ -608,18 +653,35 @@ end
             
             if(isfield(plotStyle, 'markerStyle'))
                for nF=1:Nfish
-                   set(collPlot{nF, 1}, 'Marker', plotStyle.markerStyle{nF});
+                   for nC=1:numColor
+                       set(collPlot{nF}, 'Marker', plotStyle.markerStyle{nF});
+                   end
                end
                 
             end
             
+        
+        
+        
+        for nF=1:Nfish
+                
+                set(lineFit(nF), 'LineWidth', plotStyle.lineWidth(nC));
+                set(lineFit(nF), 'LineStyle', plotStyle.lineStyle{nC});
+                
+                if(isfield(plotStyle, 'lineColor'))
+                    set(lineFit(nF),'Color', plotStyle.lineColor{nF,nC});
+                end
+                uistack(lineFit(nF),'bottom')
+
+            
         end
+        
         
         set(xLColl, 'FontSize', plotStyle.fontSize);
         set(gca, 'FontSize', plotStyle.fontSize);
         set(yLColl, 'FontSize', plotStyle.fontSize);
         
-        set(xLColl, 'String', 'T-T_{lag}');
+        set(xLColl, 'String', 'Time (hours)');
        % set(xLColl, 'String', '');
         
         set(yLColl, 'String', 'N/K');
@@ -653,25 +715,20 @@ end
                 
         end
         
+           if(isfield(plotStyle, 'timeOffset'))
+              xTick = get(gca, 'XTick');
+              xTick = xTick+plotStyle.timeOffset;
+              xTickLabel = get(gca, 'XTickLabel');
+              
+              set(gca, 'XTick', xTick);
+              set(gca, 'XTickLabel', xTickLabel);
+           end
         
         
-        %         for nC=1:numColor
-        %             set(lineFit(1), 'LineWidth', plotStyle.lineWidth);
-        %             set(lineFit(1), 'LineStyle', plotStyle.lineStyle{1});
-        %         end
-        %       set(lineFit(2), 'LineWidth', plotStyle.lineWidth);
         
-        %      set(lineFit(2), 'LineStyle', plotStyle.lineStyle{2});
-        
-        %         set(carrCapLine, 'LineWidth', plotStyle.lineWidth);
-        %         set(initPopLine, 'LineWidth', plotStyle.lineWidth);
-        %
-        %         set(carrCapLine, 'Visible', 'off');
-        %         set(initPopLine, 'Visible', 'off');
-        %         set(gca, 'lineWidth', plotStyle.lineWidth);
         
         if(plotStyle.titleVisible==false)
-            set(tL, 'Visible', 'off')
+        %    set(tL, 'Visible', 'off')
         end
 
         %set(gca, 'XTick', []);

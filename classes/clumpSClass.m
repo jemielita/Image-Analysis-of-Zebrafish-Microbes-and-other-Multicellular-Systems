@@ -12,6 +12,7 @@ classdef clumpSClass
         colorNum = NaN;
         colorStr
         
+        allDataOrig = [];
         remInd = [];
     end
     
@@ -184,9 +185,31 @@ classdef clumpSClass
             
         end
         
-        function cullClumps(obj, filtData)
-            %Remove clumps from list based
+        function obj = cullClumps(obj, regCutoff)
+            %Remove clumps from list based on what's been manually removed
+            obj.allDataOrig = obj.allData;
+            
+            [~,ind] = ismember(obj.remInd,[obj.allData.IND]);
+            
+            ind(ind==0) = [];
+            obj.allData(ind) = [];
+           
+            gutInd = [obj.allData.gutRegion];
+            gutInd = gutInd<regCutoff;
+            obj.allData = obj.allData(gutInd);       
+            
+            
         end
+        
+        function obj = restoreOrigClumps(obj)
+           if(~isempty(obj.allDataOrig))
+              obj.allData = obj.allDataOrig; 
+           else
+              fprintf(2, 'Data not culled in any way! Not doing anything.\n'); 
+           end
+        end
+        
+        
     end
     
 end

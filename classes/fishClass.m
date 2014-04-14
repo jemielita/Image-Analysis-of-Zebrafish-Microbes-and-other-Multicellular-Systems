@@ -111,7 +111,7 @@ classdef fishClass
             for c = 1:obj.totalNumColor
                 for s = 1:obj.totalNumScans
                     obj.scan(s,c) = obj.scan(s,c).getTotPop(obj.totPopRegCutoff, type);
-                   sAll(s,c) = obj.scan(s,c).totVol;
+                   sAll(s,c) = obj.scan(s,c).totInten;
                 end
             end
             
@@ -120,6 +120,15 @@ classdef fishClass
         end
         
             
+        function obj = removeCulledClumps(obj)
+            
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c).clumps = obj.scan(s,c).clumps.cullClumps(obj.totPopRegCutoff);
+                end
+                
+            end
+        end
        
         
         function obj = calcClumps(obj)
@@ -138,11 +147,18 @@ classdef fishClass
             figure;
             cM(1,:) = [0.2 0.8 0.1];
             cM(2,:) = [0.8 0.2 0.1];
-            
-            h = semilogy(obj.t,obj.totPop.(type));
-            arrayfun(@(x)set(h(x), 'Color', cM(x,:)), 1:obj.totalNumColor);
-            %Set colors appropriately
-            
+           
+            if(nargin>2)
+                colorNum = varargin{1};
+                h = semilogy(obj.t,obj.totPop.(type)(:,colorNum));
+                set(h, 'Color', cM(colorNum,:));
+                %Set colors appropriately
+                
+            else
+                h = semilogy(obj.t,obj.totPop.(type));
+                arrayfun(@(x)set(h(x), 'Color', cM(x,:)), 1:obj.totalNumColor);
+                %Set colors appropriately
+            end
             title(type);
             xlabel('Time: hours');
             ylabel('Population');

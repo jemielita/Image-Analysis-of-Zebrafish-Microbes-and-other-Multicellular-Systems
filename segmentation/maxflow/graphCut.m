@@ -7,9 +7,21 @@
 %-Might have to alter Rubinstein's code a bit to fully use features of the
 %underlying algorithm...we'll what happens when we get to that point.
 %
+% USAGE graphCut()
+%       graphCut(im);
+%       graphCut(im, maskSource, maskSink);
+%       graphCut(im, maskSource, maskSink, intenHist);
+%       graphCut(im, maskSource, maskSink, intenHist, lambda, bkgNoise);
+%       graphCut(im, maskSource, maskSink, intenHist, lambda, bkgNoise, dim);
+
+
 %Written by: Matthew Jemielita, July 13, 2012
 
 function varargout = graphCut(varargin)
+
+
+%Default dimension 
+dim = 2;
 
 %Before doing anything with more complicated images, let's use a simple
 %test image
@@ -96,12 +108,38 @@ if(nargin==6)
    
 end
 
-%Construct a graph
-im = mat2gray(im);
-[height, width] = size(im);
-N = height*width;
+if(nargin==7)
+    intenEst = varargin{4};
+    sinkHist = intenEst{1,:};
+    sourceHist = intenEst{2,:};
+    
+    %Weights for segmentation
+    lambda = varargin{5};
+    bkgNoise = varargin{6};
+   
+    dim = varargin{7};
+    
+    
+end
 
-E = edges4connected(height,width);
+%Construct a graph
+
+im = mat2gray(im);
+
+switch dim
+    case 2
+        [height, width] = size(im);
+        N = height*width;
+        E = edges4connected(height,width);
+
+    case 3
+        [height, width, depth] = size(im);
+        N = height*width*depth;
+        E = edges4connected(height,width,depth);
+
+end
+
+
 
 V = assignBoundaryPenalty(E,im,bkgNoise, 'undirected');
 

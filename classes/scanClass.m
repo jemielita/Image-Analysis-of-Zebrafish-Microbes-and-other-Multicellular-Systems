@@ -121,6 +121,7 @@ classdef scanClass
                     obj.totVol = [obj.clumps.allData.volume];
                     obj.totInten = [obj.clumps.allData.totalInten];
                     
+                    
                     gutInd = [obj.clumps.allData.sliceNum];
                     
                     gutInd = gutInd<obj.gutRegionsInd(regCutoff);
@@ -130,6 +131,7 @@ classdef scanClass
                     
                     
             end
+            
             end
         
         
