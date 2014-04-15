@@ -433,11 +433,13 @@ end
                 case 1
                     %Load tiff image
               %      try
-                       im(xOutI:xOutF,yOutI:yOutF,nZ)=...
+
+              try
+              im(xOutI:xOutF,yOutI:yOutF,nZ)=...
                             double(imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]}));
-               %     catch
-                 %       disp('This image doesnt exist-fix up your code!!!!');
-                %    end
+                    catch
+                        disp('This image doesnt exist-fix up your code!!!!');
+                    end
                     
                     
                 case 2
@@ -602,13 +604,13 @@ end
     if(posC(2)>=pos(2))
         %xOutF = xOutF - (posC(2)-pos(2));
         l = l-(posC(2)-pos(2))-1;
-        xOutF = xOutI +l;
+        xOutF = max([xOutI+1, xOutI+l]);
     end
     
     xInI = param.regionExtent.XY{1}(regNum,5)+(posC(1)-pos(1));
     xInI = max([1, xInI]);
     
-    xInF = xInI +l;
+    xInF = max([xInI +l, xInI+l]); %Annoying hack-something is slightly buggy in our code here
     
     %Get the appropriate locations of pixels in the output image
     %Y Range
@@ -625,19 +627,23 @@ end
     if(posC(1)<pos(1))
         yOutI = yOutI + (pos(1)-posC(1));
         l = l -(pos(1)-posC(1));
+        l = max([l, 1]);
+        yOutF = yOutI +l;
     end
     
     if(posC(2)>=pos(2))
         %yOutF = yOutF -(posC(2)-pos(2));
         
         l = l-(posC(2)-pos(2))-1;
-        yOutF = yOutI + l;
+        l = max([l, 1]);
+        yOutF = max([yOutI+l, yOutI+1]);
         
     end
     
     yInI = param.regionExtent.XY{1}(regNum,6)+(posC(1)-pos(1));
+    
     yInI = max([1, yInI]);
-    yInF = yInI +l;
+    yInF = max([yInI+l, yInI+1]); %Annoying hack-something is slightly buggy in our code here
     
     if((xInF-xInI)~=(xOutF-xOutI) || (yInF-yInI)~=(yOutF-yOutI))
        fprintf(2, 'Input and output ranges do not match!\n');

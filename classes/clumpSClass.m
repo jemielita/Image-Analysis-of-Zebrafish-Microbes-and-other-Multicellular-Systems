@@ -189,6 +189,11 @@ classdef clumpSClass
             %Remove clumps from list based on what's been manually removed
             obj.allDataOrig = obj.allData;
             
+            if(isempty(obj.allData))
+                return
+            end
+                
+            
             [~,ind] = ismember(obj.remInd,[obj.allData.IND]);
             
             ind(ind==0) = [];

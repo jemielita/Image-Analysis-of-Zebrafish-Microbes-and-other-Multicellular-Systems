@@ -140,7 +140,7 @@ uimenu(hMenuFile, 'Label', 'Load scan stack', 'Callback', @loadScan_Callback);
 uimenu(hMenuFile, 'Label', 'Save single image', 'Callback', @saveImage_Callback);
 uimenu(hMenuFile, 'Label', 'Save scan stack', 'Callback', @saveScan_Callback);
 uimenu(hMenuFile, 'Label', 'Save param and fish file', 'Callback', @saveParam_Callback);
-
+uimenu(hMenuFile, 'Label', 'Load fish analysis file', 'Separator', 'on' ,'Callback', @loadFishAnalysis_Callback);
 uimenu(hMenuFile, 'Separator', 'on', 'Label', 'Change key-stroke value', 'Callback', @changeKeystroke_Callback);
 uimenu(hMenuFile, 'Label', 'Set default GUI screen location', 'Callback', @saveWindowLocation_Calback);
 
@@ -637,6 +637,10 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
             case 'n'
                 %Create a new gut clump cropping box
                 outlineClump_Callback('','');
+                
+            case 'c'
+                %Add new clump removal button
+                removeThisClump_Callback('','');
         end
         
     end
@@ -720,7 +724,16 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
        save(saveFishFile, 'f');
        
     end
-
+    function loadFishAnalysis_Callback(~, ~)
+       fileName = [param.dataSaveDirectory filesep 'fishAnalysis.mat'];
+       if(exist(fileName, 'file')==2)
+          inputVar = load(fileName);
+          f = inputVar.f
+       else
+           fprintf(1, 'No fish analysis class saved yet!\n');
+       end
+        
+    end
     function changeKeystroke_Callback(hObject, eventdata)
         answer = inputdlg('Change z-increment value', '',1, {num2str(zIncr)});
         
@@ -869,6 +882,33 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         end
     end
 
+
+    function displaySegmentation(scanNum, colorNum, segmentationType, f)
+        
+        
+
+            poly = param.regionExtent.polyAll{scanNum};
+            cL = param.centerLineAll{scanNum};
+            
+            height = param.regionExtent.regImSize{1}(1);
+            width = param.regionExtent.regImSize{1}(2);
+            
+            gutMask = poly2mask(poly(:,1), poly(:,2), height,width);
+            imSeg = im; imSeg(~gutMask) = NaN;
+            segMask = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param,f);
+            maskFeat.Type = 'perim';
+            maskFeat.seSize = 5;
+            
+            hRem = findobj('Tag', 'segMask');
+            delete(hRem);
+            
+            %rgbIm = maskClass.showMask(segmask, 'perim', 5);
+            
+            rgbIm = segmentRegionShowMask(segMask, maskFeat);
+            hAlpha = alphamask(rgbIm, [1 0 0], 0.5, imageRegion);
+            set(hAlpha, 'Tag', 'segMask');
+            
+    end
     function addSpots_Callback(hObject, eventdata)
         scanNum = get(hScanSlider, 'Value');
         scanNum = int16(scanNum);
@@ -973,7 +1013,12 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         %Remove a new clump from the image
         [scanNum, colorNum] = getScanAndColor();
         userG = newObject(userG, 'clumpRemove', scanNum, colorNum);
+        userG = userG.saveG(scanNum, colorNum);
+
         [f, ~] = updateField(userG, f, param, scanNum, colorNum);
+        
+        displaySegmentation(scanNum, colorNum, segmentationType, f);
+        
     end
 
     function loadClump_Callback(hObject, eventdata)
@@ -3965,44 +4010,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         
         
         if(strcmp(get(hMenuShowSegmentation, 'Checked'), 'on'))
-            
-
-            poly = param.regionExtent.polyAll{scanNum};
-            cL = param.centerLineAll{scanNum};
-            
-            height = param.regionExtent.regImSize{1}(1);
-            width = param.regionExtent.regImSize{1}(2);
-            
-            gutMask = poly2mask(poly(:,1), poly(:,2), height,width);
-            imSeg = im; imSeg(~gutMask) = NaN;
-            segMask = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param,f);
-            maskFeat.Type = 'perim';
-            maskFeat.seSize = 5;
-            
-            hRem = findobj('Tag', 'segMask');
-            delete(hRem);
-            
-            %rgbIm = maskClass.showMask(segmask, 'perim', 5);
-            
-            rgbIm = segmentRegionShowMask(segMask, maskFeat);
-            hAlpha = alphamask(rgbIm, [1 0 0], 0.5, imageRegion);
-            set(hAlpha, 'Tag', 'segMask');
-            
-%             
-%             %Show marker for further segmentation
-%             segmentType.Selection = 'intenThresh';
-%             segMaskMark = segmentGutMIP(imSeg, segmentType, scanNum, colorNum, param);
-%             maskFeat.Type = 'perim';
-%             maskFeat.seSize = 5;
-%             
-%             rgbIm = segmentRegionShowMask(segMaskMark, maskFeat);
-%             hAlpha = alphamask(rgbIm, [0 1 0], 0.5, imageRegion);
-%             set(hAlpha, 'Tag', 'segMask');
-            
-            
-            
-            
-              % set(hIm, 'CData', im);
+            displaySegmentation(scanNum, colorNum, segmentationType,f);
         end
         
         if(strcmp(get(hMenuShowFoundCoarseRegions, 'Checked'), 'on'))

@@ -11,6 +11,7 @@ colorNum = 1;%To deal with oldish code
     %Get a list of the regions contained in this cropping rectangle
     overlap = zeros(totalNumRegions,2);
     regOverlap = zeros(totalNumRegions,2,2);
+    b = 0;
     
     for nR=1:totalNumRegions
         %x position
@@ -26,13 +27,13 @@ colorNum = 1;%To deal with oldish code
         %these regions.
         cr = cropRect(2):cropRect(2)+cropRect(4);
         r = regOverlap(nR,1,1):regOverlap(nR,1,2);
-        if(sum(ismember(cr,r)>0))
+        if(sum(ismember(cr,r))>1) %greater than one to deal with boundary cases 
             overlap(nR,1) =1;
         end
 
         cr = cropRect(1):cropRect(1)+cropRect(3);
         r = regOverlap(nR,2,1):regOverlap(nR,2,2);
-        if(sum(ismember(cr,r)>0))
+        if(sum(ismember(cr,r))>1)
             overlap(nR,2) =1;
         end
         

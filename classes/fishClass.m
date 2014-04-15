@@ -69,9 +69,26 @@ classdef fishClass
        
         function obj = initScanArr(obj,param,offset)
             
-            for s = 1:param.expData.totalNumberScans
-                for c = 1:obj.totalNumColor
-                    obj.scan(s+offset,c) = scanClass(param, s,c,offset);
+            %See if we've already created the fish class, if so load in the
+            %particulars for each scan
+            if(exist([param.dataSaveDirectory filesep 'fishAnalysis.mat'], 'file')==2)
+               inputVar = load([param.dataSaveDirectory filesep 'fishAnalysis.mat']);
+               inF = inputVar.f;
+               
+               for s = 1:param.expData.totalNumberScans
+                    for c = 1:obj.totalNumColor
+                        obj.scan(s+offset,c) = inF.scan(s,c);
+                    end
+                    
+                end
+               
+            else
+                
+                for s = 1:param.expData.totalNumberScans
+                    for c = 1:obj.totalNumColor
+                        obj.scan(s+offset,c) = scanClass(param, s,c,offset);
+                    end
+                    
                 end
                 
             end

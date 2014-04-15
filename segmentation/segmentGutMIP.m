@@ -37,7 +37,7 @@ switch lower(segmentType.Selection)
       
         segMask = inputVar.segMask;
         
-        ind = f.scan(scanNum, colorNum).clumps.remInd;
+        ind = [f.scan(scanNum, colorNum).clumps.remInd];
         if(~isempty(ind))
             %Remove indices that we've hand selected
             segMask = bwlabel(segMask);
