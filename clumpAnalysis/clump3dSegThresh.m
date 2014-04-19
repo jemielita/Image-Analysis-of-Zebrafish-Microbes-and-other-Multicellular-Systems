@@ -78,7 +78,7 @@ cc.zRange = [zMin, zMax];
 %Find the point on the center gut line closest to the centroid of the clump
 rp = regionprops(mask, 'Centroid');rp = rp.Centroid;
 cl = param.centerLineAll{scanNum};
-
+cc.centroid = rp;
 d = sqrt((cl(:,1)-rp(1)).^2 + (cl(:,2)-rp(2)).^2);
 [~,cc.sliceNum] =  min(d);
 cc.gutRegion  = find(cc.sliceNum > param.gutRegionsInd(cc.scanNum,:),1, 'last');

@@ -433,13 +433,13 @@ end
                 case 1
                     %Load tiff image
               %      try
-
+              
               try
-              im(xOutI:xOutF,yOutI:yOutF,nZ)=...
-                            double(imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]}));
-                    catch
-                        disp('This image doesnt exist-fix up your code!!!!');
-                    end
+                  im(xOutI:xOutF,yOutI:yOutF,nZ)=...
+                      double(imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]}));
+              catch
+                  disp('This image doesnt exist-fix up your code!!!!');
+              end
                     
                     
                 case 2
@@ -612,6 +612,8 @@ end
     
     xInF = max([xInI +l, xInI+l]); %Annoying hack-something is slightly buggy in our code here
     
+    
+    
     %Get the appropriate locations of pixels in the output image
     %Y Range
     pos(1) = param.regionExtent.XY{colorNum}(regNum,2);
@@ -647,25 +649,25 @@ end
     
     if((xInF-xInI)~=(xOutF-xOutI) || (yInF-yInI)~=(yOutF-yOutI))
        fprintf(2, 'Input and output ranges do not match!\n');
-       pause;
+    %   pause;
        return
     end
     
-    if(yInF>param.regionExtent.XY{colorNum}(regNum,4)||xInF>param.regionExtent.XY{colorNum}(regNum,3))
+    if(yInF>param.regionExtent.XY{colorNum}(regNum,4)+1||xInF>param.regionExtent.XY{colorNum}(regNum,3)+1)
        fprintf(2, 'Input out of range for image!\n');
-       pause;
+     %  pause;
        return;
     end
     
     if(xOutI<1||xInI<1 ||yInI<1||yOutI<1)
        fprintf(2, 'Negative values!\n');
-       pause
+      % pause
        return
     end
     
     if(xOutI>xOutF||xInI>xInF||yOutI>yOutF||yInI>yInF)
        fprintf(2, 'Wrong order!\n');
-       pause
+       %pause
        return
     end
     

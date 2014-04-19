@@ -1017,6 +1017,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
 
         [f, ~] = updateField(userG, f, param, scanNum, colorNum);
         
+        f.scan(scanNum, colorNum).clumps.remInd
         displaySegmentation(scanNum, colorNum, segmentationType, f);
         
     end

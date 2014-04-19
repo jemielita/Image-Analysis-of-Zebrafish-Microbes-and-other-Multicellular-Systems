@@ -13,7 +13,16 @@ classdef fishClass
         param = [];
         totPopType = {'clump', 'coarse', 'spot'};
         
+        sL = [];
+        sH = [];
+        
+        nL = [];
+        nH = [];
+        
+        cut = [];
         t = NaN;
+        
+        singleBacInten = [];
     end
     
     methods
@@ -65,7 +74,6 @@ classdef fishClass
                obj.totPop = setfield(obj.totPop, obj.totPopType{i}, NaN);
            end
         end
-        
        
         function obj = initScanArr(obj,param,offset)
             
@@ -84,8 +92,10 @@ classdef fishClass
                
             else
                 
+                
                 for s = 1:param.expData.totalNumberScans
                     for c = 1:obj.totalNumColor
+                        
                         obj.scan(s+offset,c) = scanClass(param, s,c,offset);
                     end
                     
@@ -113,8 +123,7 @@ classdef fishClass
                 
             end
         end 
-        
-        
+            
         function obj = getTotPop(obj, varargin)
             switch nargin
                 case 1
@@ -135,7 +144,6 @@ classdef fishClass
             obj.totPop.(type) = sAll;
             
         end
-        
             
         function obj = removeCulledClumps(obj)
             
@@ -147,7 +155,6 @@ classdef fishClass
             end
         end
        
-        
         function obj = calcClumps(obj)
             
             for s = 1:obj.totalNumScans
@@ -159,11 +166,15 @@ classdef fishClass
             
         end
         
-        
-        function plotTotPop(obj, type, varargin)
+        function plotTotPop(obj, varargin)
             figure;
             cM(1,:) = [0.2 0.8 0.1];
             cM(2,:) = [0.8 0.2 0.1];
+           if(nargin==1)
+               type = 'clump';
+           else
+              type = varargin{1}; 
+           end
            
             if(nargin>2)
                 colorNum = varargin{1};
@@ -182,6 +193,54 @@ classdef fishClass
             
         end
         
+        
+        %Functions for dealing with clumps of objects
+        
+        function obj = getClumpData(obj)
+            if(length(obj.cut)~=obj.totalNumColor)
+                fprintf(2, 'Need to set object intensity cutoff first!\n');
+                return
+            end
+            
+            for nC=1:obj.totalNumColor
+                pL = arrayfun(@(x)[obj.scan(x,nC).clumps.allData.totalInten]<obj.cut(nC), 1:obj.totalNumScans, 'UniformOutput', false);
+                pH = arrayfun(@(x)[obj.scan(x,nC).clumps.allData.totalInten]>=obj.cut(nC), 1:obj.totalNumScans, 'UniformOutput', false);
+                
+                temp = arrayfun(@(x)[obj.scan(x,nC).clumps.allData(pL{x}).totalInten], 1:obj.totalNumScans,...
+                    'UniformOutput', false);
+                obj.singleBacInten(nC) = mean(cell2mat(temp));
+                
+                obj.sL(:,nC) = arrayfun(@(x) sum([obj.scan(x,nC).clumps.allData(pL{x}).totalInten]), 1:obj.totalNumScans);
+                obj.sH(:,nC) = arrayfun(@(x) sum([obj.scan(x,nC).clumps.allData(pH{x}).totalInten]), 1:obj.totalNumScans);
+               
+                obj.sL(:,nC) = obj.sL(:,nC)/obj.singleBacInten(nC);
+                obj.sH(:,nC) = obj.sH(:,nC)/obj.singleBacInten(nC);
+                
+                obj.nL(:,nC) = cellfun(@(x) sum(x), pL);
+                obj.nH(:,nC) = cellfun(@(x) sum(x), pH);
+                
+                
+            end
+            
+        end
+        
+        function plotClumpFrac(obj)
+            figure;
+            cM(1,:) = [0.2 0.8 0.1];
+            cM(2,:) = [0.8 0.2 0.1];
+            
+            hold on;
+            
+            h = semilogy(obj.sL, obj.sH);
+            arrayfun(@(x)set(h(x), 'Color', cM(x,:)), 1:obj.totalNumColor);
+            set(gca, 'YScale', 'log');
+            set(gca, 'XScale', 'log');
+            axis square;
+            title('Fraction of population in clumps vs. Individuals');
+            xlabel('Population size of individuals');
+            ylabel('Population size in clumps');
+            
+        end
         
     end
     
