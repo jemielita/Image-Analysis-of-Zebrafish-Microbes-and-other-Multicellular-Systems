@@ -6,11 +6,24 @@
 %
 % INPUT codeDirectory: directory where the bzr directory for this code is stored
 %       saveLogDirectory: location to save the current log as codeLog.m
+%       displayLog (optional, default ==false). If true then don't save the
+%       code log to a file and instead print out the result.
 % OUTPUT error: equals 1 if there was a problem recording the state of the
 %        code, 0 otherwise.
 % AUTHOR Matthew Jemielita, August 16, 2012
 
-function error = checkCodeVersion(codeDirectory, saveLogDirectory)
+function error = checkCodeVersion(codeDirectory, saveLogDirectory, varargin)
+
+switch nargin
+    case 2
+        displayLog = false;
+    case 3
+        displayLog = varargin{1};
+    otherwise
+        fprintf(2, 'checkCodeVersion either takes 2 or 3 inputs!\n');
+        return;
+end
+
 error = 0;
 
 currentDir = pwd;
@@ -26,9 +39,15 @@ end
 
 [status, currentLog] = system('bzr log -r-1');
 
-save([saveLogDirectory filesep 'codeLog.mat'],'currentLog')
 
-cd(currentDir);
-fprintf(1, 'Current code log saved!');
+switch displayLog
+    case true
+        fprintf(1, currentLog);
+    case false
+        save([saveLogDirectory filesep 'codeLog.mat'],'currentLog')
+        cd(currentDir);
+        fprintf(1, 'Current code log saved!');
+
+end
 
 end

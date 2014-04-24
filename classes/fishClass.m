@@ -16,6 +16,9 @@ classdef fishClass
         sL = [];
         sH = [];
         
+        mL = [];
+        mH = [];
+        
         nL = [];
         nH = [];
         
@@ -171,28 +174,132 @@ classdef fishClass
             cM(1,:) = [0.2 0.8 0.1];
             cM(2,:) = [0.8 0.2 0.1];
            if(nargin==1)
-               type = 'clump';
+               type = 'tot';
            else
               type = varargin{1}; 
            end
            
-            if(nargin>2)
-                colorNum = varargin{1};
-                h = semilogy(obj.t,obj.totPop.(type)(:,colorNum));
-                set(h, 'Color', cM(colorNum,:));
-                %Set colors appropriately
-                
-            else
-                h = semilogy(obj.t,obj.totPop.(type));
-                arrayfun(@(x)set(h(x), 'Color', cM(x,:)), 1:obj.totalNumColor);
-                %Set colors appropriately
-            end
-            title(type);
-            xlabel('Time: hours');
-            ylabel('Population');
-            
+           
+           if(nargin>2)
+              cList = varargin{2}; 
+           else
+               cList = 1:obj.totalNumColor;
+           end
+           
+           
+           %Find which type of plot to make
+           switch type
+               case 'tot'
+                   %Confusing syntax-load in the total population data as
+                   %measured by the
+                   type = 'clump';
+                   pop = obj.totPop.(type);
+                   pop = pop./(repmat(obj.singleBacInten,size(pop,1),1));
+                   
+               case 'clump'
+                   pop = obj.sH;
+                   
+               case 'indiv'
+                   pop = obj.sL;
+                   
+               case 'all'
+                   pop = [obj.sL(:,cList)+obj.sH(:,cList), obj.sL(:,cList), obj.sH(:,cList)];
+                   h = semilogy(obj.t,pop);
+                   set(h(1), 'Color', [0 0 0]);
+                   set(h(2), 'Color', [0.8 0.2 0.2]);
+                   set(h(3), 'Color', [0.4 0.8 0.2]);
+                   
+                   arrayfun(@(x)set(h(x), 'LineWidth', 2), 1:length(h));
+                   legend('Total population', 'individuals', 'clumps', 'Location', 'Northwest');
+                   
+                   title(['Total population, color: ', num2str(cList)]);
+                   xlabel('Time: hours');
+                   ylabel('Population');
+                   return
+           end
+           %Only get the colors that we want.
+           pop = pop(:,cList);
+           
+           %Plotting the graph
+           h = semilogy(obj.t,pop);
+           
+           %Setting colors
+           if(length(cList)==1)
+               set(h, 'Color', cM(cList,:));
+           else
+               arrayfun(@(x)set(h(x), 'Color', cM(cList(x),:)), cList);
+           end
+           
+           %Tweaking figures
+           set(h, 'LineWidth', 2);
+           
+           title(type);
+           xlabel('Time: hours');
+           ylabel('Population');
+           
         end
         
+        
+        function plotTotNumClumps(obj)
+            figure; 
+            
+            if(nargin==1)
+                cList = 1:obj.totalNumColor;
+            else
+                cList = varargin{1};
+            end
+            
+            
+            h =  plot(obj.t, obj.nH(:,cList));
+            cM(1,:) = [0.2 0.8 0.1];
+            cM(2,:) = [0.8 0.2 0.1];
+            
+            set(gca, 'YScale', 'log');
+            
+            %Setting colors
+           if(length(cList)==1)
+               set(h, 'Color', cM(cList,:));
+           else
+               arrayfun(@(x)set(h(x), 'Color', cM(cList(x),:)), cList);
+           end
+           
+           %Tweaking figures
+           set(h, 'LineWidth', 2);
+           title('Total number of clumps');
+            ylabel('# of clumps');
+            xlabel('Time (hours)');
+        end
+        
+        function plotMeanClumpSize(obj)
+            figure;
+            
+            if(nargin==1)
+                cList = 1:obj.totalNumColor;
+            else
+                cList = varargin{1};
+            end
+            
+            
+            h =  plot(obj.t, obj.mH(:,cList));
+            cM(1,:) = [0.2 0.8 0.1];
+            cM(2,:) = [0.8 0.2 0.1];
+            
+            set(gca, 'YScale', 'log');
+            
+            %Setting colors
+            if(length(cList)==1)
+                set(h, 'Color', cM(cList,:));
+            else
+                arrayfun(@(x)set(h(x), 'Color', cM(cList(x),:)), cList);
+            end
+            
+            %Tweaking figures
+            set(h, 'LineWidth', 2);
+            title('Mean Clump size');
+            ylabel('Clump size (# of bacteria)');
+            xlabel('Time (hours)');
+            
+        end
         
         %Functions for dealing with clumps of objects
         
@@ -210,12 +317,23 @@ classdef fishClass
                     'UniformOutput', false);
                 obj.singleBacInten(nC) = mean(cell2mat(temp));
                 
+                %Total clump and individual intensity
                 obj.sL(:,nC) = arrayfun(@(x) sum([obj.scan(x,nC).clumps.allData(pL{x}).totalInten]), 1:obj.totalNumScans);
                 obj.sH(:,nC) = arrayfun(@(x) sum([obj.scan(x,nC).clumps.allData(pH{x}).totalInten]), 1:obj.totalNumScans);
                
                 obj.sL(:,nC) = obj.sL(:,nC)/obj.singleBacInten(nC);
                 obj.sH(:,nC) = obj.sH(:,nC)/obj.singleBacInten(nC);
                 
+                %Mean clump and individual intensity
+                obj.mL(:,nC) = arrayfun(@(x) mean([obj.scan(x,nC).clumps.allData(pL{x}).totalInten]), 1:obj.totalNumScans);
+                obj.mH(:,nC) = arrayfun(@(x) mean([obj.scan(x,nC).clumps.allData(pH{x}).totalInten]), 1:obj.totalNumScans);
+                
+                obj.mL(:,nC) = obj.mL(:,nC)/obj.singleBacInten(nC);
+                obj.mH(:,nC) = obj.mH(:,nC)/obj.singleBacInten(nC);
+                
+                
+                
+                %Total number of clumps and individuals
                 obj.nL(:,nC) = cellfun(@(x) sum(x), pL);
                 obj.nH(:,nC) = cellfun(@(x) sum(x), pH);
                 
@@ -232,6 +350,8 @@ classdef fishClass
             hold on;
             
             h = semilogy(obj.sL, obj.sH);
+            
+            set(h, 'LineWidth', 3)
             arrayfun(@(x)set(h(x), 'Color', cM(x,:)), 1:obj.totalNumColor);
             set(gca, 'YScale', 'log');
             set(gca, 'XScale', 'log');
