@@ -58,13 +58,11 @@ intenMask = intensitySegment(im, scanNum, colorNum, param);
 spotMask = spotSegment(param, colorNum, scanNum, size(segMask),spotRad);
 
 
-
-
 fileName = [param.dataSaveDirectory, filesep, 'bkgEst', filesep, 'fin_', num2str(scanNum), '_', param.color{colorNum}, '.mat'];
 
 inputVar = load(fileName, 'segMask');
 segMask =inputVar.segMask;
-%segMask = graphCutSegment(im, segMask, spotMask, intenMask);
+segMask = graphCutSegment(im, segMask, spotMask, intenMask);
 
 
 segMask = removeSmallObj(segMask, spotMask);
@@ -186,7 +184,7 @@ end
 
 function segMask = intensitySegment(im, scanNum, colorNum, param)
 
-colorInten = [1000,500];
+colorInten = [1000,600];
 
 segMask = im>colorInten(colorNum);
 

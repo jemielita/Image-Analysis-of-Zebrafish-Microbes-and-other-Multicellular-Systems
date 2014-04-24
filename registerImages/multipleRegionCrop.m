@@ -934,7 +934,9 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
             
             height = param.regionExtent.regImSize{1}(1);
             width = param.regionExtent.regImSize{1}(2);
+
             
+            im = get(hIm, 'CData');
             gutMask = poly2mask(poly(:,1), poly(:,2), height,width);
             imSeg = im; imSeg(~gutMask) = NaN;
             segMask = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param,f);
