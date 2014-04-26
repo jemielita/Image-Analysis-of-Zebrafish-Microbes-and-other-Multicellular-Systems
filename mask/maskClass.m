@@ -37,9 +37,14 @@ classdef maskClass
 
            
            %% Remove regions around found bacterial spots
-           rProp = load([param.dataSaveDirectory filesep 'singleBacCount'...
+           inputVar = load([param.dataSaveDirectory filesep 'singleBacCount'...
                filesep 'bacCount' num2str(scanNum) '.mat']);
-           rProp = rProp.rProp{colorNum};
+           
+           if(iscell(inputVar.rProp))
+               rProp = inputVar.rProp{colorNum};
+           else
+               rProp = inputVar.rProp;
+           end
            
            remBugsSaveDir = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'removedBugs.mat'];
            if(exist(remBugsSaveDir, 'file')==2)
@@ -69,11 +74,19 @@ classdef maskClass
        end
        
        function m = getBkgEstMask(param, scanNum, colorNum)
-           recalcProj = false;
-           im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
            
-           bkgOffset = 1.8;
-           m = showBkgSegment(im, scanNum, colorNum, param, bkgOffset);
+           fN = [param.dataSaveDirectory filesep 'bkgEst' filesep 'bkgEst_' param.color{colorNum} '_nS_' num2str(scanNum) '.mat'];
+           if(exist(fN, 'file')~=2)
+               makeUnrotatedMask(param, scanNum, colorNum);
+               makeBkgSegmentMask(param, scanNum, colorNum);
+           else
+               
+               recalcProj = false;
+               im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
+               
+               bkgOffset = 1.8;
+               m = showBkgSegment(im, scanNum, colorNum, param, bkgOffset);
+           end
        end
        
        function m = getIntenMask(param, scanNum, colorNum, varargin)

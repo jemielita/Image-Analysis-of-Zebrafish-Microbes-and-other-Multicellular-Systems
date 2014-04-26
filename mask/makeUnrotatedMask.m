@@ -1,14 +1,19 @@
 %makeUnrotatedMask: Make a series of unrotated masks for different gut
 %regions
-%
+% INPUT: param: parameter file for fish
+%        scanNum: (optional, default all)
 % AUTHOR: Matthew Jemielita, March 20, 2014
 
-function [] = makeUnrotatedMask(param)
+function [] = makeUnrotatedMask(param, varargin)
 
-maxS = length(param.regionExtent.polyAll);
+if(nargin==1)
+    sList = 1: length(param.regionExtent.polyAll);    
+else
+    sList = varargin{1};
+end
 
-for nS=1:maxS
-    
+for i=1:length(sList);
+    nS = sList(i);
    % inputVar = load([param.dataSaveDirectory filesep 'masks' filesep 'maskUnrotated_' num2str(nS) '.mat']);
    
        fprintf(1, ['Making mask for scan ', num2str(nS), '\n']); 

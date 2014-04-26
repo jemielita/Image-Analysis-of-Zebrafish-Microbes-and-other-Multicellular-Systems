@@ -95,6 +95,8 @@ classdef scanClass
             inputVar = load([obj.saveLoc filesep 'param.mat']);
             param = inputVar.param;
             
+            maskClass.getBkgEstMask(param, obj.scanNum, obj.colorNum);
+            
             segMask = maskClass.getGraphCutMask(param, obj.scanNum, obj.colorNum);
             
             saveLoc = [obj.saveLoc filesep 'bkgEst' filesep 'fin_' num2str(obj.scanNum) '_' param.color{obj.colorNum} '.mat'];

@@ -3,7 +3,7 @@
 %
 
 function mask = makeCircleMask(imSize, xy, rad)
-
+xy = round(xy);
 mask = zeros(imSize(1), imSize(2));
 
 ind = sub2ind(imSize, xy(2,:), xy(1,:));

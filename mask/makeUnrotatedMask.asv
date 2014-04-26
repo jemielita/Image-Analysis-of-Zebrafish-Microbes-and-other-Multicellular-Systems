@@ -1,9 +1,22 @@
 %makeUnrotatedMask: Make a series of unrotated masks for different gut
 %regions
-%
+% INPUT: param: parameter file for fish
+%        scanNum: (optional, default all)
+%        colorNum: (optional, default all)
+
 % AUTHOR: Matthew Jemielita, March 20, 2014
 
-function [] = makeUnrotatedMask(param)
+function [] = makeUnrotatedMask(param, varargin)
+
+if(nargin==1)
+
+    sList = 1: length(param.regionExtent.polyAll);
+    cList = 1: length(param.color);
+    
+else
+    sList = varargin{1};
+    cList = varargin{2};
+end
 
 maxS = length(param.regionExtent.polyAll);
 

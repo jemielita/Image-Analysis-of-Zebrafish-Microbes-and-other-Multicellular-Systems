@@ -81,6 +81,8 @@ colorNum = 1;
 %here (e.g. spot detection filtering, clump filtering, etc.). The param
 %structure should be used exclusively for parameters that affect region
 %features of the fish themselves (gut outline, etc.)
+
+
 f = fishClass(param);
 
 
@@ -411,7 +413,9 @@ hColorTextEdit = uicontrol('Parent', hManipPanel, 'Units', 'Normalized', 'Positi
 hColorSlider = uicontrol('Parent', hManipPanel,'Units', 'Normalized', 'Position', [0.3 0.86-dist 0.65 0.1],...
     'Style', 'slider', 'Min', minColor, 'Max', maxColor, 'SliderStep', [1 1], 'Value', 1,...
     'Callback', @colorSlider_Callback);
-
+if(minColor==maxColor)
+   set(hColorSlider, 'Visible', 'off'); 
+end
 
 %Button group to select one of several projection types
 hMenuProjectionType = uibuttongroup('Parent', fGui, 'Units', 'Normalized','Title', 'Projection',...
@@ -1615,6 +1619,9 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         
         xyz = [rPropClassified.CentroidOrig];
         xyz = reshape(xyz,3,length(xyz)/3);
+        
+        xyz(1,:) = xyz(1,:);
+        xyz(2,:) = xyz(2,:);
         
         %keptSpots = logical(keptSpots.*(~outsideGut));
         %xyz = xyz(:, keptSpots);
@@ -3145,9 +3152,9 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         end
         
         
-         userG = userG.saveG(scanNumPrev, colorNum);
-         userG = userG.newG(scanNum, scanNumPrev,colorNum);
-         [f, param] = updateField(userG, f, param, scanNum, colorNum);
+       %  userG = userG.saveG(scanNumPrev, colorNum);
+        % userG = userG.newG(scanNum, scanNumPrev,colorNum);
+         %[f, param] = updateField(userG, f, param, scanNum, colorNum);
 
         %Display the new image
         color = colorType(colorNum);
