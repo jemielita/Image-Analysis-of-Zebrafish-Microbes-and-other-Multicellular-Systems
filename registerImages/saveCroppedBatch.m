@@ -19,7 +19,7 @@
 %    cropType: 'all', 'xy', or 'z'. Crop the images either in the 'xy' plane,
 %    'z' plane or in both ('all'). Only 'xy' currently supported.
 %
-%    minCrop (optional): true/false. If true saveCropped Batche uses the
+%    minCrop (optional, default= false): true/false. If true saveCropped Batche uses the
 %    code calcMinCrop() to find the minimum cropping rectangles around the
 %    gut based on the outline of the gut.
 %

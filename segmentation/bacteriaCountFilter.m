@@ -14,7 +14,7 @@
 %       -useRemovedBugList: (optional. Default = false) before using a 
 %       classifier to filter data remove ones that have beeen manually
 %       removed. Classification error may be changed if object is
-%       pre-filtered. If useRemovedBugList is an array then use this array
+%       pre-filtered. If useRemovndBugList is an array then use this array
 %       as the list of spots to remove.
 %       -classifierType: (optional. Default = 'svn') Type of classifier to
 %       use. Currently supported:

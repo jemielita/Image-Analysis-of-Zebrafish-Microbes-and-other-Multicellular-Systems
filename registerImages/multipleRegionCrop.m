@@ -81,7 +81,7 @@ colorNum = 1;
 %here (e.g. spot detection filtering, clump filtering, etc.). The param
 %structure should be used exclusively for parameters that affect region
 %features of the fish themselves (gut outline, etc.)
-f = fishClass(param);
+%f = fishClass(param);
 
 
 %%%%%%%%%%%% variable that contains information about expected pixel
@@ -232,6 +232,8 @@ hMenuRemoveClump = uimenu(hMenuSpotSelectorMenu, 'Separator', 'on', 'Label', 'Be
 hMenuAddRemoveClump = uimenu(hMenuSpotSelectorMenu,'Label', 'Remove clump', 'Callback', @removeThisClump_Callback);
 hMenuLoadClumpData = uimenu(hMenuSpotSelectorMenu, 'Label', 'Load clump data', 'Callback', @loadClump_Callback);
 
+hMenuRandomSpots = uimenu(hMenuSpotSelectorMenu, 'Separator', 'on', 'Label', 'Randomly choose spots',...
+    'Callback', @randomSpot_Callback);
 %% 
 hManualSpotPlot = [];
 hSpotSelect = [];
@@ -1072,6 +1074,66 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         fprintf(1, '.succesful!\n');
     end
 
+    function randomSpot_Callback(hObject, eventdata)
+       %Randomly scroll through different found spots and let the user decide whether they are spots or not
+       set(hMenuUseSavedRemBugList, 'Checked', 'on');
+   
+       ind = cell(2,1);
+       
+       for nS=1:3:maxScan
+       
+           for nC=1:numColor
+               colorNum = nC;
+               scanNum = nS;
+               
+               %Get color and scan number
+               set(hColorSlider, 'Value', nC);
+               set(hScanSlider, 'Value', nC);
+               
+               
+               rPropAll = getrPropFile();
+               [~, ~,  ~,rPropAll] = getBugList(rPropAll);
+               
+               perm = randperm(length(rPropAll));
+               
+               count = 0;
+               maxCount = min(length(perm), 5);
+               for i=1:length(perm)
+                   rProp = rPropAll(perm(i));
+                   
+                   xyz = [rProp.CentroidOrig];
+                   xyz = reshape(xyz,3,length(xyz)/3);
+                   xyz = round(xyz);
+                   zNum = xyz(3);
+                   projectionType = 'none';
+                   getRegisteredImage(scanNum, param.color{nC}, zNum, im, data, param);
+                   displayOverlappedBugs(rProp, xyz);
+                   %
+                   
+         %          answer = inputdlg('Is this a bacteria 1=yes, 0=no', '', 1, {'1'});
+%                    if(isempty(answer))
+%                        answer{1} = '0';
+%                    end
+%                    answer = answer{1};
+%                    if(strcmp(answer, '1'))
+%                        count = count+1;
+%                        ind{colorNum} = [ind{colorNum}; [xyz' perm(i) scanNum]];
+%                    end
+%                    
+                   if(count>=maxCount)
+                       break
+                   end
+                   
+               end
+               
+           end
+           
+           save([param.dataSaveDirectory filesep 'singleBacCount' filesep 'randBac.mat'], 'ind');
+       end
+       
+       
+       
+    end
     function overlapBugs_Callback(hObject, eventdata)
        
         if strcmp(get(hMenuOverlapBugs, 'Checked'),'on')
@@ -1103,30 +1165,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
 
     function findBugZLocation        
 
-        rProp = load([param.dataSaveDirectory filesep 'singleBacCount'...
-            filesep 'bacCount' num2str(scanNum) '.mat']);
-        rProp = rProp.rProp;
-        
-        scanNum = get(hScanSlider, 'Value');
-        scanNum = int16(scanNum);
-        colorNum = get(hColorSlider, 'Value');
-        colorNum = ceil(colorNum);
-        colorNum = int16(colorNum);
-        if(strcmp(get(hMenuOverlapImages, 'Checked'), 'on'))
-            rPropComb = rProp{1};
-            for i=1:length(rProp{2});
-                rPropComb(end+1) = rProp{2}(i);
-            end
-        elseif(iscell(rProp))
-            if(length(rProp)==1)
-                %Not greatest way to deal with this since we'll have image
-                %overlaps on both channels...oh well.
-                
-                rProp = rProp{1};
-            else
-                rProp = rProp{colorNum};
-            end
-        end
+        rProp = getrPropFile();
         
         %Find the z location of all the bugs
         [xyz, ~, ~,~] = getBugList(rProp);
@@ -1296,7 +1335,9 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                removeBugInd{scanNum,colorNum} =  unique([removeBugInd{scanNum, colorNum} ,indAll]);
                %Remove these bugs from the list of z-depths to go to.
                findBugZLocation();
-               displayOverlappedBugs()
+               rProp = getrPropFile();
+               
+               displayOverlappedBugs(rProp)
                return;
            end
             xyz = [rProp.CentroidOrig];
@@ -1389,8 +1430,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
     end
 
 
-
-    function displayOverlappedBugs()
+    function rProp = getrPropFile()
         rProp = load([param.dataSaveDirectory filesep 'singleBacCount'...
             filesep 'bacCount' num2str(scanNum) '.mat']);
         rProp = rProp.rProp;
@@ -1416,7 +1456,20 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 rProp = rProp{colorNum};
             end
         end
-             
+        
+    end
+
+
+    function displayOverlappedBugs(rProp, varargin)
+        
+        if(nargin>1)
+            xyz = varargin{1};
+            xyzRem = [0;0;0];
+            xyzKept = [0;0;0];
+        else
+            [xyz, xyzRem, xyzKept,~] = getBugList(rProp);
+         
+        end
         if(isempty(hP{1}))
             hold on
             
@@ -1430,8 +1483,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
             
         end
         
-        [xyz, xyzRem, xyzKept,rPropClassified] = getBugList(rProp);
-        disp(['Total num:'  num2str(sum([rPropClassified.gutRegion]<5))])
+        
         switch projectionType
             case 'mip'
                
@@ -3044,7 +3096,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         
         userG = userG.saveG(scanNumPrev, colorNum);
         userG = userG.newG(scanNum, scanNumPrev,colorNum);
-        [f, param] = updateField(userG, f, param, scanNum, colorNum);
+     %   [f, param] = updateField(userG, f, param, scanNum, colorNum);
 
         getRegisteredImage(scanNum, color, zNum, im, data, param);
         
@@ -3147,7 +3199,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         
          userG = userG.saveG(scanNumPrev, colorNum);
          userG = userG.newG(scanNum, scanNumPrev,colorNum);
-         [f, param] = updateField(userG, f, param, scanNum, colorNum);
+      %   [f, param] = updateField(userG, f, param, scanNum, colorNum);
 
         %Display the new image
         color = colorType(colorNum);
@@ -4037,7 +4089,9 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         set(hIm, 'Visible', 'on');
 
         if(overlapBugs==true)
-           displayOverlappedBugs(); 
+            rProp = getrPropFile();
+
+           displayOverlappedBugs(rProp); 
         end
         
         
@@ -4349,7 +4403,6 @@ dataFileExist = exist(dataFile, 'file');
 %going through different fish.
 cd([pwd filesep '..']);
 
-paramFileExist
 switch paramFileExist
     case 2
         disp('Parameters for this scan have already been (partially?) calculated. Loading them into the workspace.');
