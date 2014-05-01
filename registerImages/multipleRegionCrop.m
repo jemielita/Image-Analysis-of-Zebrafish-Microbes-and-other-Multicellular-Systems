@@ -1072,7 +1072,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
 
     function loadClump_Callback(hObject, eventdata)
        fprintf(1, 'Loading in clumps data.');
-        f= f.getClumps;
+        f = f.getClumps;
         fprintf(1, '.succesful!\n');
     end
 
@@ -3152,9 +3152,9 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         end
         
         
-       %  userG = userG.saveG(scanNumPrev, colorNum);
-        % userG = userG.newG(scanNum, scanNumPrev,colorNum);
-         %[f, param] = updateField(userG, f, param, scanNum, colorNum);
+         userG = userG.saveG(scanNumPrev, colorNum);
+         userG = userG.newG(scanNum, scanNumPrev,colorNum);
+         [f, param] = updateField(userG, f, param, scanNum, colorNum);
 
         %Display the new image
         color = colorType(colorNum);
