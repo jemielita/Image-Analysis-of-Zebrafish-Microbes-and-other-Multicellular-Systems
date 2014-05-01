@@ -30,6 +30,7 @@ currentDir = pwd;
 
 cd(codeDirectory);
 
+
 [status, revisionUpdated] = system('bzr diff');
 
 if(~isempty(revisionUpdated))

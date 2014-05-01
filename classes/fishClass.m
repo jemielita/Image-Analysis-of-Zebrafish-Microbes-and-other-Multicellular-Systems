@@ -141,11 +141,12 @@ classdef fishClass
             
             for c = 1:obj.totalNumColor
                 for s = 1:obj.totalNumScans
-                    obj.scan(s,c) = obj.scan(s,c).getTotPop(obj.totPopRegCutoff, type);
-                   sAll(s,c) = obj.scan(s,c).totInten;
-                   
-                   %Normalizing by individual bacterial intensity
-                   sAll(s,c) = sAll(s,c)/obj.singleBacInten(c);
+                    obj.scan(s,c) = ...
+                        obj.scan(s,c).getTotPop(obj.totPopRegCutoff, type, obj.cut, obj.singleBacInten);
+                    sAll(s,c) = obj.scan(s,c).totInten;
+                    
+                    %Normalizing by individual bacterial intensity
+                    sAll(s,c) = sAll(s,c)/obj.singleBacInten(c);
                 end
             end
             
@@ -180,43 +181,47 @@ classdef fishClass
             end
             
             for nC=1:obj.totalNumColor
-                pL = arrayfun(@(x)[obj.scan(x,nC).clumps.allData.totalInten]<obj.cut(nC), 1:obj.totalNumScans, 'UniformOutput', false);
-                pH = arrayfun(@(x)[obj.scan(x,nC).clumps.allData.totalInten]>=obj.cut(nC), 1:obj.totalNumScans, 'UniformOutput', false);
+                pL = arrayfun(@(x)[obj.scan(x,nC).clumps.allData.totalInten]<obj.cut(nC), 1:obj.totalNumScans, ...
+                    'UniformOutput', false);
+                pH = arrayfun(@(x)[obj.scan(x,nC).clumps.allData.totalInten]>=obj.cut(nC), 1:obj.totalNumScans,...
+                    'UniformOutput', false);
                 
                 temp = arrayfun(@(x)[obj.scan(x,nC).clumps.allData(pL{x}).totalInten], 1:obj.totalNumScans,...
                     'UniformOutput', false);
                 obj.singleBacInten(nC) = mean(cell2mat(temp));
                 
-                %Total clump and individual intensity
-                obj.sL(:,nC) = arrayfun(@(x) sum([obj.scan(x,nC).clumps.allData(pL{x}).totalInten]), 1:obj.totalNumScans);
-                obj.sH(:,nC) = arrayfun(@(x) sum([obj.scan(x,nC).clumps.allData(pH{x}).totalInten]), 1:obj.totalNumScans);
-               
-                obj.sL(:,nC) = obj.sL(:,nC)/obj.singleBacInten(nC);
-                obj.sH(:,nC) = obj.sH(:,nC)/obj.singleBacInten(nC);
-                
-                %Mean clump and individual intensity
-                obj.mL(:,nC) = arrayfun(@(x) mean([obj.scan(x,nC).clumps.allData(pL{x}).totalInten]), 1:obj.totalNumScans);
-                obj.mH(:,nC) = arrayfun(@(x) mean([obj.scan(x,nC).clumps.allData(pH{x}).totalInten]), 1:obj.totalNumScans);
-                
-                obj.mL(:,nC) = obj.mL(:,nC)/obj.singleBacInten(nC);
-                obj.mH(:,nC) = obj.mH(:,nC)/obj.singleBacInten(nC);
-                
-                %Total fraction of population in largest clump
-                highPop = arrayfun(@(x)max([obj.scan(x,nC).clumps.allData.totalInten]), 1:obj.totalNumScans, 'UniformOutput', false);
-                emptyEl = cellfun(@(x)isempty(x), highPop);
-                highPop(emptyEl) = {0};
-                highPop = cell2mat(highPop);
-                highPop = highPop/obj.singleBacInten(nC);
-                
-                obj.highPopFrac(:,nC) = highPop'./(obj.sL(:,nC)+obj.sH(:,nC));
-                
-                
-                %Total number of clumps and individuals
-                obj.nL(:,nC) = cellfun(@(x) sum(x), pL);
-                obj.nH(:,nC) = cellfun(@(x) sum(x), pH);
-                
+%                 %Total clump and individual intensity
+%                 obj.sL(:,nC) = arrayfun(@(x) sum([obj.scan(x,nC).clumps.allData(pL{x}).totalInten]), 1:obj.totalNumScans);
+%                 obj.sH(:,nC) = arrayfun(@(x) sum([obj.scan(x,nC).clumps.allData(pH{x}).totalInten]), 1:obj.totalNumScans);
+%                
+%                 obj.sL(:,nC) = obj.sL(:,nC)/obj.singleBacInten(nC);
+%                 obj.sH(:,nC) = obj.sH(:,nC)/obj.singleBacInten(nC);
+%                 
+%                 %Mean clump and individual intensity
+%                 obj.mL(:,nC) = arrayfun(@(x) mean([obj.scan(x,nC).clumps.allData(pL{x}).totalInten]), 1:obj.totalNumScans);
+%                 obj.mH(:,nC) = arrayfun(@(x) mean([obj.scan(x,nC).clumps.allData(pH{x}).totalInten]), 1:obj.totalNumScans);
+%                 
+%                 obj.mL(:,nC) = obj.mL(:,nC)/obj.singleBacInten(nC);
+%                 obj.mH(:,nC) = obj.mH(:,nC)/obj.singleBacInten(nC);
+%                 
+%                 %Total fraction of population in largest clump
+%                 highPop = arrayfun(@(x)max([obj.scan(x,nC).clumps.allData.totalInten]), 1:obj.totalNumScans,...
+%                     'UniformOutput', false);
+%                 emptyEl = cellfun(@(x)isempty(x), highPop);
+%                 highPop(emptyEl) = {0};
+%                 highPop = cell2mat(highPop);
+%                 highPop = highPop/obj.singleBacInten(nC);
+%                 
+%                 obj.highPopFrac(:,nC) = highPop'./(obj.sL(:,nC)+obj.sH(:,nC));
+%                 
+%                 %Total number of clumps and individuals
+%                 obj.nL(:,nC) = cellfun(@(x) sum(x), pL);
+%                 obj.nH(:,nC) = cellfun(@(x) sum(x), pH);
+%                 
                 
             end
+           
+            
             
         end
         
@@ -293,7 +298,6 @@ classdef fishClass
            
         end
         
-        
         function plotTotNumClumps(obj)
             figure; 
             
@@ -320,8 +324,8 @@ classdef fishClass
            %Tweaking figures
            set(h, 'LineWidth', 2);
            title('Total number of clumps');
-            ylabel('# of clumps');
-            xlabel('Time (hours)');
+           ylabel('# of clumps');
+           xlabel('Time (hours)');
         end
         
         function plotMeanClumpSize(obj)
@@ -354,7 +358,6 @@ classdef fishClass
             xlabel('Time (hours)');
             
         end
-            
         
         function plotClumpFrac(obj)
             figure;

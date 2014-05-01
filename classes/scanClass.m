@@ -12,6 +12,15 @@ classdef scanClass
         clumps = clumpSClass.empty(1,0);
         totVol = NaN;
         totInten = NaN; 
+        
+        sL;
+        sH;
+        mL;
+        mH;
+        nL;
+        nH;
+        highPopFrac;
+        
     end
     
     methods
@@ -109,7 +118,7 @@ classdef scanClass
             clump3dSegThreshAll(param, obj.scanNum, obj.colorNum, true);
         end
         
-        function obj = getTotPop(obj, regCutoff, type)
+        function obj = getTotPop(obj, regCutoff, type,cut, singleBacInten)
             
             switch type
                 case 'clump'
@@ -121,15 +130,44 @@ classdef scanClass
                     obj.totVol = [obj.clumps.allData.volume];
                     obj.totInten = [obj.clumps.allData.totalInten];
                     
+                    %Only consider spots before the gut region cutoff
                     
                     gutInd = [obj.clumps.allData.sliceNum];
-                    
                     gutInd = gutInd<obj.gutRegionsInd(regCutoff);
+                    obj.totVol = obj.totVol(gutInd);
+                    obj.totInten = obj.totInten(gutInd);
+                    
+                    %Getting clumps above and below our single bacteria
+                    %intensity cutoff
+                    pL = obj.totInten<cut;
+                    pH = obj.totInten>=cut;
+                    
+                    %Total clump and individual intensity
+                    obj.sL = obj.totInten(pL)/singleBacInten;
+                    obj.sH = obj.totInten(pH)/singleBacInten;
+                    
+                    %Mean clump and individual intensity
+                    obj.mL = mean([obj.totInten(pL{x})])/singleBacInten;
+                    obj.mH = mean([obj.totInten(pH{x})])/singleBacInten;
+                    
+                    %Total fraction of population in largest clump
+                    highPop = max([obj.totInten]);
+                    if(isempty(highPop))
+                        highPop = 0;
+                    end
+                    highPop = highPop/singleBacInten;
+                    
+                    obj.highPopFrac = highPop'./(obj.sL+obj.sH);
+                    
+                    %Total number of clumps and individuals
+                    obj.nL = sum(pL);
+                    obj.nH = sum(pH);
+                    
                     
                     obj.totVol = sum(obj.totVol(gutInd));
                     obj.totInten = sum(obj.totInten(gutInd));
                     
-                    
+        
             end
             
             end

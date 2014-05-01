@@ -114,7 +114,7 @@ classdef clumpSClass
             inputVar = load([obj.saveLoc filesep 'param.mat']);
             param = inputVar.param;
             clump3dSegThreshAll(param, obj.scanNum, obj.colorNum, true);
-            
+             
         end
         
         %Display data from clump data
