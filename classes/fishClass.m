@@ -142,12 +142,15 @@ classdef fishClass
             for c = 1:obj.totalNumColor
                 for s = 1:obj.totalNumScans
                     obj.scan(s,c) = ...
-                        obj.scan(s,c).getTotPop(obj.totPopRegCutoff, type, obj.cut, obj.singleBacInten);
+                        obj.scan(s,c).getTotPop(obj.totPopRegCutoff, type, obj.cut(c), obj.singleBacInten(c));
                     sAll(s,c) = obj.scan(s,c).totInten;
                     
                     %Set all the appropriate fields in the total fish data
                     popField = {'sL', 'sH', 'mL', 'mH', 'nL', 'nH', 'highPopFrac'};
                     for i=1:length(popField)
+                        if(isempty(obj.scan(s,c).(popField{i})))
+                            obj.scan(s,c).(popField{i}) = 0;
+                        end
                         obj.(popField{i})(s,c) = obj.scan(s,c).(popField{i});
                     end
                     
