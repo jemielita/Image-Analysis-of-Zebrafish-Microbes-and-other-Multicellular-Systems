@@ -9,7 +9,7 @@ classdef fishClass
         scan = scanClass.empty(1,0);
         
         totPopRegCutoff = NaN;
-        totPop;
+        totPop = [];
         param = [];
         totPopType = {'clump', 'coarse', 'spot'};
         
@@ -28,6 +28,8 @@ classdef fishClass
         t = NaN;
         
         singleBacInten = [];
+        
+        fitParam = [];
     end
     
     methods
@@ -109,6 +111,30 @@ classdef fishClass
             end
         end
         
+        
+        
+        
+        function obj = calcMasks(obj)
+            
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c).calcMask();
+                end
+                
+            end
+        end
+        
+        function obj = calcClumps(obj)
+            
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c).calcClump;
+                end
+                
+            end
+            
+        end
+        
         function obj = getClumps(obj)
            
             for s = 1:obj.totalNumScans
@@ -119,16 +145,6 @@ classdef fishClass
             end
         end
         
-        function obj = calcMasks(obj)
-           
-            for s = 1:obj.totalNumScans
-                for c = 1:obj.totalNumColor
-                    obj.scan(s,c).calcMask();
-                end
-                
-            end
-        end 
-            
         function obj = getTotPop(obj, varargin)
             switch nargin
                 case 1
@@ -172,16 +188,11 @@ classdef fishClass
             end
         end
        
-        function obj = calcClumps(obj)
-            
-            for s = 1:obj.totalNumScans
-                for c = 1:obj.totalNumColor
-                    obj.scan(s,c).calcClump;
-                end
-                
-            end
+        function obj = getLogisticFit(obj)
             
         end
+        
+        
         
         function obj = getClumpData(obj)
             if(length(obj.cut)~=obj.totalNumColor)
@@ -234,8 +245,6 @@ classdef fishClass
             
         end
         
-        
-        
         % Plotting functions for fish data
         
         function plotTotPop(obj, varargin)
@@ -284,13 +293,23 @@ classdef fishClass
                    xlabel('Time: hours');
                    ylabel('Population');
                    return
+                   
+               case 'loglog'
+                   loadType = 'clump';
+                   pop = obj.totPop.(loadType);
            end
+           
            %Only get the colors that we want.
            pop = pop(:,cList);
            
            %Plotting the graph
-           h = semilogy(obj.t,pop);
-           
+           switch type
+               case 'loglog'
+                   h = loglog(obj.t, pop);
+                   grid on;
+               otherwise
+                   h = semilogy(obj.t,pop);
+           end
            %Setting colors
            if(length(cList)==1)
                set(h, 'Color', cM(cList,:));
@@ -304,6 +323,8 @@ classdef fishClass
            title(type);
            xlabel('Time: hours');
            ylabel('Population');
+           
+       
            
         end
         
@@ -368,14 +389,37 @@ classdef fishClass
             
         end
         
-        function plotClumpFrac(obj)
+        function plotClumpFrac(obj, varargin)
+            
+            switch nargin
+                case 1
+                    single = obj.sL;
+                    clump = obj.sH;
+                    
+                case 2
+                    normalize = varargin{1};
+                    if(strcmp(normalize, 'normalize'))
+                        if(~isfield(obj.fitParam, 'K'))
+                           fprintf(2, 'Need to fit logistic growth curve before normalizing!\n');
+                           beep;
+                           return
+                        end
+                        single = obj.sL/obj.fitParam.K;
+                        clump = obj.sH/obj.fitParam.K;
+                    else
+                        single = obj.sL;
+                        clump = obj.sH;
+                    end
+            end
+            
+            
             figure;
             cM(1,:) = [0.2 0.8 0.1];
             cM(2,:) = [0.8 0.2 0.1];
             
             hold on;
             
-            h = semilogy(obj.sL, obj.sH);
+            h = semilogy(single, clump);
             
             set(h, 'LineWidth', 3)
             arrayfun(@(x)set(h(x), 'Color', cM(x,:)), 1:obj.totalNumColor);
@@ -396,6 +440,56 @@ classdef fishClass
             title('Fraction of population in largest clump')
             xlabel('Time (hours)');
             ylabel('Fraction of population');
+            
+        end
+        
+        function obj = fitLogisticCurve(obj)
+            
+            nC = 1;
+            pop = obj.totPop.clump;
+            
+            adjustFitParam = false;
+            fitParam = [];
+            
+            [halfboxsize, alt_fit, tolN, params0, LB, UB, lsqoptions, fitRange] =...
+                getFitParameters(adjustFitParam, fitParam);
+
+            alt_fit = obj.fitParam.alt_fit;
+
+            minS= obj.fitParam.minS;
+            maxS = obj.fitParam.maxS;
+            
+            % fit, using fit_logistic_growth.m
+            [r(nC), K(nC), N0(nC), t_lag(nC), sigr(nC), sigK(nC), sigN0(nC), sigt_lag(nC)] = ...
+                fit_logistic_growth(obj.t(minS:maxS),pop(minS:maxS,nC), alt_fit, halfboxsize, tolN, params0, LB, UB, lsqoptions);
+            
+            % Logistic fit curves, for each population
+            Nth(nC,:) = logistic_N_t(obj.t(minS:maxS), r(nC), K(nC), N0(nC), t_lag(nC));
+            
+            
+            colors{1}(1,:) = [0.2 0.7 0.4];
+            
+            colors{2}(1,:) = [0.8 0.2 0.4];
+            
+            figure;hold on
+            %Plotting the result
+            hLogPlot(nC) = semilogy(obj.t,pop(:,nC), 'o', 'color', 0.8*colors{nC}(1,:), 'markerfacecolor', colors{nC}(:));
+            
+            % Plot
+            lineFit(nC) = semilogy(obj.t(minS:maxS), Nth(nC,:), '-', 'color', 0.5*colors{nC}(:));
+            set(gca, 'YScale', 'log');
+            
+            obj.fitParam.r = r;
+            obj.fitParam.K = K;
+            obj.fitParam.N0 = N0;
+            obj.fitParam.t_lag = t_lag; 
+            obj.fitParam.sigr = sigr;
+            obj.fitParam.sigK = sigK;
+            obj.fitParam.sigN0 = sigN0;
+            obj.fitParam.sigt_lag = sigt_lag;
+            
+            
+            
             
         end
         

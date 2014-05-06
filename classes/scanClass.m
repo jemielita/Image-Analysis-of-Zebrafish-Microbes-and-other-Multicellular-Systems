@@ -20,6 +20,7 @@ classdef scanClass
         nL;
         nH;
         highPopFrac;
+        totPop;
         
     end
     
@@ -148,6 +149,9 @@ classdef scanClass
                     obj.sL = sum(obj.totInten(pL))/singleBacInten;
                     obj.sH = sum(obj.totInten(pH))/singleBacInten;
                     
+                    %Total population
+                    obj.totPop = obj.sL+obj.sH;
+                  
                     %Mean clump and individual intensity
                     obj.mL = mean([obj.totInten(pL)])/singleBacInten;
                     obj.mH = mean([obj.totInten(pH)])/singleBacInten;
