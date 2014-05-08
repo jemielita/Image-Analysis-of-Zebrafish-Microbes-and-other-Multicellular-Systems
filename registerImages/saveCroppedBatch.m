@@ -58,7 +58,14 @@ if(minCrop==true)
 end
 
 %Get some needed variables.
-totalNumRegions = length(unique([param.expData.Scan.region]));
+allRegion = [param.expData.Scan.region];
+isScan =  cellfun(@(x)strcmp(x, 'true'), {param.expData.Scan.isScan});
+%Remove regions that are not scans (i.e. videos)
+allRegion = allRegion(isScan==1);
+
+totalNumRegions = length(unique(allRegion));
+
+
 totalNumScans = param.expData.totalNumberScans;
 totalNumColors = size(param.color,2);
 

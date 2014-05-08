@@ -82,7 +82,7 @@ colorNum = 1;
 %structure should be used exclusively for parameters that affect region
 %features of the fish themselves (gut outline, etc.)
 
-f = fishClass(param);
+%f = fishClass(param);
 
 
 %%%%%%%%%%%% variable that contains information about expected pixel
@@ -731,7 +731,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
        %Save the fish file (containing analysis stuff) also to the same
        %directory
        saveFishFile = [saveDir filesep 'fishAnalysis.mat'];
-       save(saveFishFile, 'f');
+      % save(saveFishFile, 'f');
        
     end
 
@@ -2949,20 +2949,20 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         
         %Move everything after the manually moved region by the same
         %amount
-        for j=0:numColor-1
-            for i=changeRow+1:size(tableData,1)-1
-        
-              tableData(i, changeCol+(numColor*j)) = ...
-                  tableData(i,changeCol+(numColor*j))+thisOffset;
-            end
-        end
+%         for j=0:numColor-1
+%             for i=changeRow+1:size(tableData,1)-1
+%         
+%               tableData(i, changeCol+(numColor*j)) = ...
+%                   tableData(i,changeCol+(numColor*j))+thisOffset;
+%             end
+%         end
         
         %Update table data so that the different colors are the same
-        for j=0:numColor-1
-            if(j~=changeColor)
-                tableData(:,2*j+1:2*j+2) = tableData(:,2*changeColor+1:2*changeColor+2);               
-            end
-        end
+%         for j=0:numColor-1
+%             if(j~=changeColor)
+%                 tableData(:,2*j+1:2*j+2) = tableData(:,2*changeColor+1:2*changeColor+2);               
+%             end
+%         end
         
         %Update the table
         set(hxyRegTable, 'Data', tableData);
