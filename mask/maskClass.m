@@ -56,7 +56,7 @@ classdef maskClass
            
            rPropClassified = rProp(keptSpots);
            useRemovedBugList = false;
-           classifierType = 'svm';
+           classifierType = 'none';
            distCutoff_combRegions = false;
            
            rProp = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
@@ -218,10 +218,15 @@ classdef maskClass
        function inten = getIntensityCutoff(im, spotMask)
             b  = im(spotMask==1);
             b = sort(b(:));
-            %Cutoff equal to intensity at which %80 of bacteria signal
-            %present-somewhat arbitrary
-            inten = b(round(0.2*length(b)));
-            
+            if(isempty(b(:)))
+                %If not spts found, force the itensity cutoff to be higher
+                %than the max intensity-effectively counting zero bacteria.
+                inten = max(im(:));
+            else
+                %Cutoff equal to intensity at which %80 of bacteria signal
+                %present-somewhat arbitrary
+                inten = b(round(0.2*length(b)));
+            end
        end
        
        function m = getFinalGutMask(param, scanNum, colorNum)

@@ -23,6 +23,7 @@ classdef fishClass
         nH = [];
         
         highPopFrac = [];
+        colorOverlap = [];
         
         cut = [];
         t = NaN;
@@ -134,6 +135,11 @@ classdef fishClass
             end
             
         end
+        
+        function obj = calcColorOverlap(obj)
+            obj.colorOverlap = calcMIPOverlap(obj);
+        end
+        
         
         function obj = getClumps(obj)
            
@@ -404,8 +410,8 @@ classdef fishClass
                            beep;
                            return
                         end
-                        single = obj.sL/obj.fitParam.K;
-                        clump = obj.sH/obj.fitParam.K;
+                        single = obj.sL./repmat(sum(obj.fitParam.K), length(obj.sL),2);
+                        clump = obj.sH./repmat(sum(obj.fitParam.K),length(obj.sH),2);
                     else
                         single = obj.sL;
                         clump = obj.sH;
@@ -445,52 +451,59 @@ classdef fishClass
         
         function obj = fitLogisticCurve(obj)
             
-            nC = 1;
-            pop = obj.totPop.clump;
+            fitField = {'r', 'K', 'N0', 't_lag', 'sigr', 'sigK', 'sigN0', 'sigt_lag'};
+            for i=1:length(fitField)
+               obj.fitParam.(fitField{i}) = zeros(obj.totalNumColor,1); 
+            end
+                
+            Nth = cell(obj.totalNumColor,1);
             
-            adjustFitParam = false;
-            fitParam = [];
-            
-            [halfboxsize, alt_fit, tolN, params0, LB, UB, lsqoptions, fitRange] =...
-                getFitParameters(adjustFitParam, fitParam);
-
-            alt_fit = obj.fitParam.alt_fit;
-
-            minS= obj.fitParam.minS;
-            maxS = obj.fitParam.maxS;
-            
-            % fit, using fit_logistic_growth.m
-            [r(nC), K(nC), N0(nC), t_lag(nC), sigr(nC), sigK(nC), sigN0(nC), sigt_lag(nC)] = ...
-                fit_logistic_growth(obj.t(minS:maxS),pop(minS:maxS,nC), alt_fit, halfboxsize, tolN, params0, LB, UB, lsqoptions);
-            
-            % Logistic fit curves, for each population
-            Nth(nC,:) = logistic_N_t(obj.t(minS:maxS), r(nC), K(nC), N0(nC), t_lag(nC));
-            
-            
-            colors{1}(1,:) = [0.2 0.7 0.4];
-            
-            colors{2}(1,:) = [0.8 0.2 0.4];
-            
-            figure;hold on
-            %Plotting the result
-            hLogPlot(nC) = semilogy(obj.t,pop(:,nC), 'o', 'color', 0.8*colors{nC}(1,:), 'markerfacecolor', colors{nC}(:));
-            
-            % Plot
-            lineFit(nC) = semilogy(obj.t(minS:maxS), Nth(nC,:), '-', 'color', 0.5*colors{nC}(:));
-            set(gca, 'YScale', 'log');
+            for nC=1:obj.totalNumColor
+                
+                pop = obj.totPop.clump;
+                
+                adjustFitParam = false;
+                fitParam = [];
+                
+                [halfboxsize, alt_fit, tolN, params0, LB, UB, lsqoptions, fitRange] =...
+                    getFitParameters(adjustFitParam, fitParam);
+                
+                alt_fit = obj.fitParam.alt_fit{nC};
+                
+                minS= obj.fitParam.minS{nC};
+                maxS = obj.fitParam.maxS{nC};
+                Nth{nC} = zeros(maxS-minS+1, 1);
+                % fit, using fit_logistic_growth.m
+                [r(nC), K(nC), N0(nC), t_lag(nC), sigr(nC), sigK(nC), sigN0(nC), sigt_lag(nC)] = ...
+                    fit_logistic_growth(obj.t(minS:maxS),pop(minS:maxS,nC), alt_fit, halfboxsize, tolN, params0, LB, UB, lsqoptions);
+                
+                % Logistic fit curves, for each population
+                Nth{nC}= logistic_N_t(obj.t(minS:maxS), r(nC), K(nC), N0(nC), t_lag(nC));
+                
+                colors{1}(1,:) = [0.2 0.7 0.4];
+                
+                colors{2}(1,:) = [0.8 0.2 0.4];
+                
+                figure;hold on
+                %Plotting the result
+                hLogPlot(nC) = semilogy(obj.t,pop(:,nC), 'o', 'color', 0.8*colors{nC}(1,:), 'markerfacecolor', colors{nC}(:));
+                
+                % Plot
+                lineFit(nC) = semilogy(obj.t(minS:maxS), Nth{nC}, '-', 'color', 0.5*colors{nC}(:));
+                set(gca, 'YScale', 'log');
+                
+                
+                
+            end
             
             obj.fitParam.r = r;
             obj.fitParam.K = K;
             obj.fitParam.N0 = N0;
-            obj.fitParam.t_lag = t_lag; 
+            obj.fitParam.t_lag = t_lag;
             obj.fitParam.sigr = sigr;
             obj.fitParam.sigK = sigK;
             obj.fitParam.sigN0 = sigN0;
             obj.fitParam.sigt_lag = sigt_lag;
-            
-            
-            
-            
         end
         
     
