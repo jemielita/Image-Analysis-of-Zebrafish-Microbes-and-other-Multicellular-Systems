@@ -175,7 +175,7 @@ classdef clumpSClass
                     hist(log([obj.allData.volume]), nBin);
                 case 'totalInten'
                     hist(log([obj.allData.totalInten]), nBin);
-                case 'itnenCutoff'
+                case 'intenCutoff'
                     hist(log([obj.allData.intenCutoff]), nBin);                    
             end
             
@@ -214,6 +214,112 @@ classdef clumpSClass
            end
         end
         
+        
+        function obj = calcCenterMass(obj,cut,regCutoff)
+            
+            %Load in segmentation mask
+            fileName = [obj.saveLoc filesep 'masks' filesep 'clumpAndIndiv_nS' num2str(obj.scanNum) '_' obj.colorStr '.mat'];
+            inputVar = load(fileName);
+            segMask = inputVar.segMask;
+            
+            %Replace each one of these masks with the mean intensity of
+            %each of the found spots.
+            
+            labelC = (segMask==2);
+            labelI = (segMask==1);
+            
+            %Load in unrotated mask
+            fileName = [obj.saveLoc filesep 'masks' filesep 'maskUnrotated_' num2str(obj.scanNum) '.mat'];
+            inputVar = load(fileName);
+            gutMask = inputVar.gutMask;
+            
+            
+            regCutoff = 4;
+            
+            %Calculate the center of mass of all clumps and individuals in
+            %the gut.
+            isClump = [obj.allData.totalInten]>cut;
+            isIndiv = [obj.allData.totalInten]<=cut;
+            
+            inGut = [obj.allData.gutRegion]<=regCutoff;
+            
+            isClump = logical(isClump.*inGut);
+            isIndiv = logical(isIndiv.*inGut);
+            
+            clumpInd = [obj.allData(isClump).IND];
+            indivInd = [obj.allData(isIndiv).IND];
+            
+            intenL_indiv = getCentroidInfo(clumpInd, labelI);
+            intenL_clump = getCentroidInfo(indivInd, labelC);
+            
+            function centroid = getCentroidInfo(ind,labelM)
+                
+                intenMask = zeros(size(gutMask));
+                
+                %intenM = zeros(size(gutMask));
+                %intenI = zeros(size(gutMask));
+                
+                for i=1:size(gutMask,3)
+                    thisIm = gutMask(:,:,i);
+                    thisIm(labelM==0) = 0;                  
+                    intenMask(:,:,i) = thisIm;
+                end
+                
+              %  uniqEl = unique(intenMask(:));
+                inten{1}(1,:) = arrayfun(@(x)sum(intenMask(intenMask(:)==x)), ind);
+                inten{1}(2,:) = ind;
+                
+                %Get a distribution of intensities of spots
+                intenM = zeros(size(labelM));
+                
+                for i=1:length(ind)
+                    area = sum(labelM(:)==ind(i));
+                    
+                    meanInten = obj.allData(ind(i)).totalInten;
+                    intenM(labelM==ind(i)) = meanInten/area;
+                end
+                
+                %Now getting the total intensity in each box
+                intenL{2} = zeros(length(ind),1);
+                intenM = repmat(intenM, 1, 1, size(gutMask,3));
+                logM = gutMask>0;
+                intenL{2}(1,:) = arrayfun(@(x)sum(logM(gutMask==x).*intenM(gutMask==x)), ind);
+                intenL{2}(2,:) = uniqEl;
+                
+                %Now get information about the centroid, etc.
+  
+                %Normalize itensity curve
+                intenL{i}(1,:) = intenL{i}(1,:)/sum(intenL{i}(1,:));
+                
+                %Turn into cdf
+                intenL{i}(1,:) = cumsum(intenL{i}(1,:));
+                %Interpolate curve
+                interpRange = 1:0.01: max(intenL{i}(2,:));
+                cdf = interp1(intenL{i}(2,:), intenL{i}(1,:), interpRange);
+                
+                %Now find index closest to the center and to the range of
+                %the middle quartile
+                
+                [~,ind] = min(abs(cdf-0.5));
+                centroid(1) = interpRange(ind);
+                
+                [~,ind] = min(abs(cdf-0.75));
+                centroid(2) = interpRange(ind);
+                
+                [~,ind] = min(abs(cdf-0.25));
+                centroid(3) = interpRange(ind);
+                
+                
+                
+                
+%                centroid{1} = sum(intenL{1}(1,:).*intenL{1}(2,:))./sum(itenL{1}(1,:));
+                
+ %               centroid{2} = sum(intenL{2}(1,:).*intenL{2}(2,:))./sum(itenL{2}(1,:));
+                
+                
+            end
+            
+        end
         
     end
     

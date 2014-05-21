@@ -22,6 +22,12 @@ classdef scanClass
         highPopFrac;
         totPop;
         
+        %Center of mass position (in sliceNum) plus the region that
+        %contains centerMassFound percent of the population (gives an
+        %estimate of how 
+        centerMass;
+        centerMassBound = 0.5;
+        
     end
     
     methods
@@ -114,6 +120,17 @@ classdef scanClass
             
         end
         
+        function obj = calcIndivClumpMask(obj, cut)
+            inputVar = load([obj.saveLoc filesep 'param.mat']);
+            param = inputVar.param;
+            
+            segmentType.Selection = 'clump and indiv';
+            
+            segMask = segmentGutMIP('', segmentType, obj.scanNum, obj.colorNum, param, obj ,cut);
+            fileName = [obj.saveLoc filesep 'masks' filesep 'clumpAndIndiv_nS' num2str(obj.scanNum) '_' obj.colorStr '.mat'];
+            save(fileName, 'segMask');
+        end
+        
         function obj = calcClump(obj)
             inputVar = load([obj.saveLoc filesep 'param.mat']);
             param = inputVar.param;
@@ -176,7 +193,7 @@ classdef scanClass
         
             end
             
-            end
+        end
         
         
         

@@ -260,6 +260,10 @@ classdef maskClass
            segMask = (spotMask+segMask)>0;
            
        end
+       
+       function m = calcIndivClumpMask(param, scanNum, colorNum)
+           
+       end
    end
 
 end

@@ -13,7 +13,7 @@
 %
 % AUTHOR: Matthew Jemielita, Aug 15, 2013
 
-function segMask = segmentGutMIP(im, segmentType,scanNum, colorNum,param,f)
+function segMask = segmentGutMIP(im, segmentType,scanNum, colorNum,param,scan,cut)
 
 switch lower(segmentType.Selection)
     case 'otsu'
@@ -37,7 +37,7 @@ switch lower(segmentType.Selection)
       
         segMask = inputVar.segMask;
         
-        ind = [f.scan(scanNum, colorNum).clumps.remInd];
+        ind = [scan.clumps.remInd];
         if(~isempty(ind))
             %Remove indices that we've hand selected
             segMask = bwlabel(segMask);
@@ -45,6 +45,38 @@ switch lower(segmentType.Selection)
             segMask = segMask>0;
         end
         
+    case 'clump and indiv'
+        fileName = [param.dataSaveDirectory filesep 'masks' filesep 'clumpAndIndiv_nS' num2str(scanNum) '_' param.color{colorNum} '.mat'];
+        if(exist(fileName, 'file')==2)
+           inputVar = load(fileName);
+           segMask = inputVar.segMask;
+            return
+        end
+        
+        %Same as above, but label the clumps and individuals differently
+        inputVar = load([param.dataSaveDirectory filesep 'bkgEst' filesep 'fin_' num2str(scanNum) '_' param.color{colorNum} '.mat']);
+        
+        segMask = inputVar.segMask;
+        
+        ind = [scan.clumps.remInd];
+        if(~isempty(ind))
+            %Remove indices that we've hand selected
+            segMask = bwlabel(segMask);
+            segMask(ismember(segMask,ind)) = 0;
+            segMask = segMask>0;
+        end
+        labelMatrix = bwlabel(segMask);
+        ind = unique(labelMatrix(:)); ind(ind==0) = [];
+        indiv = [scan.clumps.allData.totalInten]<cut;
+        clump = ~indiv;
+        
+        indivInd = [scan.clumps.allData(indiv).IND];
+        clumpInd = [scan.clumps.allData(clump).IND];
+        
+        clumpMask = ismember(labelMatrix, clumpInd);
+        indivMask = ismember(labelMatrix, indivInd);
+        
+        segMask = indivMask + 2*clumpMask;
 end
 
 

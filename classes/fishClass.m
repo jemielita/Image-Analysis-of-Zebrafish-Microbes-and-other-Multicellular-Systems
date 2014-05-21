@@ -1,17 +1,11 @@
 %fishClass: Class to store all analysis information about a particular fish
 
 classdef fishClass
+    
+    
     properties
         saveLoc = '';
-        totalNumScans = '';
-        totalNumColor = '';
-        
-        scan = scanClass.empty(1,0);
-        
-        totPopRegCutoff = NaN;
         totPop = [];
-        param = [];
-        totPopType = {'clump', 'coarse', 'spot'};
         
         sL = [];
         sH = [];
@@ -22,7 +16,19 @@ classdef fishClass
         nL = [];
         nH = [];
         
+        
+        
         highPopFrac = [];
+        
+        totalNumScans = '';
+        totalNumColor = '';
+        
+        scan = scanClass.empty(1,0);
+        
+        totPopRegCutoff = NaN;
+        param = [];
+        totPopType = {'clump', 'coarse', 'spot'};
+        
         colorOverlap = [];
         
         cut = [];
@@ -113,8 +119,6 @@ classdef fishClass
         end
         
         
-        
-        
         function obj = calcMasks(obj)
             
             for s = 1:obj.totalNumScans
@@ -140,6 +144,19 @@ classdef fishClass
             obj.colorOverlap = calcMIPOverlap(obj);
         end
         
+        function obj =  calcIndivClumpMask(obj)
+            fprintf(1, 'Calculating indiv/clump masks');
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c).calcIndivClumpMask(obj.cut);
+                    fprintf(1, '.');
+                end
+                
+            end
+            fprintf(1, '\n');
+            
+           
+        end
         
         function obj = getClumps(obj)
            
@@ -506,9 +523,43 @@ classdef fishClass
             obj.fitParam.sigt_lag = sigt_lag;
         end
         
-    
-    end
+        
+        function makeMovie(obj, fileName)
+            figure;
+           
+            for colorNum=1:obj.totalNumColor
+           
+                colorList = {'488nm', '568nm'};
+                fileDir = [obj.saveLoc fi lesep 'movie' colorList{colorNum}];
+                mkdir(fileDir);
+                
+                recalcProj = false;
+                zNum = [];
+                
+                for nS = 1:obj.totalNumScans
+                    inputVar = load([obj.scan(nS,colorNum).saveLoc filesep 'param.mat']);
+                    paramIn = inputVar.param;
+                    
+                    scanNum = obj.scan(nS, colorNum).scanNum;
+                    paramIn.dataSaveDirectory = paramIn.dataSaveDirectory;
+                    im = selectProjection(paramIn, 'mip', 'true', scanNum,colorList{colorNum}, zNum,recalcProj);
+                    imshow(im, [0 1000]);
+                    
+                    
+                    inputVar = load([obj.scan(nS,colorNum).saveLoc filesep 'bkgEst' filesep 'fin_' num2str(scanNum) '_' paramIn.color{colorNum} '.mat']);
+                    segMask = inputVar.segMask;
+                    maskFeat.Type = 'perim';
+                    maskFeat.seSize = 5;
+                    rgbIm = segmentRegionShowMask(segMask, maskFeat);
+                    hAlpha = alphamask(rgbIm, [1 0 0], 0.5, gca);
+                    
+                    print('-dpng', [fileDir filesep 'movie', sprintf('%03d', nS), '.png']);
+                    
+                    
+                end
+            end
+        end
 
 end
-    
+end
     
