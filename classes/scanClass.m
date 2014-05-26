@@ -125,7 +125,7 @@ classdef scanClass
             param = inputVar.param;
             
             segmentType.Selection = 'clump and indiv';
-            
+            param.dataSaveDirectory = obj.saveLoc;
             segMask = segmentGutMIP('', segmentType, obj.scanNum, obj.colorNum, param, obj ,cut);
             fileName = [obj.saveLoc filesep 'masks' filesep 'clumpAndIndiv_nS' num2str(obj.scanNum) '_' obj.colorStr '.mat'];
             save(fileName, 'segMask');

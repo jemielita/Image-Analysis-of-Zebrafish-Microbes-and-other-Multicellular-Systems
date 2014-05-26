@@ -17,6 +17,13 @@ classdef fishClass
         nH = [];
         
         
+        %For our analysis of clump and individuals distributions
+        clumpCentroid = cell(2,1);
+        indivCentroid = cell(2,1);
+        clumpRegionList = cell(2,1);
+        indivRegionList = cell(2,1);
+        
+        
         
         highPopFrac = [];
         
@@ -148,7 +155,7 @@ classdef fishClass
             fprintf(1, 'Calculating indiv/clump masks');
             for s = 1:obj.totalNumScans
                 for c = 1:obj.totalNumColor
-                    obj.scan(s,c).calcIndivClumpMask(obj.cut);
+                    obj.scan(s,c).calcIndivClumpMask(obj.cut(c));
                     fprintf(1, '.');
                 end
                 
@@ -156,6 +163,19 @@ classdef fishClass
             fprintf(1, '\n');
             
            
+        end
+        
+        function obj = calcCenterMass(obj)
+            
+            fprintf(1, 'Calculating object center of mass');
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c).clumps = obj.scan(s,c).clumps.calcCenterMass(obj.cut);
+                    fprintf(1, '.');
+                end
+                
+            end
+            fprintf(1, '\n'); 
         end
         
         function obj = getClumps(obj)

@@ -46,13 +46,15 @@ switch lower(segmentType.Selection)
         end
         
     case 'clump and indiv'
-        fileName = [param.dataSaveDirectory filesep 'masks' filesep 'clumpAndIndiv_nS' num2str(scanNum) '_' param.color{colorNum} '.mat'];
-        if(exist(fileName, 'file')==2)
-           inputVar = load(fileName);
-           segMask = inputVar.segMask;
-            return
-        end
-        
+%         fileName = [param.dataSaveDirectory filesep 'masks' filesep 'clumpAndIndiv_nS' num2str(scanNum) '_' param.color{colorNum} '.mat'];
+%        
+%         
+%         if(exist(fileName, 'file')==2)
+%            inputVar = load(fileName);
+%            segMask = inputVar.segMask;
+%             return
+%         end
+%         
         %Same as above, but label the clumps and individuals differently
         inputVar = load([param.dataSaveDirectory filesep 'bkgEst' filesep 'fin_' num2str(scanNum) '_' param.color{colorNum} '.mat']);
         
