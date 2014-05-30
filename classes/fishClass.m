@@ -151,7 +151,7 @@ classdef fishClass
             obj.colorOverlap = calcMIPOverlap(obj);
         end
         
-        function obj =  calcIndivClumpMask(obj)
+        function obj = calcIndivClumpMask(obj)
             fprintf(1, 'Calculating indiv/clump masks');
             for s = 1:obj.totalNumScans
                 for c = 1:obj.totalNumColor
@@ -170,7 +170,21 @@ classdef fishClass
             fprintf(1, 'Calculating object center of mass');
             for s = 1:obj.totalNumScans
                 for c = 1:obj.totalNumColor
-                    obj.scan(s,c).clumps = obj.scan(s,c).clumps.calcCenterMass(obj.cut);
+                    maxRegNum = obj.scan(s,c).gutRegionsInd(obj.totPopRegCutoff);
+                    obj.scan(s,c).clumps = obj.scan(s,c).clumps.calcCenterMass(obj.cut, maxRegNum);
+                    fprintf(1, '.');
+                end
+                
+            end
+            fprintf(1, '\n'); 
+        end
+        
+        function obj = calcGutWidth(obj)
+            
+            fprintf(1, 'Calculating approximate gut width');
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c)  = obj.scan(s,c).clumps.calcCenterMass(obj.cut);
                     fprintf(1, '.');
                 end
                 
@@ -234,8 +248,6 @@ classdef fishClass
         function obj = getLogisticFit(obj)
             
         end
-        
-        
         
         function obj = getClumpData(obj)
             if(length(obj.cut)~=obj.totalNumColor)
@@ -486,7 +498,70 @@ classdef fishClass
             
         end
         
-        function obj = fitLogisticCurve(obj)
+        function plotPopulationHeatMap(obj, colorNum, segType)
+            
+            imSize = 100;
+            im = zeros(obj.totalNumScans,imSize);
+            
+            cen = zeros(obj.totalNumScans,3);
+           for nS=1:obj.totalNumScans
+               
+               cen(nS,3) = nS;
+               switch segType
+                   case 'clump'
+                       regList = obj.scan(nS, colorNum).clumps.clumpRegionList;
+                       cen(nS,1) = obj.scan(nS,colorNum).clumps.clumpCentroid(1,1);
+                       cen(nS,2) = obj.scan(nS,colorNum).clumps.clumpCentroid(1,2);
+                       
+                   case 'indiv'
+                       regList = obj.scan(nS, colorNum).clumps.indivRegionList;
+                       cen(nS,1) = obj.scan(nS,colorNum).clumps.indivCentroid(1,1);
+                       cen(nS,2) = obj.scan(nS,colorNum).clumps.indivCentroid(1,2);
+
+               end
+               if(isnan(regList))
+                  continue 
+               end
+               %Normalizing the region list
+               regList(1,:) = regList(1,:)/obj.scan(nS,colorNum).gutRegionsInd(obj.totPopRegCutoff);
+               regList(1,:) = round(imSize*regList(1,:));
+               ind = regList(1,:)<=imSize;
+               regList = regList(:,ind);
+               
+               
+               cen(nS,1) = cen(nS,1)/obj.scan(nS,colorNum).gutRegionsInd(obj.totPopRegCutoff);
+               cen(nS,1) = imSize*cen(nS,1);
+               
+               cen(nS,2) = cen(nS,2)/obj.scan(nS,colorNum).gutRegionsInd(obj.totPopRegCutoff);
+               cen(nS,2) = imSize*cen(nS,2);
+               %Normalizing the population
+               regList(2,:) = regList(2,:)/obj.singleBacInten(colorNum);
+               %Forcing all boxes to have at least 1 bacteria-somewhat
+               %artifical, but useful for visualization purposes
+               t = log(regList(2,:));
+               t(t<0) = 0;
+               im(nS,regList(1,:)) = t;
+               
+           end
+           
+           im = mat2gray(im);
+           figure; imshow(im); hold on
+           colormap('hot'); 
+           
+           hP = plot(cen(:,1),cen(:,3));
+           set(hP, 'LineWidth', 3);
+           set(hP, 'Color', [0.2 0.3 0.9]);
+           set(gcf, 'Position', [708 573 612 360]);
+           set(gca, 'Position', [0.1 0.1 0.75 0.8]);
+           
+           l(1) = xlabel('Distance down gut (normalized)');
+           l(2) = ylabel(' \leftarrow Time (hours)');
+           
+           arrayfun(@(x)set(x, 'FontSize', 24), l);
+           shadedErrorBar(cen(:,1), cen(:,3), cen(:,2))
+        end
+        
+        function obj = fitLogisticCurve(obj, fitType)
             
             fitField = {'r', 'K', 'N0', 't_lag', 'sigr', 'sigK', 'sigN0', 'sigt_lag'};
             for i=1:length(fitField)
@@ -497,7 +572,14 @@ classdef fishClass
             
             for nC=1:obj.totalNumColor
                 
-                pop = obj.totPop.clump;
+                switch fitType
+                    case 'clump'
+                        pop = obj.sH(:,nC);
+                    case 'indiv'
+                        pop = obj.sL(:,nC);
+                    case 'all'
+                        pop = obj.sL(:,nC)+obj.sH(:,nC);
+                end
                 
                 adjustFitParam = false;
                 fitParam = [];
@@ -505,17 +587,26 @@ classdef fishClass
                 [halfboxsize, alt_fit, tolN, params0, LB, UB, lsqoptions, fitRange] =...
                     getFitParameters(adjustFitParam, fitParam);
                 
-                alt_fit = obj.fitParam.alt_fit{nC};
                 
-                minS= obj.fitParam.minS{nC};
-                maxS = obj.fitParam.maxS{nC};
+                if(obj.totalNumColor>1)
+                    alt_fit = obj.fitParam.(fitType).alt_fit{nC};
+                    
+                    minS= obj.fitParam.(fitType).minS{nC};
+                    maxS = obj.fitParam.(fitType).maxS{nC};
+                elseif(obj.totalNumColor==1)
+                    alt_fit = obj.fitParam.(fitType).alt_fit;
+                    
+                    minS= obj.fitParam.(fitType).minS;
+                    maxS = obj.fitParam.(fitType).maxS;
+                end
+                
                 Nth{nC} = zeros(maxS-minS+1, 1);
                 % fit, using fit_logistic_growth.m
                 [r(nC), K(nC), N0(nC), t_lag(nC), sigr(nC), sigK(nC), sigN0(nC), sigt_lag(nC)] = ...
                     fit_logistic_growth(obj.t(minS:maxS),pop(minS:maxS,nC), alt_fit, halfboxsize, tolN, params0, LB, UB, lsqoptions);
                 
                 % Logistic fit curves, for each population
-                Nth{nC}= logistic_N_t(obj.t(minS:maxS), r(nC), K(nC), N0(nC), t_lag(nC));
+                Nth{nC} = logistic_N_t(obj.t(minS:maxS), r(nC), K(nC), N0(nC), t_lag(nC));
                 
                 colors{1}(1,:) = [0.2 0.7 0.4];
                 
@@ -525,24 +616,22 @@ classdef fishClass
                 %Plotting the result
                 hLogPlot(nC) = semilogy(obj.t,pop(:,nC), 'o', 'color', 0.8*colors{nC}(1,:), 'markerfacecolor', colors{nC}(:));
                 
-                % Plot
+                %Plot
                 lineFit(nC) = semilogy(obj.t(minS:maxS), Nth{nC}, '-', 'color', 0.5*colors{nC}(:));
                 set(gca, 'YScale', 'log');
-                
-                
+                title(fitType)
                 
             end
             
-            obj.fitParam.r = r;
-            obj.fitParam.K = K;
-            obj.fitParam.N0 = N0;
-            obj.fitParam.t_lag = t_lag;
-            obj.fitParam.sigr = sigr;
-            obj.fitParam.sigK = sigK;
-            obj.fitParam.sigN0 = sigN0;
-            obj.fitParam.sigt_lag = sigt_lag;
+            obj.fitParam.(fitType).r = r;
+            obj.fitParam.(fitType).K = K;
+            obj.fitParam.(fitType).N0 = N0;
+            obj.fitParam.(fitType).t_lag = t_lag;
+            obj.fitParam.(fitType).sigr = sigr;
+            obj.fitParam.(fitType).sigK = sigK;
+            obj.fitParam.(fitType).sigN0 = sigN0;
+            obj.fitParam.(fitType).sigt_lag = sigt_lag;
         end
-        
         
         function makeMovie(obj, fileName)
             figure;
@@ -565,9 +654,9 @@ classdef fishClass
                     im = selectProjection(paramIn, 'mip', 'true', scanNum,colorList{colorNum}, zNum,recalcProj);
                     imshow(im, [0 1000]);
                     
+                    inputVar = load([obj.saveLoc filesep 'masks' filesep 'allRegMask_' num2str(obj.scanNum) '_' param.color{obj.colorNum} '.mat']);
+                    segMask = inputVar.segMask>0;
                     
-                    inputVar = load([obj.scan(nS,colorNum).saveLoc filesep 'bkgEst' filesep 'fin_' num2str(scanNum) '_' paramIn.color{colorNum} '.mat']);
-                    segMask = inputVar.segMask;
                     maskFeat.Type = 'perim';
                     maskFeat.seSize = 5;
                     rgbIm = segmentRegionShowMask(segMask, maskFeat);

@@ -9,9 +9,9 @@ function cc = clump3dSegThreshAll(param, scanNum, colorNum, saveVal)
 %% Load in variables
 fileDir = param.dataSaveDirectory;
 
-inputVar = load([fileDir filesep 'bkgEst' filesep 'fin_' num2str(scanNum) '_' param.color{colorNum} '.mat']);
-
-maskAll = inputVar.segMask;
+inputVar = load( [obj.saveLoc filesep 'masks' filesep 'allRegMask_' num2str(obj.scanNum) '_' param.color{obj.colorNum} '.mat']);
+labelMatrix = inputVar.segMask;
+ind = unique(labelMatrix(:)); ind(ind==0) = [];
 
 imMIP = imread([fileDir filesep 'FluoroScan_' num2str(scanNum) '_' param.color{colorNum} '.tiff']);
 
@@ -26,9 +26,6 @@ if(isdir(sl))
 end
 
 %% Finding connected components
-labelMatrix = bwlabel(maskAll);
-ind = unique(labelMatrix(:)); ind(ind==0) = [];
-
 arrayfun(@(x)clump3dSegThresh(param, scanNum, colorNum, labelMatrix, imMIP,x, saveVal), ind);
 
 end

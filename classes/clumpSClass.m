@@ -223,7 +223,7 @@ classdef clumpSClass
         end
         
         
-        function obj = calcCenterMass(obj,cut,regCutoff)
+        function obj = calcCenterMass(obj,cut,maxRegNum)
             if(isempty(obj.allData))
                 obj.indivCentroid = nan(2,3);
                 obj.indivRegionList = nan;
@@ -240,6 +240,9 @@ classdef clumpSClass
             inputVar = load(fileName);
             segMask = inputVar.segMask;
             
+          
+                
+
             %Replace each one of these masks with the mean intensity of
             %each of the found spots.
             
@@ -250,8 +253,19 @@ classdef clumpSClass
             fileName = [obj.saveLoc filesep 'masks' filesep 'maskUnrotated_' num2str(obj.scanNum) '.mat'];
             inputVar = load(fileName);
             gutMask = inputVar.gutMask;
-            intenMask = zeros(size(gutMask));
+            %Removing regions of the gut past where we're stopping our
+            %analysis
+            gutMask(gutMask(:)>maxRegNum) = 0;
+            
+            regMask = zeros(size(gutMask));
             logMask = zeros(size(gutMask));
+            
+            intenMask = bwlabel(segMask>0);
+            for j=1:length(obj.allData)
+                regArea = sum(intenMask(:)==obj.allData(j).IND);
+               intenMask(intenMask==obj.allData(j).IND) = obj.allData(j).totalInten/regArea;
+            end
+            intenMask = repmat(intenMask, 1,1,size(gutMask,3));
             
             regCutoff = 4;
             
@@ -259,26 +273,26 @@ classdef clumpSClass
             %the gut.
             %stupid cludge because of mistakes in how clumps are
             %constructed.
-            for i=1:length(obj.allData)
+            for j=1:length(obj.allData)
                 
-                val = obj.allData(i).totalInten>cut;
+                val = obj.allData(j).totalInten>cut;
                 if(isempty(val))
-                    isClump(i) = 0;
+                    isClump(j) = 0;
                 else
-                    isClump(i) = val;
+                    isClump(j) = val;
                 end
-                val = obj.allData(i).totalInten<=cut;
+                val = obj.allData(j).totalInten<=cut;
                 if(isempty(val))
-                    isIndiv(i) = 0;
+                    isIndiv(j) = 0;
                 else
-                    isIndiv(i) = val;
+                    isIndiv(j) = val;
                 end
                 
-                val = obj.allData(i).gutRegion<=regCutoff;
+                val = obj.allData(j).gutRegion<=regCutoff;
                 if(isempty(val))
-                    inGut(i) = 0;
+                    inGut(j) = 0;
                 else
-                    inGut(i) = val;
+                    inGut(j) = val;
                 end
             end
             isClump = logical(isClump.*inGut);
@@ -297,9 +311,9 @@ classdef clumpSClass
                    return;
                 end 
                 
-                intenMask(:) = 0;
+                regMask(:) = 0;
                 logMask = repmat(labelM,1,1,size(gutMask,3));
-                intenMask = gutMask.*(logMask>0);
+                regMask = gutMask.*(logMask>0);
                 
 %                 gutInd = unique(gutMask(:));
 %                 gutInd(gutInd==0) = [];
@@ -307,66 +321,33 @@ classdef clumpSClass
 %                 intenL{1}(:,1) = arrayfun(@(x)sum(intenMask(intenMask(:)==x)), gutInd);
 %                 intenL{1}(:,2) = gutInd;
 %                 
-                rp = regionprops(intenMask,'Area');
-                allReg = unique(intenMask(:));
+% figure; imshow(max(regMask,[],3));
+% pause
+
+                rp = regionprops(regMask,intenMask, 'Area', 'MeanIntensity');
+                allReg = unique(regMask(:));
                 allReg(allReg==0) = [];
-                intenL{1}(:,1) = [rp(allReg).Area];
-                intenL{1}(:,2) = allReg;
-                
-                
-                %Get a distribution of intensities of spots
-               %mlj: for now lets not do this-it's somewhat slow and tells
-               %us something different than what we're interested in
-%                 intenM = zeros(size(labelM));
-%                 
-%                 for i=1:length(ind)
-%                     area = sum(labelM(:)==ind(i));
-%                     
-%                     meanInten = obj.allData(ind(i)).totalInten;
-%                     intenM(labelM==ind(i)) = meanInten/area;
-%                 end
-%                
-%                 
-%                 %Now getting the total intensity in each box
-%                 intenL{2} = zeros(length(ind),2);
-%                 intenM = repmat(intenM, 1, 1, size(gutMask,3));
-%                 logM = gutMask>0;
-%                 intenL{2}(:,1) = arrayfun(@(x)sum(logM(gutMask==x).*intenM(gutMask==x)), ind);
-%                 intenL{2}(:,2) = ind;
+                if(isempty(allReg))  
+                    centroid = nan(2,3);
+                    regionList = nan;
+                    return
+                end
+                    
+                intenL(:,1) = [rp(allReg).Area];
+                intenL(:,2) = [rp(allReg).MeanIntensity].*[rp(allReg).Area];
+                intenL(:,3) = allReg;
+                regionList = [allReg'; intenL(:,2)'];
                 
                 %Now get information about the centroid, etc.
-                for i=1:1
+                for i=1:2
                     %Normalize itensity curve
-                    intenL{i}(:,1) = intenL{i}(:,1)/sum(intenL{i}(:,1));
+                    intenL(:,i) = intenL(:,i)/sum(intenL(:,i));
                     
-                    %Turn into cdf
-                    cdf = cumsum(intenL{i}(:,1));
-                    valRange = intenL{i}(:,2);
-                 %   cdf = cdf/sum(cdf);
-                    %Interpolate curve
-                    %interpRange = 1:0.01: max(intenL{i}(:,2));
+                    centroid(i,1) = sum(intenL(:,i).*intenL(:,3));
                     
-                   % cdf2 = interp1(intenL{i}(:,2), cdf, interpRange);
-                    
-                    
-                    %Now find index closest to the center and to the range of
-                    %the middle quartile
-                    
-                    [~,indM] = min(abs(cdf-0.5));
-                    centroid(i,1) = valRange(indM);
-                    
-                    [~,indM] = min(abs(cdf-0.75));
-                    centroid(i,2) = valRange(indM);
-                    
-                    [~,indM] = min(abs(cdf-0.25));
-                    centroid(i,3) = valRange(indM);
+                    centroid(i,2) = (1/sum(intenL(:,3)))*sum((intenL(:,i)-centroid(i,1)).^2);
+                   
                 end
-                regionList = allReg;
-                
-%                centroid{1} = sum(intenL{1}(1,:).*intenL{1}(2,:))./sum(itenL{1}(1,:));
-                
- %               centroid{2} = sum(intenL{2}(1,:).*intenL{2}(2,:))./sum(itenL{2}(1,:));
-                
                 
             end
             

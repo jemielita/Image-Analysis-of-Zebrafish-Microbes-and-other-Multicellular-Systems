@@ -944,7 +944,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
             im = get(hIm, 'CData');
             gutMask = poly2mask(poly(:,1), poly(:,2), height,width);
             imSeg = im; imSeg(~gutMask) = NaN;
-            segMask = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param,f.scan(scanNum, colorNum), f.cut);
+            segMask = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param,f.scan(scanNum, colorNum), f.cut(colorNum));
             
             maskFeat.Type = 'perim';
             maskFeat.seSize = 5;

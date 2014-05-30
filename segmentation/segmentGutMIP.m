@@ -29,54 +29,41 @@ switch lower(segmentType.Selection)
         segMask = spotSegment(param, colorNum, scanNum, imSize);
         
     case 'final seg'
-        inputVar = load([param.dataSaveDirectory filesep 'bkgEst' filesep 'fin_' num2str(scanNum) '_' param.color{colorNum} '.mat']);
+        inputVar = load( [param.dataSaveDirectory filesep 'masks' filesep 'allRegMask_' num2str(scanNum) '_' param.color{colorNum} '.mat']);
+        segMask = inputVar.segMask>0;
+
+    case 'clump'        
+        inputVar = load( [param.dataSaveDirectory filesep 'masks' filesep 'allRegMask_' num2str(scanNum) '_' param.color{colorNum} '.mat']);
+        segMask = inputVar.segMask>0;
+        
+        ind = [scan.clumps.remInd];
+        if(~isempty(ind))
+            %Remove indices that we've hand selected
+            segMask = bwlabel(segMask);
+            segMask(ismember(segMask,ind)) = 0;
+            segMask = segMask>0;
+        end
+        
+    case 'clump and indiv'  
+        %Same as above, but label the clumps and individuals differently
+        inputVar = load( [param.dataSaveDirectory filesep 'masks' filesep 'allRegMask_' num2str(scanNum) '_' param.color{colorNum} '.mat']);
         segMask = inputVar.segMask;
 
-    case 'clump'
-        inputVar = load([param.dataSaveDirectory filesep 'bkgEst' filesep 'fin_' num2str(scanNum) '_' param.color{colorNum} '.mat']);
-      
-        segMask = inputVar.segMask;
         
         ind = [scan.clumps.remInd];
         if(~isempty(ind))
             %Remove indices that we've hand selected
-            segMask = bwlabel(segMask);
             segMask(ismember(segMask,ind)) = 0;
-            segMask = segMask>0;
         end
         
-    case 'clump and indiv'
-%         fileName = [param.dataSaveDirectory filesep 'masks' filesep 'clumpAndIndiv_nS' num2str(scanNum) '_' param.color{colorNum} '.mat'];
-%        
-%         
-%         if(exist(fileName, 'file')==2)
-%            inputVar = load(fileName);
-%            segMask = inputVar.segMask;
-%             return
-%         end
-%         
-        %Same as above, but label the clumps and individuals differently
-        inputVar = load([param.dataSaveDirectory filesep 'bkgEst' filesep 'fin_' num2str(scanNum) '_' param.color{colorNum} '.mat']);
-        
-        segMask = inputVar.segMask;
-        
-        ind = [scan.clumps.remInd];
-        if(~isempty(ind))
-            %Remove indices that we've hand selected
-            segMask = bwlabel(segMask);
-            segMask(ismember(segMask,ind)) = 0;
-            segMask = segMask>0;
-        end
-        labelMatrix = bwlabel(segMask);
-        ind = unique(labelMatrix(:)); ind(ind==0) = [];
         indiv = [scan.clumps.allData.totalInten]<cut;
         clump = ~indiv;
         
         indivInd = [scan.clumps.allData(indiv).IND];
         clumpInd = [scan.clumps.allData(clump).IND];
         
-        clumpMask = ismember(labelMatrix, clumpInd);
-        indivMask = ismember(labelMatrix, indivInd);
+        clumpMask = ismember(segMask, clumpInd);
+        indivMask = ismember(segMask, indivInd);
         
         segMask = indivMask + 2*clumpMask;
 end

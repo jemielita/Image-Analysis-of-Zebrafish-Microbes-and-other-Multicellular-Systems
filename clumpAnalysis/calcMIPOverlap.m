@@ -11,8 +11,9 @@ for scanNum = 1:obj.totalNumScans
         param = inputVar.param;
         
         sN= obj.scan(scanNum, colorNum).scanNum;
-        inputVar = load([fileDir filesep 'bkgEst' filesep 'fin_' num2str(sN) '_' param.color{colorNum} '.mat']);
-        im{colorNum} = bwlabel(inputVar.segMask);
+
+        inputVar = load([obj.saveLoc filesep 'masks' filesep 'allRegMask_' num2str(obj.scanNum) '_' param.color{obj.colorNum} '.mat']);
+        im{colorNum} = inputVar.segMask;
         
     end
     
