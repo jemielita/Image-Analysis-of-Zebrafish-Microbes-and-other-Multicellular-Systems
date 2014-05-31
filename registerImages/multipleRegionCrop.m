@@ -731,7 +731,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
        %Save the fish file (containing analysis stuff) also to the same
        %directory
        saveFishFile = [saveDir filesep 'fishAnalysis.mat'];
-      % save(saveFishFile, 'f');
+       save(saveFishFile, 'f');
        
     end
 
@@ -1060,7 +1060,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         userG = userG.saveG(scanNum, colorNum);
 
         [f, ~] = updateField(userG, f, param, scanNum, colorNum);
-        
+
         f.scan(scanNum, colorNum).clumps.remInd
         displaySegmentation(scanNum, colorNum, segmentationType, f);
         

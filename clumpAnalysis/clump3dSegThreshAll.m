@@ -2,6 +2,9 @@
 %particular scan
 %
 % USAGE cc = clump3dSegThresh(param, scanNum, colorNum, saveVal)
+%
+% INPUT saveVal: if true, then save the results of the calculation to the
+% appropriate subfolder.
 % AUTHOR Matthew Jemielita, April 2, 2014
 
 function cc = clump3dSegThreshAll(param, scanNum, colorNum, saveVal)
@@ -9,7 +12,7 @@ function cc = clump3dSegThreshAll(param, scanNum, colorNum, saveVal)
 %% Load in variables
 fileDir = param.dataSaveDirectory;
 
-inputVar = load( [obj.saveLoc filesep 'masks' filesep 'allRegMask_' num2str(obj.scanNum) '_' param.color{obj.colorNum} '.mat']);
+inputVar = load( [param.dataSaveDirectory filesep 'masks' filesep 'allRegMask_' num2str(scanNum) '_' param.color{colorNum} '.mat']);
 labelMatrix = inputVar.segMask;
 ind = unique(labelMatrix(:)); ind(ind==0) = [];
 

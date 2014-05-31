@@ -240,9 +240,6 @@ classdef clumpSClass
             inputVar = load(fileName);
             segMask = inputVar.segMask;
             
-          
-                
-
             %Replace each one of these masks with the mean intensity of
             %each of the found spots.
             
@@ -260,7 +257,12 @@ classdef clumpSClass
             regMask = zeros(size(gutMask));
             logMask = zeros(size(gutMask));
             
-            intenMask = bwlabel(segMask>0);
+            
+            
+            fileName = [obj.saveLoc filesep 'masks' filesep 'allRegMask_' num2str(obj.scanNum) '_' obj.colorStr '.mat'];
+            inputVar = load(fileName);
+            intenMask = inputVar.segMask;
+            
             for j=1:length(obj.allData)
                 regArea = sum(intenMask(:)==obj.allData(j).IND);
                intenMask(intenMask==obj.allData(j).IND) = obj.allData(j).totalInten/regArea;

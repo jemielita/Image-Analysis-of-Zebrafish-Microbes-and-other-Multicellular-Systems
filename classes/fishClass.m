@@ -558,7 +558,7 @@ classdef fishClass
            l(2) = ylabel(' \leftarrow Time (hours)');
            
            arrayfun(@(x)set(x, 'FontSize', 24), l);
-           shadedErrorBar(cen(:,1), cen(:,3), cen(:,2))
+%           shadedErrorBar(cen(:,1), cen(:,3), cen(:,2))
         end
         
         function obj = fitLogisticCurve(obj, fitType)
@@ -639,7 +639,7 @@ classdef fishClass
             for colorNum=1:obj.totalNumColor
            
                 colorList = {'488nm', '568nm'};
-                fileDir = [obj.saveLoc fi lesep 'movie' colorList{colorNum}];
+                fileDir = [obj.saveLoc filesep 'movie' colorList{colorNum}];
                 mkdir(fileDir);
                 
                 recalcProj = false;
@@ -654,19 +654,21 @@ classdef fishClass
                     im = selectProjection(paramIn, 'mip', 'true', scanNum,colorList{colorNum}, zNum,recalcProj);
                     imshow(im, [0 1000]);
                     
-                    inputVar = load([obj.saveLoc filesep 'masks' filesep 'allRegMask_' num2str(obj.scanNum) '_' param.color{obj.colorNum} '.mat']);
+                    inputVar = load([obj.saveLoc filesep 'masks' filesep 'allRegMask_' num2str(nS) '_' obj.scan(nS,colorNum).colorStr '.mat']);
                     segMask = inputVar.segMask>0;
                     
                     maskFeat.Type = 'perim';
                     maskFeat.seSize = 5;
-                    rgbIm = segmentRegionShowMask(segMask, maskFeat);
+                    segmentationType.Selection = 'clump and indiv';
+                    rgbIm = segmentRegionShowMask(segMask, maskFeat,segmentationType,gca);
                     hAlpha = alphamask(rgbIm, [1 0 0], 0.5, gca);
                     
                     print('-dpng', [fileDir filesep 'movie', sprintf('%03d', nS), '.png']);
                     
-                    
+                    fprintf(1, '.');
                 end
             end
+            fprintf(1, '\n');
         end
 
 end

@@ -114,12 +114,12 @@ classdef maskClass
            spotMask = maskClass.getSpotMask(param, scanNum, colorNum);
            recalcProj = false;
            im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
-           
            inten = maskClass.getIntensityCutoff(im, spotMask);
            
-           intenMask = maskClass.getIntenMask(param, scanNum, colorNum,inten);
-           
+            intenMask = maskClass.getIntenMask(param, scanNum, colorNum,inten);
+          
            intenMask = maskClass.removeSmallObj(intenMask, spotMask);
+           
            %Force the intensity mask to always include individual bacteria,
            %even if they fall below the intensity threshold.
            intenMask = (intenMask+spotMask)>0;
@@ -246,6 +246,7 @@ classdef maskClass
            for s = 1:sL
                fprintf(1, ['Scan ' num2str(s) '\n']);
                for c=1:cL
+                   
                    segMask = maskClass.getGraphCutMask(param, s,c);
            
                    fileN = [param.dataSaveDirectory filesep 'bkgEst' filesep saveName '_' num2str(s) '_' param.color{c} '.mat'];
@@ -257,6 +258,7 @@ classdef maskClass
        function segMask = removeSmallObj(segMask, spotMask)
            %Remove small objects that don't overlap with found spots
            segMask = bwareaopen(segMask, 500);
+          
            segMask = (spotMask+segMask)>0;
            
        end
