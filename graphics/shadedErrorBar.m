@@ -1,4 +1,4 @@
-function varargout=shadedErrorBar(x,y,errBar,lineProps,transparent)
+function varargout=shadedErrorBar(x,y,errBar,lineProps,transparent, orientation)
 % function H=shadedErrorBar(x,y,errBar,lineProps,transparent)
 %
 % Purpose 
@@ -23,7 +23,10 @@ function varargout=shadedErrorBar(x,y,errBar,lineProps,transparent)
 %               bar is made transparent, which forces the renderer
 %               to be openGl. However, if this is saved as .eps the
 %               resulting file will contain a raster not a vector
-%               image. 
+%               image.
+% orientation - [optional, default= 'horizontal'], either 'vertical' or
+%                'horizontal'-This defines the axis along which to produce
+%                the shaded error bars.
 %
 % Outputs
 % H - a structure of handles to the generated plot objects.     
@@ -50,8 +53,7 @@ function varargout=shadedErrorBar(x,y,errBar,lineProps,transparent)
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
 % Error checking    
-error(nargchk(3,5,nargin))
-
+narginchk(3,6);
 
 %Process y using function handles if needed to make the error bar
 %dynamically
@@ -92,7 +94,7 @@ if isempty(lineProps), lineProps=defaultProps; end
 if ~iscell(lineProps), lineProps={lineProps}; end
 
 if nargin<5, transparent=0; end
-
+if nargin<6, orientation = 'horizontal'; end
 
 
 
@@ -110,7 +112,7 @@ H.mainLine=plot(x,y,lineProps{:});
 
 col=get(H.mainLine,'color');
 edgeColor=col+(1-col)*0.55;
-patchSaturation=0.15; %How de-saturated or transparent to make patch
+patchSaturation=0.30; %How de-saturated or transparent to make patch
 if transparent
     faceAlpha=patchSaturation;
     patchColor=col;
@@ -123,9 +125,15 @@ end
 
     
 %Calculate the error bars
-uE=y+errBar(1,:);
-lE=y-errBar(2,:);
+switch orientation
+    case 'horizontal'
+        uE=y+errBar(1,:);
+        lE=y-errBar(2,:);
 
+    case 'vertical'
+        uE = x+errBar(1,:);
+        lE = x-errBar(2,:);
+end
 
 %Add the patch error bar
 holdStatus=ishold;
@@ -133,8 +141,15 @@ if ~holdStatus, hold on,  end
 
 
 %Make the patch
-yP=[lE,fliplr(uE)];
-xP=[x,fliplr(x)];
+switch orientation
+    case 'horizontal'
+        yP=[lE,fliplr(uE)];
+        xP=[x,fliplr(x)];
+
+    case 'vertical'
+        yP = [y, fliplr(y)];
+        xP = [lE, fliplr(uE)];
+end
 
 %remove nans otherwise patch won't work
 xP(isnan(yP))=[];
@@ -147,8 +162,15 @@ H.patch=patch(xP,yP,1,'facecolor',patchColor,...
 
 
 %Make pretty edges around the patch. 
-H.edge(1)= plot(x,lE,'-','color',edgeColor);
-H.edge(2)= plot(x,uE,'-','color',edgeColor);
+switch orientation
+    case 'horizontal'
+        H.edge(1)= plot(x,lE,'-','color',edgeColor);
+        H.edge(2)= plot(x,uE,'-','color',edgeColor);
+    case 'vertical'
+        H.edge(1)= plot(lE,y,'-','color',edgeColor);
+        H.edge(2)= plot(uE,y,'-','color',edgeColor);
+end
+
 
 %Now replace the line (this avoids having to bugger about with z coordinates)
 delete(H.mainLine)

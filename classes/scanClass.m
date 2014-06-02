@@ -23,7 +23,8 @@ classdef scanClass
         totPop;
         
         gutWidth; 
-        
+        centerLine;
+        gutOutline;
         %Center of mass position (in sliceNum) plus the region that
         %contains centerMassFound percent of the population (gives an
         %estimate of how 
@@ -89,6 +90,10 @@ classdef scanClass
             
         end
         
+        function obj = getOutlines(obj)
+            
+        end
+        
         function spots = foundSpots(obj)
             
         end
@@ -140,6 +145,7 @@ classdef scanClass
             
         end
         
+    
         
         
         function obj = calcIndivClumpMask(obj, cut)

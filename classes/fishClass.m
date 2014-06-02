@@ -38,6 +38,8 @@ classdef fishClass
         
         colorOverlap = [];
         
+        
+        gutWidth = [];
         cut = [];
         t = NaN;
         
@@ -163,6 +165,18 @@ classdef fishClass
             fprintf(1, '\n');
             
            
+        end
+        
+        function obj.calcGutWidth(obj)
+            fprintf(1, 'Calculating gutwidth');
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.gutWidth{s,c} = obj.scan(s,c).calcGutWidth(obj.cut(c));
+                    fprintf(1, '.');
+                end
+                
+            end
+            fprintf(1, '\n');
         end
         
         function obj = calcCenterMass(obj)
@@ -344,9 +358,12 @@ classdef fishClass
                    arrayfun(@(x)set(h(x), 'LineWidth', 2), 1:length(h));
                    legend('Total population', 'individuals', 'clumps', 'Location', 'Northwest');
                    
-                   title(['Total population, color: ', num2str(cList)]);
-                   xlabel('Time: hours');
-                   ylabel('Population');
+                   l(1) = title(['Total population, color: ', num2str(cList)]);
+                   l(2) = xlabel('Time: hours');
+                   l(3) = ylabel('Population');
+                   l(4) = gca;
+                   arrayfun(@(x)set(x, 'FontSize', 24), l);
+            
                    return
                    
                case 'loglog'
@@ -498,52 +515,55 @@ classdef fishClass
             
         end
         
-        function plotPopulationHeatMap(obj, colorNum, segType)
-            
+        function [im, cen] = getPopulationHeatMap(obj, colorNum, segType)
             imSize = 100;
             im = zeros(obj.totalNumScans,imSize);
             
             cen = zeros(obj.totalNumScans,3);
-           for nS=1:obj.totalNumScans
-               
-               cen(nS,3) = nS;
-               switch segType
-                   case 'clump'
-                       regList = obj.scan(nS, colorNum).clumps.clumpRegionList;
-                       cen(nS,1) = obj.scan(nS,colorNum).clumps.clumpCentroid(1,1);
-                       cen(nS,2) = obj.scan(nS,colorNum).clumps.clumpCentroid(1,2);
-                       
-                   case 'indiv'
-                       regList = obj.scan(nS, colorNum).clumps.indivRegionList;
-                       cen(nS,1) = obj.scan(nS,colorNum).clumps.indivCentroid(1,1);
-                       cen(nS,2) = obj.scan(nS,colorNum).clumps.indivCentroid(1,2);
+            for nS=1:obj.totalNumScans
+                
+                cen(nS,3) = nS;
+                switch segType
+                    case 'clump'
+                        regList = obj.scan(nS, colorNum).clumps.clumpRegionList;
+                        cen(nS,1) = obj.scan(nS,colorNum).clumps.clumpCentroid(2,1);
+                        cen(nS,2) = obj.scan(nS,colorNum).clumps.clumpCentroid(2,2);
+                        
+                    case 'indiv'
+                        regList = obj.scan(nS, colorNum).clumps.indivRegionList;
+                        cen(nS,1) = obj.scan(nS,colorNum).clumps.indivCentroid(2,1);
+                        cen(nS,2) = obj.scan(nS,colorNum).clumps.indivCentroid(2,2);
+                        
+                end
+                if(isnan(regList))
+                    continue
+                end
+                %Normalizing the region list
+                regList(1,:) = regList(1,:)/obj.scan(nS,colorNum).gutRegionsInd(obj.totPopRegCutoff);
+                regList(1,:) = round(imSize*regList(1,:));
+                ind = regList(1,:)<=imSize;
+                regList = regList(:,ind);
+                
+                
+                cen(nS,1) = cen(nS,1)/obj.scan(nS,colorNum).gutRegionsInd(obj.totPopRegCutoff);
+                cen(nS,1) = imSize*cen(nS,1);
+                
+                cen(nS,2) = cen(nS,2)/obj.scan(nS,colorNum).gutRegionsInd(obj.totPopRegCutoff);
+                cen(nS,2) = imSize*cen(nS,2);
+                %Normalizing the population
+                regList(2,:) = regList(2,:)/obj.singleBacInten(colorNum);
+                %Forcing all boxes to have at least 1 bacteria-somewhat
+                %artifical, but useful for visualization purposes
+                t = log(regList(2,:));
+                t(t<0) = 0;
+                im(nS,regList(1,:)) = t;
+                
+            end
+        end
 
-               end
-               if(isnan(regList))
-                  continue 
-               end
-               %Normalizing the region list
-               regList(1,:) = regList(1,:)/obj.scan(nS,colorNum).gutRegionsInd(obj.totPopRegCutoff);
-               regList(1,:) = round(imSize*regList(1,:));
-               ind = regList(1,:)<=imSize;
-               regList = regList(:,ind);
-               
-               
-               cen(nS,1) = cen(nS,1)/obj.scan(nS,colorNum).gutRegionsInd(obj.totPopRegCutoff);
-               cen(nS,1) = imSize*cen(nS,1);
-               
-               cen(nS,2) = cen(nS,2)/obj.scan(nS,colorNum).gutRegionsInd(obj.totPopRegCutoff);
-               cen(nS,2) = imSize*cen(nS,2);
-               %Normalizing the population
-               regList(2,:) = regList(2,:)/obj.singleBacInten(colorNum);
-               %Forcing all boxes to have at least 1 bacteria-somewhat
-               %artifical, but useful for visualization purposes
-               t = log(regList(2,:));
-               t(t<0) = 0;
-               im(nS,regList(1,:)) = t;
-               
-           end
-           
+        function plotPopulationHeatMap(obj, colorNum, segType)
+            
+           [im, cen] = obj.getPopulationHeatMap(colorNum, segType);
            im = mat2gray(im);
            figure; imshow(im); hold on
            colormap('hot'); 
@@ -558,12 +578,13 @@ classdef fishClass
            l(2) = ylabel(' \leftarrow Time (hours)');
            
            arrayfun(@(x)set(x, 'FontSize', 24), l);
-%           shadedErrorBar(cen(:,1), cen(:,3), cen(:,2))
+           shadedErrorBar(cen(:,1), cen(:,3), cen(:,2), {},1, 'vertical')
         end
         
         function obj = fitLogisticCurve(obj, fitType)
             
             fitField = {'r', 'K', 'N0', 't_lag', 'sigr', 'sigK', 'sigN0', 'sigt_lag'};
+            
             for i=1:length(fitField)
                obj.fitParam.(fitField{i}) = zeros(obj.totalNumColor,1); 
             end
