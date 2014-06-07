@@ -167,6 +167,18 @@ classdef fishClass
            
         end
         
+        function obj = getOutlines(obj)
+            fprintf(1, 'Calculating indiv/clump masks');
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c) = obj.scan(s,c).getOutlines;
+                    fprintf(1, '.');
+                end
+                
+            end
+            fprintf(1, '\n');
+        end
+        
         function obj.calcGutWidth(obj)
             fprintf(1, 'Calculating gutwidth');
             for s = 1:obj.totalNumScans
@@ -198,7 +210,7 @@ classdef fishClass
             fprintf(1, 'Calculating approximate gut width');
             for s = 1:obj.totalNumScans
                 for c = 1:obj.totalNumColor
-                    obj.scan(s,c)  = obj.scan(s,c).clumps.calcCenterMass(obj.cut);
+                    obj.scan(s,c)  = obj.scan(s,c).calcGutWidth;
                     fprintf(1, '.');
                 end
                 
@@ -654,35 +666,42 @@ classdef fishClass
             obj.fitParam.(fitType).sigt_lag = sigt_lag;
         end
         
-        function makeMovie(obj, fileName)
+        function makeMovie(obj, fileName, minS, maxS)
             figure;
            
             for colorNum=1:obj.totalNumColor
            
                 colorList = {'488nm', '568nm'};
-                fileDir = [obj.saveLoc filesep 'movie' colorList{colorNum}];
+                if(iscell(obj.saveLoc))
+                    sl = obj.saveLoc{1};
+                else
+                    sl = obj.saveLoc;
+                end
+                fileDir = [sl filesep 'movie' colorList{colorNum}];
                 mkdir(fileDir);
                 
                 recalcProj = false;
                 zNum = [];
+                
                 
                 for nS = 1:obj.totalNumScans
                     inputVar = load([obj.scan(nS,colorNum).saveLoc filesep 'param.mat']);
                     paramIn = inputVar.param;
                     
                     scanNum = obj.scan(nS, colorNum).scanNum;
-                    paramIn.dataSaveDirectory = paramIn.dataSaveDirectory;
+                    paramIn.dataSaveDirectory = ['J', paramIn.dataSaveDirectory(2:end)];
                     im = selectProjection(paramIn, 'mip', 'true', scanNum,colorList{colorNum}, zNum,recalcProj);
                     imshow(im, [0 1000]);
                     
-                    inputVar = load([obj.saveLoc filesep 'masks' filesep 'allRegMask_' num2str(nS) '_' obj.scan(nS,colorNum).colorStr '.mat']);
-                    segMask = inputVar.segMask>0;
+                    fileName = [obj.scan(nS,colorNum).saveLoc filesep 'masks' filesep 'clumpAndIndiv_nS' num2str(obj.scan(nS,colorNum).scanNum) '_' colorList{colorNum} '.mat'];
+                    inputVar = load(fileName);
+                    segMask = inputVar.segMask;
                     
                     maskFeat.Type = 'perim';
                     maskFeat.seSize = 5;
                     segmentationType.Selection = 'clump and indiv';
                     rgbIm = segmentRegionShowMask(segMask, maskFeat,segmentationType,gca);
-                    hAlpha = alphamask(rgbIm, [1 0 0], 0.5, gca);
+                   % hAlpha = alphamask(rgbIm, [1 0 0], 0.5, gca);
                     
                     print('-dpng', [fileDir filesep 'movie', sprintf('%03d', nS), '.png']);
                     

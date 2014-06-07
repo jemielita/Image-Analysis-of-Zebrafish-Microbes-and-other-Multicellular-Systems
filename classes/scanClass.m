@@ -89,10 +89,7 @@ classdef scanClass
         function obj = getBkgEst(obj)
             
         end
-        
-        function obj = getOutlines(obj)
-            
-        end
+       
         
         function spots = foundSpots(obj)
             
@@ -103,6 +100,15 @@ classdef scanClass
         end
         
         function mask = masks(obj)
+            
+        end
+        
+        function obj = getOutlines(obj)
+            inputVar = load([obj.saveLoc filesep 'param.mat']);
+            param = inputVar.param;
+        
+            obj.centerLine = param.centerLineAll{obj.scanNum};
+            obj.gutOutline = param.regionExtent.polyAll{obj.scanNum};
             
         end
         
@@ -149,6 +155,7 @@ classdef scanClass
         
         
         function obj = calcIndivClumpMask(obj, cut)
+            obj = obj.createLabelMask;
             inputVar = load([obj.saveLoc filesep 'param.mat']);
             param = inputVar.param;
             
@@ -167,7 +174,7 @@ classdef scanClass
         end
         
         function obj = calcGutWidth(obj)
-            
+            obj.gutWidth = calcGutWidth(obj.centerLine, obj.gutOutline);
         end
         
         function obj = getTotPop(obj, regCutoff, type,cut, singleBacInten)
