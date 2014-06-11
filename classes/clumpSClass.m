@@ -14,6 +14,14 @@ classdef clumpSClass
         
         allDataOrig = [];
         remInd = [];
+        
+        
+        indivCentroid;
+        indivRegionList;
+        clumpCentroid;
+        clumpRegionList;
+            
+            
     end
     
     
@@ -175,7 +183,7 @@ classdef clumpSClass
                     hist(log([obj.allData.volume]), nBin);
                 case 'totalInten'
                     hist(log([obj.allData.totalInten]), nBin);
-                case 'itnenCutoff'
+                case 'intenCutoff'
                     hist(log([obj.allData.intenCutoff]), nBin);                    
             end
             
@@ -214,6 +222,138 @@ classdef clumpSClass
            end
         end
         
+        
+        function obj = calcCenterMass(obj,cut,maxRegNum)
+            if(isempty(obj.allData))
+                obj.indivCentroid = nan(2,3);
+                obj.indivRegionList = nan;
+                
+                obj.clumpCentroid = nan(2,3);
+                obj.clumpRegionList = nan;
+                
+                return
+                
+            end
+            cut = cut(obj.colorNum);
+            %Load in segmentation mask
+            fileName = [obj.saveLoc filesep 'masks' filesep 'clumpAndIndiv_nS' num2str(obj.scanNum) '_' obj.colorStr '.mat'];
+            inputVar = load(fileName);
+            segMask = inputVar.segMask;
+            
+            %Replace each one of these masks with the mean intensity of
+            %each of the found spots.
+            
+            labelC = (segMask==2);
+            labelI = (segMask==1);
+            
+            %Load in unrotated mask
+            fileName = [obj.saveLoc filesep 'masks' filesep 'maskUnrotated_' num2str(obj.scanNum) '.mat'];
+            inputVar = load(fileName);
+            gutMask = inputVar.gutMask;
+            %Removing regions of the gut past where we're stopping our
+            %analysis
+            gutMask(gutMask(:)>maxRegNum) = 0;
+            
+            regMask = zeros(size(gutMask));
+            logMask = zeros(size(gutMask));
+            
+            
+            
+            fileName = [obj.saveLoc filesep 'masks' filesep 'allRegMask_' num2str(obj.scanNum) '_' obj.colorStr '.mat'];
+            inputVar = load(fileName);
+            intenMask = inputVar.segMask;
+            
+            for j=1:length(obj.allData)
+                regArea = sum(intenMask(:)==obj.allData(j).IND);
+               intenMask(intenMask==obj.allData(j).IND) = obj.allData(j).totalInten/regArea;
+            end
+            intenMask = repmat(intenMask, 1,1,size(gutMask,3));
+            
+            regCutoff = 4;
+            
+            %Calculate the center of mass of all clumps and individuals in
+            %the gut.
+            %stupid cludge because of mistakes in how clumps are
+            %constructed.
+            for j=1:length(obj.allData)
+                
+                val = obj.allData(j).totalInten>cut;
+                if(isempty(val))
+                    isClump(j) = 0;
+                else
+                    isClump(j) = val;
+                end
+                val = obj.allData(j).totalInten<=cut;
+                if(isempty(val))
+                    isIndiv(j) = 0;
+                else
+                    isIndiv(j) = val;
+                end
+                
+                val = obj.allData(j).gutRegion<=regCutoff;
+                if(isempty(val))
+                    inGut(j) = 0;
+                else
+                    inGut(j) = val;
+                end
+            end
+            isClump = logical(isClump.*inGut);
+            isIndiv = logical(isIndiv.*inGut);
+            
+            clumpInd = [obj.allData(isClump).IND];
+            indivInd = [obj.allData(isIndiv).IND];
+            
+            [obj.indivCentroid, obj.indivRegionList] = getCentroidInfo(indivInd, labelI);
+            [obj.clumpCentroid, obj.clumpRegionList] = getCentroidInfo(clumpInd, labelC);
+            
+            function [centroid, regionList] = getCentroidInfo(ind,labelM)
+                if(isempty(ind))
+                   centroid = nan(2,3);
+                   regionList = nan;
+                   return;
+                end 
+                
+                regMask(:) = 0;
+                logMask = repmat(labelM,1,1,size(gutMask,3));
+                regMask = gutMask.*(logMask>0);
+                
+%                 gutInd = unique(gutMask(:));
+%                 gutInd(gutInd==0) = [];
+%                 %  uniqEl = unique(intenMask(:));
+%                 intenL{1}(:,1) = arrayfun(@(x)sum(intenMask(intenMask(:)==x)), gutInd);
+%                 intenL{1}(:,2) = gutInd;
+%                 
+% figure; imshow(max(regMask,[],3));
+% pause
+
+                rp = regionprops(regMask,intenMask, 'Area', 'MeanIntensity');
+                allReg = unique(regMask(:));
+                allReg(allReg==0) = [];
+                if(isempty(allReg))  
+                    centroid = nan(2,3);
+                    regionList = nan;
+                    return
+                end
+                    
+                intenL(:,1) = [rp(allReg).Area];
+                intenL(:,2) = [rp(allReg).MeanIntensity].*[rp(allReg).Area];
+                intenL(:,3) = allReg;
+                regionList = [allReg'; intenL(:,2)'];
+                
+                %Now get information about the centroid, etc.
+                for i=1:2
+                    %Normalize itensity curve
+                    intenL(:,i) = intenL(:,i)/sum(intenL(:,i));
+                    
+                    centroid(i,1) = sum(intenL(:,i).*intenL(:,3));
+                    
+                    centroid(i,2) = (1/sum(intenL(:,3)))*sum((intenL(:,i)-centroid(i,1)).^2);
+                   
+                end
+                
+            end
+            
+        end
         
     end
     
