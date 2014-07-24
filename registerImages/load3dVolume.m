@@ -27,7 +27,8 @@
 %        'crop': User must provide a cropping rectangle (cropRect), which
 %        gives the location of the particular region to load in. If there
 %        are two values load in all images within the range of these
-%        values. Currently the error checking on the inputs isn't great so
+%        values. The crop rectangle will be rounded to the nearest integer before being applied.
+%        Currently the error checking on the inputs isn't great so
 %        be careful!
 %        'polygonRegion': User must provide a polygonal region (poly) to load
 %        from. This polygon is used to calculate a minimum bounding box
@@ -63,6 +64,7 @@ elseif nargin==4
     dataType = 'uint16';
     if(strcmp(loadType, 'crop'))
         cropRect = varargin{1};
+        cropRect = round(cropRect);
     end
     if(strcmp(loadType, 'polygonRegion'))
        regPoly = varargin{1}; 
@@ -98,7 +100,7 @@ end
         colorNum =  find(strcmp(param.color, imVar.color));
         
         %Getting a list of all the image slices to load in.        
-        [~,totalZ, zList] = getZRange(param, 'region', regNum);
+        [zList,totalZ, ~] = getZRange(param, 'region', regNum);
         
         
         %The array will be of type dataType (double, etc.) to make it possible to

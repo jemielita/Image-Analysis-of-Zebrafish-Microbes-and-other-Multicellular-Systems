@@ -44,6 +44,7 @@ classdef clumpSClass
                    end
                end
         end
+        
         function ind = findRemovedClump(obj, loc)
            %Update indices of clumps to remove 
            ind = obj.remInd;
@@ -222,7 +223,6 @@ classdef clumpSClass
            end
         end
         
-        
         function obj = calcCenterMass(obj,cut,maxRegNum)
             if(isempty(obj.allData))
                 obj.indivCentroid = nan(2,3);
@@ -338,7 +338,7 @@ classdef clumpSClass
                 intenL(:,1) = [rp(allReg).Area];
                 intenL(:,2) = [rp(allReg).MeanIntensity].*[rp(allReg).Area];
                 intenL(:,3) = allReg;
-                regionList = [allReg'; intenL(:,2)'];
+                regionList = [allReg'; intenL(:,1)'; intenL(:,2)'];
                 
                 %Now get information about the centroid, etc.
                 for i=1:2
@@ -353,6 +353,31 @@ classdef clumpSClass
                 
             end
             
+        end
+        
+        
+        function calculateCentroid(obj)
+               fileDir = [obj.saveLoc filesep 'clump' filesep 'clump_' obj.colorStr '_nS' num2str(obj.scanNum)];
+               fprintf(1, 'Calculating 3d centroid of all clumps');
+               
+            for i = 1:obj.numClumps
+                fileName = [fileDir filesep num2str(i) '.mat'];
+                if(exist(fileName,'file')==0)
+                    continue
+                end
+                
+                inputVar = load(fileName);
+                c = inputVar.c;
+                c.saveLoc = obj.saveLoc;
+               
+                vol = c.loadVolume;
+                c = c.calcCentroid(vol);
+                
+                save([fileDir filesep num2str(i) '.mat'], 'c');
+                fprintf(1, '.');
+            end
+            fprintf(1, '\n');
+           
         end
         
     end

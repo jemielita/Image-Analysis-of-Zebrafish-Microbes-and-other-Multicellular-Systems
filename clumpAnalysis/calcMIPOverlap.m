@@ -1,50 +1,22 @@
 function totDiff = calcMIPOverlap(obj)
 
+fprintf(1, 'Calculating cluster overlap between different colors');
 for scanNum = 1:obj.totalNumScans
-    
     
     %Load in masks
     for colorNum = 1:obj.totalNumColor
-
-        fileDir = obj.scan(scanNum, colorNum).saveLoc;
-        inputVar = load([fileDir filesep 'param.mat']);
-        param = inputVar.param;
+        fileDir = [obj.scan(scanNum,colorNum).saveLoc filesep 'masks' filesep ...
+            'clumpAndIndiv_nS' num2str(obj.scan(scanNum,colorNum).scanNum) '_'...
+            obj.scan(scanNum,colorNum).colorStr '.mat'];
+       
+        inputVar = load(fileDir);
         
-        sN= obj.scan(scanNum, colorNum).scanNum;
-
-        inputVar = load([obj.saveLoc filesep 'masks' filesep 'allRegMask_' num2str(obj.scanNum) '_' param.color{obj.colorNum} '.mat']);
-        im{colorNum} = inputVar.segMask;
+        %Only look at clusters, not individuals, in calculating the
+        %overlap.
+        segMask = inputVar.segMask==2;
         
+        im{colorNum} = segMask;        
     end
-    
-    %Remove all single objects
-    for colorNum = 1:obj.totalNumColor
-        
-        indRemList = [];
-        for i=1:length([obj.scan(scanNum, colorNum).clumps.allData])
-            indRem = obj.scan(scanNum, colorNum).clumps.allData(i).totalInten<obj.cut(colorNum);
-            indRem2 = obj.scan(scanNum, colorNum).clumps.allData(i).gutRegion>=obj.totPopRegCutoff;
-            
-            if(isempty(indRem))
-                indRem = 1;
-            end
-            if(isempty(indRem2))
-                indRem2 = 1;
-            end
-            
-            if(or(indRem,indRem2))
-                indRemList = [indRemList, obj.scan(scanNum, colorNum).clumps.allData(i).IND];
-            end
-                
-        end
-        
-       %Remove them:Note this currently seems somewhat buggy-not removing
-       %all the spots that I think we should be.
-       im{colorNum}(ismember(im{colorNum}, indRemList)) = 0;
-        
-    end
-    
-    
     
     %Looking at overlap between the different clusters
     imDiff = (im{1}>0)+(im{2}>0);
@@ -53,11 +25,7 @@ for scanNum = 1:obj.totalNumScans
     temp = im{2}>0;
     
     totDiff(scanNum) = sum(imDiff(:))/sum(temp(:));
-    totDiff(scanNum)
     
-    
-    
-    
-    
-    
+    fprintf(1, '.');
 end
+fprintf(1, '\n');

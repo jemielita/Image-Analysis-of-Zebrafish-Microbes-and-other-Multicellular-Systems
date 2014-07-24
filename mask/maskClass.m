@@ -116,17 +116,18 @@ classdef maskClass
            im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
            inten = maskClass.getIntensityCutoff(im, spotMask);
            
-            intenMask = maskClass.getIntenMask(param, scanNum, colorNum,inten);
-          
-           intenMask = maskClass.removeSmallObj(intenMask, spotMask);
+           inten = 1000;
+           intenMask = maskClass.getIntenMask(param, scanNum, colorNum,inten);
+           
+        %   intenMask = maskClass.removeSmallObj(intenMask, spotMask);
            
            %Force the intensity mask to always include individual bacteria,
            %even if they fall below the intensity threshold.
-           intenMask = (intenMask+spotMask)>0;
+         %  intenMask = (intenMask+spotMask)>0;
            
            %Remove regions that don't have high intensity spots in it or single
            %bacteria.
-           cc = bwconncomp(segMask);
+           cc = bwconncomp(segMask );
            label = labelmatrix(cc);
            
            ul = unique(label(:)); ul(ul==0) =[];

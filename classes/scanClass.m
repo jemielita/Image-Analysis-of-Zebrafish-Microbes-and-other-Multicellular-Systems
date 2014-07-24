@@ -113,8 +113,10 @@ classdef scanClass
         end
         
         function obj = getClumps(obj)
+           
             inputVar = load([obj.saveLoc filesep 'param.mat']);
             param = inputVar.param;
+            param.dataSaveDirectory = obj.saveLoc;
             temp = clumpSClass(param,obj.scanNum, obj.colorNum, 'get');
             
             obj.clumps = temp;

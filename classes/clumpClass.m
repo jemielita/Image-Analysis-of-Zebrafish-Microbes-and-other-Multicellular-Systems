@@ -22,6 +22,24 @@ classdef clumpClass < clumpSClass
            obj.IND = ind;
        end
       
+       function vol = loadVolume(obj)
+           inputVar = load([obj.saveLoc filesep 'param.mat']); param = inputVar.param;
+           imVar.zNum = ''; imVar.scanNum = obj.scanNum; imVar.color = obj.colorStr;
+           param.directoryName = ['J' param.directoryName(2:end)];
+           vol = load3dVolume(param, imVar, 'crop', obj.cropRect);
+       end
+       
+       function obj = calcCentroid(obj,vol)
+           vol = vol>obj.intenCutoff;
+           
+           rp = regionprops(vol);
+           %Only consider largest region, in case there was some pixel
+           %noise around the found objects.
+           rp = rp([rp.Area]==max([rp.Area]));
+           obj.centroid = [obj.cropRect(1)+rp(1).Centroid(1) obj.cropRect(2)+rp(1).Centroid(2) rp(1).Centroid(3)];
+           
+       end
+       
        function obj = save(obj)
            
            sl = [obj.saveLoc filesep obj.saveStr filesep 'clump_' obj.colorStr '_nS' num2str(obj.scanNum) ];

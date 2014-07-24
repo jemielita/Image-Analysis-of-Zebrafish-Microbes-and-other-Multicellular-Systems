@@ -138,6 +138,16 @@ classdef fishClass
             end
         end
         
+        function obj = calcClumpCentroid(obj)
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c).clumps.calculateCentroid;
+                end
+                
+            end
+            
+        end
+        
         function obj = calcClumps(obj)
             
             for s = 1:obj.totalNumScans
@@ -669,7 +679,12 @@ classdef fishClass
         function makeMovie(obj, fileName, minS, maxS)
             figure;
            
-            for colorNum=1:obj.totalNumColor
+            minS=1;
+            maxS = obj.totalNumScans;
+            
+%            minS= 42;
+            
+            for colorNum=2:obj.totalNumColor
            
                 colorList = {'488nm', '568nm'};
                 if(iscell(obj.saveLoc))
@@ -683,8 +698,7 @@ classdef fishClass
                 recalcProj = false;
                 zNum = [];
                 
-                
-                for nS = 1:obj.totalNumScans
+                for nS = minS:maxS
                     inputVar = load([obj.scan(nS,colorNum).saveLoc filesep 'param.mat']);
                     paramIn = inputVar.param;
                     

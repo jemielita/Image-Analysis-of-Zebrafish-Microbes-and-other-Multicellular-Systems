@@ -82,7 +82,7 @@ colorNum = 1;
 %structure should be used exclusively for parameters that affect region
 %features of the fish themselves (gut outline, etc.)
 
-f = fishClass(param);
+%f = fishClass(param);
 
 
 %%%%%%%%%%%% variable that contains information about expected pixel
@@ -731,7 +731,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
        %Save the fish file (containing analysis stuff) also to the same
        %directory
        saveFishFile = [saveDir filesep 'fishAnalysis.mat'];
-       save(saveFishFile, 'f');
+     %  save(saveFishFile, 'f');
        
     end
 

@@ -76,6 +76,10 @@ zMax = find(r~=0, 1, 'last') + zRange(1)-1;
 cc.zRange = [zMin, zMax];
 
 %Find the point on the center gut line closest to the centroid of the clump
+%mlj:Note: this is a mildly goofy way to do this: one shouldn't calculate
+%regionprops for the full image, but instead calculate the centroif od the
+%volume and then add the x, y offset for this volume....will be changed in
+%the future.
 rp = regionprops(mask, 'Centroid');rp = rp.Centroid;
 cl = param.centerLineAll{scanNum};
 cc.centroid = rp;
