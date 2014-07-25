@@ -2339,7 +2339,28 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         param.regionExtent.XY{i}(:,2) = param.regionExtent.XY{i}(:,2)-minY+1;
        end
         
-
+       %mlj: temporary code
+       param.centerLineAll{1}(:,1) = param.centerLineAll{1}(:,1)-minY+1;
+       param.centerLineAll{1}(:,2) = param.centerLineAll{1}(:,2)-minX+1;
+       
+       param.regionExtent.polyAll{1}(:,1) = param.regionExtent.polyAll{1}(:,1)-minY+1;
+       param.regionExtent.polyAll{1}(:,2) = param.regionExtent.polyAll{1}(:,2)-minX+1;
+       
+       param.endGutPos(1) = param.endGutPos(1)-minY+1;
+       param.endGutPos(2) = param.endGutPos(2)-minX+1;
+       
+       
+       param.autoFluorPos(1) = param.autoFluorPos(1)-minY+1;
+       param.autoFluorPos(2) = param.autoFluorPos(2)-minX+1;
+       
+       
+       param.beginGutPos(1) = param.beginGutPos(1)-minY+1;
+       param.beginGutPos(2) = param.beginGutPos(2)-minX+1;
+       
+       
+       param.autoFluorEndPos(1) = param.autoFluorEndPos(1)-minY+1;
+       param.autoFluorEndPos(2) = param.autoFluorEndPos(2)-minX+1;
+       
        regDataTable = [];
        for i=1:length(param.color)
            thisColorData = [param.regionExtent.XY{i}(:, 1:2); param.regionExtent.regImSize{i}];
@@ -2843,13 +2864,15 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                         %Full scan has been saved-load this ind
                         
                         if(imNum(regNum)~=-1)
-                            imFileName = ...
-                                strcat(scanDir,  'region_', num2str(regNum),filesep,...
-                                color, filesep,'pco', num2str(imNum(regNum)),'.tif');
-                            
-                            imArray{cN,regNum} = imread(imFileName,...
-                                'PixelRegion', {[xInI xInF], [yInI yInF]});
-                            
+                          
+                            [whichType, imFileName] = whichImageFileType(scanDir, regNum, param, imNum(regNum), colorNum);
+                            switch whichType
+                                case 1 %tiff
+                                    imArray{cN,regNum} = imread(imFileName,...
+                                        'PixelRegion', {[xInI xInF], [yInI yInF]});
+                                case 2 %png
+                                    imArray{cN,regNum} = imread(imFileName);
+                            end
                         else
                             imArray{cN,regNum} = zeros(xInF-xInI+1, yInF-yInI+1);
                         end
