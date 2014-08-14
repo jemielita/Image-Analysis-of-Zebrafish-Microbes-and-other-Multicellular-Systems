@@ -119,11 +119,11 @@ classdef maskClass
            inten = 1000;
            intenMask = maskClass.getIntenMask(param, scanNum, colorNum,inten);
            
-        %   intenMask = maskClass.removeSmallObj(intenMask, spotMask);
+           %intenMask = maskClass.removeSmallObj(intenMask, spotMask);
            
            %Force the intensity mask to always include individual bacteria,
            %even if they fall below the intensity threshold.
-         %  intenMask = (intenMask+spotMask)>0;
+           %intenMask = (intenMask+spotMask)>0;
            
            %Remove regions that don't have high intensity spots in it or single
            %bacteria.

@@ -19,7 +19,7 @@ switch nargin
         fprintf(2, 'Wrong number of inputs to combineRegions!');
 end
 
-loc = [spotLoc(:).Centroid];
+loc = [spotLoc(:).CentroidOrig];
 loc = reshape(loc, 3,length(spotLoc));
 
 loc(1:2,:) = (0.1625)*loc(1:2,:); %Resize in z direction
@@ -45,7 +45,7 @@ remInd = []; %Regions to cull out
 for nR=1:maxNumReg
     %Rescale bounding box
     spotLoc(nR).BoundingBox(4:5) = (0.1625)*spotLoc(nR).BoundingBox(4:5);
-   spotLoc(nR).EffRadius =  max([spotLoc(nR).BoundingBox(4:6)])/2;
+    spotLoc(nR).EffRadius = max([spotLoc(nR).BoundingBox(4:6)])/2;
 end
 
 for nR=1:maxNumReg

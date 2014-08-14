@@ -60,7 +60,7 @@ end
 removeBugIndAll = cell(length(paramAll),1);
 
 for nF=1:length(paramAll)
-    fileName = [paramAll{nF}.dataSaveDirectory '\singleBacCount',...
+    fileName = [paramAll{nF}.dataSaveDirectory filesep 'singleBacCount',...
         filesep 'removedBugs.mat'];
     if(exist(fileName)==2)
         removeBugInd = load(fileName);
@@ -103,18 +103,22 @@ end
     
 for nC=1:length(colorList)
     
-        boxVal{2} = [10, 200];
+    
+        boxVal{1} = [0.1 0.01];
 
     figure;
     numKeptSpots = sum(Y{nC}==1);
 
+    tLAll{nC}(:,1:2) = log(tLAll{nC}(:,1:2));
     boxCon = [boxVal{nC}(1)*ones(numKeptSpots,1); boxVal{nC}(2)*ones(size(tLAll{nC},1)-numKeptSpots,1)];
     if(displayData==true)
-        svmStruct{nC} = svmtrain(tLAll{nC}(:,1:2), Ynom{nC}, 'showplot', true, 'Kernel_Function', 'linear', 'boxconstraint', boxCon);
+       svmStruct{nC} = svmtrain(tLAll{nC}(:,1:2), Ynom{nC}, 'showplot', true, 'Kernel_Function', 'quadratic', 'boxconstraint', boxCon, ...
+           'autoscale', true);
+
     end
     
     
-    svmStruct{nC} = svmtrain(tLAll{nC}(:,1:3), Ynom{nC}, 'showplot', true, 'Kernel_Function', 'linear', 'boxconstraint', boxCon);
+    svmStruct{nC} = svmtrain(tLAll{nC}(:,1:3), Ynom{nC}, 'showplot', true, 'Kernel_Function', 'quadratic', 'boxconstraint', boxCon,'autoscale', true);
     
     % Calculate the confusion matrix
     
@@ -130,7 +134,7 @@ end
 %% Save results
 if(saveData.value ==true)
    %Save the classifier
-    save(saveData.saveLocation, 'svmStruct'); 
+    save(saveData.saveLocation, 'svmStruct', '-append'); 
     
     %Save a pointer to the classifier in each of the fish gutOutline
     %folders
@@ -145,7 +149,7 @@ if(saveData.value ==true)
          classifierType{1} = 'svm';
          classifierType{2} = 'svm';
          %Also save the classifier type: If the classifier was not
-        save(fileName, 'autoFluorMaxInten', 'cullProp', 'trainingListLocation', 'boxVal', 'classifierType');
+        save(fileName, 'autoFluorMaxInten', 'cullProp', 'trainingListLocation', 'boxVal', 'classifierType', '-append');
     end
 end
 
@@ -175,7 +179,7 @@ end
              
                 for i=1:length(remInd)
                     nS = remInd(i);
-                    fileRoot = [paramAll{nF}.dataSaveDirectory '\singleBacCount'];
+                    fileRoot = [paramAll{nF}.dataSaveDirectory filesep 'singleBacCount'];
                     
                     rProp = load([fileRoot, '\bacCount', num2str(nS), '.mat']);
                     rProp = rProp.rProp;

@@ -90,7 +90,6 @@ classdef scanClass
             
         end
        
-        
         function spots = foundSpots(obj)
             
         end

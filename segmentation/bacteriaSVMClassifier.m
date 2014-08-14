@@ -11,8 +11,8 @@ cen = [rProp.CentroidOrig];
 cen = reshape(cen, 3, length(cen)/3);
 cenRatio = max(cen, [],1)./min(cen, [],1);
 
-allData(:,1) = [rProp.MeanIntensity];
-allData(:,2) = [rProp.Area];
+allData(:,1) = log([rProp.MeanIntensity]);
+allData(:,2) = log([rProp.Area]);
 allData(:,3) = cenRatio;
 
 svmClass = svmclassify(svmStruct, allData);

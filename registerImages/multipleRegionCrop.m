@@ -1627,16 +1627,21 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         %Let's filter out all points with an intensity below 200
         % rPropClassified =  rPropClassified([rPropClassified.MeanIntensity]>200);
         %rPropClassified = rPropClassified([rPropClassified.Area]>40);
-        
+        length(rPropClassified)
         switch get(hMenuShowAllBugs, 'Checked')
             case 'off'
                 %Use the filter that we've built to further classify the
                 %data
-                distCutoff_combRegions = false;
-                rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
+                %distCutoff_combRegions = false;
+                %rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
                 %rPropClassified
                 %keptSpots = intersect(keptSpots, [rProp.ind]);
                 
+                inputVar = load([param.dataSaveDirectory filesep 'singleBacCount' filesep 'classifier.mat']);
+                clf = inputVar.clf;
+                
+                %rPropClassified = clf.SVMclassify(rProp);
+                rPropClassified = clf.removeOutsideRang(rPropClassified);
             case 'on'
                 %Apply some harsh-ish threshold-Set this threshold in
                 %bacteriaCountFilter.
@@ -1648,8 +1653,8 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 
                 colorThresh = [0,0];
                 areaThresh = [3,3];
-                classifierType = 'none_plusAutoFluor';
-              
+                %classifierType = 'none_plusAutoFluor';
+                classifierType = 'none';
                 
                 distCutoff_combRegions = false;
 
@@ -1662,6 +1667,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 
                 
         end
+      length(rPropClassified)
         
         xyz = [rPropClassified.CentroidOrig];
         xyz = reshape(xyz,3,length(xyz)/3);
@@ -2333,34 +2339,35 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         maxX = max(cMaxX);
         maxY = max(cMaxY);
         
-       for i=1:numColor
-        param.regionExtent.regImSize{i} = [maxX-minX+1 maxY-minY+1];
-        param.regionExtent.XY{i}(:,1) = param.regionExtent.XY{i}(:,1)-minX+1;
-        param.regionExtent.XY{i}(:,2) = param.regionExtent.XY{i}(:,2)-minY+1;
-       end
+        for i=1:numColor
+            param.regionExtent.regImSize{i} = [maxX-minX+1 maxY-minY+1];
+            param.regionExtent.XY{i}(:,1) = param.regionExtent.XY{i}(:,1)-minX+1;
+            param.regionExtent.XY{i}(:,2) = param.regionExtent.XY{i}(:,2)-minY+1;
+        end
         
-       %mlj: temporary code
-       param.centerLineAll{1}(:,1) = param.centerLineAll{1}(:,1)-minY+1;
-       param.centerLineAll{1}(:,2) = param.centerLineAll{1}(:,2)-minX+1;
-       
-       param.regionExtent.polyAll{1}(:,1) = param.regionExtent.polyAll{1}(:,1)-minY+1;
-       param.regionExtent.polyAll{1}(:,2) = param.regionExtent.polyAll{1}(:,2)-minX+1;
-       
-       param.endGutPos(1) = param.endGutPos(1)-minY+1;
-       param.endGutPos(2) = param.endGutPos(2)-minX+1;
-       
-       
-       param.autoFluorPos(1) = param.autoFluorPos(1)-minY+1;
-       param.autoFluorPos(2) = param.autoFluorPos(2)-minX+1;
-       
-       
-       param.beginGutPos(1) = param.beginGutPos(1)-minY+1;
-       param.beginGutPos(2) = param.beginGutPos(2)-minX+1;
-       
-       
-       param.autoFluorEndPos(1) = param.autoFluorEndPos(1)-minY+1;
-       param.autoFluorEndPos(2) = param.autoFluorEndPos(2)-minX+1;
-       
+        %mlj: temporary code
+        for ns =1:param.expData.totalNumberScans
+            param.centerLineAll{ns}(:,1) = param.centerLineAll{ns}(:,1)-minY+1;
+            param.centerLineAll{ns}(:,2) = param.centerLineAll{ns}(:,2)-minX+1;
+            
+            param.regionExtent.polyAll{ns}(:,1) = param.regionExtent.polyAll{ns}(:,1)-minY+1;
+            param.regionExtent.polyAll{ns}(:,2) = param.regionExtent.polyAll{ns}(:,2)-minX+1;
+            
+            param.endGutPos(ns,1) = param.endGutPos(ns,1)-minY+1;
+            param.endGutPos(ns,2) = param.endGutPos(ns,2)-minX+1;
+            
+            
+            param.autoFluorPos(ns,1) = param.autoFluorPos(ns,1)-minY+1;
+            param.autoFluorPos(ns,2) = param.autoFluorPos(ns,2)-minX+1;
+            
+            
+            param.beginGutPos(ns,1) = param.beginGutPos(ns,1)-minY+1;
+            param.beginGutPos(ns,2) = param.beginGutPos(ns,2)-minX+1;
+            
+            
+            param.autoFluorEndPos(ns,1) = param.autoFluorEndPos(ns,1)-minY+1;
+            param.autoFluorEndPos(ns,2) = param.autoFluorEndPos(ns,2)-minX+1;
+        end
        regDataTable = [];
        for i=1:length(param.color)
            thisColorData = [param.regionExtent.XY{i}(:, 1:2); param.regionExtent.regImSize{i}];
