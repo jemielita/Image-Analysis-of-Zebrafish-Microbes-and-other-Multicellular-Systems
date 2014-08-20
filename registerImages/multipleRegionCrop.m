@@ -82,7 +82,7 @@ colorNum = 1;
 %structure should be used exclusively for parameters that affect region
 %features of the fish themselves (gut outline, etc.)
 
-%f = fishClass(param);
+f = fishClass(param);
 
 
 %%%%%%%%%%%% variable that contains information about expected pixel
@@ -945,6 +945,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
             im = get(hIm, 'CData');
             gutMask = poly2mask(poly(:,1), poly(:,2), height,width);
             imSeg = im; imSeg(~gutMask) = NaN;
+            f.cut = [1,1];
             segMask = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param,f.scan(scanNum, colorNum), f.cut(colorNum));
             
             maskFeat.Type = 'perim';

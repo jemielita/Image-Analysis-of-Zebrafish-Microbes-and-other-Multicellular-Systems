@@ -681,9 +681,7 @@ classdef fishClass
            
             minS=1;
             maxS = obj.totalNumScans;
-            
-%            minS= 42;
-            
+
             for colorNum=2:obj.totalNumColor
            
                 colorList = {'488nm', '568nm'};
