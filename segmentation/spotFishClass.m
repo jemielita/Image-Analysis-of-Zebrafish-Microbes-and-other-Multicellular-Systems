@@ -239,10 +239,10 @@ classdef spotFishClass
           %our spot analysis (after the function classifySpots) has been
           %run.
           fSaveDir = [obj.saveDir filesep 'final'];
-
+          
           if(~isdir(fSaveDir))
-            fprintf(2, 'Need to run the function .classifySpots first!\n');
-            return
+              fprintf(2, 'Need to run the function .classifySpots first!\n');
+              return
           else
               %Save the result
               inputVar = load([fSaveDir filesep obj.saveName num2str(ns) '.mat']);
@@ -282,7 +282,6 @@ classdef spotFishClass
            for nc=1:obj.numColor
               obj.classType{nc} = cell(obj.numScan); 
            end
-           
            
            %For now, let's classify everything with a basic pipeline, of
            %applying cutoffs 

@@ -57,9 +57,7 @@ if(length(rp)>1)
    b = 0; 
 end
 
-
 r = sum(sum(bw,1),2); r = squeeze(r);
-
 
 if(sum(vol(:)>cutoff)==0)
     %If the spot isn't actually brighter than it's immediate
@@ -77,7 +75,7 @@ cc.zRange = [zMin, zMax];
 
 %Find the point on the center gut line closest to the centroid of the clump
 %mlj:Note: this is a mildly goofy way to do this: one shouldn't calculate
-%regionprops for the full image, but instead calculate the centroif od the
+%regionprops for the full image, but instead calculate the centroid of the
 %volume and then add the x, y offset for this volume....will be changed in
 %the future.
 rp = regionprops(mask, 'Centroid');rp = rp.Centroid;
