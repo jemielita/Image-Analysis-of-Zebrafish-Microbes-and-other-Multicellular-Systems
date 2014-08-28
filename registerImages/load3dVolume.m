@@ -28,8 +28,11 @@
 %        gives the location of the particular region to load in. If there
 %        are two values load in all images within the range of these
 %        values. The crop rectangle will be rounded to the nearest integer before being applied.
-%        Currently the error checking on the inputs isn't great so
-%        be careful!
+%        If cropRect is a 4x1 array the entire z-stack will
+%        be loaded. If the cropRect is a 6x1 array only the appropriate z-depth will be loaded. 
+%        Currently the error checking on the inputs isn't great so be careful! 
+%        The format of cropRect is [x, y, z(optional), width, height,
+%        depth (optional)];
 %        'polygonRegion': User must provide a polygonal region (poly) to load
 %        from. This polygon is used to calculate a minimum bounding box
 %        around this polygon and everthing in this box is loaded. Pixels
@@ -400,7 +403,7 @@ end
     if(isempty(regList))
         fprintf(2, 'Region is empty! Returning an empty image');
         im = [];
-    end
+    end 
     
     
     %Get z-range for this list of regions

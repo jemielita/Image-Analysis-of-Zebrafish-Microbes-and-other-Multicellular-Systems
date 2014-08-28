@@ -1594,7 +1594,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
     end
 
     function [xyz, xyzRem,  xyzKept,rPropClassified] = getBugList(rProp)
-        
+        %Get list of all found and removed spots in this scan.
         [xyzRem,~] = spots.getSpotLoc(rProp, 'removed',scanNum, colorNum);
         [xyzKept,~] = spots.getSpotLoc(rProp, 'manually kept', scanNum, colorNum);
         
@@ -1607,92 +1607,6 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 %Get all spots, minus the ones that we've manually removed.
                 [xyz, rPropClassified] = spots.getSpotLoc(rProp, 'all', scanNum, colorNum);
         end
-%         
-%         xyz = [rPropClassified.CentroidOrig];
-%         xyz = reshape(xyz,3,length(xyz)/3);
-%         
-%         
-%         
-%         xyzKeptInd = spots.keepBugInd{scanNum, colorNum};
-%         xyzKept = [rProp.CentroidOrig];
-%         xyzKept = reshape(xyzKept,3,length(xyzKept)/3);
-%         xyzKept = xyzKept(:, xyzKeptInd);
-%         
-%         %Remove spots that were manually segmented.
-%         keptSpots = setdiff(1:length(rProp), spots.removeBugInd{scanNum, colorNum});
-%         
-%         %Construct list of removed spots
-%         xyzRem = [rProp.CentroidOrig];
-%         
-%         xyzRem = reshape(xyzRem,3,length(xyzRem)/3);
-%         
-%         xyzRem = xyzRem(:,spots.removeBugInd{scanNum,colorNum});
-% 
-%         if(strcmp(get(hMenuUseSavedRemBugList, 'Checked'), 'on'))
-%             useRemovedBugList = true;
-%             rPropClassified = rProp;
-%         else
-%             rPropClassified = rProp(keptSpots);
-%             useRemovedBugList = false;
-%         end
-% 
-%         classifierType = 'svm';
-%         
-%         %Let's filter out all points with an intensity below 200
-%         % rPropClassified =  rPropClassified([rPropClassified.MeanIntensity]>200);
-%         %rPropClassified = rPropClassified([rPropClassified.Area]>40);
-%         length(rPropClassified)
-%         switch get(hMenuShowAllBugs, 'Checked')
-%             case 'off'
-%                 %Use the filter that we've built to further classify the
-%                 %data
-%                 %distCutoff_combRegions = false;
-%                 %rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
-%                 %rPropClassified
-%                 %keptSpots = intersect(keptSpots, [rProp.ind]);
-%                 
-%                 inputVar = load([param.dataSaveDirectory filesep 'singleBacCount' filesep 'classifier.mat']);
-%                 clf = inputVar.clf;
-%                 
-%                 %rPropClassified = clf.SVMclassify(rProp);
-%                 rPropClassified = clf.removeOutsideRang(rPropClassified);
-%             case 'on'
-%                 %Apply some harsh-ish threshold-Set this threshold in
-%                 %bacteriaCountFilter.
-%                 %for now.distCutoff_combRegions = false;
-%                 %  classifierType = 'none';
-%                 % distCutoff_combRegions = false;
-%                 
-%                 %rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
-%                 
-%                 colorThresh = [0,0];
-%                 areaThresh = [3,3];
-%                 %classifierType = 'none_plusAutoFluor';
-%                 classifierType = 'none';
-%                 
-%                 distCutoff_combRegions = false;
-% 
-%                 rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
-%                 
-%                 
-%               %  rPropClassified = rPropClassified([rPropClassified.Area]>areaThresh(colorNum));
-%                 
-%                % rPropClassified = rPropClassified([rPropClassified.MeanIntensity]>colorThresh(colorNum));
-%                 
-%                 
-%         end
-%         length(rPropClassified)
-%         
-%         xyz = [rPropClassified.CentroidOrig];
-%         xyz = reshape(xyz,3,length(xyz)/3);
-%         
-%         xyz(1,:) = xyz(1,:);
-%         xyz(2,:) = xyz(2,:);
-%         
-%         %keptSpots = logical(keptSpots.*(~outsideGut));
-%         %xyz = xyz(:, keptSpots);
-%         
-        
     end
 
 
@@ -4583,7 +4497,6 @@ param.expData.totalNumberScans = numScans;
 if(~isfield(param, 'dataSaveDirectory'))
     param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
 end
-
 
 %Save the calculated parameters, unless they've been
 %calculated before.
