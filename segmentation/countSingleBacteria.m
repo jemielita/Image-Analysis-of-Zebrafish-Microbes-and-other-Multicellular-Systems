@@ -40,13 +40,9 @@ else
     maxThresh = spotFeatures.intenThresh(colorNum);
 end
 
-
-
-
 %maskAll = zeros(size(im), 'uint8');
 % Filter image using wavelet filter
 fprintf(1, 'Filtering image and segmenting.');
-
 
 thisFrame = zeros(size(im,1), size(im,2));
 tic;
@@ -104,10 +100,9 @@ im = imresize(im, [height, width]);
 
 fprintf(1, '\n');
 
-
 %Dilate the mask so that we don't count spots on the edge
 %mlj: This should all be done within the c++ code above.
- gutExt = max(gutMask,[],3)==0;
+gutExt = max(gutMask,[],3)==0;
 se = strel('disk', 20);
 gutExt = imdilate(gutExt, se);
 

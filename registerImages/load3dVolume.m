@@ -474,7 +474,6 @@ end
                   disp('This image doesnt exist-fix up your code!!!!');
               end
                     
-                    
                 case 2
                     try
                         %Load png image
@@ -485,7 +484,6 @@ end
                     end
             end
             
-        
         end
         %Update counter
         n = n+1;

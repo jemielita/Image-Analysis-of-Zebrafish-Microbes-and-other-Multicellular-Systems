@@ -160,7 +160,6 @@ classdef spotClassifier
        function rProp = removeOutsideRang(obj, rProp)
        %Remove all objects that fall outside the range that we've prescribed for the spot values
        
-       
        for i=1:length(obj.feat)
        ind = [rProp.(obj.feat{i})]> obj.featRng.minR.(obj.feat{i}) & ...
            [rProp.(obj.feat{i})]< obj.featRng.maxR.(obj.feat{i});
@@ -169,11 +168,9 @@ classdef spotClassifier
        
        end
        
-       
        end
        
        function obj = spotClassifier(obj)
-          
            %Default min range for all features, and convert into
            %human-readable form.
            minR = [200,20,300, 200];
