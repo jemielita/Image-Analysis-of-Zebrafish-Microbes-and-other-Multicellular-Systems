@@ -44,9 +44,10 @@ classdef spotFishClass
        end
        
        function findSpots(obj,param, varargin)
-   
+           %findSpots(obj,param, varargin): Find all putative spots in all
+           %scans, by running our wavelet-based spot detector program.
            
-           for ns=1:obj.numScan
+           for ns = 1:obj.numScan
                
                for colorNum = 1:obj.numColor
                    
@@ -97,7 +98,7 @@ classdef spotFishClass
                    outputName = varargin{4};
            end
            
-           %% Got through and load each region of the gut independatally and run the spot detection algorithm on it
+           %% Load each region of the gut independently that have had the spot detector algorithm run on it.
            fprintf(1, 'Resorting out data');
            for ns=1:obj.numScan
                rProp = cell(obj.numColor,1);
@@ -105,7 +106,7 @@ classdef spotFishClass
                for colorNum = 1:obj.numColor
                    imVar.scanNum = ns;imVar.zNum =''; imVar.color = obj.colorStr{colorNum};                   
                    for nr = 1:obj.numReg
-                       fileName = [obj.saveDir filesep inputDir inputName filesep 'nS_' num2str(ns) '_' obj.colorStr{colorNum} '_nR' num2str(nr) '.mat'];
+                       fileName = [param.dataSaveDirectory filesep inputDir inputName filesep 'nS_' num2str(ns) '_' obj.colorStr{colorNum} '_nR' num2str(nr) '.mat'];
                        inputVar = load(fileName);
                        spotLoc = inputVar.spotLoc;
                        
@@ -135,7 +136,7 @@ classdef spotFishClass
                    end
                    
                end
-               fileName = [obj.saveDir filesep outputDir filesep outputName num2str(ns) '.mat'];
+               fileName = [param.dataSaveDirectory filesep outputDir filesep outputName num2str(ns) '.mat'];
                save(fileName, 'rProp');
                
            end
@@ -204,7 +205,7 @@ classdef spotFishClass
           end
           
           fprintf(1, 'Culling');
-          rProp = cell(obj.numColor,2);
+          rProp = cell(obj.numColor,1);
           for ns=1:obj.numScan
               for nc = 1:obj.numColor
                   %Load in data
@@ -271,10 +272,10 @@ classdef spotFishClass
        
        function saveInstance(obj)
           %saveInstance(): save this instance of spotFishClass to
-          %(obj.saveDir/'spotClassifier.mat)
+          %(obj.saveDir/'spotClassifier.mat). This will almost always be in
+          %the subfolder /gutOutline/singleBacCount
           spots = obj;
-          save([obj.saveDir filesep 'spotClassifier.mat'], 'spots');
-          
+          save([obj.saveDir filesep 'spotClassifier.mat'], 'spots');     
        end
        
        function reloadBackup(obj, origLoc, backupLoc)
@@ -306,11 +307,11 @@ classdef spotFishClass
               for nc=1:obj.numColor
                   rProp{nc} = obj.loadSpot(ns, nc);
 
-                  rProp{nc} = obj.classifyThisSpot(rProp,nc);
+                  rProp{nc} = obj.classifyThisSpot(rProp{nc},ns,nc);
                   %Save the result
-                  save([fSaveDir filesep obj.saveName num2str(ns) '.mat'], 'rProp');
+                  %save([fSaveDir filesep obj.saveName num2str(ns) '.mat'], 'rProp');
                   
-                  
+                  ind(ns,nc) = length(rProp{nc});
                   fprintf(1, '.');
               end
               
@@ -321,17 +322,27 @@ classdef spotFishClass
        
        function rProp = classifyThisSpot(obj, rProp,ns,nc)
 
-           for i =1:length(obj.classType)
+           
+               %This syntax is somewhat confusing, but allows for
+               %flexibility in constructing different classifiers for each
+               %scan and color.
+               %obj contains a cell array, 'spotClassifier', that holds an
+               %instance of the classifier used for each of the different colors of scans.
+               %Each of those classifiers has functions associated with it 
+               %that we can further use to classify the data. The
+               %particular classifiers for each scan is called by
+               %.(obj.classType{i}{ns}) which using dynamics field names to
+               %run a particular function filtering rProp.
                
-               rProp = obj.spotClassifier{nc}.(obj.classType{i}{ns})(rProp);
+               rProp = obj.spotClassifier{nc}.(obj.classType{nc}{ns})(rProp);
                
                %mlj: Don't do this for now until we clean up the
                %indexing in multipleRegionCrop for identifying particles
                %to remove.
-               %rProp = obj.spotClassifier{nc}.manuallyRemovedBugs(rProp, obj.saveDir);
-               
+%               rProp = obj.spotClassifier{nc}.manuallyRemovedBugs(rProp, obj.removeBugInd{ns,nc});
+               rProp = spotClass.keptManualSpots(rProp, obj.removeBugInd{ns,nc});
                %rProp{nc} = obj.spotClassifier{nc}.autoFluorCutoff(rProp{nc});
-           end
+           
            
        end
        
@@ -342,12 +353,14 @@ classdef spotFishClass
                    %Note: need to make sure this is done with the index of
                    %the particle, not the location
                    %Construct list of removed spots
+                   
+                   %rProp = rProp(obj.removeBugInd{scanNum,colorNum});
+                   rProp = spotClass.removedManualSpots(rProp, obj.removeBugInd{scanNum, colorNum});
+                   
                    xyzRem = [rProp.CentroidOrig];
                    xyzRem = reshape(xyzRem,3,length(xyzRem)/3);
-                   loc = xyzRem(:,obj.removeBugInd{scanNum,colorNum});
-
-                   rProp = rProp(obj.removeBugInd{scanNum,colorNum});
-                   
+                   %loc = xyzRem(:,obj.removeBugInd{scanNum,colorNum});
+                    loc = xyzRem;
                case 'manually kept'
                    %Note: need to make sure this is done with the index of
                    %the particle, not the location 
@@ -365,12 +378,15 @@ classdef spotFishClass
 
                    
                case 'all' 
-                   keptInd = setdiff(1:length(rProp), obj.removeBugInd{scanNum, colorNum});
+                   rProp = spotClass.keptManualSpots(rProp, obj.removeBugInd{scanNum, colorNum});
+
+                   %keptInd = setdiff(1:length(rProp), obj.removeBugInd{scanNum, colorNum});
                    
                    xyzKept = [rProp.CentroidOrig];
                    xyzKept = reshape(xyzKept,3,length(xyzKept)/3); 
-                   loc = xyzKept(:, keptInd);
-                   rProp = rProp(keptInd);
+                   %loc = xyzKept(:, keptInd);
+                   %rProp = rProp(keptInd);
+                   loc = xyzKept;
            end
               
        end

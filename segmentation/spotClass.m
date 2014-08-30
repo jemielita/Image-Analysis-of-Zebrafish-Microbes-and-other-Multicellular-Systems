@@ -43,6 +43,23 @@ classdef spotClass
            
        end
            
+       function ind = getSpotInd(rProp, arrayInd)
+          % ind = getSpotInd(rProp, arrayInd)
+          %Get the indices of the found spots from a list of positions
+          %in the array
+          % code: ind = rProp(arrayInd).ind;
+          ind = [rProp(arrayInd).ind];          
+       end
+       
+       function list = updateManualBug(listIn,rProp, arrayInd)
+           %ind = updateManualBug(listIn, rProp, arrayInd)
+           %Update list of bugs that we've manually selected (either for
+           %removal or keeping)
+           ind = spotClass.getSpotInd(rProp, arrayInd);
+           list = [listIn ind];     
+           list = unique(list);
+       end
+       
        function pos = getXYZPos(rProp)
            pos = [rProp.CentroidOrig];
            pos = reshape(pos,3,length(pos)/3);
@@ -57,8 +74,23 @@ classdef spotClass
           rProp([rProp.(type)]<minVal) = []; 
        end
        
-       function rProp = removeManualBug(rProp, param, ns, nc)
+       function rProp = removedManualSpots(rProp, removeBugInd)
+           %rProp = removedManualSpots(rProp, removeBugInd)
+           %Return all spots that were manually removed.
+           %Temporary...
+           %keptSpots = setdiff(1:length(rProp), removeBugInd{ns, nc});
+           %remSpots = removeBugInd{ns,nc};
            
+           %ind = [rProp(keptSpots).ind];
+           ind = ismember([rProp.ind], removeBugInd);
+           rProp = rProp(ind);
+       end
+       
+       function rProp = keptManualSpots(rProp, removeBugInd)
+           %rProp = keptManualSpots(rProp, removeBugInd)
+           %Return all spots that were *not* manually removed
+           ind = ~ismember([rProp.ind], removeBugInd);
+           rProp = rProp(ind);        
        end
        
        function rProp = distCutoff(rProp,cut)
@@ -125,16 +157,18 @@ classdef spotClass
                
                label = bwlabeln(ims);
                
-               if(isempty(label))
+               if(unique(label(:))==0)
                    rem = [rem i];
-                   continue;
+                   fprintf('No object in FOV!?\n');
+
                    fprintf(1, '.');                   
+                   continue;
                end
                
                if(size(label,1)<boxSize || size(label,2)<boxSize)
                    rem = [rem i];
-                   continue;
                    fprintf(1, '.');                   
+                   continue;
                end
                
                %If more than onde object is here, find one closest to
@@ -147,10 +181,10 @@ classdef spotClass
                ind = label(boxSize, boxSize, val(n));
               
                if(isempty(ind))
-                   %fprintf('No object at center!?\n');
+                   fprintf('No object at center!?\n');
                    rem = [rem i];
-                   continue
                    fprintf(1, '.');
+                   continue
                end
                
                if(length(ind)>1)

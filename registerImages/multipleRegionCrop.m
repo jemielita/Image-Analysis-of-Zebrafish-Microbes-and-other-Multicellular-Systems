@@ -1352,11 +1352,12 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
            indAll = union(indI, indA);
        
            if(isempty(position))
-               spots.removeBugInd{scanNum,colorNum} =  unique([spots.removeBugInd{scanNum, colorNum} ,indAll]);
                %Remove these bugs from the list of z-depths to go to.
                findBugZLocation();
                rProp = getrPropFile();
-               
+              
+               spots.removeBugInd{scanNum,colorNum} = updateManualBug(spots.removeBugInd{scanNum,colorNum},rProp, indAll);
+            
                displayOverlappedBugs(rProp)
                return;
            end
@@ -1386,7 +1387,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 indAll = intersect(indAll, indZ);
         end
       
-        spots.removeBugInd{scanNum, colorNum} =  [spots.removeBugInd{scanNum, colorNum} ,indAll];
+        spots.removeBugInd{scanNum,colorNum} = updateManualBug(spots.removeBugInd{scanNum,colorNum},rProp, indAll);
         
         
         %Remove these bugs from the list of z-depths to go to.

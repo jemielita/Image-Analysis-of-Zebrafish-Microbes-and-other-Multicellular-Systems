@@ -119,9 +119,9 @@ classdef spotClassifier
            cen = reshape(cen, 3, length(cen)/3);
            cenRatio = max(cen, [],1)./min(cen, [],1);
            
-           allData(:,1) = log([rProp.MeanIntensity]);
-           allData(:,2) = log([rProp.Area]);
-           allData(:,3) = cenRatio;
+%           allData(:,1) = log([rProp.MeanIntensity]);
+ %          allData(:,2) = log([rProp.Area]);
+  %         allData(:,3) = cenRatio;
            
            for i=1:length(obj.feat)
               allData(:,i) = [rProp.(obj.feat{i})]; 
@@ -135,17 +135,8 @@ classdef spotClassifier
            rProp = obj.removeOutsideRang(rProp);
        end
        
-       function rProp = manuallyRemovedBugs(obj, rProp, saveDir)
+       function rProp = manuallyRemovedBugs(obj, removeBugInd)
            
-           %Load in list of removed bugs, if we manually removed some.
-           remBugsSaveDir = [saveDir filesep 'singleBacCount' filesep 'removedBugs.mat'];
-           if(exist(remBugsSaveDir, 'file')==2)
-               removeBugInd = load(remBugsSaveDir);
-               removeBugInd = removeBugInd.removeBugInd;
-               removeBugInd = removeBugInd{scanNum, colorNum};
-               
-               rProp(removeBugInd) = [];
-           end
        end
        
        function rProp = autoFluorCutoff(obj, rProp)
@@ -170,16 +161,15 @@ classdef spotClassifier
        end
        
        function rProp = removeOutsideRang(obj, rProp)
-       %Remove all objects that fall outside the range that we've prescribed for the spot values
-       
-       for i=1:length(obj.feat)
-       ind = [rProp.(obj.feat{i})]> obj.featRng.minR.(obj.feat{i}) & ...
-           [rProp.(obj.feat{i})]< obj.featRng.maxR.(obj.feat{i});
-       
-       rProp = rProp(ind);
-       
-       end
-       
+           %Remove all objects that fall outside the range that we've prescribed for the spot values    
+           for i=1:length(obj.feat)
+               ind = [rProp.(obj.feat{i})]> obj.featRng.minR.(obj.feat{i}) & ...
+                   [rProp.(obj.feat{i})]< obj.featRng.maxR.(obj.feat{i});
+               
+               rProp = rProp(ind);
+               
+           end
+           
        end
        
        function obj = spotClassifier(obj)
