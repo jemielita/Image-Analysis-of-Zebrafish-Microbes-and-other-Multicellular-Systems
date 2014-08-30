@@ -341,8 +341,9 @@ classdef clumpSClass
                 regionList = [allReg'; intenL(:,2)'];
                 
                 %Now get information about the centroid, etc.
+                centroid = zeros(2,2);
                 for i=1:2
-                    %Normalize itensity curve
+                    %Normalize intensity curve
                     intenL(:,i) = intenL(:,i)/sum(intenL(:,i));
                     
                     centroid(i,1) = sum(intenL(:,i).*intenL(:,3));

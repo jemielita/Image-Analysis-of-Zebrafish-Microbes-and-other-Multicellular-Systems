@@ -88,7 +88,19 @@ for j=1:size(A,1)
         nx(k) = sum(ind==k);
         if and(~isempty(rk),sum(~isnan(rk)>0))  % not empty, and not all NaN
             mx(j,k) = mean(rk(~isnan(rk)));
-            stdx(j,k) = std(rk(~isnan(rk)));
+            
+            bounds = 'std';
+            switch bounds
+                case 'std'
+                    stdx(j,k) = std(rk(~isnan(rk)));
+                case 'range'
+                    val = sort(rk(~isnan(rk)));
+                    minInd = round(0.25*length(val));
+                    maxInd = round(0.75*length(val));
+                    
+                    stdx(j,k,1) = mx(j,k) -val(minInd);
+                    stdx(j,k,2) = val(maxInd)-mx(j,k);
+            end
         else
             mx(j,k) = NaN;
             stdx(j,k) = NaN;

@@ -604,7 +604,6 @@ classdef fishClass
                 ind = regList(1,:)<=imSize;
                 regList = regList(:,ind);
                 
-                
                 cen(nS,1) = cen(nS,1)/obj.scan(nS,colorNum).gutRegionsInd(obj.totPopRegCutoff);
                 cen(nS,1) = imSize*cen(nS,1);
                 
@@ -620,6 +619,7 @@ classdef fishClass
                     t = regList(2,:);
                 else
                     t = log(regList(2,:)); 
+                    t = regList(2,:);
                     t(t<0) = 0;
                 end
                 im(nS,regList(1,:)) = t;
@@ -630,6 +630,8 @@ classdef fishClass
         function plotPopulationHeatMap(obj, colorNum, segType)
             
            [im, cen] = obj.getPopulationHeatMap(colorNum, segType);
+           %im(24,:) = 0;
+           %cen(24,:) = nan;
            im = mat2gray(im);
            figure; imshow(im); hold on
            colormap('hot'); 
@@ -644,7 +646,7 @@ classdef fishClass
            l(2) = ylabel(' \leftarrow Time (hours)');
            
            arrayfun(@(x)set(x, 'FontSize', 24), l);
-           shadedErrorBar(cen(:,1), cen(:,3), cen(:,2), {},1, 'vertical')
+        %   shadedErrorBar(cen(:,1), cen(:,3), cen(:,2), {},1, 'vertical')
         end
         
         function [obj, varargout] = fitLogisticCurve(obj, fitType)
