@@ -87,11 +87,11 @@ end
 
 %Not really the correct place to do this, but find empty gut
 %locations and set them to 6-a.k.a undefiniable at this point
-for i=1:length(rProp)
-    if(isempty(rProp(i).gutRegion))
-        rProp(i).gutRegion = 6;
-    end
-end
+% for i=1:length(rProp)
+%    if(isempty(rProp(i).gutRegion))
+%        rProp(i).gutRegion = 6;
+%    end
+%end
 
 %Not best place to put in index, but it'll do for now
 for i=1:length(rProp)

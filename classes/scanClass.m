@@ -89,11 +89,7 @@ classdef scanClass
         function obj = getBkgEst(obj)
             
         end
-        
-        function obj = getOutlines(obj)
-            
-        end
-        
+       
         function spots = foundSpots(obj)
             
         end
@@ -106,9 +102,20 @@ classdef scanClass
             
         end
         
-        function obj = getClumps(obj)
+        function obj = getOutlines(obj)
             inputVar = load([obj.saveLoc filesep 'param.mat']);
             param = inputVar.param;
+        
+            obj.centerLine = param.centerLineAll{obj.scanNum};
+            obj.gutOutline = param.regionExtent.polyAll{obj.scanNum};
+            
+        end
+        
+        function obj = getClumps(obj)
+           
+            inputVar = load([obj.saveLoc filesep 'param.mat']);
+            param = inputVar.param;
+            param.dataSaveDirectory = obj.saveLoc;
             temp = clumpSClass(param,obj.scanNum, obj.colorNum, 'get');
             
             obj.clumps = temp;
@@ -118,14 +125,14 @@ classdef scanClass
             inputVar = load([obj.saveLoc filesep 'param.mat']);
             param = inputVar.param;
             
-            maskClass.getBkgEstMask(param, obj.scanNum, obj.colorNum);
-            
-            segMask = maskClass.getGraphCutMask(param, obj.scanNum, obj.colorNum);
+            %maskClass.getBkgEstMask(param, obj.scanNum, obj.colorNum);
+            mask = maskClass;
+            segMask = mask.getGraphCutMask(param, obj.scanNum, obj.colorNum);
         
             %Save a binary mask-...this should eventually be removed
             saveLoc = [obj.saveLoc filesep 'bkgEst' filesep 'fin_' num2str(obj.scanNum) '_' obj.colorStr '.mat'];
             
-            save(saveLoc, 'segMask');
+           % save(saveLoc, 'segMask');
             
             %Save the label matrix
             saveLoc = [obj.saveLoc filesep 'masks' filesep 'allRegMask_' num2str(obj.scanNum) '_' obj.colorStr '.mat'];
@@ -149,6 +156,7 @@ classdef scanClass
         
         
         function obj = calcIndivClumpMask(obj, cut)
+            obj = obj.createLabelMask;
             inputVar = load([obj.saveLoc filesep 'param.mat']);
             param = inputVar.param;
             
@@ -167,7 +175,7 @@ classdef scanClass
         end
         
         function obj = calcGutWidth(obj)
-            
+            obj.gutWidth = calcGutWidth(obj.centerLine, obj.gutOutline);
         end
         
         function obj = getTotPop(obj, regCutoff, type,cut, singleBacInten)

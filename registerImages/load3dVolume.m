@@ -27,8 +27,12 @@
 %        'crop': User must provide a cropping rectangle (cropRect), which
 %        gives the location of the particular region to load in. If there
 %        are two values load in all images within the range of these
-%        values. Currently the error checking on the inputs isn't great so
-%        be careful!
+%        values. The crop rectangle will be rounded to the nearest integer before being applied.
+%        If cropRect is a 4x1 array the entire z-stack will
+%        be loaded. If the cropRect is a 6x1 array only the appropriate z-depth will be loaded. 
+%        Currently the error checking on the inputs isn't great so be careful! 
+%        The format of cropRect is [x, y, z(optional), width, height,
+%        depth (optional)];
 %        'polygonRegion': User must provide a polygonal region (poly) to load
 %        from. This polygon is used to calculate a minimum bounding box
 %        around this polygon and everthing in this box is loaded. Pixels
@@ -63,6 +67,7 @@ elseif nargin==4
     dataType = 'uint16';
     if(strcmp(loadType, 'crop'))
         cropRect = varargin{1};
+        cropRect = round(cropRect);
     end
     if(strcmp(loadType, 'polygonRegion'))
        regPoly = varargin{1}; 
@@ -98,7 +103,7 @@ end
         colorNum =  find(strcmp(param.color, imVar.color));
         
         %Getting a list of all the image slices to load in.        
-        [~,totalZ, zList] = getZRange(param, 'region', regNum);
+        [zList,totalZ, ~] = getZRange(param, 'region', regNum);
         
         
         %The array will be of type dataType (double, etc.) to make it possible to
@@ -390,24 +395,50 @@ end
     
     
     function im = loadCroppedRegion(param, imVar, cropRect)
+
     colorNum =  find(strcmp(param.color, imVar.color));
    
-    %Get regions to load in
-    [regList, ~] = regionOverlap(param, cropRect);
-    
-    if(isempty(regList))
-        fprintf(2, 'Region is empty! Returning an empty image');
-        im = [];
+    %Get the cropRect for just the xy direction
+    switch length(cropRect)
+        case 4
+            cropRectXY = cropRect;
+        case 6
+            cropRectXY = cropRect([1,2,4,5]);
     end
-    
+    %Get specific regions to load in
+    [regList, ~] = regionOverlap(param, cropRectXY);
+    if(isempty(regList))
+        fprintf(2, 'Region is empty! Returning an empty image.\n');
+        im = [];
+        return
+    end 
     
     %Get z-range for this list of regions
-    [zList, depth, zRange] = getZRange(param, 'multipleRegions', regList);
-    minZ = zRange(1); maxZ = zRange(2);
-    
-    %Construct image array of appropriate size
-    height = cropRect(4)+1;
-    width = cropRect(3)+1;
+    [~, ~, zRange] = getZRange(param, 'multipleRegions', regList);
+   
+    %If cropRect is passed in with 6 arguments then crop in all 3
+    %dimenstions instead of loading in the full z-stack
+    switch length(cropRect)
+        case 4 
+            minZ = zRange(1); 
+            maxZ = zRange(2);
+            %Construct image array of appropriate size
+            height = cropRect(4)+1;
+            width = cropRect(3)+1;
+            depth = maxZ-minZ+1;
+        case 6
+            minZ = cropRect(3);
+            maxZ = minZ+cropRect(6);
+            
+            %Construct image array of appropriate size
+            height = cropRect(5)+1;
+            width = cropRect(4)+1;
+            depth = cropRect(6)+1;
+        otherwise
+            fprintf(2, 'load3dVolume:loadCroppedRegion: cropRect must have length of 4 or 6!\n');
+            return
+    end
+
     
     im = zeros(height, width, depth);
     
@@ -415,8 +446,10 @@ end
     %Going through each scan
     scanDir = [baseDir, 'scan_', num2str(imVar.scanNum), filesep];
     
-    %Go through z list step by step
-    for nZ=1:minZ:maxZ
+    %Go through z list frame by frame
+    n = 1;%counter for loading in z-slices.
+    for nZ = minZ:maxZ
+
         for i = 1:length(regList)
             regNum = regList(i);
             imNum = param.regionExtent.Z(nZ, regNum);
@@ -427,7 +460,7 @@ end
             [whichType, imFileName] = whichImageFileType(scanDir, regNum, param, imNum,colorNum);
             
             %Get the extent of this region
-            [xInI, xInF, yInI, yInF, xOutI, xOutF, yOutI, yOutF] = getXYrange(param, colorNum, regNum, height,width,cropRect);
+            [xInI, xInF, yInI, yInF, xOutI, xOutF, yOutI, yOutF] = getXYrange(param, colorNum, regNum, height,width,cropRectXY);
             
             switch whichType
                 case 1
@@ -435,86 +468,26 @@ end
               %      try
               
               try
-                  im(xOutI:xOutF,yOutI:yOutF,nZ)=...
+                  im(xOutI:xOutF,yOutI:yOutF,n)=...
                       double(imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]}));
               catch
                   disp('This image doesnt exist-fix up your code!!!!');
               end
                     
-                    
                 case 2
                     try
                         %Load png image
                         inputImage = imread(imFileName);
-                        im(:,:,nZ) = inputImage(xInI:xInF, yInI:yInF);
+                        im(:,:,n) = inputImage(xInI:xInF, yInI:yInF);
                     catch
                         disp('This image doesnt exist-fix up your code!!!!');
                     end
             end
             
-        
         end
+        %Update counter
+        n = n+1;
     end
-%     
-%     for nR=1:length(regList)
-%         regNum = regList(nR);
-%         %Getting a list of all the image to load in
-%         [zList, totalZ,~]  = getZRange(param, 'region', regNum);
-%         if(isempty(zList))
-%             fprintf(2, 'No valid z positions for this found bug! Screwy...\n');
-%             fprintf(2, 'Returning all-zero matrix.\n');
-%             
-%             im = zeros(xInF-xInI+1,yInF-yInI+1,1);
-%             return;
-%         end
-%         
-%         if(~isempty(imVar.zNum))
-%             if(length(imVar.zNum)==1)
-%                 zList = imVar.zNum(1);
-%             elseif(length(imVar.zNum)==2)
-%                 ind = find(zList>=imVar.zNum(1) & zList<=imVar.zNum(2));
-%                 zList = zList(ind);
-%             end
-%         end
-% 
-%         %Get the extent of this region
-%         [xInI, xInF, yInI, yInF, xOutI, xOutF, yOutI, yOutF] = getXYrange(param, colorNum, regNum,cropRect);
-%         %Make sure that the region extents don't go beyond the range of
-%         %this image
-%         
-%         im = zeros(xInF-xInI+1,yInF-yInI+1, length(zList));
-%         
-%         baseDir = [param.directoryName filesep 'Scans' filesep];
-%         %Going through each scan
-%         scanDir = [baseDir, 'scan_', num2str(imVar.scanNum), filesep];
-%         
-%         for nZ = 1:totalZ
-%             imNum = zList(nZ);
-%             
-%             [whichType, imFileName] = whichImageFileType(scanDir, regNum, param, imNum,colorNum);
-%             switch whichType
-%                 case 1
-%                     %Load tiff image
-%                     try
-%                         im(:,:,nZ)= imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]});
-%                     catch
-%                         disp('This image doesnt exist-fix up your code!!!!');
-%                     end
-%                     
-%                 case 2
-%                     try
-%                         %Load png image
-%                         inputImage = imread(imFileName);
-%                         im(:,:,nZ) = inputImage(xInI:xInF, yInI:yInF);
-%                     catch
-%                         disp('This image doesnt exist-fix up your code!!!!');
-%                     end
-%             end
-%             
-%             
-%         end
-%         
-%     end
     
     end
     
@@ -539,39 +512,6 @@ end
     im(~mask) = 0;
     end
     
-    
-    function  [whichType, imFileName] = whichImageFileType(scanDir, regNum, param, imNum, colorNum)
-    imFileNameTiff = ...
-        strcat(scanDir,  'region_', num2str(regNum),filesep,...
-        param.color(colorNum), filesep,'pco', num2str(imNum),'.tif');
-    
-    imFileNamePng = ...
-        strcat(scanDir,  'region_', num2str(regNum),filesep,...
-        param.color(colorNum), filesep,'pco', num2str(imNum),'.png');
-    
-    typeList = [exist(imFileNameTiff{1}, 'file') exist(imFileNamePng{1}, 'file')];
-    
-    
-    %See if we have a png or tiff type of file. If we
-    %have both return an error-we should only have one
-    %of these in the directory
-    whichType = find(typeList==2, 2);
-    if(length(whichType)==2)
-        fprintf(2, 'Directory can only contain png or tiff versions of the images!\n');
-        whichType = 0;
-    end
-    
-    
-    
-    switch whichType
-        case 1
-            imFileName = imFileNameTiff{1};
-        case 2
-            imFileName = imFileNamePng{1};
-    end
-            
-    
-    end
     
     function [xInI, xInF, yInI, yInF, xOutI, xOutF, yOutI, yOutF] ...
         = getXYrange(param, colorNum, regNum,height, width,varargin)

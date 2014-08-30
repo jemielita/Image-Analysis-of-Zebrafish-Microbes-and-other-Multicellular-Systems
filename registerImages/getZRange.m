@@ -1,4 +1,4 @@
-%getZRange: For a given cropping rectangle in the gut, find the range of z
+ %getZRange: For a given cropping rectangle in the gut, find the range of z
 %value that this rectangle will span
 %
 % USAGE [zList, totalZ, zRange] = getZRange(param, cropRect)

@@ -46,9 +46,6 @@ classdef fishClass
         singleBacInten = [];
         
         fitParam = [];
-        
-        growthRateWindow = [];
-        wSize = 3;
     end
     
     methods
@@ -141,6 +138,16 @@ classdef fishClass
             end
         end
         
+        function obj = calcClumpCentroid(obj)
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c).clumps.calculateCentroid;
+                end
+                
+            end
+            
+        end
+        
         function obj = calcClumps(obj)
             
             for s = 1:obj.totalNumScans
@@ -168,6 +175,18 @@ classdef fishClass
             fprintf(1, '\n');
             
            
+        end
+        
+        function obj = getOutlines(obj)
+            fprintf(1, 'Calculating indiv/clump masks');
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c) = obj.scan(s,c).getOutlines;
+                    fprintf(1, '.');
+                end
+                
+            end
+            fprintf(1, '\n');
         end
         
         function obj.calcGutWidth(obj)
@@ -201,7 +220,7 @@ classdef fishClass
             fprintf(1, 'Calculating approximate gut width');
             for s = 1:obj.totalNumScans
                 for c = 1:obj.totalNumColor
-                    obj.scan(s,c)  = obj.scan(s,c).clumps.calcCenterMass(obj.cut);
+                    obj.scan(s,c)  = obj.scan(s,c).calcGutWidth;
                     fprintf(1, '.');
                 end
                 
@@ -209,41 +228,6 @@ classdef fishClass
             fprintf(1, '\n'); 
         end
         
-        function obj = calcGrowthRateWindow(obj)
-            typeList = {'clump', 'indiv'};
-            
-            obj.growthRateWindow = arrayfun(@(x)growthRateFun(obj,x), 1:obj.totalNumColor);
-            
-            function growthRate =  growthRateFun(obj, cN)
-                
-                for nT = 1:length(typeList)
-                    type = typeList{nT};
-                    growthRate.(type) = nan(obj.totalNumScans,1);
-                    for nS=1+obj.wSize:obj.totalNumScans-obj.wSize
-                        x = obj.t;
-                        
-                        switch type
-                            case 'clump'
-                                y = obj.sH(:,cN);
-                            case 'indiv'
-                                y = obj.sL(:,cN);
-                        end
-                        y = log(y);
-                        y = y(nS-obj.wSize:nS+obj.wSize);
-                        x = x(nS-obj.wSize:nS+obj.wSize);
-                        
-                        
-                        [growthRate.(type)(nS), ~,~,~] = fityeqbx(x', y);
-                        
-                        if(growthRate.(type)(nS)==-Inf)
-                            growthRate.(type)(nS) = NaN;
-                        end
-                    end
-                    
-                end
-            end
-            
-        end
         function obj = getClumps(obj)
            
             for s = 1:obj.totalNumScans
@@ -572,29 +556,7 @@ classdef fishClass
                         cen(nS,1) = obj.scan(nS,colorNum).clumps.indivCentroid(2,1);
                         cen(nS,2) = obj.scan(nS,colorNum).clumps.indivCentroid(2,2);
                         
-                    case 'width normalized indiv'
-                        regList = obj.scan(nS, colorNum).clumps.indivRegionList;
-                        if(isnan(regList))
-                            continue;
-                        else
-                            gw = (obj.scan(nS,colorNum).gutWidth).^2;
-                            regList(2,:) = regList(2,:)./(gw(regList(1,:)))';
-                            
-                            cen(nS,1) = obj.scan(nS,colorNum).clumps.indivCentroid(2,1);
-                            cen(nS,2) = obj.scan(nS,colorNum).clumps.indivCentroid(2,2);
-                        end
-                    case 'width normalized clump'
-                        regList = obj.scan(nS, colorNum).clumps.clumpRegionList;
-                        if(isnan(regList))
-                            continue;
-                        else
-                            gw = (obj.scan(nS,colorNum).gutWidth).^2;
-                            regList(2,:) = regList(2,:)./(gw(regList(1,:)))';
-                            cen(nS,1) = obj.scan(nS,colorNum).clumps.clumpCentroid(2,1);
-                            cen(nS,2) = obj.scan(nS,colorNum).clumps.clumpCentroid(2,2);
-                        end
                 end
-                
                 if(isnan(regList))
                     continue
                 end
@@ -603,6 +565,7 @@ classdef fishClass
                 regList(1,:) = round(imSize*regList(1,:));
                 ind = regList(1,:)<=imSize;
                 regList = regList(:,ind);
+                
                 
                 cen(nS,1) = cen(nS,1)/obj.scan(nS,colorNum).gutRegionsInd(obj.totPopRegCutoff);
                 cen(nS,1) = imSize*cen(nS,1);
@@ -613,15 +576,8 @@ classdef fishClass
                 regList(2,:) = regList(2,:)/obj.singleBacInten(colorNum);
                 %Forcing all boxes to have at least 1 bacteria-somewhat
                 %artifical, but useful for visualization purposes
-                
-                normVal = {'width normalized indiv', 'width normalized clump'};
-                if(ismember(segType, normVal))
-                    t = regList(2,:);
-                else
-                    t = log(regList(2,:)); 
-                    t = regList(2,:);
-                    t(t<0) = 0;
-                end
+                t = log(regList(2,:));
+                t(t<0) = 0;
                 im(nS,regList(1,:)) = t;
                 
             end
@@ -630,8 +586,6 @@ classdef fishClass
         function plotPopulationHeatMap(obj, colorNum, segType)
             
            [im, cen] = obj.getPopulationHeatMap(colorNum, segType);
-           %im(24,:) = 0;
-           %cen(24,:) = nan;
            im = mat2gray(im);
            figure; imshow(im); hold on
            colormap('hot'); 
@@ -646,10 +600,10 @@ classdef fishClass
            l(2) = ylabel(' \leftarrow Time (hours)');
            
            arrayfun(@(x)set(x, 'FontSize', 24), l);
-        %   shadedErrorBar(cen(:,1), cen(:,3), cen(:,2), {},1, 'vertical')
+           shadedErrorBar(cen(:,1), cen(:,3), cen(:,2), {},1, 'vertical')
         end
         
-        function [obj, varargout] = fitLogisticCurve(obj, fitType)
+        function obj = fitLogisticCurve(obj, fitType)
             
             fitField = {'r', 'K', 'N0', 't_lag', 'sigr', 'sigK', 'sigN0', 'sigt_lag'};
             
@@ -720,41 +674,46 @@ classdef fishClass
             obj.fitParam.(fitType).sigK = sigK;
             obj.fitParam.(fitType).sigN0 = sigN0;
             obj.fitParam.(fitType).sigt_lag = sigt_lag;
-            
-            if(nargout==2)
-               varargout{1} = Nth; 
-            end
         end
         
-        function makeMovie(obj, fileName)
+        function makeMovie(obj, fileName, minS, maxS)
             figure;
            
-            for colorNum=1:obj.totalNumColor
+            minS=1;
+            maxS = obj.totalNumScans;
+
+            for colorNum=2:obj.totalNumColor
            
                 colorList = {'488nm', '568nm'};
-                fileDir = [obj.saveLoc filesep 'movie' colorList{colorNum}];
+                if(iscell(obj.saveLoc))
+                    sl = obj.saveLoc{1};
+                else
+                    sl = obj.saveLoc;
+                end
+                fileDir = [sl filesep 'movie' colorList{colorNum}];
                 mkdir(fileDir);
                 
                 recalcProj = false;
                 zNum = [];
                 
-                for nS = 1:obj.totalNumScans
+                for nS = minS:maxS
                     inputVar = load([obj.scan(nS,colorNum).saveLoc filesep 'param.mat']);
                     paramIn = inputVar.param;
                     
                     scanNum = obj.scan(nS, colorNum).scanNum;
-                    paramIn.dataSaveDirectory = paramIn.dataSaveDirectory;
+                    paramIn.dataSaveDirectory = ['J', paramIn.dataSaveDirectory(2:end)];
                     im = selectProjection(paramIn, 'mip', 'true', scanNum,colorList{colorNum}, zNum,recalcProj);
                     imshow(im, [0 1000]);
                     
-                    inputVar = load([obj.saveLoc filesep 'masks' filesep 'allRegMask_' num2str(nS) '_' obj.scan(nS,colorNum).colorStr '.mat']);
-                    segMask = inputVar.segMask>0;
+                    fileName = [obj.scan(nS,colorNum).saveLoc filesep 'masks' filesep 'clumpAndIndiv_nS' num2str(obj.scan(nS,colorNum).scanNum) '_' colorList{colorNum} '.mat'];
+                    inputVar = load(fileName);
+                    segMask = inputVar.segMask;
                     
                     maskFeat.Type = 'perim';
                     maskFeat.seSize = 5;
                     segmentationType.Selection = 'clump and indiv';
                     rgbIm = segmentRegionShowMask(segMask, maskFeat,segmentationType,gca);
-                    hAlpha = alphamask(rgbIm, [1 0 0], 0.5, gca);
+                   % hAlpha = alphamask(rgbIm, [1 0 0], 0.5, gca);
                     
                     print('-dpng', [fileDir filesep 'movie', sprintf('%03d', nS), '.png']);
                     

@@ -82,7 +82,7 @@ colorNum = 1;
 %structure should be used exclusively for parameters that affect region
 %features of the fish themselves (gut outline, etc.)
 
-%f = fishClass(param);
+f = fishClass(param);
 
 
 %%%%%%%%%%%% variable that contains information about expected pixel
@@ -218,7 +218,7 @@ multiZSliceMax = 1;
 hMenuShowSegmentation = uimenu(hMenuDisplay, 'Separator', 'on', 'Label', 'Show gut segmentation', ...
     'Checked', 'off','Callback', @showSegmentation_Callback);
 hMenuSetSegementationType = uimenu(hMenuDisplay, 'Label', 'Choose segmentation type', 'Callback', @setSegmentation_Callback);
-segmentationType.List = {'none', 'Otsu', 'estimated background', 'final seg', 'clump'};
+segmentationType.List = {'none', 'Otsu', 'estimated background', 'final seg', 'clump', 'clump and indiv'};
 segmentationType.Selection = 'none';
 hMenuShowFoundCoarseRegions = uimenu(hMenuDisplay, 'Label', 'Show coarse analysis results', 'Callback', @showCoarseResults_Callback);
 
@@ -247,27 +247,28 @@ hMenuOverlapBugs = uimenu(hMenuDisplay, 'Label', 'Show found bugs', 'Separator',
 hMenuOverlapBugOptions = uimenu(hMenuDisplay, 'Label', 'Bug label options', 'Callback', @overlapBugOptions_Callback);
 hMenuRemoveBugs = uimenu(hMenuDisplay, 'Label', 'Remove bugs', 'Callback', @removeBugs_Callback, 'Checked', 'off');
 rProp = ''; %Will be filled with information about current scans found bacteria
-removeBugInd = cell(numScans, numColor); %Variable to save culled bacteria points.
+spots = []; %Class for filtering spots for this particular fish.
 remBugsSaveDir = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'removedBugs.mat'];
 if(exist(remBugsSaveDir, 'file')==2)
    removeBugInd = load(remBugsSaveDir); 
    removeBugInd = removeBugInd.removeBugInd;
 end
+
 hMenuUseSavedRemBugList = uimenu(hMenuDisplay, 'Label', 'Use only saved removed bug list', 'Callback', @useSaveRemBug_Callback);
 
 hMenuKeepBugs = uimenu(hMenuDisplay, 'Label', 'Label bugs (instead of removing)', 'Callback', @keepBugs_Callback, 'Checked', 'off');
-keepBugInd = cell(numScans, numColor); %Variable to save culled bacteria points.
-keepBugsSaveDir = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'removedBugs.mat'];
-if(exist(keepBugsSaveDir, 'file')==2)
-   keepBugInd = load(keepBugsSaveDir); 
-   if(isfield(keepBugInd, 'keepBugInd'))
-       keepBugInd = keepBugInd.keepBugInd;
-   else 
-       keepBugInd  = cell(numScans, numColor);
-   end
-else
-    keepBugInd  = cell(numScans, numColor);
-end
+% keepBugInd = cell(numScans, numColor); %Variable to save culled bacteria points.
+% keepBugsSaveDir = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'removedBugs.mat'];
+% if(exist(keepBugsSaveDir, 'file')==2)
+%    keepBugInd = load(keepBugsSaveDir); 
+%    if(isfield(keepBugInd, 'keepBugInd'))
+%        keepBugInd = keepBugInd.keepBugInd;
+%    else 
+%        keepBugInd  = cell(numScans, numColor);
+%    end
+% else
+%     keepBugInd  = cell(numScans, numColor);
+% end
 
 hMenuSaveRemovedBugs = uimenu(hMenuDisplay, 'Label', 'Save removed bug list', 'Callback', @saveRemovedBugs_Callback);
 hMenuShowAllBugs = uimenu(hMenuDisplay, 'Label', 'Show ALL found bugs', 'Callback', @showAllBugs_Callback);
@@ -565,7 +566,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
     function keyPressGUI(hObject, eventdata)
         eventdata.Key
         switch eventdata.Key
-            case 'rightarrow'
+            case 'uparrow'
                 %Go one scan forward
                 scanNum = get(hScanSlider, 'Value');
                 scanNum = int16(scanNum);
@@ -579,7 +580,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 set(hScanSlider, 'Value', scanNum);
                 scanSlider_Callback('', '');
                 
-            case 'leftarrow'
+            case 'downarrow'
                 %Go one scan backward
                 %Go one scan forward
                 scanNum = get(hScanSlider, 'Value');
@@ -594,7 +595,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 set(hScanSlider, 'Value', scanNum);
                 scanSlider_Callback('', '');
                 
-            case 'downarrow'
+            case 'leftarrow'
                 %Go one z-depth up
                 zNum = get(hZSlider, 'Value');
                 
@@ -615,7 +616,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 set(hZSlider, 'Value',double(zNum));
 
                 z_Callback('','');
-            case 'uparrow'
+            case 'rightarrow'
                 %Go one z-depth down
                 %Go one z-depth up
                 zNum = get(hZSlider, 'Value');
@@ -731,7 +732,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
        %Save the fish file (containing analysis stuff) also to the same
        %directory
        saveFishFile = [saveDir filesep 'fishAnalysis.mat'];
-      % save(saveFishFile, 'f');
+     %  save(saveFishFile, 'f');
        
     end
 
@@ -944,18 +945,14 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
             im = get(hIm, 'CData');
             gutMask = poly2mask(poly(:,1), poly(:,2), height,width);
             imSeg = im; imSeg(~gutMask) = NaN;
-            segMask = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param,f);
+            f.cut = [1,1];
+            segMask = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param,f.scan(scanNum, colorNum), f.cut(colorNum));
+            
             maskFeat.Type = 'perim';
             maskFeat.seSize = 5;
             
-            hRem = findobj('Tag', 'segMask');
-            delete(hRem);
-            
-            %rgbIm = maskClass.showMask(segmask, 'perim', 5);
-            
-            rgbIm = segmentRegionShowMask(segMask, maskFeat);
-            hAlpha = alphamask(rgbIm, [1 0 0], 0.5, imageRegion);
-            set(hAlpha, 'Tag', 'segMask');
+            rgbIm = segmentRegionShowMask(segMask, maskFeat, segmentationType, imageRegion);
+
             
     end
     function addSpots_Callback(hObject, eventdata)
@@ -1065,7 +1062,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         userG = userG.saveG(scanNum, colorNum);
 
         [f, ~] = updateField(userG, f, param, scanNum, colorNum);
-        
+
         f.scan(scanNum, colorNum).clumps.remInd
         displaySegmentation(scanNum, colorNum, segmentationType, f);
         
@@ -1157,8 +1154,26 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
             scanNum = int16(scanNum);
             color = colorType(colorNum);
             color = color{1};
+            %Load in spot classifer instance for this fish, or create a new
+            %one.
+            if(isempty(spots))
+                spotDir = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'spotClassifier.mat'];
+               if(exist(spotDir,'file')==0)
+                   spots = spotFishClass(param);
+                   for nc=1:numColor
+                      spots.spotClassifier{nc} = spotClassifier;
+                   end
+               else
+                  inputVar = load(spotDir);
+                  spots = inputVar.spots;
+               end
+            end
+            
             getRegisteredImage(scanNum, color, zNum, im, data, param);
-        end      
+            
+        end
+        
+        
     end
 
     function overlapBugOptions_Callback(hObject, eventdata)
@@ -1254,8 +1269,10 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
     end
 
     function saveRemovedBugs_Callback(hObject, eventdata)
-        remBugsSaveDir = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'removedBugs.mat'];
-        save(remBugsSaveDir, 'removeBugInd', 'keepBugInd');
+        %remBugsSaveDir = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'removedBugs.mat'];
+%         %save(remBugsSaveDir, 'removeBugInd', 'keepBugInd');
+        
+        spots.saveInstance;
         fprintf(1, 'List of bugs removed (or kept) saved!\n');
       
     end
@@ -1285,7 +1302,6 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
 
     function manualThresh_Callback(hObject, eventdata)
        
-        
         if(strcmp(get(hMenuManualParticleThresh, 'Checked'), 'on'))
             set(hMenuManualParticleThresh, 'Checked', 'off');
             useManualParticleThresh = false;
@@ -1298,6 +1314,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
     function changeManualThresh_Callback(hObject, eventdata)
        updateManualThresholdValues(); 
     end
+ 
     function updateManualThresholdValues()
         %Set the manual threshold for this scan and color
         scanNum = get(hScanSlider, 'Value');
@@ -1335,11 +1352,12 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
            indAll = union(indI, indA);
        
            if(isempty(position))
-               removeBugInd{scanNum,colorNum} =  unique([removeBugInd{scanNum, colorNum} ,indAll]);
                %Remove these bugs from the list of z-depths to go to.
                findBugZLocation();
                rProp = getrPropFile();
-               
+              
+               spots.removeBugInd{scanNum,colorNum} = updateManualBug(spots.removeBugInd{scanNum,colorNum},rProp, indAll);
+            
                displayOverlappedBugs(rProp)
                return;
            end
@@ -1369,7 +1387,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 indAll = intersect(indAll, indZ);
         end
       
-        removeBugInd{scanNum, colorNum} =  [removeBugInd{scanNum, colorNum} ,indAll];
+        spots.removeBugInd{scanNum,colorNum} = updateManualBug(spots.removeBugInd{scanNum,colorNum},rProp, indAll);
         
         
         %Remove these bugs from the list of z-depths to go to.
@@ -1411,9 +1429,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 indAll = intersect(indAll, indZ);
         end
       
-        keepBugInd{scanNum, colorNum} =  [keepBugInd{scanNum, colorNum} ,indAll];
-        
-        keepBugInd{scanNum, colorNum}
+        spots.keepBugInd{scanNum, colorNum} =  [spots.keepBugInd{scanNum, colorNum} ,indAll];
           
         %Remove these bugs from the list of z-depths to go to.
         findBugZLocation();
@@ -1434,32 +1450,8 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
 
 
     function rProp = getrPropFile()
-        rProp = load([param.dataSaveDirectory filesep 'singleBacCount'...
-            filesep 'bacCount' num2str(scanNum) '.mat']);
-        rProp = rProp.rProp;
-        
-        scanNum = get(hScanSlider, 'Value');
-        scanNum = int16(scanNum);
-        colorNum = get(hColorSlider, 'Value');
-        colorNum = ceil(colorNum);
-        colorNum = int16(colorNum);
-      
-        if(strcmp(get(hMenuOverlapImages, 'Checked'), 'on'))
-            rPropComb = rProp{1};
-            for i=1:length(rProp{2});
-                rPropComb(end+1) = rProp{2}(i);
-            end
-        elseif(iscell(rProp))
-            if(length(rProp)==1)
-                %Not greatest way to deal with this since we'll have image
-                %overlaps on both channels...oh well.
-                
-                rProp = rProp{1};
-            else
-                rProp = rProp{colorNum};
-            end
-        end
-        
+        [scanNum, colorNum] = getScanAndColor();     
+        rProp = spots.loadSpot(scanNum, colorNum);    
     end
 
 
@@ -1505,7 +1497,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 set(hP{4}, 'YData', []);
                 
                 
-                if(~isempty(keepBugInd{scanNum, colorNum}))
+                if(~isempty(spots.keepBugInd{scanNum, colorNum}))
                     %Use same color for removed and kept bugs, depending on
                     %what we do.
                     locData{4} = xyzKept;
@@ -1538,7 +1530,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                     set(hP{i},'XData', locData{i}(1,:));
                     set(hP{i}, 'YData', locData{i}(2,:));
                 end
-                if(~isempty(removeBugInd))
+                if(~isempty(spots.removeBugInd))
                     
                     remLoc = -1*(xyzRem(3,:)<zNum-bugWindow) + (xyzRem(3,:)>zNum+bugWindow);
                     locData{4} = xyzRem(:,remLoc==0);
@@ -1547,7 +1539,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                     set(hP{4}, 'YData', locData{4}(2,:));
                 end
                 
-                if(~isempty(keepBugInd))
+                if(~isempty(spots.keepBugInd))
                     %Use same color for removed and kept bugs, depending on
                     %what we do.
                     remLoc = -1*(xyzKept(3,:)<zNum-bugWindow) + (xyzKept(3,:)>zNum+bugWindow);
@@ -1578,7 +1570,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                     set(hP{i},'XData', locData{i}(1,:));
                     set(hP{i}, 'YData', locData{i}(2,:));
                 end
-                if(~isempty(removeBugInd))
+                if(~isempty(spots.removeBugInd))
                     
                     remLoc = -1*(xyzRem(3,:)<zNum-bugWindow) + (xyzRem(3,:)>zNum+bugWindow+multiZSliceMax);
                     locData{4} = xyzRem(:,remLoc==0);
@@ -1587,7 +1579,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                     set(hP{4}, 'YData', locData{4}(2,:));
                 end
                 
-                if(~isempty(keepBugInd))
+                if(~isempty(spots.keepBugInd))
                     %Use same color for removed and kept bugs, depending on
                     %what we do.
                     remLoc = -1*(xyzKept(3,:)<zNum-bugWindow) + (xyzKept(3,:)>zNum+bugWindow+multiZSliceMax);
@@ -1603,81 +1595,19 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
     end
 
     function [xyz, xyzRem,  xyzKept,rPropClassified] = getBugList(rProp)
-        
-        xyzKeptInd = keepBugInd{scanNum, colorNum};
-        xyzKept = [rProp.CentroidOrig];
-        xyzKept = reshape(xyzKept,3,length(xyzKept)/3);
-        xyzKept = xyzKept(:, xyzKeptInd);
-        
-        %Remove spots that were manually segmented.
-        keptSpots = setdiff(1:length(rProp), removeBugInd{scanNum, colorNum});
-        
-        %Construct list of removed spots
-        xyzRem = [rProp.CentroidOrig];
-        
-        xyzRem = reshape(xyzRem,3,length(xyzRem)/3);
-        
-        xyzRem = xyzRem(:,removeBugInd{scanNum,colorNum});
-
-        if(strcmp(get(hMenuUseSavedRemBugList, 'Checked'), 'on'))
-            useRemovedBugList = true;
-            rPropClassified = rProp;
-        else
-            rPropClassified = rProp(keptSpots);
-            useRemovedBugList = false;
-        end
-
-        classifierType = 'svm';
-        
-        %Let's filter out all points with an intensity below 200
-        % rPropClassified =  rPropClassified([rPropClassified.MeanIntensity]>200);
-        %rPropClassified = rPropClassified([rPropClassified.Area]>40);
+        %Get list of all found and removed spots in this scan.
+        [xyzRem,~] = spots.getSpotLoc(rProp, 'removed',scanNum, colorNum);
+        [xyzKept,~] = spots.getSpotLoc(rProp, 'manually kept', scanNum, colorNum);
         
         switch get(hMenuShowAllBugs, 'Checked')
             case 'off'
-                %Use the filter that we've built to further classify the
-                %data
-                distCutoff_combRegions = false;
-                rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
-                %rPropClassified
-                %keptSpots = intersect(keptSpots, [rProp.ind]);
-                
+                %Run through the filtering steps that we've used to clean
+                %up our data.
+                [xyz, rPropClassified] = spots.getSpotLoc(rProp, 'filtered', scanNum, colorNum);
             case 'on'
-                %Apply some harsh-ish threshold-Set this threshold in
-                %bacteriaCountFilter.
-                %for now.distCutoff_combRegions = false;
-                %  classifierType = 'none';
-                % distCutoff_combRegions = false;
-                
-                %rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
-                
-                colorThresh = [0,0];
-                areaThresh = [3,3];
-                classifierType = 'none_plusAutoFluor';
-              
-                
-                distCutoff_combRegions = false;
-
-                rPropClassified = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
-                
-                
-              %  rPropClassified = rPropClassified([rPropClassified.Area]>areaThresh(colorNum));
-                
-               % rPropClassified = rPropClassified([rPropClassified.MeanIntensity]>colorThresh(colorNum));
-                
-                
+                %Get all spots, minus the ones that we've manually removed.
+                [xyz, rPropClassified] = spots.getSpotLoc(rProp, 'all', scanNum, colorNum);
         end
-        
-        xyz = [rPropClassified.CentroidOrig];
-        xyz = reshape(xyz,3,length(xyz)/3);
-        
-        xyz(1,:) = xyz(1,:);
-        xyz(2,:) = xyz(2,:);
-        
-        %keptSpots = logical(keptSpots.*(~outsideGut));
-        %xyz = xyz(:, keptSpots);
-        
-        
     end
 
 
@@ -2338,13 +2268,35 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         maxX = max(cMaxX);
         maxY = max(cMaxY);
         
-       for i=1:numColor
-        param.regionExtent.regImSize{i} = [maxX-minX+1 maxY-minY+1];
-        param.regionExtent.XY{i}(:,1) = param.regionExtent.XY{i}(:,1)-minX+1;
-        param.regionExtent.XY{i}(:,2) = param.regionExtent.XY{i}(:,2)-minY+1;
-       end
+        for i=1:numColor
+            param.regionExtent.regImSize{i} = [maxX-minX+1 maxY-minY+1];
+            param.regionExtent.XY{i}(:,1) = param.regionExtent.XY{i}(:,1)-minX+1;
+            param.regionExtent.XY{i}(:,2) = param.regionExtent.XY{i}(:,2)-minY+1;
+        end
         
-
+        %mlj: temporary code
+        for ns =1:param.expData.totalNumberScans
+            param.centerLineAll{ns}(:,1) = param.centerLineAll{ns}(:,1)-minY+1;
+            param.centerLineAll{ns}(:,2) = param.centerLineAll{ns}(:,2)-minX+1;
+            
+            param.regionExtent.polyAll{ns}(:,1) = param.regionExtent.polyAll{ns}(:,1)-minY+1;
+            param.regionExtent.polyAll{ns}(:,2) = param.regionExtent.polyAll{ns}(:,2)-minX+1;
+            
+            param.endGutPos(ns,1) = param.endGutPos(ns,1)-minY+1;
+            param.endGutPos(ns,2) = param.endGutPos(ns,2)-minX+1;
+            
+            
+            param.autoFluorPos(ns,1) = param.autoFluorPos(ns,1)-minY+1;
+            param.autoFluorPos(ns,2) = param.autoFluorPos(ns,2)-minX+1;
+            
+            
+            param.beginGutPos(ns,1) = param.beginGutPos(ns,1)-minY+1;
+            param.beginGutPos(ns,2) = param.beginGutPos(ns,2)-minX+1;
+            
+            
+            param.autoFluorEndPos(ns,1) = param.autoFluorEndPos(ns,1)-minY+1;
+            param.autoFluorEndPos(ns,2) = param.autoFluorEndPos(ns,2)-minX+1;
+        end
        regDataTable = [];
        for i=1:length(param.color)
            thisColorData = [param.regionExtent.XY{i}(:, 1:2); param.regionExtent.regImSize{i}];
@@ -2848,13 +2800,15 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                         %Full scan has been saved-load this ind
                         
                         if(imNum(regNum)~=-1)
-                            imFileName = ...
-                                strcat(scanDir,  'region_', num2str(regNum),filesep,...
-                                color, filesep,'pco', num2str(imNum(regNum)),'.tif');
-                            
-                            imArray{cN,regNum} = imread(imFileName,...
-                                'PixelRegion', {[xInI xInF], [yInI yInF]});
-                            
+                          
+                            [whichType, imFileName] = whichImageFileType(scanDir, regNum, param, imNum(regNum), colorNum);
+                            switch whichType
+                                case 1 %tiff
+                                    imArray{cN,regNum} = imread(imFileName,...
+                                        'PixelRegion', {[xInI xInF], [yInI yInF]});
+                                case 2 %png
+                                    imArray{cN,regNum} = imread(imFileName);
+                            end
                         else
                             imArray{cN,regNum} = zeros(xInF-xInI+1, yInF-yInI+1);
                         end
@@ -4544,7 +4498,6 @@ param.expData.totalNumberScans = numScans;
 if(~isfield(param, 'dataSaveDirectory'))
     param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
 end
-
 
 %Save the calculated parameters, unless they've been
 %calculated before.

@@ -11,19 +11,26 @@ classdef maskClass
         scanNum = NaN;
         colorNum = NaN;
         
+        bkgOffset = 1.8; %Scalar offset from the estimated background in each wedge of the gut.
+        colorInten = [1000,500]; %Intensity cutoff for each color channel (assuming 2) to produce the intensity cutoff mask.
     end
     
    methods(Static)
        function m = getGutOutlineMask(param, scanNum,width)
-        m = maskClass.getGutFillMask(param, scanNum);
-        
-        m = bwperim(m);
-        se = strel('disk', width);
-        
-        m = imdilate(m, se);
+           % m = getGutOutlineMask(param, scanNum,width): Get outline of of the entire 
+           % gut for a particular scan. The input width gives the amount,
+           % in pixels, to dilate the mask.
+           m = maskClass.getGutFillMask(param, scanNum);
+           
+           m = bwperim(m);
+           se = strel('disk', width);
+           
+           m = imdilate(m, se);
        end
        
        function m = getGutFillMask(param, scanNum)
+           %m = getGutFillMask(param, scanNum): Get a binary mask which is
+           %equal to 1 inside the outlined gut, and 0 otherwise.
            poly = param.regionExtent.polyAll{scanNum};
            imSize = param.regionExtent.regImSize{1};
            m = poly2mask(poly(:,1), poly(:,2), imSize(1), imSize(2));
@@ -33,37 +40,27 @@ classdef maskClass
            
        end
        
-       function m = getSpotMask(param, scanNum, colorNum)
-
+   end
+   
+       methods 
+           
+       function m = getSpotMask(obj,param, scanNum, colorNum)
+           %m = getSpotMask(param, scanNum, colorNum): Get a binary mask
+           %showing the locations of found spots in the gut.
            
            %% Remove regions around found bacterial spots
-           inputVar = load([param.dataSaveDirectory filesep 'singleBacCount'...
-               filesep 'bacCount' num2str(scanNum) '.mat']);
-           
-           if(iscell(inputVar.rProp))
-               rProp = inputVar.rProp{colorNum};
+           spotFile = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'spotClassifier.mat'];
+           if(~exist(spotFile))
+               fprintf(2, 'Need to construct spot classifier first!\n');
+               return
            else
-               rProp = inputVar.rProp;
+               inputVar = load(spotFile);
+               spots = inputVar.spots;
            end
            
-           remBugsSaveDir = [param.dataSaveDirectory filesep 'singleBacCount' filesep 'removedBugs.mat'];
-           if(exist(remBugsSaveDir, 'file')==2)
-               removeBugInd = load(remBugsSaveDir);
-               removeBugInd = removeBugInd.removeBugInd;
-           end
+           rProp = spots.loadFinalSpot(scanNum, colorNum);
            
-           keptSpots = setdiff(1:length(rProp), removeBugInd{scanNum, colorNum});
-           
-           rPropClassified = rProp(keptSpots);
-           useRemovedBugList = false;
-           classifierType = 'svm';
-           distCutoff_combRegions = false;
-           
-           rProp = bacteriaCountFilter(rPropClassified, scanNum, colorNum, param, useRemovedBugList, classifierType,distCutoff_combRegions);
-           
-           xyz = [rProp.CentroidOrig];
-           xyz = reshape(xyz,3,length(xyz)/3);
-           
+           xyz = spotClass.getXYZPos(rProp);
            xyz = xyz(1:2,:);
            
            %Go through each of these spots and add a circle to to the mask around the
@@ -73,8 +70,11 @@ classdef maskClass
            m = makeCircleMask(imSize, xyz, spotRad);
        end
        
-       function m = getBkgEstMask(param, scanNum, colorNum)
-           
+       function m = getBkgEstMask(obj,param, scanNum, colorNum)
+           %m = getBkgEstMask(param, scanNum, colorNum): Construct an
+           %estimate of the background intensity. This function requires
+           %the creation of the background estimator for each wedge in the
+           %gut-this is somewhat old code that I'm hoping to retire.
            fN = [param.dataSaveDirectory filesep 'bkgEst' filesep 'bkgEst_' param.color{colorNum} '_nS_' num2str(scanNum) '.mat'];
            if(exist(fN, 'file')~=2)
                makeUnrotatedMask(param, scanNum, colorNum);
@@ -84,49 +84,71 @@ classdef maskClass
                recalcProj = false;
                im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
                
-               bkgOffset = 1.8;
-               m = showBkgSegment(im, scanNum, colorNum, param, bkgOffset);
+               m = showBkgSegment(im, scanNum, colorNum, param, obj.bkgOffset);
            end
        end
        
-       function m = getIntenMask(param, scanNum, colorNum, varargin)
-          switch nargin
-              case 3
-                  colorIntenL = [1000,500];
-                  colorInten = colorIntenL(colorNum);
-              case 4
-                  colorInten = varargin{1};
+       function m = getIntenMask(obj,param, scanNum, colorNum, varargin)
+          %m = getIntenMask(param, scanNum, colorNum, direction): Construct a binary
+          %mask of regions above a given intensity. Used the variable
+          %obj.colorInten(colorNum) as the intensity cutoff. Optional
+          %input : direction ('gt', 'lt', default: 'gt') give an intensity
+          %cutoff  greater than ('gt') or less than ('lt') the given
+          %intensity cutoff.
+          if(nargin==4)
+              direction = 'gt';
+          else
+             direction = varargin{1}; 
           end
           
           recalcProj = false;
           im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
           
-          m = im>colorInten;
-          
+          switch direction
+              case 'gt'
+                  m = im>obj.colorInten(colorNum);
+              case 'lt'
+                  m = im<obj.colorInten(colorNum);
+          end
           gm = maskClass.getGutFillMask(param, scanNum);
           
           m(~gm) = 0;
           
        end
        
-       function m = getGraphCutMask(param, scanNum, colorNum)
-           segMask = maskClass.getBkgEstMask(param, scanNum, colorNum);
-           spotMask = maskClass.getSpotMask(param, scanNum, colorNum);
+       function m = getGraphCutMask(obj,param, scanNum, colorNum)
+           % m = getGraphCutMask(param, scanNum, colorNum): Construct a
+           % segmented image of the gut using a graph cut segmentation
+           % algorithm.
+           
+          % segMask = maskClass.getBkgEstMask(param, scanNum, colorNum);
+           
+           obj.colorInten(colorNum) = 600;
+           segMask  = obj.getIntenMask(param, scanNum, colorNum,'lt');
+           spotMask = obj.getSpotMask(param, scanNum, colorNum);
+          
            recalcProj = false;
            im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
+           obj.colorInten(colorNum)  = obj.getIntensityCutoff(im, spotMask);
            
-           inten = maskClass.getIntensityCutoff(im, spotMask);
+           obj.colorInten(colorNum) = 1000;
+           intenMask = obj.getIntenMask(param, scanNum, colorNum);
            
-           intenMask = maskClass.getIntenMask(param, scanNum, colorNum,inten);
+           intenMask = obj.removeSmallObj(intenMask, spotMask);
            
-           intenMask = maskClass.removeSmallObj(intenMask, spotMask);
+           segMask = ~bwareaopen(~segMask,1000);
+           %segMask = imclearborder(~segMask,4);
+           m = maskClass.getGutFillMask(param, scanNum);
+           segMask(~m) = 1;
+           segMask = ~segMask;
+           %segMask(~m) = NaN;
            %Force the intensity mask to always include individual bacteria,
            %even if they fall below the intensity threshold.
-           intenMask = (intenMask+spotMask)>0;
+           %intenMask = (intenMask+spotMask)>0;
            
            %Remove regions that don't have high intensity spots in it or single
            %bacteria.
-           cc = bwconncomp(segMask);
+           cc = bwconncomp(segMask );
            label = labelmatrix(cc);
            
            ul = unique(label(:)); ul(ul==0) =[];
@@ -147,7 +169,7 @@ classdef maskClass
            
            segMask = label>0;
            
-           segMask = (segMask+spotMask)>0;
+           %segMask = (segMask+spotMask)>0;
            
            %% Further segment data using graph cut approach
            
@@ -160,10 +182,13 @@ classdef maskClass
                fprintf(1, '.');
                mask = zeros(size(segMask));
                mask(cc.PixelIdxList{i}) = 1;
+             
                [mask2, im, range] = minBoundBox(mask, imMaster);
                [~,maskM,~] = minBoundBox(mask, intenMask);
                mask = mask2;
-               
+               if(isempty(mask))
+                   continue
+               end  
                %To generate a histogram of potential intensities from source and
                %sink, dilate mask by a given amount and use that as the cutoff
                %between the two regions.
@@ -215,20 +240,25 @@ classdef maskClass
            
        end
        
-       function inten = getIntensityCutoff(im, spotMask)
+       function inten = getIntensityCutoff(obj,im, spotMask)
             b  = im(spotMask==1);
             b = sort(b(:));
-            %Cutoff equal to intensity at which %80 of bacteria signal
-            %present-somewhat arbitrary
-            inten = b(round(0.2*length(b)));
-            
+            if(isempty(b(:)))
+                %If not spts found, force the itensity cutoff to be higher
+                %than the max intensity-effectively counting zero bacteria.
+                inten = max(im(:));
+            else
+                %Cutoff equal to intensity at which %80 of bacteria signal
+                %present-somewhat arbitrary
+                inten = b(round(0.2*length(b)));
+            end
        end
        
-       function m = getFinalGutMask(param, scanNum, colorNum)
+       function m = getFinalGutMask(obj,param, scanNum, colorNum)
            
        end
        
-       function m = calcFinalMask(param,saveName, varargin)
+       function m = calcFinalMask(obj,param,saveName, varargin)
            switch nargin
                case 2
                    sL = param.expData.totalNumberScans;
@@ -241,6 +271,7 @@ classdef maskClass
            for s = 1:sL
                fprintf(1, ['Scan ' num2str(s) '\n']);
                for c=1:cL
+                   
                    segMask = maskClass.getGraphCutMask(param, s,c);
            
                    fileN = [param.dataSaveDirectory filesep 'bkgEst' filesep saveName '_' num2str(s) '_' param.color{c} '.mat'];
@@ -249,10 +280,15 @@ classdef maskClass
            end
        end
        
-       function segMask = removeSmallObj(segMask, spotMask)
+       function segMask = removeSmallObj(obj,segMask, spotMask)
            %Remove small objects that don't overlap with found spots
            segMask = bwareaopen(segMask, 500);
+          
            segMask = (spotMask+segMask)>0;
+           
+       end
+       
+       function m = calcIndivClumpMask(obj,param, scanNum, colorNum)
            
        end
    end

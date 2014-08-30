@@ -117,7 +117,7 @@ if(~isfield(param, 'gutRegionsInd'))
 end
 
 
-%createAllMasks(scanParam, param);
+createAllMasks(scanParam, param);
 %% Save meta-data
 %Including analysis parameters and the current version of the code
 
@@ -238,10 +238,10 @@ end
 function [param, centerLine, gutMask] = getScanMasks(...
     scanParam, param,centerLine, gutMask,thisScan)
 
-%param.cutVal = calcOptimalCut(scanParam.regOverlap,param,scanParam.scanNum);
-cutVal = load([param.dataSaveDirectory filesep 'masks' filesep 'cutVal.mat'],'cutValAll');
-cutVal = cutVal.cutValAll;
-param.cutVal = cutVal{scanParam.scanNum};
+param.cutVal = calcOptimalCut(scanParam.regOverlap,param,scanParam.scanNum);
+%cutVal = load([param.dataSaveDirectory filesep 'masks' filesep 'cutVal.mat'],'cutValAll');
+%cutVal = cutVal.cutValAll;
+%param.cutVal = cutVal{scanParam.scanNum};
 
 switch isdir([param.dataSaveDirectory filesep 'masks']);
     case false
