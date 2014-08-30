@@ -168,6 +168,11 @@ classdef spotFishClass
                           rProp{nc} = spotClass.findGutSliceParticle(rProp{nc}, obj.param,ns);
                       case 'ind'
                           rProp{nc} = spotClass.setSpotInd(rProp{nc});
+                      case 'object feature'
+                          %Get a host of object features for these spots,
+                          %and remove spots which, for whatever reason,
+                          %don't show up on this
+                          rProp{nc} = spotClass.getObjectFeat(rProp{nc},obj.param,50, ns,nc);
                   end
                   
                   fprintf(1, '.');
@@ -251,7 +256,6 @@ classdef spotFishClass
           
        end
 
-       
        function saveSpot(obj, rProp, ns,nc)
            %saveSpot(rProp, ns,nc): Save the list of spots, rProp, to it's appropriate location. 
            fileName = [obj.saveDir filesep obj.saveName num2str(ns) '.mat'];
@@ -261,7 +265,7 @@ classdef spotFishClass
        function backup(obj, origLoc, saveLoc)
            %backup(origLoc, saveLoc): Backup the list of spots to somewhere else.
            fprintf(1, 'Backing up spot list...');
-           copyfile([obj.saveDir filesep origLoc], [obj.saveDir filesep saveLoc]);
+           copyfile([obj.saveDir ], [obj.saveDir filesep saveLoc]);
            fprintf(1, '.\n'); 
        end
        
@@ -277,10 +281,13 @@ classdef spotFishClass
           %Reload the backup file and overwrite the current list of spots. 
        end
        
-       function createClassificationPipeline(obj)
-           obj.classType = cell(obj.numColor);
+       function obj = createClassificationPipeline(obj)
+           obj.classType = cell(obj.numColor,1);
            for nc=1:obj.numColor
-              obj.classType{nc} = cell(obj.numScan); 
+              obj.classType{nc} = cell(obj.numScan,1);
+              for ns=1:obj.numScan
+                 obj.classType{nc}{ns} = 'SVMclassify'; 
+              end
            end
            
            %For now, let's classify everything with a basic pipeline, of
@@ -312,11 +319,11 @@ classdef spotFishClass
            
        end
        
-       function rProp = classifyThisSpot(obj, rProp,nc)
+       function rProp = classifyThisSpot(obj, rProp,ns,nc)
 
            for i =1:length(obj.classType)
                
-               rProp{nc} = obj.spotClassifier{nc}.(obj.classType{i})(rProp{nc});
+               rProp = obj.spotClassifier{nc}.(obj.classType{i}{ns})(rProp);
                
                %mlj: Don't do this for now until we clean up the
                %indexing in multipleRegionCrop for identifying particles
@@ -352,7 +359,7 @@ classdef spotFishClass
                    rProp = rProp(xyzKeptInd);
                    
                case 'filtered'
-                   rProp = obj.classifyThisSpot(rProp, colorNum);
+                   rProp = obj.classifyThisSpot(rProp, scanNum,colorNum);
                    loc = [rProp.CentroidOrig];
                    loc = reshape(loc,3,length(loc)/3);
 

@@ -566,7 +566,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
     function keyPressGUI(hObject, eventdata)
         eventdata.Key
         switch eventdata.Key
-            case 'rightarrow'
+            case 'uparrow'
                 %Go one scan forward
                 scanNum = get(hScanSlider, 'Value');
                 scanNum = int16(scanNum);
@@ -580,7 +580,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 set(hScanSlider, 'Value', scanNum);
                 scanSlider_Callback('', '');
                 
-            case 'leftarrow'
+            case 'downarrow'
                 %Go one scan backward
                 %Go one scan forward
                 scanNum = get(hScanSlider, 'Value');
@@ -595,7 +595,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 set(hScanSlider, 'Value', scanNum);
                 scanSlider_Callback('', '');
                 
-            case 'downarrow'
+            case 'leftarrow'
                 %Go one z-depth up
                 zNum = get(hZSlider, 'Value');
                 
@@ -616,7 +616,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 set(hZSlider, 'Value',double(zNum));
 
                 z_Callback('','');
-            case 'uparrow'
+            case 'rightarrow'
                 %Go one z-depth down
                 %Go one z-depth up
                 zNum = get(hZSlider, 'Value');

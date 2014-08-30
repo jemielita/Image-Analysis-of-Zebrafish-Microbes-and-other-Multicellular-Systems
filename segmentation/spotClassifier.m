@@ -10,7 +10,7 @@ classdef spotClassifier
        svmStruct = [];
        tList = [];
        autoFluorMaxInten = [];
-       feat = {'MeanIntensity', 'Area', 'MaxIntensity', 'MinIntensity'};
+       feat = {'objMean','bkgMean', 'wvlMean','objStd','bkgStd','Volume', 'ksTest','centroidFit','MajorAxisLength','MinorAxisLength','Area','Eccentricity', 'convexArea'};
        rescaleFactor = [];
        boxVal = []; %For giving the softness of the SVM margins.
       
@@ -18,6 +18,7 @@ classdef spotClassifier
    end
    
    methods
+       
        function obj = createTrainingList(obj, nc,sList, removeBugInd, saveDir)
            %Assemble a training list from this data
            
@@ -29,21 +30,29 @@ classdef spotClassifier
                inputVar = load([saveDir filesep 'bacCount' num2str(ns) '.mat']);
                rProp = inputVar.rProp{nc};
                
+               %Temporary...
+               keptSpots = setdiff(1:length(rProp), removeBugInd{ns, nc});
+               remSpots = removeBugInd{ns,nc};
+               
+               %ind = [rProp(keptSpots).ind];
+               ind = [rProp(remSpots).ind];
+               
                %Only build classifier for points before the autofluorescent
                %region
                rProp = obj.selectGutRange(rProp, 1:2);
                rProp = obj.removeOutsideRang(rProp);
                
                %Find manually kept and removed spots
-               ind = removeBugInd{ns, nc};
+               %ind = removeBugInd{ns, nc};
                remSpots = ismember([rProp.ind],ind);
                keptSpots = ~ismember([rProp.ind],ind);
                numKeptSpots = sum(keptSpots);
                numRemSpots = sum(remSpots);
                
+               
                %Should be written more generally to call any number of
                %classification features
-           
+               t = zeros(length(rProp), length(obj.feat));
                for j = 1:length(obj.feat)
                    t(:,j) = [[rProp(keptSpots).(obj.feat{j})], [rProp(remSpots).(obj.feat{j})]];
                end
@@ -60,14 +69,18 @@ classdef spotClassifier
                return
            end
            
+           
+           Y = obj.tList(:,end); Ynom = nominal(Y==1);
+           
            for i=1:length(obj.feat)
-               tList(:,i)  = obj.tList(:,i)./obj.featRng.maxR.(obj.feat{i});
+           %    tList(:,i)  = obj.tList(:,i)./obj.featRng.maxR.(obj.feat{i});
+               tList(:,i)  = obj.tList(:,i)./max(obj.tList(:,i));
            end
            
-           
-           Y = tList(:,end); Ynom = nominal(Y==1);
+           for i=1:length(obj.feat)
+              obj.featRng.maxR.(obj.feat{i}) = max(obj.tList(:,i)); 
+           end
 
-           
            figure;
            numKeptSpots = sum(Y==1);
            
@@ -75,16 +88,16 @@ classdef spotClassifier
            boxCon = [obj.boxVal(1)*ones(numKeptSpots,1); obj.boxVal(2)*ones(size(tList,1)-numKeptSpots,1)];
            displayData = true;
            if(displayData==true)
-               svmStruct = svmtrain(tList(:,1:2), Ynom, 'showplot', true, 'Kernel_Function', 'quadratic', 'boxconstraint', boxCon, ...
+               svmStruct = svmtrain(tList(:,[10,2]), Ynom, 'showplot', true, 'Kernel_Function', 'polynomial', 'polyorder', 5,'boxconstraint', boxCon, ...
                    'autoscale', true);
                
            end
            
-           svmStruct = svmtrain(tList(:,1:4), Ynom, 'showplot', true, 'Kernel_Function', 'quadratic', 'boxconstraint', boxCon,'autoscale', true);
+           svmStruct = svmtrain(tList(:,1:13), Ynom, 'showplot', true, 'Kernel_Function', 'polynomial', 'polyorder', 5,'boxconstraint', boxCon,'autoscale', true);
            
            % Calculate the confusion matrix
            
-           group = svmclassify(svmStruct,tList(:,1:4));
+           group = svmclassify(svmStruct,tList(:,1:13));
            
            N = length(group);
            
@@ -110,13 +123,12 @@ classdef spotClassifier
            allData(:,2) = log([rProp.Area]);
            allData(:,3) = cenRatio;
            
-           
-           for i=1:4
-               allData(:,i) = [rProp.(obj.feat{i})];
-               allData(:,i) = allData(:,i)./obj.featRng.maxR.(obj.feat{i});
+           for i=1:length(obj.feat)
+              allData(:,i) = [rProp.(obj.feat{i})]; 
+              allData(:,i) = allData(:,i)./obj.featRng.maxR.(obj.feat{i});
            end
            
-           svmClass = svmclassify(obj.svmStruct{1}, allData);
+           svmClass = svmclassify(obj.svmStruct, allData);
            
            rProp = rProp(svmClass =='true');
            
@@ -152,8 +164,8 @@ classdef spotClassifier
        function obj = setFeatRang(obj, minR, maxR)
            %Set the maximum and minimum value for each feature, irrespective of any further classification
            for i=1:length(obj.feat)
-               obj.featRng.minR.(obj.feat{i}) = minR(i);
-               obj.featRng.maxR.(obj.feat{i}) = maxR(i);
+               obj.featRng.minR.(obj.feat{i}) = minR;
+               obj.featRng.maxR.(obj.feat{i}) = maxR;
           end
        end
        
@@ -173,8 +185,8 @@ classdef spotClassifier
        function obj = spotClassifier(obj)
            %Default min range for all features, and convert into
            %human-readable form.
-           minR = [200,20,300, 200];
-           maxR = [10000,10000, 10000, 10000 ];
+           minR = 0;
+           maxR = Inf;
            obj = setFeatRang(obj, minR, maxR);
           
        end
