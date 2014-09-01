@@ -79,7 +79,7 @@ end
 
 if ~exist('lsqoptions', 'var') || isempty(lsqoptions)
     lsqoptions = optimset('lsqnonlin');
-end
+end           
 
 
 % More fitting options
@@ -101,14 +101,14 @@ alpha(1) = params(4);
 alpha(2) = params(5);
 
 
-% Uncertainties
+% Uncertainties          
 % http://www.mathworks.com/matlabcentral/answers/51136
 % http://www.ligo-wa.caltech.edu/~ehirose/work/andri_matlab_tools/fitting/MatlabJacobianDef.pdf
 sigr = sqrt(cv(1,1));
 sigK = [sqrt(cv(2,2)) sqrt(cv(3,3))];
 sigalpha = [sqrt(cv(4,4)) sqrt(cv(5,5))];
 
-
+ 
 end
 
 

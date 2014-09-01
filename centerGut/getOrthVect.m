@@ -20,13 +20,14 @@
                 %intersect the gut...doesn't seem to be the case right now.
                 Orth = [xI yI] - ((x*xI + yI*y)/(x^2 +y^2))*[x y];
                 
-                xVal(1,:) = xx(i)+ Orth(1)*(vectSize)*[-1, 1];
+                xVal(1,:) = xx(i)+ Orth(1)*(vectSize)*[-1,1];
                 yVal(1,:) = yy(i)+ Orth(2)*(vectSize)*[-1,1];
                 
                 xVal(2,:) = xx(i+1)+ Orth(1)*(vectSize)*[-1, 1];
                 yVal(2,:) = yy(i+1)+ Orth(2)*(vectSize)*[-1,1];
                 
                 
+            
             case 'curved'
                 x = xx(i)-xx(i-1);
                 y = yy(i)-yy(i-1);
