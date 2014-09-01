@@ -130,8 +130,15 @@ classdef spotFishClass
                            spotLoc(i).CentroidOrig = pos(:,i)';
                        end
                        
-                       rProp{colorNum} = [rProp{colorNum}; spotLoc];
+                       if(isempty(spotLoc))
+                           continue;
+                       end
                        
+                       if(isempty(rProp{colorNum}))
+                           rProp{colorNum} = spotLoc;
+                       else
+                           rProp{colorNum} = [rProp{colorNum}; spotLoc];
+                       end                       
                        fprintf(1, '.');
                    end
                    

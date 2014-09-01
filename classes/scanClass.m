@@ -152,9 +152,6 @@ classdef scanClass
             
         end
         
-    
-        
-        
         function obj = calcIndivClumpMask(obj, cut)
             obj = obj.createLabelMask;
             inputVar = load([obj.saveLoc filesep 'param.mat']);

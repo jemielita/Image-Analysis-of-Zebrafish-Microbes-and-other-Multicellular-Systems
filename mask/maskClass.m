@@ -123,10 +123,10 @@ classdef maskClass
            
           % segMask = maskClass.getBkgEstMask(param, scanNum, colorNum);
            
-           obj.colorInten(colorNum) = 600;
+           obj.colorInten(colorNum) = 1500;
            segMask  = obj.getIntenMask(param, scanNum, colorNum,'lt');
-           spotMask = obj.getSpotMask(param, scanNum, colorNum);
-          
+         %  spotMask = obj.getSpotMask(param, scanNum, colorNum);
+           spotMask = zeros(size(segMask));
            recalcProj = false;
            im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
            obj.colorInten(colorNum)  = obj.getIntensityCutoff(im, spotMask);
@@ -179,6 +179,7 @@ classdef maskClass
            imMaster = im;
            imMaster(~segMask) = NaN;
            for i=1:cc.NumObjects
+               
                fprintf(1, '.');
                mask = zeros(size(segMask));
                mask(cc.PixelIdxList{i}) = 1;
@@ -186,7 +187,7 @@ classdef maskClass
                [mask2, im, range] = minBoundBox(mask, imMaster);
                [~,maskM,~] = minBoundBox(mask, intenMask);
                mask = mask2;
-               if(isempty(mask))
+               if(isempty(mask)|sum(mask(:))==0||length(mask(:))<4)
                    continue
                end  
                %To generate a histogram of potential intensities from source and

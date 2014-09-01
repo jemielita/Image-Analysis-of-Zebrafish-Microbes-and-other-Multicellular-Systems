@@ -139,8 +139,6 @@ switch dim
 
 end
 
-
-
 V = assignBoundaryPenalty(E,im,bkgNoise, 'undirected');
 
 A = sparse(E(:,1),E(:,2),V,N,N,4*N);
@@ -273,7 +271,7 @@ switch weightType
         V = ones(size(intenDiff,1),1);
         V(intenDiff>0) = exp(-(1./bkgNoise^2)*(im(E(intenDiff>0,1))-im(E(intenDiff>0,2)) ).^2  );
     case 'undirected'
-        V = exp(-(1./bkgNoise^2)*(im(E(:,1))-im(E(:,2)) ).^2  );
+         V = exp(-(1./bkgNoise^2)*(im(E(:,1))-im(E(:,2)) ).^2  );
 end
 
 
