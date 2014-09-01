@@ -148,10 +148,21 @@ classdef spotClassifier
            inAutoFluor = and(inAutoFluor,inAutoFluorKept);
            
            keptSpots = or(outsideAutoFluor, inAutoFluor);
-           rProp = rProp(keptSpots);
-           
+           rProp = rProp(keptSpots);          
        end
       
+       function obj = setAutoFluorCutoff(obj, rProp)
+          %inten = setAutoFluorCutoff(obj, rProp): Set the autofluorescent 
+          %cutoff to be used. The cuttoff will be set to mean +2*stdDev of 
+          %the mean intensity of the spots given as input. Other schemes
+          %would work as well. Suggest giving the input rProp as one of the
+          %1st scans, where there are very few bacteria in this region
+          inAutoFluor = [rProp.gutRegion]==3; 
+          rProp = rProp(inAutoFluor);
+          inten = mean([rProp.objMean]) +std([rProp.objMean]);
+          obj.autoFluorMaxInten = inten;
+       end
+       
        function obj = setFeatRang(obj, minR, maxR)
            %Set the maximum and minimum value for each feature, irrespective of any further classification
            for i=1:length(obj.feat)
@@ -166,8 +177,7 @@ classdef spotClassifier
                ind = [rProp.(obj.feat{i})]> obj.featRng.minR.(obj.feat{i}) & ...
                    [rProp.(obj.feat{i})]< obj.featRng.maxR.(obj.feat{i});
                
-               rProp = rProp(ind);
-               
+               rProp = rProp(ind);         
            end
            
        end

@@ -1,52 +1,72 @@
-%spotFishClass: Functions for manipulating all spots found for a given
-%fish.
+%spotFishClass: Functions for identifying, manipulating, updating, and
+%manually pruning foung bacterial spots in the gut.
 
 classdef spotFishClass
    properties
-       %boilerplate
+       %Location to save all found spots and the classifiers used. Should
+       %be set to 'gutOutline/singleBacCount'
        saveDir = '';
-       numScan = '';
-       numColor = '';
-       colorStr = '';
-       numReg = '';
-       param = '';
        
+       %Number of scans for this fish.
+       numScan = '';
+       %Number of colors
+       numColor = '';
+       %Cell array containing color names: {'488nm', '568nm'};
+       colorStr = '';
+       %Number of regions to tile the full gut
+       numReg = '';
+       %Parameter file that we know and love
+       param = '';
+       %String to save the spots for each scan to. Ex:
+       %obj.saveDir/saveName(scanNum).mat
        saveName = 'bacCount';
-       %Parameters used to do our analysis of found spots in the gut
+       
+       %Cell array, format: {colorNum}{scanNum}, that containing a string
+       %identifying the type of classifier that will be used for that
+       %particular scan, e.g. 'SVMclassify'
        classType = [];
        
+       %Cell array containing an instance of the spotClassifier class that
+       %will be used to do the classifying (whatever it is) of the spots
        spotClassifier = [];
        
+       %Cell array, format: {scanNum,colorNum}, containg indices f bugs
+       %that we will keep, and getting rid of everything else. Current support for this variable isn't great.
        keepBugInd =[];
+       
+       %Cell array, format: {scanNum,colorNum}, containg indices f bugs
+       %that we will manually remove.
        removeBugInd = [];
    end
    
    methods
        
        function obj = spotFishClass(param)
-          obj.saveDir = [param.dataSaveDirectory filesep 'singleBacCount'];
-          obj.numScan = param.expData.totalNumberScans;
-          obj.numColor = length(param.color);
-          obj.colorStr = param.color;
-          obj.param = param;
-          
-          if(isfield(param.expData.Scan, 'isScan'))
-              totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
-          else
-              totalNumRegions = unique([param.expData.Scan.region]);
-          end
-          totalNumRegions(totalNumRegions==0) = [];
-          
-          obj.numReg = length(totalNumRegions);
-          
-          obj.keepBugInd = cell(obj.numScan, obj.numColor);
-          obj.removeBugInd = cell(obj.numScan, obj.numColor);
+           %obj = spotFishClass(param): Constructor for an instance of
+           %spotFishClass.
+           obj.saveDir = [param.dataSaveDirectory filesep 'singleBacCount'];
+           obj.numScan = param.expData.totalNumberScans;
+           obj.numColor = length(param.color);
+           obj.colorStr = param.color;
+           obj.param = param;
+           
+           if(isfield(param.expData.Scan, 'isScan'))
+               totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
+           else
+               totalNumRegions = unique([param.expData.Scan.region]);
+           end
+           totalNumRegions(totalNumRegions==0) = [];
+           
+           obj.numReg = length(totalNumRegions);
+           
+           obj.keepBugInd = cell(obj.numScan, obj.numColor);
+           obj.removeBugInd = cell(obj.numScan, obj.numColor);
        end
        
        function findSpots(obj,param, varargin)
            %findSpots(obj,param, varargin): Find all putative spots in all
            %scans, by running our wavelet-based spot detector program.
-           
+           %Results saved to: param.dataSaveDirectory/foundSpots.
            for ns = 1:obj.numScan
                
                for colorNum = 1:obj.numColor
@@ -81,16 +101,19 @@ classdef spotFishClass
        end
       
        function resortFoundSpot(obj, param, inputDir, varargin)
+           %resortFoundSpot(param). Move results of the spot detector
+           %algorithm from foundSpots to the save directory for our
+           %classifier (obj.saveDir)
            switch nargin
                case 2
                    inputDir = 'foundSpots';
-                   outputDir = 'singleBacCount';
+                   outputDir = obj.saveDir;
                    if(~isdir([param.dataSaveDirectory filesep 'singleBacCount']))
                        mkdir([param.dataSaveDirectory filesep 'singleBacCount'])
                    end
                    
                    inputName = '';
-                   outputName = 'bacCount';
+                   outputName = obj.saveName;
                case 6
                    inputDir = varargin{1};
                    outputDir = varargin{2};
@@ -143,7 +166,7 @@ classdef spotFishClass
                    end
                    
                end
-               fileName = [param.dataSaveDirectory filesep outputDir filesep outputName num2str(ns) '.mat'];
+               fileName = [obj.saveDir filesep outputName num2str(ns) '.mat'];
                save(fileName, 'rProp');
                
            end
@@ -156,7 +179,11 @@ classdef spotFishClass
           %updated version.
           %Possible values:
           % 'gutSlice': Find which slice in the gut the found spot is in
-          %
+          % 'ind': Find the index of the wedge down the length of the gut
+          %        that this spot is in.
+          % 'object feature': Find the smorgasbord of object features for
+          %                   each of the putative bacteria. This is is a 
+          %                   somewhat time intensive piece of code.
           
           fields = ['gutSlice', 'ind'];
           if(~ismember(str, fields))
@@ -194,55 +221,59 @@ classdef spotFishClass
        
        function cull(obj, str,val)
            %Cull the list of found spots below a given cutoff for different
-           %features of found objects. Recommend making a backup 
+           %features of found objects. Recommend making a backup
            %(spotFishClass.backupList) before doing anything.
            % Only one color done at a time.
            %Possible values:
-          % 'area': (val= minArea), remove all spots below a certain area
-          % 'minInten': minimum intensity for a given spot
-          % 'maxInten': maximum intensity for a given spot
-          % 'meanInten': mean intensity for a given spot
-          %Note: This function should only be used for culling scalar
-          %values of each of the spots.
-          %Note: Only error checking that is done is to check that input
-          %'val' is scalar and >0.
-          if(length(val)~=2 || val(1)<0 || val(2) <0)
-              fprintf(2, 'Val must be scalar greater than zero!');
-              return;
-          end
-          
-          fprintf(1, 'Culling');
-          rProp = cell(obj.numColor,1);
-          for ns=1:obj.numScan
-              for nc = 1:obj.numColor
-                  %Load in data
-                  rProp{nc} = obj.loadSpot(ns, nc);
-                  
-                  switch lower(str)
-                      case 'area'
-                          rProp{nc} = spotClass.cullVal(rProp{nc}, 'Area', val(nc));
-                      case 'mininten'
-                          rProp{nc} = spotClass.cullVal(rProp{nc}, 'MinIntensity', val(nc));
-                      case 'meaninten'
-                          rProp{nc} = spotClass.cullVal(rProp{nc}, 'MeanIntensity', val(nc));
-                      case 'maxinten'
-                          rProp{nc} = spotClass.cullVal(rProp{nc}, 'MaxIntensity', val(nc));
-                      case 'distance'
-                          rProp{nc} = spotClass.distCutoff(rProp{nc}, val(nc));
-                      otherwise
-                          fprintf(2, 'String doesnt match any cull function!\n');
-                          return
-                  end
-              end
-              fprintf(1, '.');
-              obj.saveSpot(rProp,ns);
-          end
-          fprintf(1, '\n');
-          
+           % 'area': (val= minArea), remove all spots below a certain area
+           % 'minInten': minimum intensity for a given spot
+           % 'maxInten': maximum intensity for a given spot
+           % 'meanInten': mean intensity for a given spot
+           % 'distance': distance to nearest spot. If two spots are within
+           % the distance given as input, only keep the brightest spot.
+           % Distance is in microns. Suggested value: 3 microns.
+           %Note: This function should only be used for culling scalar
+           %values of each of the spots.
+           %Note: Only error checking that is done is to check that input
+           %'val' is scalar and >0.
+           if(length(val)~=2 || val(1)<0 || val(2) <0)
+               fprintf(2, 'Val must be scalar greater than zero!');
+               return;
+           end
+           
+           fprintf(1, 'Culling');
+           rProp = cell(obj.numColor,1);
+           for ns=1:obj.numScan
+               for nc = 1:obj.numColor
+                   %Load in data
+                   rProp{nc} = obj.loadSpot(ns, nc);
+                   
+                   switch lower(str)
+                       case 'area'
+                           rProp{nc} = spotClass.cullVal(rProp{nc}, 'Area', val(nc));
+                       case 'mininten'
+                           rProp{nc} = spotClass.cullVal(rProp{nc}, 'MinIntensity', val(nc));
+                       case 'meaninten'
+                           rProp{nc} = spotClass.cullVal(rProp{nc}, 'MeanIntensity', val(nc));
+                       case 'maxinten'
+                           rProp{nc} = spotClass.cullVal(rProp{nc}, 'MaxIntensity', val(nc));
+                       case 'distance'
+                           rProp{nc} = spotClass.distCutoff(rProp{nc}, val(nc));
+                       otherwise
+                           fprintf(2, 'String doesnt match any cull function!\n');
+                           return
+                   end
+               end
+               fprintf(1, '.');
+               obj.saveSpot(rProp,ns);
+           end
+           fprintf(1, '\n');
+           
        end
        
        function rProp = loadSpot(obj, ns, nc)
-           %rProp = loadSpot(ns,nc): load this particular set of spots.
+           %rProp = loadSpot(ns,nc): load this particular set of spots,
+           %without any filtering.
            inputVar = load([obj.saveDir filesep obj.saveName num2str(ns) '.mat']);
            rProp = inputVar.rProp{nc};
        end
@@ -328,8 +359,6 @@ classdef spotFishClass
        end
        
        function rProp = classifyThisSpot(obj, rProp,ns,nc)
-
-           
                %This syntax is somewhat confusing, but allows for
                %flexibility in constructing different classifiers for each
                %scan and color.
@@ -348,7 +377,7 @@ classdef spotFishClass
                %to remove.
 %               rProp = obj.spotClassifier{nc}.manuallyRemovedBugs(rProp, obj.removeBugInd{ns,nc});
                rProp = spotClass.keptManualSpots(rProp, obj.removeBugInd{ns,nc});
-               %rProp{nc} = obj.spotClassifier{nc}.autoFluorCutoff(rProp{nc});
+               rProp = obj.spotClassifier{nc}.autoFluorCutoff(rProp);
            
            
        end
