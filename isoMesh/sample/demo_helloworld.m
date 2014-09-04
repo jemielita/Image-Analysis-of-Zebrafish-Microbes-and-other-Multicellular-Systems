@@ -14,7 +14,7 @@ hw=imread('helloworld.png');
 hw3d=1-repmat(hw,[1 1 50]);
 
 %% create 3D mesh          |--------> threshold at v=0.7
-[node,elem,face]=v2m(hw3d,0.7,5,40);
+[node,elem,face]=v2m(im>800,0.7,5,40);
 %                             |  |-> maximum volume
 %                             |----> maximum surface triangle size
 
@@ -25,7 +25,7 @@ subplot(212);
 plotmesh(node,elem,'z<20');axis equal;view(90,60);
 
 % mesh with denser surface    |----> surface triangle size is now 2
-[node,elem,face]=v2m(hw3d,0.7,2,40);
+[node,elem,face]=v2m(im>800,0.7,2,40);
 
 figure;
 subplot(211);

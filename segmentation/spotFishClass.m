@@ -294,6 +294,21 @@ classdef spotFishClass
           end
           
        end
+       
+       function rPropAll = loadFinalSpotAll(obj)
+           rPropAll = cell(obj.numScan, obj.numColor);
+           
+           for ns=1:obj.numScan
+               for nc=1:obj.numColor
+                   rProp = obj.loadSpot(ns, nc);
+                   rPropAll{ns,nc} = obj.classifyThisSpot(rProp,ns,nc);
+                   %Save the result                   
+                   fprintf(1, '.');
+               end
+           end
+           fprintf(1, '\n');
+           
+       end
 
        function saveSpot(obj, rProp, ns,nc)
            %saveSpot(rProp, ns,nc): Save the list of spots, rProp, to it's appropriate location. 

@@ -30,6 +30,9 @@ classdef spotClass
                
                ri = param.gutRegionsInd(nS,:);
                rProp(i).gutRegion = find(ind(i)>=ri, 1, 'last');
+               if(isempty(rProp(i).gutRegion))
+                  b = 0; 
+               end
            end           
        end
        

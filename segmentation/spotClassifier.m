@@ -88,12 +88,12 @@ classdef spotClassifier
            boxCon = [obj.boxVal(1)*ones(numKeptSpots,1); obj.boxVal(2)*ones(size(tList,1)-numKeptSpots,1)];
            displayData = true;
            if(displayData==true)
-               svmStruct = svmtrain(tList(:,[10,2]), Ynom, 'showplot', true, 'Kernel_Function', 'polynomial', 'polyorder', 5,'boxconstraint', boxCon, ...
+               svmStruct = svmtrain(tList(:,[4,2]), Ynom, 'showplot', true, 'Kernel_Function', 'linear', 'boxconstraint', boxCon, ...
                    'autoscale', true);
                
            end
            
-           svmStruct = svmtrain(tList(:,1:13), Ynom, 'showplot', true, 'Kernel_Function', 'polynomial', 'polyorder', 5,'boxconstraint', boxCon,'autoscale', true);
+           svmStruct = svmtrain(tList(:,1:13), Ynom, 'showplot', true, 'Kernel_Function', 'linear','boxconstraint', boxCon,'autoscale', true);
            
            % Calculate the confusion matrix
            
@@ -189,6 +189,12 @@ classdef spotClassifier
            maxR = Inf;
            obj = setFeatRang(obj, minR, maxR);
           
+       end
+       
+       function rProp = all(obj, rProp)
+           %rProp = all(obj, rProp): Returns all the spots, without any
+           %filtering. Necessary for building our spot detection pipeline.
+           rProp = rProp;
        end
    end
    

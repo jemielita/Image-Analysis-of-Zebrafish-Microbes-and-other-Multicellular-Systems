@@ -13,6 +13,8 @@ classdef clumpClass < clumpSClass
        
        surfaceArea = NaN;
        centroid = [NaN NaN NaN];
+       mesh = struct('node', [], 'elem', [], 'face',[]);
+
    end
    
    methods
