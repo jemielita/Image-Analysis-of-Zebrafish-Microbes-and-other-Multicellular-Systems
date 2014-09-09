@@ -222,10 +222,7 @@ classdef clumpSClass
               fprintf(2, 'Data not culled in any way! Not doing anything.\n'); 
            end
         end
-        
-       
-        
-        
+      
         function calculateCentroid(obj)
                fileDir = [obj.saveLoc filesep 'clump' filesep 'clump_' obj.colorStr '_nS' num2str(obj.scanNum)];
                fprintf(1, 'Calculating 3d centroid of all clumps');
@@ -382,6 +379,28 @@ classdef clumpSClass
             end
             
         end
+        
+        function obj = calcMeshAll(obj)
+                fprintf(1, 'Calculating 3d mesh for all clumps');
+
+            for i = 1:obj.numClumps
+                fileDir = [obj.saveLoc filesep 'clump' filesep 'clump_' obj.colorStr '_nS' num2str(obj.scanNum)];
+                
+                fileName = [fileDir filesep num2str(i) '.mat'];
+                if(exist(fileName,'file')==0)
+                    continue
+                end
+                
+                inputVar = load(fileName);
+                c = inputVar.c;
+                c.saveLoc = obj.saveLoc;
+          
+                c = c.calcMesh;
+                c.save;
+                
+            end
+        end
+            
         
     end
     

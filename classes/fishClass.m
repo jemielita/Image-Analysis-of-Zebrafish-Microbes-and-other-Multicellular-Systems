@@ -5,6 +5,8 @@ classdef fishClass
     
     properties
         saveLoc = '';
+        saveName = 'fishAnalysis';
+        
         totPop = [];
         
         sL = [];
@@ -707,10 +709,11 @@ classdef fishClass
                     im = selectProjection(paramIn, 'mip', 'true', scanNum,colorList{colorNum}, zNum,recalcProj);
                     imshow(im, [0 1000]);
                     
-                    fileName = [obj.scan(nS,colorNum).saveLoc filesep 'masks' filesep 'clumpAndIndiv_nS' num2str(obj.scan(nS,colorNum).scanNum) '_' colorList{colorNum} '.mat'];
+                    %fileName = [obj.scan(nS,colorNum).saveLoc filesep 'masks' filesep 'clumpAndIndiv_nS' num2str(obj.scan(nS,colorNum).scanNum) '_' colorList{colorNum} '.mat'];
+                    fileName = [obj.scan(nS,colorNum).saveLoc filesep 'masks' filesep 'allRegMask_' num2str(obj.scan(nS,colorNum).scanNum) '_' colorList{colorNum} '.mat'];
                     inputVar = load(fileName);
                     segMask = inputVar.segMask;
-                    
+                    segMask = segMask>0;
                     maskFeat.Type = 'perim';
                     maskFeat.seSize = 5;
                     segmentationType.Selection = 'clump and indiv';
@@ -723,6 +726,11 @@ classdef fishClass
                 end
             end
             fprintf(1, '\n');
+        end
+        
+        function save(obj)
+           f = obj;
+           save([obj.saveLoc filesep obj.saveName], 'f', '-v7.3');
         end
 
 end

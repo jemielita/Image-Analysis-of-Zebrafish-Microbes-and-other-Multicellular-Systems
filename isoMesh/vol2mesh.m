@@ -64,6 +64,7 @@ elseif(nargin==9)
 else
         [no,el,regions,holes]=vol2surf(img,ix,iy,iz,opt,dofix,'cgalsurf');
 end
+holes = [];
 %then, create volumetric mesh from the surface mesh
 if(nargin>=8)
    if(strcmp(method,'cgalpoly'))

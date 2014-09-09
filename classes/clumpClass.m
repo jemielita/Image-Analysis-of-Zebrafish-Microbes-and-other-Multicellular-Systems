@@ -27,7 +27,7 @@ classdef clumpClass < clumpSClass
        function vol = loadVolume(obj)
            inputVar = load([obj.saveLoc filesep 'param.mat']); param = inputVar.param;
            imVar.zNum = ''; imVar.scanNum = obj.scanNum; imVar.color = obj.colorStr;
-           param.directoryName = ['J' param.directoryName(2:end)];
+         
            vol = load3dVolume(param, imVar, 'crop', obj.cropRect);
        end
        
@@ -55,6 +55,37 @@ classdef clumpClass < clumpSClass
        
        function obj = calcSurfaceArea(obj)
             
+       end
+       
+       function vol = getBinaryVolume(obj,vol)
+           %Make sure there's only one object in the volume and return
+           %binary image above background intensity
+           cc =  bwconncomp(vol>obj.intenCutoff);
+           numPixels = cellfun(@numel,cc.PixelIdxList);
+
+           vol(:) = 0;
+           [biggest,idx] = max(numPixels);
+           vol(cc.PixelIdxList{idx}) = 1;
+           
+           
+       end
+       
+       function obj = calcMesh(obj)
+          % obj = calcMesh(obj): Calculate a bounding mesh around this
+          % object
+          vol = obj.loadVolume;
+          
+          vol = obj.getBinaryVolume(vol);
+         if(sum(size(vol)>1000) >1)
+             vol = imresize(vol,0.25);
+             resized = true;
+             fprintf(2, 'Resizing image.\n')
+         else
+             resized = false;
+         end
+          [node,elem,face] = v2m(vol,1,100,100);
+          obj.mesh = struct('node', node, 'elem', elem, 'face',face);
+          obj.mesh.resized = resized;
        end
            
            

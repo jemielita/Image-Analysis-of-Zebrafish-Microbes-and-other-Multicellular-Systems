@@ -31,6 +31,9 @@ classdef scanClass
         centerMass;
         centerMassBound = 0.5;
         
+        %One dimensional line distribution for this bacterial population.
+        lineDist = [];
+        
     end
     
     methods
@@ -232,6 +235,81 @@ classdef scanClass
             
         end
         
+        function obj = calc1DProj(obj)
+            %obj = calc1DProj(obj): Calculate the 1d line distribution for
+            %this scan, by combining together the spots and clumps
+            %analysis. Doing this in a somewhat crude fashion right now.
+           
+           obj.lineDist = zeros(obj.gutRegionsInd(5),1);
+           obj = obj.getClumps;
+           
+           %% Load in all spots for this time point
+           spotClassifier = load([obj.saveLoc filesep 'singleBacCount' filesep 'spotClassifier.mat']);
+           spotClassifier = spotClassifier.spots;
+           
+           spots = spotClassifier.loadFinalSpot(obj.scanNum, obj.colorNum);
+           
+           sliceNum = [spots.sliceNum];
+           %Remove slice numbers not in range that we're using for our 1d
+           %projection (currently to the end of the vent).
+           sliceNum(~ismember(sliceNum, obj.gutRegionsInd(1):obj.gutRegionsInd(5))) = [];
+           
+           %Updating population data
+           for i=1:length(sliceNum)
+              obj.lineDist(sliceNum) = obj.lineDist(sliceNum)+1;
+           end
+           fprintf(1, '.');
+           %% Loading in clump data
+           
+           %Loading in clump mask
+           mask = load([obj.saveLoc filesep 'masks' filesep 'maskUnrotated_' num2str(obj.scanNum) '.mat']);
+           mask = mask.gutMask;
+           
+           cmask = load([obj.saveLoc filesep 'masks' filesep 'allRegMask_' num2str(obj.scanNum) '_' obj.colorStr '.mat']);
+           cmask = cmask.segMask;
+           
+           for i=1:length(obj.clumps.allData)
+               fprintf(1, '.');
+              ind = find(cmask==obj.clumps.allData(i).IND);
+              
+              %Find range for this clump
+              indm = [];
+              for j=1:size(mask,3)
+                  temp = mask(:,:,j);
+                  indm = [indm; unique(temp(ind))];       
+              end
+              indm(indm==0) = [];
+              indm = unique(indm);
+              indm = sort(indm);
+        
+              %Get area in MIP represented for each slice
+              a = size(indm,1);
+              for j=1:size(mask,3)
+                  a = a+ arrayfun(@(x)sum(cmask(mask(:,:,1)==x)), indm);
+              end
+              
+              %Remove areas outside region we're interested in.
+              a(~ismember(indm,  obj.gutRegionsInd(1):obj.gutRegionsInd(5))) = [];
+              indm(~ismember(indm,  obj.gutRegionsInd(1):obj.gutRegionsInd(5))) = [];
+    
+              if(isempty(indm))
+                 %Clump falls outside our range of interest.
+                  continue
+                  
+              end
+              
+              
+              %Assign to lineDist based on intensity
+              totPop = obj.clumps.allData(i).totalInten/9.5e+05;
+              
+              
+              obj.lineDist(indm) = obj.lineDist(indm)+ (a/sum(a))*totPop;
+           end
+           
+           fprintf(1, '\n');
+           
+           
+        end
         
         
     end
