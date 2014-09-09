@@ -129,6 +129,20 @@ classdef fishClass
             end
         end
         
+        function obj = calc(obj, field)
+        %obj = calc(obj, field)
+        %High level functions for running calculations os particular scans.
+        %This function will only update field in obj.scan for the
+        %appropriate field
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c) = obj.scan(s,c).(field);
+                end
+                
+            end
+        
+        end
+        
         
         function obj = calcMasks(obj)
             

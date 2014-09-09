@@ -256,7 +256,7 @@ classdef scanClass
            
            %Updating population data
            for i=1:length(sliceNum)
-              obj.lineDist(sliceNum) = obj.lineDist(sliceNum)+1;
+              obj.lineDist(sliceNum(i)) = obj.lineDist(sliceNum(i))+1;
            end
            fprintf(1, '.');
            %% Loading in clump data
@@ -285,8 +285,10 @@ classdef scanClass
               %Get area in MIP represented for each slice
               a = size(indm,1);
               for j=1:size(mask,3)
-                  a = a+ arrayfun(@(x)sum(cmask(mask(:,:,1)==x)), indm);
+                  a = a+ arrayfun(@(x)sum(cmask(mask(:,:,j)==x)), indm);
               end
+              
+              b = 0;
               
               %Remove areas outside region we're interested in.
               a(~ismember(indm,  obj.gutRegionsInd(1):obj.gutRegionsInd(5))) = [];
