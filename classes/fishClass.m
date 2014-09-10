@@ -135,10 +135,12 @@ classdef fishClass
         %This function will only update field in obj.scan for the
         %appropriate field
             for s = 1:obj.totalNumScans
+                fprintf(1, ['Scan: ' num2str(s)]);
                 for c = 1:obj.totalNumColor
                     obj.scan(s,c) = obj.scan(s,c).(field);
                 end
                 
+                obj.save()
             end
         
         end

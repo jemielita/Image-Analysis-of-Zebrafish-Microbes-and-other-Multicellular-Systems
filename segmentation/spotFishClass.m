@@ -282,17 +282,8 @@ classdef spotFishClass
           %rProp = loadFinalSpot(obj, ns,nc): Load in the final result of
           %our spot analysis (after the function classifySpots) has been
           %run.
-          fSaveDir = [obj.saveDir filesep 'final'];
-          
-          if(~isdir(fSaveDir))
-              fprintf(2, 'Need to run the function .classifySpots first!\n');
-              return
-          else
-              %Save the result
-              inputVar = load([fSaveDir filesep obj.saveName num2str(ns) '.mat']);
-              rProp = inputVar.rProp{nc};
-          end
-          
+          rProp = obj.loadSpot(ns, nc);
+          rProp = obj.classifyThisSpot(rProp,ns,nc);   
        end
        
        function rPropAll = loadFinalSpotAll(obj)
@@ -300,8 +291,7 @@ classdef spotFishClass
            
            for ns=1:obj.numScan
                for nc=1:obj.numColor
-                   rProp = obj.loadSpot(ns, nc);
-                   rPropAll{ns,nc} = obj.classifyThisSpot(rProp,ns,nc);
+                   rProp = obj.loadFinalSpot(ns,nc);
                    %Save the result                   
                    fprintf(1, '.');
                end
