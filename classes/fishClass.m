@@ -622,6 +622,134 @@ classdef fishClass
            shadedErrorBar(cen(:,1), cen(:,3), cen(:,2), {},1, 'vertical')
         end
         
+        function plot1dDistribution(obj)
+            %% Line-by-line plots
+            f = obj;
+            NtimePoints = f.totalNumScans-2;
+            cData_green = summer(ceil(2*NtimePoints));
+            cData_red = hot(ceil(2*NtimePoints));
+            
+            % Plot all green data, line-by-line
+            figure();
+            hold on
+            clear hp
+            for j=1:NtimePoints
+                pop{1} = f.scan(j,1).lineDist;
+                pop{2} = f.scan(j,2).lineDist;
+                
+                
+                
+                %Remove everything after the autofluorescent cells
+                pop{1} = pop{1}(1:f.scan(j,1).gutRegionsInd(4));
+                pop{2} = pop{2}(1:f.scan(j,1).gutRegionsInd(4));
+                
+                %Normalize the populations
+                pop{1} = pop{1}/sum(pop{1});
+                pop{2} = pop{2}/sum(pop{2});
+                
+                
+                %Smooth out population curves, so that early time vibrio don't look so
+                %noisy
+                pop{1} = smooth(pop{1}, 'moving',3);
+                pop{2} = smooth(pop{2}, 'moving',3);
+                
+                
+                x = 1:length(pop{1});
+                x = 5*0.1625*x;
+                t = j*0.33*ones(length(x),1);
+                
+                hp(j,1) = plot3(x, t, pop{1}, 'Color', cData_green(NtimePoints,:));
+                hp(j,2) = plot3(x, t, pop{2}, 'Color', cData_red(NtimePoints,:));
+                hp(j,3) = plot3(x, t, zeros(length(pop{1}),1), 'Color', [0.9 0.9 0.9]);
+            end
+            
+            %Set range appropriately
+            m = arrayfun(@(x)get(x, 'ZData'), hp(:,1:2), 'UniformOutput', false);
+            m = cellfun(@(x)max(x), m);
+            maxZ = max(m(:));
+            set(gca, 'ZLim', [0 maxZ]);
+            viewangle = [-10 70];  % alt, az
+            set(gca, 'View', viewangle);
+            set(gcf, 'Position', [183 97 1360 850]);
+            l(1) = xlabel('Position (Anterior-Posterior) microns');
+            l(2) = ylabel('Time (hours');
+            l(3) = zlabel('Normalized Density');
+            arrayfun(@(x)set(x, 'FontSize', 24), l);
+            arrayfun(@(x)set(x, 'LineWidth', 3), hp);
+            
+            print('-dpng', [obj.saveLoc filesep 'PopulationCurve.png']);
+        end
+        
+        function plotSpatialOverlap(obj)
+             hold on;
+           for ns=1:obj.totalNumScans
+              for nc = 1:obj.totalNumColor
+                  pop{nc} = obj.scan(ns,nc).lineDist;
+                 % pop{nc} = pop{nc}/sum(pop{nc});
+                  
+                 %pop{nc} = smooth(pop{nc}, 'moving', 3);
+                  
+              end
+              plot(pop{1}, pop{2},'o');
+              
+           end
+        end
+        function pop = getPopData(obj)
+%             pop = cell(obj.totalNumScans,1);
+%             for ns=1:obj.totalNumScans
+%                 for nc = 1:obj.totalNumColor
+%                     temp = obj.scan(ns,nc).lineDist;
+%                     temp = smooth(temp, 'moving', 3);
+%                     % pop{nc} = pop{nc}/sum(pop{nc});
+%                     pop{ns}(nc,1:length(temp)) = temp;  
+%                     fprintf(1, '.');
+%                 end
+%             end
+            
+            
+            %Calculate radial distribution function
+            for ns=1:obj.totalNumScans
+                for nc = 1:obj.totalNumColor
+                    pop{nc} = obj.scan(ns,nc).lineDist;
+                end
+                numEl = max([length(pop{nc}), length(pop{nc})]);
+                pop{1} = pop{1}(1:numEl);
+                pop{2} = pop{2}(1:numEl);
+                
+                
+                %Correlation of each with itself
+                n = 1:100;
+                for nc=1:obj.totalNumColor
+                    for n=1:100
+                        for i=1:length(pop{nc})               
+                            %Update the radial distribution function
+                            
+                            
+                            if( (i-n>0) && (i+n)<=length(pop{nc}))
+                                thispop(n,i) = 0.5*(pop{nc}(i-n) + pop{nc}(i+n));
+                            elseif(i-n<1)
+                                thispop(n,i) = pop{nc}(i+n);
+                            elseif(i+n>length(pop{nc}))
+                                thispop(n,i) = pop{nc}(i-n);
+                            else
+                                thispop(n,i) =0;
+                            end
+                            
+                            %Rescale each of these numbers by the
+                            %population in each bin-treating each as a
+                            %stack of individual bugs.
+                            thispop(:,i) = pop{nc}(i)*thispop(:,i);
+                        end
+                    end
+                
+                    %Rescale by 1/2*pi*distance to spot
+                    thispop = repmat(1./(2*pi*(1:100)), size(thispop,2),1)'.*thispop;
+                end
+                
+            end 
+            
+        end
+        
         function obj = fitLogisticCurve(obj, fitType)
             
             fitField = {'r', 'K', 'N0', 't_lag', 'sigr', 'sigK', 'sigN0', 'sigt_lag'};

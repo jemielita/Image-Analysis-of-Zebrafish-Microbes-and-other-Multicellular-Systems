@@ -278,6 +278,7 @@ classdef scanClass
                   temp = mask(:,:,j);
                   indm = [indm; unique(temp(ind))];       
               end
+              
               indm(indm==0) = [];
               indm = unique(indm);
               indm = sort(indm);
