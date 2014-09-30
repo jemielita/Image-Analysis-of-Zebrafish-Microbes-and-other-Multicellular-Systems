@@ -25,6 +25,12 @@ classdef spotClass
            clDist = dist(pos, cL');
            [~,ind] = min(clDist,[],2);
            
+           
+           %Check to see if param.gutRegionsInd exists
+           if(~isfield(param, 'gutRegionsInd'))
+              fprintf(2, 'param.gutRegionsInd does not exist! Need to run the command:  param.gutRegionsInd = findGutRegionMaskNumber(param, true)\n')
+           end
+           
            for i=1:length(rProp)
                rProp(i).sliceNum = ind(i);
                
@@ -127,13 +133,12 @@ classdef spotClass
           rProp(xyFinal) = [];
        end
        
-       function rProp = getObjectFeat(rProp,param, boxSize, ns, nc)
+       function rProp = getObjectFeatAll(rProp,param, boxSize, ns, nc)
            %% Get extensive list of features of each of the found spots.
            rem = []; %List of spots to remove.
            maxThresh = 30;
            for i=1:length(rProp)
-               %% Get spot
-               
+               %% Get spot location
                cropRect = spotClass.getCropRect(rProp(i),param, boxSize);
                
                %% Loading volume
@@ -141,9 +146,35 @@ classdef spotClass
                imVar.scanNum = ns; imVar.zNum =''; imVar.color = param.color(nc);
                
                im = load3dVolume(param, imVar, 'crop', cropRect);
-               
-               %figure; imshow(max(im,[],3),[0 1000]);
-               
+        
+               [rProp(i),rem] = spotClass.getObjectFeat(im,boxSize,rProp(i),cropRect,i);
+           end
+             
+           %% Cull out spots that don't meet these filtered criteria 
+           rProp(rem) = [];
+           fprintf(1, '.');
+           fprintf(1, '\n');
+           
+       end
+       
+       function [rProp,rem] = getObjectFeat(im,boxSize,rProp,cropRect,i)
+           %getObjectFeat(rProp,param, boxSize, ns, nc)
+           %
+           %% Get extensive list of features of each of the found spots.
+%            rem = []; %List of spots to remove.
+            maxThresh = 30;
+            rem = [];
+%            for i=1:length(rProp)
+               %% Get spot location               
+%                cropRect = spotClass.getCropRect(rProp(i),param, boxSize);
+%                
+%                %% Loading volume
+%                
+%                imVar.scanNum = ns; imVar.zNum =''; imVar.color = param.color(nc);
+%                
+%                im = load3dVolume(param, imVar, 'crop', cropRect);
+%                
+%                %figure; imshow(max(im,[],3),[0 1000]);
                %% Filtering the spots again using the wavelet-based spot
                %detection approach.
                %mlj: This code should call the exact same code as we use
@@ -161,22 +192,24 @@ classdef spotClass
                label = bwlabeln(ims);
                
                if(unique(label(:))==0)
-                   rem = [rem i];
+                   rem = i;
                    fprintf('No object in FOV!?\n');
 
                    fprintf(1, '.');                   
-                   continue;
+                   return;
                end
                
-               if(size(label,1)<boxSize || size(label,2)<boxSize)
-                   rem = [rem i];
-                   fprintf(1, '.');                   
-                   continue;
-               end
+%                %mlj: I don't think we need this error break-removing
+%                if(size(label,1)<boxSize/2 || size(label,2)<boxSize/2)
+%                    frprintf
+%                    rem = [rem i];
+%                    fprintf(1, '.');                   
+%                    return;
+%                end
                
-               %If more than onde object is here, find one closest to
+               %If more than one object is here, find one closest to
                %the z centroid as found before
-               z = rProp(i).CentroidOrig(3)-cropRect(3);
+               z = rProp.CentroidOrig(3)-cropRect(3);
                val = find(label(boxSize, boxSize, :)~=0);
                [~,n] = min(abs(val-z));
                
@@ -185,9 +218,9 @@ classdef spotClass
               
                if(isempty(ind))
                    fprintf('No object at center!?\n');
-                   rem = [rem i];
+                   rem = i;
                    fprintf(1, '.');
-                   continue
+                   return
                end
                
                if(length(ind)>1)
@@ -212,29 +245,27 @@ classdef spotClass
                hgram.s = hist(im(label==1),x);
                hgram.bkg = hist(im(label==0),x);
                
-               hgram.s= hgram.s/sum(hgram.s);
+               hgram.s = hgram.s/sum(hgram.s);
                hgram.bkg = hgram.bkg/sum(hgram.bkg);
                
-               rProp(i).objMean = mean(im(label==1));
-               rProp(i).bkgMean = mean(im(label==0));
+               rProp.objMean = mean(im(label==1));
+               rProp.bkgMean = mean(im(label==0));
                
-               rProp(i).wvlMean = mean(imWavelet(label==1));
-               rProp(i).wvlMean = mean(imWavelet(label==0));
+               rProp.wvlMean = mean(imWavelet(label==1));
+               rProp.wvlMean = mean(imWavelet(label==0));
                
+               rProp.objStd = std(im(label==1));
+               rProp.bkgStd = std(im(label==0));
                
-               rProp(i).objStd = std(im(label==1));
-               rProp(i).bkgStd = std(im(label==0));
-               
-               rProp(i).Volume = sum(im(label==1));
-               
+               rProp.totInten = sum(im(label==1));
                %% ks-test
-               [~,rProp(i).ksTest] = kstest2(hgram.s, hgram.bkg);
+               [~,rProp.ksTest] = kstest2(hgram.s, hgram.bkg);
                
                %% Particle fitting code-gives the goodness of fit-should be low for a purely circular object
                %(smallish tests seem to support this).
                temp = max(im,[],3);
                temp(max(label,[],3)~=1) = 0;
-               [~,~,~,rProp(i).centroidFit] = radialcenter(temp);
+               [~,~,~,rProp.centroidFit] = radialcenter(temp);
                %% Object properties
                
                maxL = max(label,[],3)==1;
@@ -242,20 +273,15 @@ classdef spotClass
                
                spotProp = regionprops(maxL,maxIm, 'Area','ConvexHull', 'Eccentricity', 'MajorAxisLength', 'MinorAxisLength', 'ConvexArea');
                
-               rProp(i).MajorAxisLength = spotProp.MajorAxisLength;
-               rProp(i).MinorAxisLength = spotProp.MinorAxisLength;
-               rProp(i).Eccentricity = spotProp.Eccentricity;
-               rProp(i).ConvexHull = spotProp.ConvexHull;
-               rProp(i).Area = spotProp.Area;
-               rProp(i).convexArea = spotProp.ConvexArea;
+               rProp.MajorAxisLength = spotProp.MajorAxisLength;
+               rProp.MinorAxisLength = spotProp.MinorAxisLength;
+               rProp.Eccentricity = spotProp.Eccentricity;
+               rProp.ConvexHull = spotProp.ConvexHull;
+               rProp.Area = spotProp.Area;
+               rProp.convexArea = spotProp.ConvexArea;
         
                fprintf(1, '.');
-           end
-  
-           %% Cull out spots that don't meet these filtered criteria
-           rProp(rem) = [];
-           fprintf(1, '.');
-           fprintf(1, '\n');
+          
        end
        
        function cropRect = getCropRect(spot,param,boxSize)

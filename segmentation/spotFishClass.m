@@ -15,8 +15,7 @@ classdef spotFishClass
        colorStr = '';
        %Number of regions to tile the full gut
        numReg = '';
-       %Parameter file that we know and love
-       param = '';
+
        %String to save the spots for each scan to. Ex:
        %obj.saveDir/saveName(scanNum).mat
        saveName = 'bacCount';
@@ -37,6 +36,9 @@ classdef spotFishClass
        %Cell array, format: {scanNum,colorNum}, containg indices f bugs
        %that we will manually remove.
        removeBugInd = [];
+       
+       intenThresh = 250; %All pixels below this intensity will be set to this intensity before using our spot detecting code. Helps get rid of some junk.
+       boxSize = 50; %Size of box around each bacteria.
    end
    
    methods
@@ -48,8 +50,7 @@ classdef spotFishClass
            obj.numScan = param.expData.totalNumberScans;
            obj.numColor = length(param.color);
            obj.colorStr = param.color;
-           obj.param = param;
-           
+       
            if(isfield(param.expData.Scan, 'isScan'))
                totalNumRegions = unique([param.expData.Scan.region].*[strcmp('true', {param.expData.Scan.isScan})]);
            else
@@ -63,10 +64,16 @@ classdef spotFishClass
            obj.removeBugInd = cell(obj.numScan, obj.numColor);
        end
        
-       function findSpots(obj,param, varargin)
-           %findSpots(obj,param, varargin): Find all putative spots in all
+       function findSpots(obj,param)
+           %findSpots(obj,param): Find all putative spots in all
            %scans, by running our wavelet-based spot detector program.
            %Results saved to: param.dataSaveDirectory/foundSpots.
+           
+           if(nargin~=2)
+              fprintf(2, 'spotFishClass.findSpots must be called with only param as argument!\n');
+              return
+           end
+           
            for ns = 1:obj.numScan
                
                for colorNum = 1:obj.numColor
@@ -76,6 +83,7 @@ classdef spotFishClass
                    
                    for nr = 1:obj.numReg
                        
+                       %% Load spots
                        im = load3dVolume(param, imVar, 'single',nr);
                        
                        xOutI = param.regionExtent.XY{colorNum}(nr,1);
@@ -88,9 +96,32 @@ classdef spotFishClass
                        
                        im = double(repmat(regMask,1,1,size(im,3))).*double(im);
                        
-                       im(im<250) = 250;
+                       %% Get putative bacterial spots
+                       im(im<obj.intenThresh) = obj.intenThresh;
                        spotLoc = countSingleBacteria(im,'', colorNum, param,regMask);
                        
+                       %% Map spot location onto the coordinate system used
+                       %for the gut
+                      
+                       %Get x y coordinates
+                       pos = [spotLoc.Centroid];
+                       pos = reshape(pos, 3, length(pos)/3);
+                       pos(1,:) = pos(1,:) + yOutI -1;
+                       pos(2,:) = pos(2,:) + xOutI -1;
+                       
+                       %Get new z coordinates
+                       zList = param.regionExtent.Z(:,nr);
+                       ind = find(zList~=-1, 1,'first');
+                       pos(3,:) = pos(3,:) + ind-1;
+                       for i=1:length(spotLoc)
+                           spotLoc(i).CentroidOrig = pos(:,i)';
+                       end
+                       
+                       %% Update spots index and gut slice number
+                       spotLoc = spotClass.findGutSliceParticle(spotLoc, param, ns);
+                       spotLoc = spotClass.setSpotInd(spotLoc);
+                       
+                       %% Save results
                        fileName = [param.dataSaveDirectory filesep 'foundSpots' filesep 'nS_' num2str(ns) '_' obj.colorStr{colorNum} '_nR' num2str(nr) '.mat'];
                        save(fileName,'spotLoc', '-v7.3');
                    end
@@ -104,6 +135,11 @@ classdef spotFishClass
            %resortFoundSpot(param). Move results of the spot detector
            %algorithm from foundSpots to the save directory for our
            %classifier (obj.saveDir)
+           if(~ismember(nargin, [2,6]))
+              fprintf(2, 'resortFoundSpot must be called with 1 or 5 arguments!\n');
+              return
+           end
+           
            switch nargin
                case 2
                    inputDir = 'foundSpots';
@@ -123,7 +159,8 @@ classdef spotFishClass
            
            %% Load each region of the gut independently that have had the spot detector algorithm run on it.
            fprintf(1, 'Resorting out data');
-           for ns=1:obj.numScan
+           for ns = 1:obj.numScan
+               
                rProp = cell(obj.numColor,1);
                
                for colorNum = 1:obj.numColor
@@ -160,7 +197,7 @@ classdef spotFishClass
                        if(isempty(rProp{colorNum}))
                            rProp{colorNum} = spotLoc;
                        else
-                           rProp{colorNum} = [rProp{colorNum}; spotLoc];
+                           rProp{colorNum} = [rProp{colorNum}, spotLoc];
                        end                       
                        fprintf(1, '.');
                    end
@@ -174,10 +211,11 @@ classdef spotFishClass
            
        end
        
-       function update(obj, str)
+       function update(obj, str,param)
+          % update(str, param)
           %Update specific entries for the found spots and save this
           %updated version.
-          %Possible values:
+          %Possible values for str:
           % 'gutSlice': Find which slice in the gut the found spot is in
           % 'ind': Find the index of the wedge down the length of the gut
           %        that this spot is in.
@@ -200,14 +238,17 @@ classdef spotFishClass
                   
                   switch str
                       case 'gutSlice'
-                          rProp{nc} = spotClass.findGutSliceParticle(rProp{nc}, obj.param,ns);
+                          rProp{nc} = spotClass.findGutSliceParticle(rProp{nc}, param, ns);
                       case 'ind'
                           rProp{nc} = spotClass.setSpotInd(rProp{nc});
                       case 'object feature'
                           %Get a host of object features for these spots,
                           %and remove spots which, for whatever reason,
                           %don't show up on this
-                          rProp{nc} = spotClass.getObjectFeat(rProp{nc},obj.param,50, ns,nc);
+                          rProp{nc} = spotClass.getObjectFeatAll(rProp{nc}, param, obj.boxSize, ns, nc);
+                      otherwise
+                          fprintf(2, 'Update string not recognized!\n');
+                          return
                   end
                   
                   fprintf(1, '.');
