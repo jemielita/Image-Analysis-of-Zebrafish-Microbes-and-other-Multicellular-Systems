@@ -81,9 +81,9 @@ colorNum = 1;
 %here (e.g. spot detection filtering, clump filtering, etc.). The param
 %structure should be used exclusively for parameters that affect region
 %features of the fish themselves (gut outline, etc.)
-
-f = fishClass(param);
-
+if(isfield(param, 'gutRegionsInd'))
+    f = fishClass(param);
+end
 
 %%%%%%%%%%%% variable that contains information about expected pixel
 %%%%%%%%%%%% intensity of background and different colors of bacteria
@@ -4499,12 +4499,17 @@ if(~isfield(param, 'dataSaveDirectory'))
     param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
 end
 
+if(~isdir(param.dataSaveDirectory))
+    fprintf(1, 'Making gut outline directory.\n');
+    mkdir(param.dataSaveDirectory);
+end
 %Save the calculated parameters, unless they've been
 %calculated before.
 saveParamFile = true;
 if(dataFileExist~=2 &&saveParamFile ==true)
     save(paramFile, 'param');
 end
+
 
 end
 
