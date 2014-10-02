@@ -128,8 +128,8 @@ classdef scanClass
             inputVar = load([obj.saveLoc filesep 'param.mat']);
             param = inputVar.param;
             
-            %maskClass.getBkgEstMask(param, obj.scanNum, obj.colorNum);
-            mask = maskClass;
+            %maskFish.getBkgEstMask(param, obj.scanNum, obj.colorNum);
+            mask = maskFish;
             segMask = mask.getGraphCutMask(param, obj.scanNum, obj.colorNum);
         
             %Save a binary mask-...this should eventually be removed

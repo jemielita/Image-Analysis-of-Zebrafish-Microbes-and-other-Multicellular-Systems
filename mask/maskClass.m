@@ -1,10 +1,10 @@
-%maskClass: Stores all functions related to the production and display of
+%maskFish: Stores all functions related to the production and display of
 %gut masks. This class will mostly be a repository for static methods that
 %we can use to create masks, in particuar ones that operate on the MIP of
 %the image.
 
 
-classdef maskClass
+classdef maskFish
     
     
     properties
@@ -20,7 +20,7 @@ classdef maskClass
            % m = getGutOutlineMask(param, scanNum,width): Get outline of of the entire 
            % gut for a particular scan. The input width gives the amount,
            % in pixels, to dilate the mask.
-           m = maskClass.getGutFillMask(param, scanNum);
+           m = maskFish.getGutFillMask(param, scanNum);
            
            m = bwperim(m);
            se = strel('disk', width);
@@ -110,7 +110,7 @@ classdef maskClass
               case 'lt'
                   m = im<obj.colorInten(colorNum);
           end
-          gm = maskClass.getGutFillMask(param, scanNum);
+          gm = maskFish.getGutFillMask(param, scanNum);
           
           m(~gm) = 0;
           
@@ -121,7 +121,7 @@ classdef maskClass
            % segmented image of the gut using a graph cut segmentation
            % algorithm.
            
-          % segMask = maskClass.getBkgEstMask(param, scanNum, colorNum);
+          % segMask = maskFish.getBkgEstMask(param, scanNum, colorNum);
            
            obj.colorInten(colorNum) = 1500;
            segMask  = obj.getIntenMask(param, scanNum, colorNum,'lt');
@@ -138,7 +138,7 @@ classdef maskClass
            
            segMask = ~bwareaopen(~segMask,1000);
            %segMask = imclearborder(~segMask,4);
-           m = maskClass.getGutFillMask(param, scanNum);
+           m = maskFish.getGutFillMask(param, scanNum);
            segMask(~m) = 1;
            segMask = ~segMask;
            %segMask(~m) = NaN;
@@ -273,7 +273,7 @@ classdef maskClass
                fprintf(1, ['Scan ' num2str(s) '\n']);
                for c=1:cL
                    
-                   segMask = maskClass.getGraphCutMask(param, s,c);
+                   segMask = maskFish.getGraphCutMask(param, s,c);
            
                    fileN = [param.dataSaveDirectory filesep 'bkgEst' filesep saveName '_' num2str(s) '_' param.color{c} '.mat'];
                    save(fileN, 'segMask');

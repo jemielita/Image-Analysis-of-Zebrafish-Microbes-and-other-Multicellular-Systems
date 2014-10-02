@@ -79,7 +79,7 @@ classdef spotFishClass
                for colorNum = 1:obj.numColor
                    
                    imVar.scanNum = ns;imVar.zNum =''; imVar.color = obj.colorStr{colorNum};
-                   mask = maskClass.getGutFillMask(param, ns);
+                   mask = maskFish.getGutFillMask(param, ns);
                    
                    for nr = 1:obj.numReg
                        
