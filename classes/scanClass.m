@@ -140,8 +140,7 @@ classdef scanClass
             %Save the label matrix
             saveLoc = [obj.saveLoc filesep 'masks' filesep 'allRegMask_' num2str(obj.scanNum) '_' obj.colorStr '.mat'];
             segMask = bwlabel(segMask);
-            save(saveLoc, 'segMask');
-            
+            save(saveLoc, 'segMask');        
         end
         
         function obj = createLabelMask(obj)
@@ -151,8 +150,7 @@ classdef scanClass
             
             segMask= bwlabel(inputVar.segMask);
             saveLoc = [obj.saveLoc filesep 'masks' filesep 'allRegMask_' num2str(obj.scanNum) '_' obj.colorStr '.mat'];
-            save(saveLoc, 'segMask');
-            
+            save(saveLoc, 'segMask');           
         end
         
         function obj = calcIndivClumpMask(obj, cut)

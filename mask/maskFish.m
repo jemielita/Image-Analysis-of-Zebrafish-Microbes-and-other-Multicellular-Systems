@@ -40,6 +40,37 @@ classdef maskFish
            
        end
        
+       function gutMask = getGutRegionMask(param, ns)
+           %gutMask = getGutRegionMask(param, scanNum): Construct a
+           %mask of the gut that gives gut regions perpendicular to the
+           %long axis of the gut for this scan.
+           poly = param.regionExtent.polyAll{ns};
+           imSize = param.regionExtent.regImSize{1};
+           gutMask = poly2mask(poly(:,1), poly(:,2), imSize(1), imSize(2));
+           
+           cl = param.centerLineAll{ns};
+           gutMask = curveMask(gutMask, cl,'', 'rectangle');
+           
+       end
+       
+       function getGutRegionMaskAll(param)
+           %m = getGutRegionMask(param): Construct a
+           %mask of the gut that gives gut regions perpendicular to the
+           %long axis of the gut for all scans. Save the result to the
+           %subdirectory 'masks'.
+           
+           if(~isdir([param.dataSaveDirectory filesep 'masks']))
+              mkdir([param.dataSaveDirectory filesep 'masks']); 
+           end
+           for ns = 1:param.expData.totalNumberScans
+               fprintf(1, ['Making mask for scan ', num2str(ns), '\n']);
+               gutMask = maskFish.getGutRegionMask(param, ns);
+               
+               %Save result
+               save([param.dataSaveDirectory filesep 'masks' filesep 'maskUnrotated_' num2str(ns) '.mat'], 'gutMask', '-v7.3');
+           end
+           
+       end
    end
    
        methods 
