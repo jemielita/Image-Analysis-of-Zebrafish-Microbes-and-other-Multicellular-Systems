@@ -154,7 +154,7 @@ classdef maskFish
            
           % segMask = maskFish.getBkgEstMask(param, scanNum, colorNum);
            
-           obj.colorInten(colorNum) = 1500;
+           obj.colorInten(colorNum) = 1000;
            segMask  = obj.getIntenMask(param, scanNum, colorNum,'lt');
          %  spotMask = obj.getSpotMask(param, scanNum, colorNum);
            spotMask = zeros(size(segMask));
@@ -224,7 +224,7 @@ classdef maskFish
                %To generate a histogram of potential intensities from source and
                %sink, dilate mask by a given amount and use that as the cutoff
                %between the two regions.
-               se = strel('disk',10);
+               se = strel('disk',5);
                
                maskD = imdilate(maskM,se);
                
@@ -232,7 +232,9 @@ classdef maskFish
                val = double(im(maskD));val = val(:);
                val(isnan(val)) = [];val(val==0) = [];
                
-               [sourceHistProb, sourceHistVal]= hist(double(im(maskD)),50);
+               %Require that all pixel values equal to 0 are not in source
+               src = double(im(maskD));src(src==0) =[];
+               [sourceHistProb, sourceHistVal]= hist(src,50);
                dx = unique(sourceHistVal(2:end)-sourceHistVal(1:end-1));
                dx = dx(1);
                sourceHistProb = sourceHistProb/(dx*sum(sourceHistProb(:)));
@@ -253,14 +255,25 @@ classdef maskFish
                intenEst{2,1} = sourceHistProb;
                intenEst{2,2} = sourceHistVal;
                
-               finMask = graphCut(im, maskM, ~maskD, intenEst);
+               %Require that pixels on the edge of the image region are in
+               %the sink (to prevent bleedthrough of our segmentation onto
+               %the image border
+               bkgMask = ~maskD;
+               bkgMask(1,:) = 1; bkgMask(:,1) = 1;
+               bkgMask(end,:) = 1; bkgMask(:,end) = 1;
+               
+               finMask = graphCut(im, maskM, bkgMask, intenEst);
+               finMask = finMask==1;
                maskTot(range(1):range(3), range(2):range(4)) = double(finMask)+double(maskTot(range(1):range(3), range(2):range(4)));
                
-               
-               %    %Now seeing how well we can do at our segmentation
-               %    imshow(im,[]);
-               %    alphamask(bwperim(mask), [1 0 0]);
-               %    alphamask(bwperim(finMask), [0 1 0]);
+               dspIm = true;
+               if(dspIm==true)
+                  %Now seeing how well we can do at our segmentation
+                  imshow(im,[]);
+                  alphamask(bwperim(mask), [1 0 0]);
+                  alphamask(bwperim(finMask), [0 1 0]);
+                  pause
+               end
                %    %Get histogram of pixel intensities in mask
                fprintf(1,'.');
                
