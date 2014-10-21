@@ -128,8 +128,18 @@ classdef scanClass
             inputVar = load([obj.saveLoc filesep 'param.mat']);
             param = inputVar.param;
             
+            if(~exist([obj.saveLoc filesep 'masks']))
+                mkdir([obj.saveLoc filesep 'masks'])
+            end
+            if(exist([obj.saveLoc filesep 'masks' filesep 'mask.mat'])==2)
+                inputVar = load([obj.saveLoc filesep 'masks' filesep 'mask.mat']);
+                mask = inputVar.mask;
+            else
+                mask = maskFish;
+            end
             %maskFish.getBkgEstMask(param, obj.scanNum, obj.colorNum);
-            mask = maskFish;
+            
+            
             segMask = mask.getGraphCutMask(param, obj.scanNum, obj.colorNum);
         
             %Save a binary mask-...this should eventually be removed
@@ -154,7 +164,7 @@ classdef scanClass
         end
         
         function obj = calcIndivClumpMask(obj, cut)
-            obj = obj.createLabelMask;
+%            obj = obj.createLabelMask;
             inputVar = load([obj.saveLoc filesep 'param.mat']);
             param = inputVar.param;
             

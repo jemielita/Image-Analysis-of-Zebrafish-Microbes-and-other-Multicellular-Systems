@@ -35,7 +35,7 @@ minThresh = 100;
 %mlj: maxThresh = 200 is decent for green, maxThresh = 30 should work for
 %red-we'll see tomorrow
 if(isempty(spotFeatures))
-    maxThresh = 30;
+    maxThresh = 400;
 else
     maxThresh = spotFeatures.intenThresh(colorNum);
 end
@@ -136,6 +136,7 @@ prop = regionprops(bw, im, 'Centroid', 'Area', 'MeanIntensity', 'BoundingBox', '
 propWv = regionprops(bw, imSeg, 'Centroid', 'Area', 'MeanIntensity', 'MaxIntensity', 'MinIntensity', 'WeightedCentroid','PixelIdxList');
 
 %Calculate properites of the background around each spot
+spotLoc = [];
 for i=1:length(prop)
     
     bb = round(prop(i).BoundingBox);
@@ -241,6 +242,10 @@ end
 % uniend
 
 %Remove super small spots
-spotLoc([spotLoc.Area2d]<=10) = [];
+if(~isempty(spotLoc))
+    spotLoc([spotLoc.Area2d]<=10) = [];
+else
+    spotLoc = []; %Need something to pass to the next part of our pipeline.
+end
 
 end
