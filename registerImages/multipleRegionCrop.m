@@ -706,7 +706,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
     function saveParam_Callback(hObject, eventdata)
         
         
-       checkFields(param);
+       %checkFields(param);
         
        %Function to save the param file that's created in the course of this analysis.
        %This is done in other function calls, but not with a directory of
@@ -732,7 +732,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
        %Save the fish file (containing analysis stuff) also to the same
        %directory
        saveFishFile = [saveDir filesep 'fishAnalysis.mat'];
-       save(saveFishFile, 'f');
+      % save(saveFishFile, 'f');
        
     end
 
@@ -2273,30 +2273,30 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
             param.regionExtent.XY{i}(:,1) = param.regionExtent.XY{i}(:,1)-minX+1;
             param.regionExtent.XY{i}(:,2) = param.regionExtent.XY{i}(:,2)-minY+1;
         end
-        
-        %mlj: temporary code
-        for ns =1:param.expData.totalNumberScans
-            param.centerLineAll{ns}(:,1) = param.centerLineAll{ns}(:,1)-minY+1;
-            param.centerLineAll{ns}(:,2) = param.centerLineAll{ns}(:,2)-minX+1;
-            
-            param.regionExtent.polyAll{ns}(:,1) = param.regionExtent.polyAll{ns}(:,1)-minY+1;
-            param.regionExtent.polyAll{ns}(:,2) = param.regionExtent.polyAll{ns}(:,2)-minX+1;
-            
-            param.endGutPos(ns,1) = param.endGutPos(ns,1)-minY+1;
-            param.endGutPos(ns,2) = param.endGutPos(ns,2)-minX+1;
-            
-            
-            param.autoFluorPos(ns,1) = param.autoFluorPos(ns,1)-minY+1;
-            param.autoFluorPos(ns,2) = param.autoFluorPos(ns,2)-minX+1;
-            
-            
-            param.beginGutPos(ns,1) = param.beginGutPos(ns,1)-minY+1;
-            param.beginGutPos(ns,2) = param.beginGutPos(ns,2)-minX+1;
-            
-            
-            param.autoFluorEndPos(ns,1) = param.autoFluorEndPos(ns,1)-minY+1;
-            param.autoFluorEndPos(ns,2) = param.autoFluorEndPos(ns,2)-minX+1;
-        end
+%         
+%         %mlj: temporary code
+%         for ns =1:param.expData.totalNumberScans
+%             param.centerLineAll{ns}(:,1) = param.centerLineAll{ns}(:,1)-minY+1;
+%             param.centerLineAll{ns}(:,2) = param.centerLineAll{ns}(:,2)-minX+1;
+%             
+%             param.regionExtent.polyAll{ns}(:,1) = param.regionExtent.polyAll{ns}(:,1)-minY+1;
+%             param.regionExtent.polyAll{ns}(:,2) = param.regionExtent.polyAll{ns}(:,2)-minX+1;
+%             
+%             param.endGutPos(ns,1) = param.endGutPos(ns,1)-minY+1;
+%             param.endGutPos(ns,2) = param.endGutPos(ns,2)-minX+1;
+%             
+%             
+%             param.autoFluorPos(ns,1) = param.autoFluorPos(ns,1)-minY+1;
+%             param.autoFluorPos(ns,2) = param.autoFluorPos(ns,2)-minX+1;
+%             
+%             
+%             param.beginGutPos(ns,1) = param.beginGutPos(ns,1)-minY+1;
+%             param.beginGutPos(ns,2) = param.beginGutPos(ns,2)-minX+1;
+%             
+%             
+%             param.autoFluorEndPos(ns,1) = param.autoFluorEndPos(ns,1)-minY+1;
+%             param.autoFluorEndPos(ns,2) = param.autoFluorEndPos(ns,2)-minX+1;
+%         end
        regDataTable = [];
        for i=1:length(param.color)
            thisColorData = [param.regionExtent.XY{i}(:, 1:2); param.regionExtent.regImSize{i}];
