@@ -8,20 +8,21 @@
 % spotLoc = countSingleBacteria(im, spotFeatures, colorNum, param)
 %
 
-function spotLoc = countSingleBacteria(im, spotFeatures, colorNum, param, varargin)
-
-if(nargin==5)
-    %For mapping the spot locations onto positions down the length of the
-    %gut.
-    gutMask = varargin{1};
-    
-    %Replace elements in im as we go-to avoid creating new array in memory
-    inPlace = false;
-   
-else
-    inPlace = false;
-end
-
+function spotLoc = countSingleBacteria(im, spotFeatures, colorNum, param, gutMask, intenThresh, maxThresh)
+inPlace = false;
+% 
+% if(nargin==5)
+%     %For mapping the spot locations onto positions down the length of the
+%     %gut.
+%     gutMask = varargin{1};
+%     
+%     %Replace elements in im as we go-to avoid creating new array in memory
+%     inPlace = false;
+%    
+% else
+%     inPlace = false;
+% end
+% 
 %Loading in filtering parameters
 %minObjSize = spotFeatures.minSize;
 %maxObjSize = spotFeatures.maxSize;
@@ -34,11 +35,11 @@ minThresh = 100;
 
 %mlj: maxThresh = 200 is decent for green, maxThresh = 30 should work for
 %red-we'll see tomorrow
-if(isempty(spotFeatures))
-    maxThresh = 400;
-else
-    maxThresh = spotFeatures.intenThresh(colorNum);
-end
+% if(isempty(spotFeatures))
+%     maxThresh = 400;
+% else
+%     maxThresh = spotFeatures.intenThresh(colorNum);
+% end
 
 %maskAll = zeros(size(im), 'uint8');
 % Filter image using wavelet filter
@@ -61,7 +62,7 @@ for nZ=1:size(im,3)
     thisFrame(:) = 0;
     %Find minimum and maximum extent of the region that needs to have spots
     %located in.
-    thisMask = im(:,:,nZ)==250;
+    thisMask = im(:,:,nZ)==intenThresh;
     
     if(sum(thisMask(:))==0)
         %Note sure why we're seeing blank frames-should look at load

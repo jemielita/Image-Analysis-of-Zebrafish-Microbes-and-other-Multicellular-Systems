@@ -28,6 +28,9 @@ switch lower(segmentType.Selection)
     case 'spot'
         segMask = spotSegment(param, colorNum, scanNum, imSize);
         
+    case 'final seg val'
+        inputVar = load( [param.dataSaveDirectory filesep 'masks' filesep 'allRegMask_' num2str(scanNum) '_' param.color{colorNum} '.mat']);
+        segMask =inputVar.segMask;
     case 'final seg'
         inputVar = load( [param.dataSaveDirectory filesep 'masks' filesep 'allRegMask_' num2str(scanNum) '_' param.color{colorNum} '.mat']);
         segMask = inputVar.segMask>0;

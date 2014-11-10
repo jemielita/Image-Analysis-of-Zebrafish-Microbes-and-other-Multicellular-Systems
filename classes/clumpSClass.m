@@ -47,7 +47,7 @@ classdef clumpSClass
         
         function ind = findRemovedClump(obj, loc)
            %Update indices of clumps to remove 
-           if(~isempty(obj.remInd))
+           if(isfield(obj, 'remInd'))
                ind = obj.remInd;
            else
                ind = [];

@@ -34,6 +34,7 @@ classdef scanClass
         %One dimensional line distribution for this bacterial population.
         lineDist = [];
         
+        
     end
     
     methods
@@ -121,7 +122,21 @@ classdef scanClass
             param.dataSaveDirectory = obj.saveLoc;
             temp = clumpSClass(param,obj.scanNum, obj.colorNum, 'get');
             
-            obj.clumps = temp;
+            %If remove indices are already set, don't set again, but
+            %provide warning
+            if(isempty(obj.clumps))
+                obj.clumps = temp;
+            else
+                if(~isempty(obj.clumps.remInd) )
+                    remInd = obj.clumps.remInd;
+                    obj.clumps = temp;
+                    obj.clumps.remInd = remInd;
+                    fprintf(1, 'Removed indices kept from current version of fishclass.\n');
+                else
+                    obj.clumps = temp;
+                end
+                
+            end
         end
         
         function obj = calcMask(obj)
@@ -320,6 +335,43 @@ classdef scanClass
            fprintf(1, '\n');
            
            
+        end
+        
+        function obj = combClumpIndiv(obj,cut)
+            %Combine together clump and spot detected data...need to work a
+            %little bit on the overall pipeline here.
+            inputVar = load([obj.saveLoc filesep 'singleBacCount' filesep 'bacCount' num2str(obj.scanNum) '.mat']);
+            rProp = inputVar.rProp{obj.colorNum};
+            
+            inputVar = load([obj.saveLoc filesep 'singleBacCount' filesep 'spotClassifier.mat']);
+            spots = inputVar.spots;
+            
+            
+            rProp = spotClass.keptManualSpots(rProp, spots.removeBugInd{obj.scanNum, obj.colorNum});
+            
+            newClump = rProp;
+            
+            %Intensity cutoff for individual bacteria
+            
+            ind = [newClump.totInten]<cut;
+            
+            %Cheater holder place for single bac intensity.
+            obj.totInten = mean([newClump(ind).totInten]);
+            
+            %Remove clumps that we've manually culled
+            ind = ismember([obj.clumps.allData.IND],obj.clumps.remInd);
+            obj.clumps.allData(ind) = [];
+            maxInd = max([obj.clumps.allData.IND]);
+              
+            inputVar = load([obj.saveLoc filesep 'param.mat']);
+            param = inputVar.param;
+            
+            numClumps = length(obj.clumps.allData);
+            for i=1:length(newClump)
+               obj.clumps.allData(numClumps+i) = clumpClass(obj.scanNum, obj.colorNum, param, maxInd+i) ;
+               obj.clumps.allData(numClumps+i).totalInten = newClump(i).totInten;
+            end
+            
         end
         
         

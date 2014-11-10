@@ -74,6 +74,11 @@ classdef spotFishClass
               return
            end
            
+           if(~isdir([param.dataSaveDirectory filesep 'foundSpots']))
+               mkdir([param.dataSaveDirectory filesep 'foundSpots']);
+               fprintf(1, 'Making directory to save data\n');
+            end
+           
            for ns = 1:obj.numScan
                
                for colorNum = 1:obj.numColor
@@ -82,7 +87,7 @@ classdef spotFishClass
                    mask = maskFish.getGutFillMask(param, ns);
                    
                    for nr = 1:obj.numReg
-             
+              
                        %% Load spots
                        im = load3dVolume(param, imVar, 'single',nr);
                        
@@ -96,9 +101,10 @@ classdef spotFishClass
                        
                        im = double(repmat(regMask,1,1,size(im,3))).*double(im);
                        
+                       objThresh = 400;
                        %% Get putative bacterial spots
                        im(im<obj.intenThresh) = obj.intenThresh;
-                       spotLoc = countSingleBacteria(im,'', colorNum, param,regMask);
+                       spotLoc = countSingleBacteria(im,'', colorNum, param,regMask,obj.intenThresh, objThresh);
                        if(isempty(spotLoc))
                            continue
                        end
@@ -211,7 +217,7 @@ classdef spotFishClass
                    %Give each element in rProp a unique index
                end
                fileName = [obj.saveDir filesep outputName num2str(ns) '.mat'];
-               save(fileName, 'rProp');
+                save(fileName, 'rProp');
                
            end
            fprintf(1, '\n');

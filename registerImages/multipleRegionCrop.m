@@ -773,7 +773,6 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
        
     end
 
-
     function loadFishAnalysis_Callback(~, ~)
        fileName = [param.dataSaveDirectory filesep 'fishAnalysis.mat'];
        if(exist(fileName, 'file')==2)
@@ -784,6 +783,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
        end
         
     end
+
     function changeKeystroke_Callback(hObject, eventdata)
         answer = inputdlg('Change z-increment value', '',1, {num2str(zIncr)});
         
@@ -800,7 +800,6 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
        save(S, 'windowPos');
        
     end
-
 
     function saveScan_Callback(hObject, eventdata)
         prompt = {'Scan range: initial', 'Scan range: final',...
@@ -877,6 +876,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         fprintf('\n');
         set(hIm, 'CData', imBig); 
     end
+
     function overlapColors_Callback(hObject, eventdata)
         %Use a check mark to indicate whether we'll align or not
         if strcmp(get(hMenuOverlapImages, 'Checked'),'on')
@@ -886,6 +886,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         end
  
     end
+
     function changeVarZ_Callback(hObject, eventdata)
         prompt = 'Change variable z step size';
         name = 'Variable z';
@@ -897,7 +898,6 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         set(hZSlider, 'SliderStep', [zStepSmall, zStepBig]);
         set(hMenuChangeVariableZStep, 'Tag', num2str(multiZSliceMax+1));
     end
-
 
     function showSegmentation_Callback(hObject, eventdata)
         
@@ -935,8 +935,6 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
 
     function displaySegmentation(scanNum, colorNum, segmentationType, f)
         
-        
-
             poly = param.regionExtent.polyAll{scanNum};
             cL = param.centerLineAll{scanNum};
             
@@ -1060,13 +1058,42 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
     function removeThisClump_Callback(hObject, eventdata)
         %Remove a new clump from the image
         [scanNum, colorNum] = getScanAndColor();
-        userG = newObject(userG, 'clumpRemove', scanNum, colorNum);
-        userG = userG.saveG(scanNum, colorNum);
-
-        [f, ~] = updateField(userG, f, param, scanNum, colorNum);
-
-        f.scan(scanNum, colorNum).clumps.remInd
-        displaySegmentation(scanNum, colorNum, segmentationType, f);
+        %        userG = newObject(userG, 'clumpRemove', scanNum, colorNum);
+        %       userG = userG.saveG(scanNum, colorNum);
+        
+        %      [f, ~] = updateField(userG, f, param, scanNum, colorNum);
+        poly = param.regionExtent.polyAll{scanNum};
+        cL = param.centerLineAll{scanNum};
+        
+        height = param.regionExtent.regImSize{1}(1);
+        width = param.regionExtent.regImSize{1}(2);
+        
+        gutMask = poly2mask(poly(:,1), poly(:,2), height,width);
+        segmentationType.Selection = 'final seg val';
+        im = get(hIm, 'CData');
+        imSeg = im; imSeg(~gutMask) = NaN;
+        segMask = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param, f.scan(scanNum, colorNum), '');
+        keptMask = segMask>0;
+        removing = true;
+        while (removing==true)
+            h = imrect(imageRegion); position = wait(h);
+           delete(h);
+            m = imcrop(segMask,position);
+            m = unique(m); m(m==0) = [];
+            
+            
+            f.scan(scanNum, colorNum).clumps.remInd = [f.scan(scanNum, colorNum).clumps.remInd; m];
+            
+            %Make mask of kept clumps
+            keptMask(ismember(segMask, m)) = 0;
+            
+            maskFeat.Type = 'perim';
+            maskFeat.seSize = 5;
+            segmentationType.Selection = '';
+            
+            rgbIm = segmentRegionShowMask(keptMask, maskFeat, segmentationType, imageRegion);
+            f.save
+        end
         
     end
 
@@ -2274,30 +2301,30 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
             param.regionExtent.XY{i}(:,1) = param.regionExtent.XY{i}(:,1)-minX+1;
             param.regionExtent.XY{i}(:,2) = param.regionExtent.XY{i}(:,2)-minY+1;
         end
-        
-        %mlj: temporary code
-        for ns =1:param.expData.totalNumberScans
-            param.centerLineAll{ns}(:,1) = param.centerLineAll{ns}(:,1)-minY+1;
-            param.centerLineAll{ns}(:,2) = param.centerLineAll{ns}(:,2)-minX+1;
-            
-            param.regionExtent.polyAll{ns}(:,1) = param.regionExtent.polyAll{ns}(:,1)-minY+1;
-            param.regionExtent.polyAll{ns}(:,2) = param.regionExtent.polyAll{ns}(:,2)-minX+1;
-            
-            param.endGutPos(ns,1) = param.endGutPos(ns,1)-minY+1;
-            param.endGutPos(ns,2) = param.endGutPos(ns,2)-minX+1;
-            
-            
-            param.autoFluorPos(ns,1) = param.autoFluorPos(ns,1)-minY+1;
-            param.autoFluorPos(ns,2) = param.autoFluorPos(ns,2)-minX+1;
-            
-            
-            param.beginGutPos(ns,1) = param.beginGutPos(ns,1)-minY+1;
-            param.beginGutPos(ns,2) = param.beginGutPos(ns,2)-minX+1;
-            
-            
-            param.autoFluorEndPos(ns,1) = param.autoFluorEndPos(ns,1)-minY+1;
-            param.autoFluorEndPos(ns,2) = param.autoFluorEndPos(ns,2)-minX+1;
-        end
+%         
+%         %mlj: temporary code
+%         for ns =1:param.expData.totalNumberScans
+%             param.centerLineAll{ns}(:,1) = param.centerLineAll{ns}(:,1)-minY+1;
+%             param.centerLineAll{ns}(:,2) = param.centerLineAll{ns}(:,2)-minX+1;
+%             
+%             param.regionExtent.polyAll{ns}(:,1) = param.regionExtent.polyAll{ns}(:,1)-minY+1;
+%             param.regionExtent.polyAll{ns}(:,2) = param.regionExtent.polyAll{ns}(:,2)-minX+1;
+%             
+%             param.endGutPos(ns,1) = param.endGutPos(ns,1)-minY+1;
+%             param.endGutPos(ns,2) = param.endGutPos(ns,2)-minX+1;
+%             
+%             
+%             param.autoFluorPos(ns,1) = param.autoFluorPos(ns,1)-minY+1;
+%             param.autoFluorPos(ns,2) = param.autoFluorPos(ns,2)-minX+1;
+%             
+%             
+%             param.beginGutPos(ns,1) = param.beginGutPos(ns,1)-minY+1;
+%             param.beginGutPos(ns,2) = param.beginGutPos(ns,2)-minX+1;
+%             
+%             
+%             param.autoFluorEndPos(ns,1) = param.autoFluorEndPos(ns,1)-minY+1;
+%             param.autoFluorEndPos(ns,2) = param.autoFluorEndPos(ns,2)-minX+1;
+%         end
        regDataTable = [];
        for i=1:length(param.color)
            thisColorData = [param.regionExtent.XY{i}(:, 1:2); param.regionExtent.regImSize{i}];
@@ -4489,10 +4516,10 @@ end
 %The number of scans might not equal the number reported
 %if the scan was halted early...manually updating this
 
-scanDir = dir([param.directoryName filesep 'Scans']);
-numScans = regexp({scanDir.name}, 'scan_\d+');
-numScans = sum([numScans{:}]);
-param.expData.totalNumberScans = numScans;
+% scanDir = dir([param.directoryName filesep 'Scans']);
+% numScans = regexp({scanDir.name}, 'scan_\d+');
+% numScans = sum([numScans{:}]);
+% param.expData.totalNumberScans = numScans;
 
 
 %Set data save directory if not done already

@@ -154,8 +154,7 @@ classdef maskFish
            % algorithm.
            
           % segMask = maskFish.getBkgEstMask(param, scanNum, colorNum);
-           
-           obj.colorInten(colorNum) = 1000;
+           obj.colorInten = [300,500];
            segMask  = obj.getIntenMask(param, scanNum, colorNum,'lt');
            %  spotMask = obj.getSpotMask(param, scanNum, colorNum);
            spotMask = zeros(size(segMask));
@@ -163,7 +162,7 @@ classdef maskFish
            im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
            obj.colorInten(colorNum)  = obj.getIntensityCutoff(im, spotMask);
            
-           obj.colorInten(colorNum) = 1000;
+           obj.colorInten(colorNum) = 600;
            intenMask = obj.getIntenMask(param, scanNum, colorNum);
            
            intenMask = obj.removeSmallObj(intenMask, spotMask);
