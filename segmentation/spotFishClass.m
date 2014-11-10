@@ -74,6 +74,11 @@ classdef spotFishClass
               return
            end
            
+           if(~isdir([param.dataSaveDirectory filesep 'foundSpots']))
+               mkdir([param.dataSaveDirectory filesep 'foundSpots']);
+               fprintf(1, 'Making directory to save data\n');
+            end
+           
            for ns = 1:obj.numScan
                
                for colorNum = 1:obj.numColor
@@ -82,7 +87,7 @@ classdef spotFishClass
                    mask = maskFish.getGutFillMask(param, ns);
                    
                    for nr = 1:obj.numReg
-                       
+              
                        %% Load spots
                        im = load3dVolume(param, imVar, 'single',nr);
                        
@@ -96,10 +101,13 @@ classdef spotFishClass
                        
                        im = double(repmat(regMask,1,1,size(im,3))).*double(im);
                        
+                       objThresh = 400;
                        %% Get putative bacterial spots
                        im(im<obj.intenThresh) = obj.intenThresh;
-                       spotLoc = countSingleBacteria(im,'', colorNum, param,regMask);
-                       
+                       spotLoc = countSingleBacteria(im,'', colorNum, param,regMask,obj.intenThresh, objThresh);
+                       if(isempty(spotLoc))
+                           continue
+                       end
                        %% Map spot location onto the coordinate system used
                        %for the gut
                       
@@ -119,7 +127,6 @@ classdef spotFishClass
                        
                        %% Update spots index and gut slice number
                        spotLoc = spotClass.findGutSliceParticle(spotLoc, param, ns);
-                       spotLoc = spotClass.setSpotInd(spotLoc);
                        
                        %% Save results
                        fileName = [param.dataSaveDirectory filesep 'foundSpots' filesep 'nS_' num2str(ns) '_' obj.colorStr{colorNum} '_nR' num2str(nr) '.mat'];
@@ -167,6 +174,11 @@ classdef spotFishClass
                    imVar.scanNum = ns;imVar.zNum =''; imVar.color = obj.colorStr{colorNum};                   
                    for nr = 1:obj.numReg
                        fileName = [param.dataSaveDirectory filesep inputDir inputName filesep 'nS_' num2str(ns) '_' obj.colorStr{colorNum} '_nR' num2str(nr) '.mat'];
+                       if(exist(fileName,'file')==0)
+                          %This region wasn't made in our analysis because
+                          %no spots were found.
+                           continue;
+                       end
                        inputVar = load(fileName);
                        spotLoc = inputVar.spotLoc;
                        
@@ -201,10 +213,11 @@ classdef spotFishClass
                        end                       
                        fprintf(1, '.');
                    end
-                   
+                   rProp{colorNum} = spotClass.setSpotInd(rProp{colorNum});
+                   %Give each element in rProp a unique index
                end
                fileName = [obj.saveDir filesep outputName num2str(ns) '.mat'];
-               save(fileName, 'rProp');
+                save(fileName, 'rProp');
                
            end
            fprintf(1, '\n');

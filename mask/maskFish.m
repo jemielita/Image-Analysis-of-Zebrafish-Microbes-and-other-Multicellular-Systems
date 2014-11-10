@@ -13,6 +13,7 @@ classdef maskFish
         
         bkgOffset = 1.8; %Scalar offset from the estimated background in each wedge of the gut.
         colorInten = [1000,500]; %Intensity cutoff for each color channel (assuming 2) to produce the intensity cutoff mask.
+        saveDir = '';
     end
     
    methods(Static)
@@ -153,16 +154,15 @@ classdef maskFish
            % algorithm.
            
           % segMask = maskFish.getBkgEstMask(param, scanNum, colorNum);
-           
-           obj.colorInten(colorNum) = 1000;
+           obj.colorInten = [300,500];
            segMask  = obj.getIntenMask(param, scanNum, colorNum,'lt');
-         %  spotMask = obj.getSpotMask(param, scanNum, colorNum);
+           %  spotMask = obj.getSpotMask(param, scanNum, colorNum);
            spotMask = zeros(size(segMask));
            recalcProj = false;
            im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
            obj.colorInten(colorNum)  = obj.getIntensityCutoff(im, spotMask);
            
-           obj.colorInten(colorNum) = 1000;
+           obj.colorInten(colorNum) = 600;
            intenMask = obj.getIntenMask(param, scanNum, colorNum);
            
            intenMask = obj.removeSmallObj(intenMask, spotMask);
@@ -248,7 +248,6 @@ classdef maskFish
                
                %[sinkHistProb, sinkHistVal] = hist(double(im(~maskD)),50);
                
-               
                intenEst{1,1} = sinkHistProb;
                intenEst{1,2} = sinkHistVal;
                
@@ -266,7 +265,7 @@ classdef maskFish
                finMask = finMask==1;
                maskTot(range(1):range(3), range(2):range(4)) = double(finMask)+double(maskTot(range(1):range(3), range(2):range(4)));
                
-               dspIm = true;
+               dspIm = false;
                if(dspIm==true)
                   %Now seeing how well we can do at our segmentation
                   imshow(im,[]);
@@ -274,15 +273,13 @@ classdef maskFish
                   alphamask(bwperim(finMask), [0 1 0]);
                   pause
                end
-               %    %Get histogram of pixel intensities in mask
+               %Get histogram of pixel intensities in mask
                fprintf(1,'.');
-               
                
            end
            fprintf(1,'\n');
            
-           m = maskTot>0;
-           
+           m = maskTot>0;         
        end
        
        function inten = getIntensityCutoff(obj,im, spotMask)
@@ -335,6 +332,15 @@ classdef maskFish
        
        function m = calcIndivClumpMask(obj,param, scanNum, colorNum)
            
+       end
+       
+       function saveInstance(obj)
+          %saveInstance(): save this instance of maskFIsh to
+          %(obj.saveDir/'masks.mat). This will almost always be in
+          %the subfolder /gutOutline/masks
+          spots = obj;
+          save([obj.saveDir filesep 'mask.mat'], 'spots');     
+          fprintf(1, 'maskFish instance saved!\n');
        end
    end
 

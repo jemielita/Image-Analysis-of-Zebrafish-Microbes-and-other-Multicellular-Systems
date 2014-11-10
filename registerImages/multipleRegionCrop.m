@@ -705,8 +705,8 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
 
     function saveParam_Callback(hObject, eventdata)
         
-        
        %checkFields(param);
+
         
        %Function to save the param file that's created in the course of this analysis.
        %This is done in other function calls, but not with a directory of
@@ -723,6 +723,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
        %Save the result to the param file associated with the data.
        saveFile = [saveDir fileName];
        
+       param.gutRegionsInd = findGutRegionMaskNumber(param,false);
        %Remove the last backspace
        saveDir = saveDir(1:end-1);
        %Update param.dataSaveDirectory to where we are saving param
@@ -731,8 +732,12 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
       
        %Save the fish file (containing analysis stuff) also to the same
        %directory
+       
        saveFishFile = [saveDir filesep 'fishAnalysis.mat'];
+
       % save(saveFishFile, 'f');
+%       f = fishClass(param);
+ %      save(saveFishFile, 'f');
        
     end
 
@@ -771,7 +776,6 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
        
     end
 
-
     function loadFishAnalysis_Callback(~, ~)
        fileName = [param.dataSaveDirectory filesep 'fishAnalysis.mat'];
        if(exist(fileName, 'file')==2)
@@ -782,6 +786,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
        end
         
     end
+
     function changeKeystroke_Callback(hObject, eventdata)
         answer = inputdlg('Change z-increment value', '',1, {num2str(zIncr)});
         
@@ -798,7 +803,6 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
        save(S, 'windowPos');
        
     end
-
 
     function saveScan_Callback(hObject, eventdata)
         prompt = {'Scan range: initial', 'Scan range: final',...
@@ -875,6 +879,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         fprintf('\n');
         set(hIm, 'CData', imBig); 
     end
+
     function overlapColors_Callback(hObject, eventdata)
         %Use a check mark to indicate whether we'll align or not
         if strcmp(get(hMenuOverlapImages, 'Checked'),'on')
@@ -884,6 +889,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         end
  
     end
+
     function changeVarZ_Callback(hObject, eventdata)
         prompt = 'Change variable z step size';
         name = 'Variable z';
@@ -895,7 +901,6 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         set(hZSlider, 'SliderStep', [zStepSmall, zStepBig]);
         set(hMenuChangeVariableZStep, 'Tag', num2str(multiZSliceMax+1));
     end
-
 
     function showSegmentation_Callback(hObject, eventdata)
         
@@ -933,8 +938,6 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
 
     function displaySegmentation(scanNum, colorNum, segmentationType, f)
         
-        
-
             poly = param.regionExtent.polyAll{scanNum};
             cL = param.centerLineAll{scanNum};
             
@@ -1058,13 +1061,42 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
     function removeThisClump_Callback(hObject, eventdata)
         %Remove a new clump from the image
         [scanNum, colorNum] = getScanAndColor();
-        userG = newObject(userG, 'clumpRemove', scanNum, colorNum);
-        userG = userG.saveG(scanNum, colorNum);
-
-        [f, ~] = updateField(userG, f, param, scanNum, colorNum);
-
-        f.scan(scanNum, colorNum).clumps.remInd
-        displaySegmentation(scanNum, colorNum, segmentationType, f);
+        %        userG = newObject(userG, 'clumpRemove', scanNum, colorNum);
+        %       userG = userG.saveG(scanNum, colorNum);
+        
+        %      [f, ~] = updateField(userG, f, param, scanNum, colorNum);
+        poly = param.regionExtent.polyAll{scanNum};
+        cL = param.centerLineAll{scanNum};
+        
+        height = param.regionExtent.regImSize{1}(1);
+        width = param.regionExtent.regImSize{1}(2);
+        
+        gutMask = poly2mask(poly(:,1), poly(:,2), height,width);
+        segmentationType.Selection = 'final seg val';
+        im = get(hIm, 'CData');
+        imSeg = im; imSeg(~gutMask) = NaN;
+        segMask = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param, f.scan(scanNum, colorNum), '');
+        keptMask = segMask>0;
+        removing = true;
+        while (removing==true)
+            h = imrect(imageRegion); position = wait(h);
+           delete(h);
+            m = imcrop(segMask,position);
+            m = unique(m); m(m==0) = [];
+            
+            
+            f.scan(scanNum, colorNum).clumps.remInd = [f.scan(scanNum, colorNum).clumps.remInd; m];
+            
+            %Make mask of kept clumps
+            keptMask(ismember(segMask, m)) = 0;
+            
+            maskFeat.Type = 'perim';
+            maskFeat.seSize = 5;
+            segmentationType.Selection = '';
+            
+            rgbIm = segmentRegionShowMask(keptMask, maskFeat, segmentationType, imageRegion);
+            f.save
+        end
         
     end
 
@@ -1215,7 +1247,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 
                 %position = wait(hRemBug);
                 pause(0.5);
-                hRemBugAPI =iptgetapi(hRemBug);
+                hRemBugAPI = iptgetapi(hRemBug);
                 
                 position = hRemBugAPI.getPosition();
                 
@@ -1408,8 +1440,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         zNum = get(hZSlider, 'Value');
         zNum = int16(zNum);
         
-        xyz = [rProp.CentroidOrig];
-        xyz = reshape(xyz,3,length(xyz)/3);
+        [xyz,~] = spots.getSpotLoc(rProp, 'all', scanNum, colorNum);
         
         indAll = findBugsBox(position, xyz);
         bugWindow = 1;
@@ -1448,7 +1479,6 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         ind = intersect(indX, indY); 
     end
 
-
     function rProp = getrPropFile()
         [scanNum, colorNum] = getScanAndColor();     
         rProp = spots.loadSpot(scanNum, colorNum);    
@@ -1465,6 +1495,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
             [xyz, xyzRem, xyzKept,~] = getBugList(rProp);
          
         end
+        
         if(isempty(hP{1}))
             hold on
             
@@ -1477,7 +1508,6 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
             hold off
             
         end
-        
         
         switch projectionType
             case 'mip'
@@ -1526,10 +1556,11 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 locData{2} = xyz(:,loc==0);
                 locData{3} = xyz(:, loc==1);
                 
-                for i=1:3
-                    set(hP{i},'XData', locData{i}(1,:));
-                    set(hP{i}, 'YData', locData{i}(2,:));
+                for j=1:3
+                    set(hP{j},'XData', locData{j}(1,:));
+                    set(hP{j}, 'YData', locData{j}(2,:));
                 end
+                
                 if(~isempty(spots.removeBugInd))
                     
                     remLoc = -1*(xyzRem(3,:)<zNum-bugWindow) + (xyzRem(3,:)>zNum+bugWindow);
@@ -1566,9 +1597,9 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 locData{2} = xyz(:,loc==0);
                 locData{3} = xyz(:, loc==1);
                 locData{2}(3,:)
-                for i=1:3
-                    set(hP{i},'XData', locData{i}(1,:));
-                    set(hP{i}, 'YData', locData{i}(2,:));
+                for j=1:3
+                    set(hP{j},'XData', locData{j}(1,:));
+                    set(hP{j}, 'YData', locData{j}(2,:));
                 end
                 if(~isempty(spots.removeBugInd))
                     
@@ -4488,10 +4519,10 @@ end
 %The number of scans might not equal the number reported
 %if the scan was halted early...manually updating this
 
-scanDir = dir([param.directoryName filesep 'Scans']);
-numScans = regexp({scanDir.name}, 'scan_\d+');
-numScans = sum([numScans{:}]);
-param.expData.totalNumberScans = numScans;
+% scanDir = dir([param.directoryName filesep 'Scans']);
+% numScans = regexp({scanDir.name}, 'scan_\d+');
+% numScans = sum([numScans{:}]);
+% param.expData.totalNumberScans = numScans;
 
 
 %Set data save directory if not done already

@@ -47,7 +47,11 @@ classdef clumpSClass
         
         function ind = findRemovedClump(obj, loc)
            %Update indices of clumps to remove 
-           ind = obj.remInd;
+           if(isfield(obj, 'remInd'))
+               ind = obj.remInd;
+           else
+               ind = [];
+           end
            
            cen = [obj.allData.cropRect];
            cen = reshape(cen, 4, length(obj.allData));
