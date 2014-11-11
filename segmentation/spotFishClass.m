@@ -194,6 +194,29 @@ classdef spotFishClass
                        pos(1,:) = pos(1,:) + yOutI -1;
                        pos(2,:) = pos(2,:) + xOutI -1;
                        
+                       %Get range that overlaps the different regions and
+                       %remove points from the more posterior region (to
+                       %avoid overcounting).
+                       if(nr<obj.numReg)
+                           %Pick out the region that overlaps for the x and
+                           %y direction
+                           yList = [param.regionExtent.XY{1}(nr,1),param.regionExtent.XY{1}(nr,1)+param.regionExtent.XY{1}(nr,3), ...
+                               param.regionExtent.XY{1}(nr+1,1),param.regionExtent.XY{1}(nr+1,1)+param.regionExtent.XY{1}(nr+1,3)];
+                           yList = sort(yList); yList = yList(2:3);
+                          
+                           
+                           xList = [param.regionExtent.XY{1}(nr,2),param.regionExtent.XY{1}(nr,2)+param.regionExtent.XY{1}(nr,4), ...
+                               param.regionExtent.XY{1}(nr+1,2),param.regionExtent.XY{1}(nr+1,2)+param.regionExtent.XY{1}(nr+1,4)];
+                           xList = sort(xList); xList = xList(2:3);
+                          
+                           indX = pos(1,:)>xList(1) & pos(1,:)<xList(2);
+                           indY = pos(2,:)>yList(1) & pos(2,:)<yList(2);
+                           
+                           ind = indX.*indY;
+                          
+                           pos = pos(:,~ind);
+                           spotLoc = spotLoc(~ind);
+                       end
                        %Get new z coordinates
                        zList = param.regionExtent.Z(:,nr);
                        ind = find(zList~=-1, 1,'first');
