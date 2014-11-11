@@ -50,6 +50,17 @@ switch nargin
         return
 end
 
+%Check inputs
+
+if(~ismember(fileType, ['png', 'tiff']))
+    frpintf(2, 'Can only accept png and tiff as files types to save to!\n');
+    return
+end
+if(~ismember(cropType, ['all', 'xy', 'z']))
+   fprintf(2, 'Can only accept all xy and z as crop types!\n'); 
+    return
+end
+    
 
 
 %Auto crop down if desired.

@@ -705,7 +705,8 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
 
     function saveParam_Callback(hObject, eventdata)
         
-       checkFields(param);
+       %checkFields(param);
+
         
        %Function to save the param file that's created in the course of this analysis.
        %This is done in other function calls, but not with a directory of
@@ -733,8 +734,10 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
        %directory
        
        saveFishFile = [saveDir filesep 'fishAnalysis.mat'];
-       f = fishClass(param);
-       save(saveFishFile, 'f');
+
+      % save(saveFishFile, 'f');
+%       f = fishClass(param);
+ %      save(saveFishFile, 'f');
        
     end
 
