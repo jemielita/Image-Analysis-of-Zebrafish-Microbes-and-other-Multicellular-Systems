@@ -178,6 +178,17 @@ classdef scanClass
             save(saveLoc, 'segMask');           
         end
         
+        function obj = filterMask(obj)
+            %Filter down the calculated cluster map produced by .calcMask
+            %(graph cut approach)
+            
+            inputVar = load([obj.saveLoc filesep 'masks' filesep 'mask.mat']);
+            mask = inputVar.mask;
+            m = mask.filterMask(obj.scanNum, obj.colorStr);
+            
+            
+        end
+        
         function obj = calcIndivClumpMask(obj, cut)
 %            obj = obj.createLabelMask;
             inputVar = load([obj.saveLoc filesep 'param.mat']);

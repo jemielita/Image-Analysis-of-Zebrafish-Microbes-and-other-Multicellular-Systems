@@ -14,6 +14,8 @@ classdef maskFish
         bkgOffset = 1.8; %Scalar offset from the estimated background in each wedge of the gut.
         colorInten = [1000,500]; %Intensity cutoff for each color channel (assuming 2) to produce the intensity cutoff mask.
         saveDir = '';
+        
+        minClusterSize = 10000;
     end
     
    methods(Static)
@@ -61,7 +63,7 @@ classdef maskFish
            %subdirectory 'masks'.
            
            if(~isdir([param.dataSaveDirectory filesep 'masks']))
-              mkdir([param.dataSaveDirectory filesep 'masks']); 
+               mkdir([param.dataSaveDirectory filesep 'masks']);
            end
            for ns = 1:param.expData.totalNumberScans
                fprintf(1, ['Making mask for scan ', num2str(ns), '\n']);
@@ -154,7 +156,7 @@ classdef maskFish
            % algorithm.
            
           % segMask = maskFish.getBkgEstMask(param, scanNum, colorNum);
-           obj.colorInten = [300,500];
+           obj.colorInten = [800,1000];
            segMask  = obj.getIntenMask(param, scanNum, colorNum,'lt');
            %  spotMask = obj.getSpotMask(param, scanNum, colorNum);
            spotMask = zeros(size(segMask));
@@ -162,7 +164,7 @@ classdef maskFish
            im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
            obj.colorInten(colorNum)  = obj.getIntensityCutoff(im, spotMask);
            
-           obj.colorInten(colorNum) = 600;
+           obj.colorInten(colorNum) = 1200;
            intenMask = obj.getIntenMask(param, scanNum, colorNum);
            
            intenMask = obj.removeSmallObj(intenMask, spotMask);
@@ -334,12 +336,41 @@ classdef maskFish
            
        end
        
+       function m = filterMask(obj, scanNum,colorStr)
+           saveLoc = [obj.saveDir filesep 'allRegMask_' num2str(scanNum) '_' colorStr '.mat'];
+           inputVar = load(saveLoc); segMask = inputVar.segMask;
+           segMask = bwlabel(segMask>0);
+           
+           
+           segMaskNew = bwareaopen(segMask, obj.minClusterSize);
+           
+           %Save result, backup old result
+           if(~isdir([obj.saveDir filesep 'maskBackup']))
+              mkdir([obj.saveDir filesep 'maskBackup']); 
+           end
+           save([obj.saveDir filesep 'maskBackup' filesep 'allRegMask_' num2str(scanNum) '_' colorStr '.mat'], 'segMask');
+           
+
+           segMask = bwlabel(segMaskNew);
+%Save output as a label matrix, not a binary mask.           
+           save([obj.saveDir filesep 'allRegMask_' num2str(scanNum) '_' colorStr '.mat'], 'segMask');
+           
+           m = segMask;
+       end
+       
+       
        function saveInstance(obj)
           %saveInstance(): save this instance of maskFIsh to
           %(obj.saveDir/'masks.mat). This will almost always be in
           %the subfolder /gutOutline/masks
-          spots = obj;
-          save([obj.saveDir filesep 'mask.mat'], 'spots');     
+          mask = obj;
+          
+          if(~isdir(obj.saveDir))
+              fprintf(1, 'Making directory for masks.\n');
+              mkdir(obj.saveDir)
+          end
+              
+          save([obj.saveDir filesep 'mask.mat'], 'mask');     
           fprintf(1, 'maskFish instance saved!\n');
        end
    end

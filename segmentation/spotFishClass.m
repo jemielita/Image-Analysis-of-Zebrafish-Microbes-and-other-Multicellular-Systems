@@ -81,14 +81,14 @@ classdef spotFishClass
            
            for ns = 1:obj.numScan
                
-               for colorNum = 1:obj.numColor
+               for colorNum = 1:1
                    
                    imVar.scanNum = ns;imVar.zNum =''; imVar.color = obj.colorStr{colorNum};
                    mask = maskFish.getGutFillMask(param, ns);
                    
-                   for nr = 1:obj.numReg
-              
-                       %% Load spots
+                   %for nr = 1:obj.numReg
+              for nr = 1:2
+                       %% Load spots 
                        im = load3dVolume(param, imVar, 'single',nr);
                        
                        xOutI = param.regionExtent.XY{colorNum}(nr,1);
@@ -101,7 +101,7 @@ classdef spotFishClass
                        
                        im = double(repmat(regMask,1,1,size(im,3))).*double(im);
                        
-                       objThresh = 400;
+                       objThresh = 200;
                        %% Get putative bacterial spots
                        im(im<obj.intenThresh) = obj.intenThresh;
                        spotLoc = countSingleBacteria(im,'', colorNum, param,regMask,obj.intenThresh, objThresh);
@@ -109,7 +109,7 @@ classdef spotFishClass
                            continue
                        end
                        %% Map spot location onto the coordinate system used
-                       %for the gut
+                       % for the gut
                       
                        %Get x y coordinates
                        pos = [spotLoc.Centroid];

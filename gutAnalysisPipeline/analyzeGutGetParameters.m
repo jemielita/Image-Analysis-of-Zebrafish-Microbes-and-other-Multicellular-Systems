@@ -13,7 +13,7 @@
 %        
 %AUTHOR: Matthew Jemielita, Oct 29, 2013
 
-function [pAll,varargout] = analyzeGutGetParameters()
+function [pAll,varargout] = analyzeGutGetParameters(varargin)
 
 dirNames = uipickfiles();
 
@@ -30,12 +30,34 @@ if(length(dirNames)==1)
     end
     dirNames = dirNamesTemp;
 else
-   %Get the location of the param file for each of these entries
-   for i=1:length(dirNames)
-      dirNames{i} = [dirNames{i} filesep 'gutOutline' filesep 'param.mat']; 
+    
+if(nargin==1)
+   findSubDir = varargin{1};
+   if(findSubDir ==true)
+       allDir = [];
+       n = 1;
+      for i=1:length(dirNames)
+          cd(dirNames{i});
+          subDir = rdir('**\param.mat');
+          
+          for j=1:length(subDir)
+             allDir{n} = [pwd filesep subDir(j).name]; 
+             n = n+1;
+          end
+      end
    end
+   
+   dirNames = allDir;
+else
+    
+    %Get the location of the param file for each of these entries
+    for i=1:length(dirNames)
+        dirNames{i} = [dirNames{i} filesep 'gutOutline' filesep 'param.mat'];
+    end
 end
 
+
+end
 
 pAll = cell(length(dirNames),1);
 for nF=1:length(dirNames)

@@ -1078,25 +1078,23 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         segMask = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param, f.scan(scanNum, colorNum), '');
         keptMask = segMask>0;
         removing = true;
-        while (removing==true)
+        %while (removing==true)
             h = imrect(imageRegion); position = wait(h);
-           delete(h);
+            delete(h);
             m = imcrop(segMask,position);
             m = unique(m); m(m==0) = [];
             
-            
             f.scan(scanNum, colorNum).clumps.remInd = [f.scan(scanNum, colorNum).clumps.remInd; m];
-            
+            m = f.scan(scanNum, colorNum).clumps.remInd;
             %Make mask of kept clumps
             keptMask(ismember(segMask, m)) = 0;
             
             maskFeat.Type = 'perim';
             maskFeat.seSize = 5;
-            segmentationType.Selection = '';
             
             rgbIm = segmentRegionShowMask(keptMask, maskFeat, segmentationType, imageRegion);
             f.save
-        end
+        %end
         
     end
 

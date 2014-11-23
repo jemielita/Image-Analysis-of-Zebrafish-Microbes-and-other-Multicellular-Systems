@@ -156,6 +156,18 @@ classdef fishClass
             end
         end
         
+        function obj = filterMasks(obj)
+            %Filter down result from calcMask.
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c).filterMask();
+                    fprintf(1, '.');
+                end
+                
+            end
+            fprintf(1, '\n');
+        end
+        
         function obj = calcClumpCentroid(obj)
             for s = 1:obj.totalNumScans
                 for c = 2:obj.totalNumColor
