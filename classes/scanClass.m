@@ -323,8 +323,6 @@ classdef scanClass
                   a = a+ arrayfun(@(x)sum(cmask(mask(:,:,j)==x)), indm);
               end
               
-              b = 0;
-              
               %Remove areas outside region we're interested in.
               a(~ismember(indm,  obj.gutRegionsInd(1):obj.gutRegionsInd(5))) = [];
               indm(~ismember(indm,  obj.gutRegionsInd(1):obj.gutRegionsInd(5))) = [];
@@ -335,16 +333,13 @@ classdef scanClass
                   
               end
               
-              
               %Assign to lineDist based on intensity
               totPop = obj.clumps.allData(i).totalInten/9.5e+05;
-              
               
               obj.lineDist(indm) = obj.lineDist(indm)+ (a/sum(a))*totPop;
            end
            
            fprintf(1, '\n');
-           
            
         end
         
@@ -356,7 +351,6 @@ classdef scanClass
             
             inputVar = load([obj.saveLoc filesep 'singleBacCount' filesep 'spotClassifier.mat']);
             spots = inputVar.spots;
-            
             
             rProp = spotClass.keptManualSpots(rProp, spots.removeBugInd{obj.scanNum, obj.colorNum});
             
@@ -381,10 +375,10 @@ classdef scanClass
             for i=1:length(newClump)
                obj.clumps.allData(numClumps+i) = clumpClass(obj.scanNum, obj.colorNum, param, maxInd+i) ;
                obj.clumps.allData(numClumps+i).totalInten = newClump(i).totInten;
+                obj.clumps.allData(numClumps+i).sliceNum = newClump(i).sliceNum;
             end
             
         end
-        
         
     end
     

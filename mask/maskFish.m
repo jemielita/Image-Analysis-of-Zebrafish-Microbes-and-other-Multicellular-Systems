@@ -12,7 +12,8 @@ classdef maskFish
         colorNum = NaN;
         
         bkgOffset = 1.8; %Scalar offset from the estimated background in each wedge of the gut.
-        colorInten = [1000,500]; %Intensity cutoff for each color channel (assuming 2) to produce the intensity cutoff mask.
+        colorInten = [800, 1000]; %Intensity cutoff for each color channel (assuming 2) to produce the intensity cutoff mask.
+        colorIntenMarker = [1200, 1200]; %Intensity cutoff for defining markers.
         saveDir = '';
         
         minClusterSize = 10000;
@@ -137,7 +138,7 @@ classdef maskFish
           
           recalcProj = false;
           im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
-          
+          param.dataSaveDirectory
           switch direction
               case 'gt'
                   m = im>obj.colorInten(colorNum);
@@ -156,7 +157,6 @@ classdef maskFish
            % algorithm.
            
           % segMask = maskFish.getBkgEstMask(param, scanNum, colorNum);
-           obj.colorInten = [800,1000];
            segMask  = obj.getIntenMask(param, scanNum, colorNum,'lt');
            %  spotMask = obj.getSpotMask(param, scanNum, colorNum);
            spotMask = zeros(size(segMask));
@@ -164,7 +164,6 @@ classdef maskFish
            im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
            obj.colorInten(colorNum)  = obj.getIntensityCutoff(im, spotMask);
            
-           obj.colorInten(colorNum) = 1200;
            intenMask = obj.getIntenMask(param, scanNum, colorNum);
            
            intenMask = obj.removeSmallObj(intenMask, spotMask);

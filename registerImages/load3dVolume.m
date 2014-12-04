@@ -112,21 +112,38 @@ end
         im = nan*zeros(param.regionExtent.XY{colorNum}(regNum,3),...
             param.regionExtent.XY{colorNum}(regNum,4),totalZ, dataType);
         
-        %Get the extent of this region
+%         %Get the extent of this region
+%         xOutI = param.regionExtent.XY{colorNum}(regNum,1);
+%         xOutF = param.regionExtent.XY{colorNum}(regNum,3)+xOutI-1;
+%         
+%         yOutI = param.regionExtent.XY{colorNum}(regNum,2);
+%         yOutF = param.regionExtent.XY{colorNum}(regNum,4)+yOutI -1;
+%         
+%         xInI = param.regionExtent.XY{colorNum}(regNum,5);
+%         xInF = xOutF - xOutI +xInI;
+%         
+%         yInI = param.regionExtent.XY{colorNum}(regNum,6);
+%         yInF = yOutF - yOutI +yInI;
+%         
+        height = param.regionExtent.XY{colorNum}(regNum,3);
+        width = param.regionExtent.XY{colorNum}(regNum,4);
+        
+        %Get the range of pixels that we will read from and read out to.
         xOutI = param.regionExtent.XY{colorNum}(regNum,1);
-        xOutF = param.regionExtent.XY{colorNum}(regNum,3)+xOutI-1;
+        xOutF = xOutI+height-1;
         
         yOutI = param.regionExtent.XY{colorNum}(regNum,2);
-        yOutF = param.regionExtent.XY{colorNum}(regNum,4)+yOutI -1;
+        yOutF = yOutI+width -1;
         
         xInI = param.regionExtent.XY{colorNum}(regNum,5);
-        xInF = xOutF - xOutI +xInI;
+        xInF = xInI +height-1;
         
         yInI = param.regionExtent.XY{colorNum}(regNum,6);
-        yInF = yOutF - yOutI +yInI;
+        yInF = yInI +width-1;
+        
         
         baseDir = [param.directoryName filesep 'Scans' filesep];
-        %Going through each scan
+        %Going through each scan2
         scanDir = [baseDir, 'scan_', num2str(imVar.scanNum), filesep];
         
         for nZ = 1:totalZ
@@ -136,13 +153,13 @@ end
             switch whichType
                 case 1
                     try
-                        im(:,:,nZ)= imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]});
+                        im(xOutI:xOutF,yOutI:yOutF,nZ)= imread(imFileName,'PixelRegion', {[xInI xInF], [yInI yInF]});
                     catch
                         disp('This image doesnt exist-fix up your code!!!!');
                     end
                 case 2
                     inputImage = imread(imFileName);
-                    im(:,:,nZ) = inputImage(xInI:xInF, yInI:yInF);
+                    im(xOutI:xOutF,yOutI:yOutF,nZ) = inputImage(xInI:xInF, yInI:yInF);
             end
                     
         end

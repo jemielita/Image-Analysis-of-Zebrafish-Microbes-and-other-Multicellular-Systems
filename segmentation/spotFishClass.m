@@ -81,24 +81,34 @@ classdef spotFishClass
            
            for ns = 1:obj.numScan
                
-               for colorNum = 1:1
+               for colorNum = 1:obj.numColor
                    
                    imVar.scanNum = ns;imVar.zNum =''; imVar.color = obj.colorStr{colorNum};
                    mask = maskFish.getGutFillMask(param, ns);
                    
-                   %for nr = 1:obj.numReg
-              for nr = 1:2
+                   for nr = 1:obj.numReg
+              
                        %% Load spots 
                        im = load3dVolume(param, imVar, 'single',nr);
                        
+                       height = param.regionExtent.XY{colorNum}(nr,3);
+                       width = param.regionExtent.XY{colorNum}(nr,4);
+                       
+                       %Get the range of pixels that we will read from and read out to.
                        xOutI = param.regionExtent.XY{colorNum}(nr,1);
-                       xOutF = param.regionExtent.XY{colorNum}(nr,3)+xOutI-1;
+                       xOutF = xOutI+height-1;
                        
                        yOutI = param.regionExtent.XY{colorNum}(nr,2);
-                       yOutF = param.regionExtent.XY{colorNum}(nr,4)+yOutI -1;
+                       yOutF = yOutI+width -1;
+                       
+                       xInI = param.regionExtent.XY{colorNum}(nr,5);
+                       xInF = xInI +height-1;
+                       
+                       yInI = param.regionExtent.XY{colorNum}(nr,6);
+                       yInF = yInI +width-1;
                        
                        regMask = mask(xOutI:xOutF, yOutI:yOutF);
-                       
+                       im = im(xOutI:xOutF, yOutI:yOutF,:);
                        im = double(repmat(regMask,1,1,size(im,3))).*double(im);
                        
                        objThresh = 200;

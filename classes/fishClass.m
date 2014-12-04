@@ -267,6 +267,17 @@ classdef fishClass
                 
             end
         end
+        function obj = combClumpIndiv(obj)
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c) = obj.scan(s,c).combClumpIndiv(obj.cut(c));
+                    
+                  fprintf(1, '.');
+                end
+                
+            end
+            fprintf(1, '\n');
+        end
         
         function obj = getTotPop(obj, varargin)
             switch nargin
