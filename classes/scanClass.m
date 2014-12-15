@@ -352,24 +352,36 @@ classdef scanClass
             inputVar = load([obj.saveLoc filesep 'singleBacCount' filesep 'spotClassifier.mat']);
             spots = inputVar.spots;
             
-            rProp = spotClass.keptManualSpots(rProp, spots.removeBugInd{obj.scanNum, obj.colorNum});
+            
+            rProp = spots.classifyThisSpot(rProp, obj.scanNum, obj.colorNum);
+            
+            %rProp = spotClass.keptManualSpots(rProp, spots.removeBugInd{obj.scanNum, obj.colorNum});
             
             newClump = rProp;
             
             %Intensity cutoff for individual bacteria
             
+            %mlj: temporary
+            newClump([newClump.sliceNum]>=obj.gutRegionsInd(4)) = [];
+            obj.totPop = length(newClump);
+            
+            
+            return
             ind = [newClump.totInten]<cut;
             
             %Cheater holder place for single bac intensity.
             obj.totInten = mean([newClump(ind).totInten]);
             
+            if(isempty(obj.clumps.allData))
+                return
+            end
             %Remove clumps that we've manually culled
             ind = ismember([obj.clumps.allData.IND],obj.clumps.remInd);
             obj.clumps.allData(ind) = [];
             maxInd = max([obj.clumps.allData.IND]);
               
-            inputVar = load([obj.saveLoc filesep 'param.mat']);
-            param = inputVar.param;
+             inputVar = load([obj.saveLoc filesep 'param.mat']);
+             param = inputVar.param;
             
             numClumps = length(obj.clumps.allData);
             for i=1:length(newClump)

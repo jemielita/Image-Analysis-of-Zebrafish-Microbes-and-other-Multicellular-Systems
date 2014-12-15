@@ -82,7 +82,7 @@ classdef spotFishClass
            for ns = 1:obj.numScan
                
                for colorNum = 1:obj.numColor
-                   
+
                    imVar.scanNum = ns;imVar.zNum =''; imVar.color = obj.colorStr{colorNum};
                    mask = maskFish.getGutFillMask(param, ns);
                    
@@ -111,7 +111,7 @@ classdef spotFishClass
                        im = im(xOutI:xOutF, yOutI:yOutF,:);
                        im = double(repmat(regMask,1,1,size(im,3))).*double(im);
                        
-                       objThresh = 200;
+                       objThresh = 50;
                        %% Get putative bacterial spots
                        im(im<obj.intenThresh) = obj.intenThresh;
                        spotLoc = countSingleBacteria(im,'', colorNum, param,regMask,obj.intenThresh, objThresh);
@@ -177,7 +177,7 @@ classdef spotFishClass
            %% Load each region of the gut independently that have had the spot detector algorithm run on it.
            fprintf(1, 'Resorting out data');
            for ns = 1:obj.numScan
-               
+  
                rProp = cell(obj.numColor,1);
                
                for colorNum = 1:obj.numColor
@@ -330,22 +330,33 @@ classdef spotFishClass
            
            fprintf(1, 'Culling');
            rProp = cell(obj.numColor,1);
-           for ns=1:obj.numScan
-               for nc = 1:obj.numColor
+           %for ns=1:obj.numScan
+           for ns=1:12
+           for nc = 1:obj.numColor
                    %Load in data
                    rProp{nc} = obj.loadSpot(ns, nc);
                    
                    switch lower(str)
                        case 'area'
-                           rProp{nc} = spotClass.cullVal(rProp{nc}, 'Area', val(nc));
+                           rProp{nc} = spotClass.cullVal(rProp{nc}, 'Area2d', val(nc));
                        case 'mininten'
                            rProp{nc} = spotClass.cullVal(rProp{nc}, 'MinIntensity', val(nc));
                        case 'meaninten'
                            rProp{nc} = spotClass.cullVal(rProp{nc}, 'MeanIntensity', val(nc));
                        case 'maxinten'
                            rProp{nc} = spotClass.cullVal(rProp{nc}, 'MaxIntensity', val(nc));
+                       case 'totinten'
+                           rProp{nc} = spotClass.cullVal(rProp{nc}, 'totInten', val(nc));
+                       case 'totintenwv'
+                           rProp{nc} = spotClass.cullVal(rProp{nc}, 'totIntenWv', val(nc));
                        case 'distance'
                            rProp{nc} = spotClass.distCutoff(rProp{nc}, val(nc));
+                       case 'objmean'
+                           rProp{nc} = spotClass.cullVal(rProp{nc},'objMean',val(nc));
+                       case 'bkgmean'
+                           rProp{nc} = spotClass.cullVal(rProp{nc},'bkgMean',val(nc));
+                       case 'wvlmean'
+                           rProp{nc} = spotClass.cullVal(rProp{nc},'wvlMean',val(nc));
                        otherwise
                            fprintf(2, 'String doesnt match any cull function!\n');
                            return

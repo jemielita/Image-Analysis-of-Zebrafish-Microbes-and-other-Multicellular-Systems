@@ -170,7 +170,7 @@ classdef fishClass
         
         function obj = calcClumpCentroid(obj)
             for s = 1:obj.totalNumScans
-                for c = 2:obj.totalNumColor
+                for c = 1:obj.totalNumColor
                     obj.scan(s,c).clumps.calculateCentroid;
                 end
                 
@@ -269,11 +269,13 @@ classdef fishClass
         end
         function obj = combClumpIndiv(obj)
             for s = 1:obj.totalNumScans
-                for c = 1:obj.totalNumColor
+               % for c = 1:obj.totalNumColor
+               for c=1:1
                     obj.scan(s,c) = obj.scan(s,c).combClumpIndiv(obj.cut(c));
                     
                   fprintf(1, '.');
-                end
+               end
+                
                 
             end
             fprintf(1, '\n');
@@ -390,7 +392,6 @@ classdef fishClass
               type = varargin{1}; 
            end
            
-           
            if(nargin>2)
               cList = varargin{2}; 
            else
@@ -452,6 +453,7 @@ classdef fishClass
            else
                arrayfun(@(x)set(h(x), 'Color', cM(cList(x),:)), cList);
            end
+           set(gca, 'XLim', [min(obj.t), max(obj.t)]);
            
            %Tweaking figures
            set(h, 'LineWidth', 2);
@@ -460,6 +462,8 @@ classdef fishClass
            xlabel('Time: hours');
            ylabel('Population');
            
+           print('-dpng', [obj.saveLoc filesep 'TotalPopulation.png']);
+
        
            
         end

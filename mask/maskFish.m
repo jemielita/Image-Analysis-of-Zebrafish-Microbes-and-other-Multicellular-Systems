@@ -164,6 +164,8 @@ classdef maskFish
            im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
            obj.colorInten(colorNum)  = obj.getIntensityCutoff(im, spotMask);
            
+           
+           obj.colorInten = obj.colorIntenMarker;
            intenMask = obj.getIntenMask(param, scanNum, colorNum);
            
            intenMask = obj.removeSmallObj(intenMask, spotMask);
