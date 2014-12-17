@@ -495,7 +495,7 @@ end
                     try
                         %Load png image
                         inputImage = imread(imFileName);
-                        im(:,:,n) = inputImage(xInI:xInF, yInI:yInF);
+                        im(xOutI:xOutF,yOutI:yOutF,n) = inputImage(xInI:xInF, yInI:yInF);
                     catch
                         disp('This image doesnt exist-fix up your code!!!!');
                     end

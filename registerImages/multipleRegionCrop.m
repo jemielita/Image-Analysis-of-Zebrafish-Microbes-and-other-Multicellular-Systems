@@ -218,6 +218,8 @@ multiZSliceMax = 1;
 hMenuShowSegmentation = uimenu(hMenuDisplay, 'Separator', 'on', 'Label', 'Show gut segmentation', ...
     'Checked', 'off','Callback', @showSegmentation_Callback);
 hMenuSetSegementationType = uimenu(hMenuDisplay, 'Label', 'Choose segmentation type', 'Callback', @setSegmentation_Callback);
+hMenuLoadSegmentation = uimenu(hMenuDisplay, 'Label', 'Load all segmented masks', 'Callback', @loadSegmentation_Callback);
+segMaskAll = []; 
 segmentationType.List = {'none', 'Otsu', 'estimated background', 'final seg', 'clump', 'clump and indiv'};
 segmentationType.Selection = 'none';
 hMenuShowFoundCoarseRegions = uimenu(hMenuDisplay, 'Label', 'Show coarse analysis results', 'Callback', @showCoarseResults_Callback);
@@ -935,6 +937,40 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         end
     end
 
+    function loadSegmentation_Callback(~,~)
+        %Preload in all the segmented regions for the cluster outlining.
+        
+         colorNum = get(hColorSlider, 'Value');
+         colorNum = ceil(colorNum);
+         
+         height = param.regionExtent.regImSize{1}(1);
+         width = param.regionExtent.regImSize{1}(2);
+         segMaskAll = cell(scanNum,2);
+         
+         fprintf(1, 'Loading in seg masks for this color');
+        for scanNum=1:maxScan
+         poly = param.regionExtent.polyAll{scanNum};
+         cL = param.centerLineAll{scanNum};
+         
+         
+         im = get(hIm, 'CData');
+         gutMask = poly2mask(poly(:,1), poly(:,2), height,width);
+         imSeg = im; imSeg(~gutMask) = NaN;
+         f.cut = [1,1];
+         segMaskAll{scanNum,1} = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param,f.scan(scanNum, colorNum), f.cut(colorNum));
+         
+         radius = 5;
+        
+         se = strel('disk', radius);
+        
+         thisMask = bwperim(segMaskAll{scanNum,1}==1);
+         thisMask = imdilate(thisMask, se);
+         segMaskAll{scanNum,2} =  thisMask;
+         fprintf(1, '.');
+        end
+           
+        fprintf(1, 'done!\n');
+    end
 
     function displaySegmentation(scanNum, colorNum, segmentationType, f)
         
@@ -949,15 +985,23 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
             gutMask = poly2mask(poly(:,1), poly(:,2), height,width);
             imSeg = im; imSeg(~gutMask) = NaN;
             f.cut = [1,1];
-            segMask = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param,f.scan(scanNum, colorNum), f.cut(colorNum));
             
-            maskFeat.Type = 'perim';
-            maskFeat.seSize = 5;
-            
-            rgbIm = segmentRegionShowMask(segMask, maskFeat, segmentationType, imageRegion);
-
+            if(isempty(segMaskAll))
+                segMask = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param,f.scan(scanNum, colorNum), f.cut(colorNum));
+                
+                maskFeat.Type = 'perim';
+                maskFeat.seSize = 5;
+                
+                rgbIm = segmentRegionShowMask(segMask, maskFeat, segmentationType, imageRegion);
+            else
+                
+                maskFeat.Type = 'preloaded';
+                maskFeat.seSize = '';
+                rgbIm = segmentRegionShowMask(segMaskAll{scanNum,2}, maskFeat, segmentationType, imageRegion);
+            end
             
     end
+
     function addSpots_Callback(hObject, eventdata)
         scanNum = get(hScanSlider, 'Value');
         scanNum = int16(scanNum);
@@ -1075,7 +1119,12 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         segmentationType.Selection = 'final seg val';
         im = get(hIm, 'CData');
         imSeg = im; imSeg(~gutMask) = NaN;
-        segMask = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param, f.scan(scanNum, colorNum), '');
+        
+        if(isempty(segMaskAll))
+            segMask = segmentGutMIP(imSeg, segmentationType, scanNum, colorNum, param, f.scan(scanNum, colorNum), '');
+        else
+            segMask = segMaskAll{scanNum,1};
+        end
         keptMask = segMask>0;
         removing = true;
         %while (removing==true)
@@ -1091,9 +1140,12 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
             
             maskFeat.Type = 'perim';
             maskFeat.seSize = 5;
-            
+            tic;
             rgbIm = segmentRegionShowMask(keptMask, maskFeat, segmentationType, imageRegion);
+            toc
+            tic;
             f.save
+            toc
         %end
         
     end

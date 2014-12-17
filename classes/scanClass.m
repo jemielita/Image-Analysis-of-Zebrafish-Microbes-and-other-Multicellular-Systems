@@ -216,6 +216,7 @@ classdef scanClass
             
             switch type
                 case 'clump'
+                 
                     if(isempty(obj.clumps.allData))
                         obj.totVol = 0;
                         obj.totInten = 0;
@@ -259,7 +260,6 @@ classdef scanClass
                     %Total number of clumps and individuals
                     obj.nL = sum(pL);
                     obj.nH = sum(pH);
-                    
                     
                     obj.totVol = sum(obj.totVol);
                     obj.totInten = sum(obj.totInten);
@@ -363,15 +363,17 @@ classdef scanClass
             
             %mlj: temporary
             newClump([newClump.sliceNum]>=obj.gutRegionsInd(4)) = [];
+            
             obj.totPop = length(newClump);
             
-            
-            return
             ind = [newClump.totInten]<cut;
             
             %Cheater holder place for single bac intensity.
             obj.totInten = mean([newClump(ind).totInten]);
             
+            %if(~isfield(obj.clumps, 'allData'))
+             %   return
+            %end
             if(isempty(obj.clumps.allData))
                 return
             end
