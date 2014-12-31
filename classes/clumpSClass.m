@@ -227,6 +227,34 @@ classdef clumpSClass
            end
         end
       
+        function updateAllSliceNum(obj, param)
+           %Update the slice number and gut region for all the found clumps
+               fileDir = [obj.saveLoc filesep 'clump' filesep 'clump_' obj.colorStr '_nS' num2str(obj.scanNum)];
+               fprintf(1, 'Calculating new slice number for all clumps');
+               
+            for i = 1:obj.numClumps
+                fileName = [fileDir filesep num2str(i) '.mat'];
+                if(exist(fileName,'file')==0)
+                    continue
+                end
+                
+                inputVar = load(fileName);
+                c = inputVar.c;
+                c.saveLoc = obj.saveLoc;
+               
+                cl = param.centerLineAll{obj.scanNum};
+                d = dist(c.centroid, cl');
+                [~,ind] = min(d);
+                c.sliceNum = ind;
+                c.gutRegion  = find(c.sliceNum > param.gutRegionsInd(obj.scanNum,:),1, 'last');
+                
+                save([fileDir filesep num2str(i) '.mat'], 'c');
+                fprintf(1, '.');
+            end
+            fprintf(1, '\n');
+           
+           
+        end
         function calculateCentroid(obj)
                fileDir = [obj.saveLoc filesep 'clump' filesep 'clump_' obj.colorStr '_nS' num2str(obj.scanNum)];
                fprintf(1, 'Calculating 3d centroid of all clumps');

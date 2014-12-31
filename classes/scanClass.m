@@ -34,6 +34,8 @@ classdef scanClass
         %One dimensional line distribution for this bacterial population.
         lineDist = [];
         
+        removedRegion = [];%Regions to manually remove from these scans (this will likely be regions by the vent).
+        
         
     end
     
@@ -352,7 +354,6 @@ classdef scanClass
             inputVar = load([obj.saveLoc filesep 'singleBacCount' filesep 'spotClassifier.mat']);
             spots = inputVar.spots;
             
-            
             rProp = spots.classifyThisSpot(rProp, obj.scanNum, obj.colorNum);
             
             %rProp = spotClass.keptManualSpots(rProp, spots.removeBugInd{obj.scanNum, obj.colorNum});
@@ -387,11 +388,15 @@ classdef scanClass
             
             numClumps = length(obj.clumps.allData);
             for i=1:length(newClump)
-               obj.clumps.allData(numClumps+i) = clumpClass(obj.scanNum, obj.colorNum, param, maxInd+i) ;
-               obj.clumps.allData(numClumps+i).totalInten = newClump(i).totInten;
+                obj.clumps.allData(numClumps+i) = clumpClass(obj.scanNum, obj.colorNum, param, maxInd+i) ;
+                obj.clumps.allData(numClumps+i).totalInten = newClump(i).totInten;
                 obj.clumps.allData(numClumps+i).sliceNum = newClump(i).sliceNum;
             end
             
+        end
+        
+        function obj = updateSliceNum(obj,param)
+            obj.gutRegionsInd = param.gutRegionsInd(obj.scanNum,:);
         end
         
     end

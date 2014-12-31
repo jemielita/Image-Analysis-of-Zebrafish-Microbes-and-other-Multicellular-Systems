@@ -182,6 +182,8 @@ uimenu(hMenuOutline, 'Label', 'Clear center of gut line', 'Callback', @clearGutC
 uimenu(hMenuOutline, 'Label', 'Smooth/extrapolate all outlines & centers',...
     'Separator', 'on', 'Callback', @smoothAll_Callback);
 
+uimenu(hMenuOutline, 'Label', 'Begin manually remove regions from gut', 'Callback', @manualRemoveReg_Callback, 'Separator', 'on');
+uimenu(hMenuOutline, 'Label' , 'Manually remove region from gut', 'Callback', @manualRemoveThisReg_Callback);
 %Box to outline the region containing the bulb
 uimenu(hMenuOutline, 'Label', 'Outline bulb region', 'Callback', @outlineBulbRegion_Callback, 'Separator', 'on');
 hShowBulbSeg = uimenu(hMenuOutline, 'Label', 'Show bulb segmentation', 'Callback', @showBulbSegmenatation_Callback, 'Checked', 'off');
@@ -737,7 +739,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
        
        saveFishFile = [saveDir filesep 'fishAnalysis.mat'];
 
-      % save(saveFishFile, 'f');
+       save(saveFishFile, 'f');
 %       f = fishClass(param);
  %      save(saveFishFile, 'f');
        
@@ -3120,7 +3122,6 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
 
     function colorSlider_Callback(hObject, eventData)
 
-        
         colorNum = get(hColorSlider, 'Value');
         colorNum = ceil(colorNum);
         colorNum = int16(colorNum);
@@ -3673,6 +3674,21 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         myhandles.param = param;
         guidata(fGui, myhandles);
       
+    end
+
+    function manualRemoveReg_Callback(hObject, eventdata)
+        newVal = true; %Click on different clumps for each time point
+
+        userG = newHandleList(userG, 'regionRemove', 'line',newVal, 'fishClass');
+
+    end
+
+    function manualRemoveThisReg_Callback(~,~)
+        [scanNum, colorNum] = getScanAndColor();
+        userG = newObject(userG, 'regionRemove', scanNum , colorNum);
+        userG = userG.saveG(scanNum, colorNum);
+        
+        [f, ~] = updateField(userG, f, param, scanNum, colorNum);
     end
 
     function outlineBulbRegion_Callback(hOjbect, eventdata)

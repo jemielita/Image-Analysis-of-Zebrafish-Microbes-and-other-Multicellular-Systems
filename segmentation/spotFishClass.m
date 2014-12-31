@@ -39,6 +39,8 @@ classdef spotFishClass
        
        intenThresh = 250; %All pixels below this intensity will be set to this intensity before using our spot detecting code. Helps get rid of some junk.
        boxSize = 50; %Size of box around each bacteria.
+       
+       objThresh = 50; %Threshold for keeping bacteria in the spot detector code.
    end
    
    methods
@@ -83,11 +85,20 @@ classdef spotFishClass
                
                for colorNum = 1:obj.numColor
 
-                   imVar.scanNum = ns;imVar.zNum =''; imVar.color = obj.colorStr{colorNum};
+                  obj.findThisSpot(param, ns, colorNum, 1:obj.numReg);
+               end
+               
+           end
+           
+       end
+      
+       
+       function findThisSpot(obj, param, ns, colorNum, regList)
+            imVar.scanNum = ns;imVar.zNum =''; imVar.color = obj.colorStr{colorNum};
                    mask = maskFish.getGutFillMask(param, ns);
                    
-                   for nr = 1:obj.numReg
-              
+                   for i = 1:length(regList)
+                       nr = regList(i);
                        %% Load spots 
                        im = load3dVolume(param, imVar, 'single',nr);
                        
@@ -111,10 +122,9 @@ classdef spotFishClass
                        im = im(xOutI:xOutF, yOutI:yOutF,:);
                        im = double(repmat(regMask,1,1,size(im,3))).*double(im);
                        
-                       objThresh = 50;
                        %% Get putative bacterial spots
                        im(im<obj.intenThresh) = obj.intenThresh;
-                       spotLoc = countSingleBacteria(im,'', colorNum, param,regMask,obj.intenThresh, objThresh);
+                       spotLoc = countSingleBacteria(im,'', colorNum, param,regMask,obj.intenThresh, obj.objThresh);
                        if(isempty(spotLoc))
                            continue
                        end
@@ -142,12 +152,8 @@ classdef spotFishClass
                        fileName = [param.dataSaveDirectory filesep 'foundSpots' filesep 'nS_' num2str(ns) '_' obj.colorStr{colorNum} '_nR' num2str(nr) '.mat'];
                        save(fileName,'spotLoc', '-v7.3');
                    end
-               end
-               
-           end
-           
        end
-      
+       
        function resortFoundSpot(obj, param, inputDir, varargin)
            %resortFoundSpot(param). Move results of the spot detector
            %algorithm from foundSpots to the save directory for our
@@ -423,12 +429,16 @@ classdef spotFishClass
           %Reload the backup file and overwrite the current list of spots. 
        end
        
-       function obj = createClassificationPipeline(obj)
+       function obj = createClassificationPipeline(obj,classType)
+           if(nargin==1)
+               classType = 'SVMclassify';
+           end
+           
            obj.classType = cell(obj.numColor,1);
            for nc=1:obj.numColor
               obj.classType{nc} = cell(obj.numScan,1);
               for ns=1:obj.numScan
-                 obj.classType{nc}{ns} = 'SVMclassify'; 
+                 obj.classType{nc}{ns} = classType; 
               end
            end
            
