@@ -81,8 +81,9 @@ colorNum = 1;
 %here (e.g. spot detection filtering, clump filtering, etc.). The param
 %structure should be used exclusively for parameters that affect region
 %features of the fish themselves (gut outline, etc.)
+f = '';
 if(isfield(param, 'gutRegionsInd'))
-    f = fishClass(param);
+   % f = fishClass(param);
 end
 
 %%%%%%%%%%%% variable that contains information about expected pixel
@@ -1252,7 +1253,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                   spots = inputVar.spots;
                end
             end
-            
+                            
             getRegisteredImage(scanNum, color, zNum, im, data, param);
             
         end
@@ -2896,14 +2897,14 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                             imArray{cN,regNum} = zeros(xInF-xInI+1, yInF-yInI+1);
                         end
                         
-                        %Also update imC
-                        if(imNum(regNum)~=-1)
-                            whichC = mod(regNum, 2)+1;
-                            imC(xOutI:xOutF,yOutI:yOutF,whichC) = ...
-                                imArray{cN,regNum} + ...
-                                imC(xOutI:xOutF,yOutI:yOutF,whichC);
-                            
-                        end
+%                         %Also update imC
+%                         if(imNum(regNum)~=-1)
+%                             whichC = mod(regNum, 2)+1;
+%                             imC(xOutI:xOutF,yOutI:yOutF,whichC) = ...
+%                                 imArray{cN,regNum} + ...
+%                                 imC(xOutI:xOutF,yOutI:yOutF,whichC);
+%                             
+%                         end
                         
                     case 'false'
                         %Load in just the MIP
@@ -2911,11 +2912,11 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                         imArray{cN,regNum} = imread(imFileName,...
                             'PixelRegion', {[xInI xInF], [yInI yInF]});
                         
-                        %Also update imC
-                        whichC = mod(regNum,2)+1;
-                        imC(xOutI:xOutF, yOutI:yOutF, whichC) = ...
-                            imArray{cN,regNum} + ...
-                            imC(xOutI:xOutF,yOutI:yOutF,whichC);
+%                         %Also update imC
+%                         whichC = mod(regNum,2)+1;
+%                         imC(xOutI:xOutF, yOutI:yOutF, whichC) = ...
+%                             imArray{cN,regNum} + ...
+%                             imC(xOutI:xOutF,yOutI:yOutF,whichC);
                 end
 
                 

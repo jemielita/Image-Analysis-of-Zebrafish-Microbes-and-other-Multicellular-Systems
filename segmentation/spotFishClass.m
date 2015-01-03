@@ -92,7 +92,6 @@ classdef spotFishClass
            
        end
       
-       
        function findThisSpot(obj, param, ns, colorNum, regList)
             imVar.scanNum = ns;imVar.zNum =''; imVar.color = obj.colorStr{colorNum};
                    mask = maskFish.getGutFillMask(param, ns);
@@ -183,84 +182,89 @@ classdef spotFishClass
            %% Load each region of the gut independently that have had the spot detector algorithm run on it.
            fprintf(1, 'Resorting out data');
            for ns = 1:obj.numScan
-  
-               rProp = cell(obj.numColor,1);
-               
-               for colorNum = 1:obj.numColor
-                   imVar.scanNum = ns;imVar.zNum =''; imVar.color = obj.colorStr{colorNum};                   
-                   for nr = 1:obj.numReg
-                       fileName = [param.dataSaveDirectory filesep inputDir inputName filesep 'nS_' num2str(ns) '_' obj.colorStr{colorNum} '_nR' num2str(nr) '.mat'];
-                       if(exist(fileName,'file')==0)
-                          %This region wasn't made in our analysis because
-                          %no spots were found.
-                           continue;
-                       end
-                       inputVar = load(fileName);
-                       spotLoc = inputVar.spotLoc;
-                       
-                       xOutI = param.regionExtent.XY{colorNum}(nr,1);
-                       xOutF = param.regionExtent.XY{colorNum}(nr,3)+xOutI-1;
-                       
-                       yOutI = param.regionExtent.XY{colorNum}(nr,2);
-                       yOutF = param.regionExtent.XY{colorNum}(nr,4)+yOutI -1;
-                       
-                       %Get x y coordinates
-                       pos = [spotLoc.Centroid];
-                       pos = reshape(pos, 3, length(pos)/3);
-                       pos(1,:) = pos(1,:) + yOutI -1;
-                       pos(2,:) = pos(2,:) + xOutI -1;
-                       
-                       %Get range that overlaps the different regions and
-                       %remove points from the more posterior region (to
-                       %avoid overcounting).
-                       if(nr<obj.numReg)
-                           %Pick out the region that overlaps for the x and
-                           %y direction
-                           yList = [param.regionExtent.XY{1}(nr,1),param.regionExtent.XY{1}(nr,1)+param.regionExtent.XY{1}(nr,3), ...
-                               param.regionExtent.XY{1}(nr+1,1),param.regionExtent.XY{1}(nr+1,1)+param.regionExtent.XY{1}(nr+1,3)];
-                           yList = sort(yList); yList = yList(2:3);
-                          
-                           
-                           xList = [param.regionExtent.XY{1}(nr,2),param.regionExtent.XY{1}(nr,2)+param.regionExtent.XY{1}(nr,4), ...
-                               param.regionExtent.XY{1}(nr+1,2),param.regionExtent.XY{1}(nr+1,2)+param.regionExtent.XY{1}(nr+1,4)];
-                           xList = sort(xList); xList = xList(2:3);
-                          
-                           indX = pos(1,:)>xList(1) & pos(1,:)<xList(2);
-                           indY = pos(2,:)>yList(1) & pos(2,:)<yList(2);
-                           
-                           ind = indX.*indY;
-                          
-                           pos = pos(:,~ind);
-                           spotLoc = spotLoc(~ind);
-                       end
-                       %Get new z coordinates
-                       zList = param.regionExtent.Z(:,nr);
-                       ind = find(zList~=-1, 1,'first');
-                       pos(3,:) = pos(3,:) + ind-1;
-                       for i=1:length(spotLoc)
-                           spotLoc(i).CentroidOrig = pos(:,i)';
-                       end
-                       
-                       if(isempty(spotLoc))
-                           continue;
-                       end
-                       
-                       if(isempty(rProp{colorNum}))
-                           rProp{colorNum} = spotLoc;
-                       else
-                           rProp{colorNum} = [rProp{colorNum}, spotLoc];
-                       end                       
-                       fprintf(1, '.');
-                   end
-                   rProp{colorNum} = spotClass.setSpotInd(rProp{colorNum});
-                   %Give each element in rProp a unique index
-               end
-               fileName = [obj.saveDir filesep outputName num2str(ns) '.mat'];
-                save(fileName, 'rProp');
+               obj.resortThisFoundSpot(param, ns,inputDir, outputDir, inputName, outputName);
                
            end
            fprintf(1, '\n');
            
+       end
+       
+       function resortThisFoundSpot(obj,param, ns,inputDir, outputDir, inputName, outputName)
+      
+       rProp = cell(obj.numColor,1);
+               
+       for colorNum = 1:obj.numColor
+           imVar.scanNum = ns;imVar.zNum =''; imVar.color = obj.colorStr{colorNum};
+           for nr = 1:obj.numReg
+               fileName = [param.dataSaveDirectory filesep inputDir inputName filesep 'nS_' num2str(ns) '_' obj.colorStr{colorNum} '_nR' num2str(nr) '.mat'];
+               if(exist(fileName,'file')==0)
+                   %This region wasn't made in our analysis because
+                   %no spots were found.
+                   continue;
+               end
+               inputVar = load(fileName);
+               spotLoc = inputVar.spotLoc;
+               
+               xOutI = param.regionExtent.XY{colorNum}(nr,1);
+               xOutF = param.regionExtent.XY{colorNum}(nr,3)+xOutI-1;
+               
+               yOutI = param.regionExtent.XY{colorNum}(nr,2);
+               yOutF = param.regionExtent.XY{colorNum}(nr,4)+yOutI -1;
+               
+               %Get x y coordinates
+               pos = [spotLoc.Centroid];
+               pos = reshape(pos, 3, length(pos)/3);
+               pos(1,:) = pos(1,:) + yOutI -1;
+               pos(2,:) = pos(2,:) + xOutI -1;
+               
+               %Get range that overlaps the different regions and
+               %remove points from the more posterior region (to
+               %avoid overcounting).
+               if(nr<obj.numReg)
+                   %Pick out the region that overlaps for the x and
+                   %y direction
+                   yList = [param.regionExtent.XY{1}(nr,1),param.regionExtent.XY{1}(nr,1)+param.regionExtent.XY{1}(nr,3), ...
+                       param.regionExtent.XY{1}(nr+1,1),param.regionExtent.XY{1}(nr+1,1)+param.regionExtent.XY{1}(nr+1,3)];
+                   yList = sort(yList); yList = yList(2:3);
+                   
+                   
+                   xList = [param.regionExtent.XY{1}(nr,2),param.regionExtent.XY{1}(nr,2)+param.regionExtent.XY{1}(nr,4), ...
+                       param.regionExtent.XY{1}(nr+1,2),param.regionExtent.XY{1}(nr+1,2)+param.regionExtent.XY{1}(nr+1,4)];
+                   xList = sort(xList); xList = xList(2:3);
+                   
+                   indX = pos(1,:)>xList(1) & pos(1,:)<xList(2);
+                   indY = pos(2,:)>yList(1) & pos(2,:)<yList(2);
+                   
+                   ind = indX.*indY;
+                   
+                   pos = pos(:,~ind);
+                   spotLoc = spotLoc(~ind);
+               end
+               %Get new z coordinates
+               zList = param.regionExtent.Z(:,nr);
+               ind = find(zList~=-1, 1,'first');
+               pos(3,:) = pos(3,:) + ind-1;
+               for i=1:length(spotLoc)
+                   spotLoc(i).CentroidOrig = pos(:,i)';
+               end
+               
+               if(isempty(spotLoc))
+                   continue;
+               end
+               
+               if(isempty(rProp{colorNum}))
+                   rProp{colorNum} = spotLoc;
+               else
+                   rProp{colorNum} = [rProp{colorNum}, spotLoc];
+               end
+               fprintf(1, '.');
+           end
+           rProp{colorNum} = spotClass.setSpotInd(rProp{colorNum});
+           %Give each element in rProp a unique index
+       end
+       fileName = [obj.saveDir filesep outputName num2str(ns) '.mat'];
+       save(fileName, 'rProp');
+       
        end
        
        function update(obj, str,param)
@@ -422,6 +426,9 @@ classdef spotFishClass
           %(obj.saveDir/'spotClassifier.mat). This will almost always be in
           %the subfolder /gutOutline/singleBacCount
           spots = obj;
+          if(~isdir(obj.saveDir))
+              mkdir(obj.saveDir);
+          end
           save([obj.saveDir filesep 'spotClassifier.mat'], 'spots');     
        end
        

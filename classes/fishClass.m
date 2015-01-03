@@ -62,7 +62,7 @@ classdef fishClass
                 obj.totalNumColor = length(param.color);
                 
                 offset = 0;
-                obj = initScanArr(obj,param,offset,false);
+                obj = initScanArr(obj,param,offset,true);
                 obj.param{1} = param;
                 
             end
@@ -101,7 +101,9 @@ classdef fishClass
         end
        
         function obj = initScanArr(obj,param,offset, reset)
-            
+            if(isempty(reset))
+               reset = false; 
+            end
             %See if we've already created the fish class, if so load in the
             %particulars for each scan
             if(exist([param.dataSaveDirectory filesep 'fishAnalysis.mat'], 'file')==2 &&reset ==false)
@@ -184,6 +186,16 @@ classdef fishClass
                 
             end
             
+        end
+        
+        function updateClumpSliceNum(obj, param)
+           %Update the clump slice number for each found clump
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c).clumps.updateAllSliceNum(param);
+                end
+                
+            end 
         end
         
         function obj = calcColorOverlap(obj)
@@ -269,14 +281,15 @@ classdef fishClass
         end
         
         function obj = combClumpIndiv(obj)
+            
             for s = 1:obj.totalNumScans
-               % for c = 1:obj.totalNumColor
-               for c=1:1
-                   s
+                for c = 1:obj.totalNumColor
+                    
+                    s
                     obj.scan(s,c) = obj.scan(s,c).combClumpIndiv(obj.cut(c));
                     
-                  fprintf(1, '.');
-               end
+                    fprintf(1, '.');
+                end
                 
                 
             end
@@ -314,6 +327,7 @@ classdef fishClass
             end
             
             obj.totPop.(type) = sAll;
+            
         end
             
         function obj = removeCulledClumps(obj)
@@ -405,9 +419,32 @@ classdef fishClass
            switch type
                case 'tot'
                    %Confusing syntax-load in the total population data as
-                   %measured by the
+                   %measured by whether they are in clusters or individuals
                    type = 'clump';
                    pop = obj.totPop.(type);
+                   
+               case 'totAll'
+                   %Plot the total population in either color channel
+                   
+                   for cList=1:obj.totalNumColor
+                       pop = [obj.sL(:,cList)+obj.sH(:,cList), obj.sL(:,cList), obj.sH(:,cList)];
+                   end
+                   h = semilogy(obj.t,pop);
+                   set(h(1), 'Color', [0 0 0]);
+                   set(h(2), 'Color', [0.8 0.2 0.2]);
+                   set(h(3), 'Color', [0.4 0.8 0.2]);
+                   
+                   arrayfun(@(x)set(h(x), 'LineWidth', 2), 1:length(h));
+                   legend('Total population', 'individuals', 'clumps', 'Location', 'Northwest');
+                   
+                   l(1) = title(['Total population, color: ', num2str(cList)]);
+                   l(2) = xlabel('Time: hours');
+                   l(3) = ylabel('Population');
+                   l(4) = gca;
+                   arrayfun(@(x)set(x, 'FontSize', 24), l);
+            
+                   return
+                   
                    
                case 'clump'
                    pop = obj.sH;
@@ -862,7 +899,7 @@ classdef fishClass
 
             for colorNum=1:obj.totalNumColor
            
-                %colorList = {'488nm', '568nm'};
+               % colorList = {'488nm', '568nm'};
                 colorList  = {'568nm'};
                 if(iscell(obj.saveLoc))
                     sl = obj.saveLoc{1};

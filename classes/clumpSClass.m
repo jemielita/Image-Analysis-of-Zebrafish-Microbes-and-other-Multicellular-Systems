@@ -228,13 +228,21 @@ classdef clumpSClass
         end
       
         function updateAllSliceNum(obj, param)
-           %Update the slice number and gut region for all the found clumps
-               fileDir = [obj.saveLoc filesep 'clump' filesep 'clump_' obj.colorStr '_nS' num2str(obj.scanNum)];
-               fprintf(1, 'Calculating new slice number for all clumps');
-               
+            %Update the slice number and gut region for all the found clumps
+            fileDir = [obj.saveLoc filesep 'clump' filesep 'clump_' obj.colorStr '_nS' num2str(obj.scanNum)];
+            fprintf(1, 'Calculating new slice number for all clumps');
+            
+            b = dir(fileDir);
+            
+            d = arrayfun(@(x)regexp(b(x).name, '.mat'), 1:size(b,1), 'UniformOutput', false);
+            e = cellfun(@(x)~isempty(x), d);
+            
+            b = b(e);
+            
             for i = 1:obj.numClumps
-                fileName = [fileDir filesep num2str(i) '.mat'];
+                fileName = [fileDir filesep b(i).name];
                 if(exist(fileName,'file')==0)
+                    fprintf(2, 'clumpSClass: This file doesnt exist!\n');
                     continue
                 end
                 
@@ -248,7 +256,7 @@ classdef clumpSClass
                 c.sliceNum = ind;
                 c.gutRegion  = find(c.sliceNum > param.gutRegionsInd(obj.scanNum,:),1, 'last');
                 
-                save([fileDir filesep num2str(i) '.mat'], 'c');
+                save([fileDir filesep b(i).name], 'c');
                 fprintf(1, '.');
             end
             fprintf(1, '\n');

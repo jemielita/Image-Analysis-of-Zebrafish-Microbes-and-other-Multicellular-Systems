@@ -354,8 +354,9 @@ classdef scanClass
             inputVar = load([obj.saveLoc filesep 'singleBacCount' filesep 'spotClassifier.mat']);
             spots = inputVar.spots;
             
+            if(~isempty(rProp))
             rProp = spots.classifyThisSpot(rProp, obj.scanNum, obj.colorNum);
-            
+            end
             %rProp = spotClass.keptManualSpots(rProp, spots.removeBugInd{obj.scanNum, obj.colorNum});
             
             newClump = rProp;
@@ -372,25 +373,32 @@ classdef scanClass
             %Cheater holder place for single bac intensity.
             obj.totInten = mean([newClump(ind).totInten]);
             
-            %if(~isfield(obj.clumps, 'allData'))
-             %   return
-            %end
-            if(isempty(obj.clumps.allData))
-                return
-            end
-            %Remove clumps that we've manually culled
-            ind = ismember([obj.clumps.allData.IND],obj.clumps.remInd);
-            obj.clumps.allData(ind) = [];
-            maxInd = max([obj.clumps.allData.IND]);
-              
-             inputVar = load([obj.saveLoc filesep 'param.mat']);
-             param = inputVar.param;
+            %            if(~isfield(obj.clumps, 'allData'))
+            %
+            %                 return
+            %             end
+            inputVar = load([obj.saveLoc filesep 'param.mat']);
+            param = inputVar.param;
             
+            if(isempty(obj.clumps.allData))
+                maxInd = 0;
+                obj.clumps.allData = clumpClass(obj.scanNum, obj.colorNum,param, 0);
+            else
+                %Remove clumps that we've manually culled
+                ind = ismember([obj.clumps.allData.IND],obj.clumps.remInd);
+                obj.clumps.allData(ind) = [];
+                maxInd = max([obj.clumps.allData.IND]);
+            end
+
             numClumps = length(obj.clumps.allData);
+            
             for i=1:length(newClump)
                 obj.clumps.allData(numClumps+i) = clumpClass(obj.scanNum, obj.colorNum, param, maxInd+i) ;
                 obj.clumps.allData(numClumps+i).totalInten = newClump(i).totInten;
                 obj.clumps.allData(numClumps+i).sliceNum = newClump(i).sliceNum;
+                obj.clumps.allData(numClumps+i).gutRegion = newClump(i).gutRegion;
+                obj.clumps.allData(numClumps+i).centroid = newClump(i).CentroidOrig;
+                obj.clumps.allData(numClumps+i).IND = 0; %We'll use this to indicate that this is a spot
             end
             
         end

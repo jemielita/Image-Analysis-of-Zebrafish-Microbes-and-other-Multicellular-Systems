@@ -90,7 +90,7 @@ classdef spotClassifier
            boxCon = [obj.boxVal(1)*ones(numKeptSpots,1); obj.boxVal(2)*ones(size(tList,1)-numKeptSpots,1)];
            displayData = true;
            if(displayData==true)
-               svmStruct = svmtrain(tList(:,[4,2]), Ynom, 'showplot', true, 'Kernel_Function', 'quadratic', 'boxconstraint', boxCon, ...
+               svmStruct = svmtrain(tList(:,[1,2]), Ynom, 'showplot', true, 'Kernel_Function', 'quadratic', 'boxconstraint', boxCon, ...
                    'autoscale', true);
                
            end
