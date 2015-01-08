@@ -26,7 +26,7 @@ if(length(dirNames)==1)
     
     dirNamesTemp = [];
     for i=1:length(subDir)
-        dirNamesTemp{i} = subDir(i).name;
+        dirNamesTemp{i} = [pwd filesep subDir(i).name];
     end
     dirNames = dirNamesTemp;
 else

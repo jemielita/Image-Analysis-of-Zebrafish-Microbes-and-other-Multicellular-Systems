@@ -143,8 +143,7 @@ classdef fishClass
             end
         
         end
-        
-        
+       
         function obj = calcMasks(obj)
             
             for s = 1:obj.totalNumScans
@@ -285,7 +284,6 @@ classdef fishClass
             for s = 1:obj.totalNumScans
                 for c = 1:obj.totalNumColor
                     
-                    s
                     obj.scan(s,c) = obj.scan(s,c).combClumpIndiv(obj.cut(c));
                     
                     fprintf(1, '.');
@@ -954,6 +952,22 @@ classdef fishClass
            save([obj.saveLoc filesep obj.saveName], 'f', '-v7.3');
         end
 
-end
+    end
+
+    methods(Static)
+        function updateAllSliceNum(param)
+           %Update all the parts of the analysis that got messed up b/c of
+           %the param file center line not being appropriately resampled
+           scanParam.stepSize = 5;
+           param = resampleCenterLine(param, scanParam);
+            
+           param.gutRegionsInd = findGutRegionMaskNumber(param, true);
+           
+           spots = spotFishClass(param);
+           
+           spots.update('gutSlice',param);
+           
+        end
+    end
 end
     

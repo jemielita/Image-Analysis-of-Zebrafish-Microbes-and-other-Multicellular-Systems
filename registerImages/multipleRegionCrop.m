@@ -3661,6 +3661,11 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         
         %Updating the entries
         param.centerLineAll = allLine;
+        
+        %Resample line at 5 microns intervals
+        scanParam.stepSize = 5;
+        param = resampleCenterLine(param, scanParam);
+        
         param.regionExtent.polyAll = allOutline;
               
         %Updating the displayed outline/center of gut
