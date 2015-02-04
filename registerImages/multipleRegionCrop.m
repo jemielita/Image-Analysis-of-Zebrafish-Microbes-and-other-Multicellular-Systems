@@ -3644,7 +3644,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
             if(isempty(allOutline{nS}))
                 allOutline{nS} = allOutline{lastFilled};
             end
-            
+           
             lastFilled = nS;
             
         end

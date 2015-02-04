@@ -897,8 +897,8 @@ classdef fishClass
 
             for colorNum=1:obj.totalNumColor
            
-               % colorList = {'488nm', '568nm'};
-                colorList  = {'568nm'};
+                colorList = {'488nm', '568nm'};
+               % colorList  = {'568nm'};
                 if(iscell(obj.saveLoc))
                     sl = obj.saveLoc{1};
                 else
@@ -951,7 +951,32 @@ classdef fishClass
            f = obj;
            save([obj.saveLoc filesep obj.saveName], 'f', '-v7.3');
         end
-
+        
+        function calcAll(obj)
+           %Function that runs the entire analysis pipeline
+           inputVar = load([obj.saveLoc filesep 'param.mat']);
+           param = inputVar.param;
+           
+           %%Create masks
+           %Gut region masks
+           maskFish.getGutRegionMaskAll(param);
+           %Segmentation masks
+           obj = calcMasks(obj);
+           
+           %% Find all spots
+           s = spotFishClass(param);
+           s.findSpots(param);
+           s  = s.createClassificationPipeline('all');
+           for c =1:obj.totalNumColor
+              s.spotClassifier{c} = spotClassifier;
+              s.spotClassifier{c}.autoFluorMaxInten = 0;
+           end
+           s.saveInstance;
+                    
+           %%Find clumps
+           calcClumps(obj);
+           
+        end
     end
 
     methods(Static)

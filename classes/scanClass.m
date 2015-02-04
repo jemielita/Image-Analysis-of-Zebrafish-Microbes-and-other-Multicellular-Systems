@@ -338,7 +338,8 @@ classdef scanClass
               %Assign to lineDist based on intensity
               totPop = obj.clumps.allData(i).totalInten/9.5e+05;
               
-              obj.lineDist(indm) = obj.lineDist(indm)+ (a/sum(a))*totPop;
+            %  obj.lineDist(indm) = obj.lineDist(indm)+ (a/sum(a))*totPop;
+              obj.lineDist(indm) = obj.lineDist(indm) + (a/sum(a))*totPop;
            end
            
            fprintf(1, '\n');

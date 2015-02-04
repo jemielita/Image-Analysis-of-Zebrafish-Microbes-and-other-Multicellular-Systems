@@ -340,8 +340,8 @@ classdef spotFishClass
            
            fprintf(1, 'Culling');
            rProp = cell(obj.numColor,1);
-           %for ns=1:obj.numScan
-           for ns=1:12
+           for ns=1:obj.numScan
+          
            for nc = 1:obj.numColor
                    %Load in data
                    rProp{nc} = obj.loadSpot(ns, nc);
