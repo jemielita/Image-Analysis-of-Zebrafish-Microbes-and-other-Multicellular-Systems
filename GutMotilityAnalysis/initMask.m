@@ -2,7 +2,7 @@ function initMask(imPath,filetype,savePrevDirBool)
 
 %% Read first image
 ims=dir(strcat(imPath,filesep,filetype));
-im=imread(strcat(imPath,filesep,ims(1).name));
+ im=imread(strcat(imPath,filesep,ims(1).name));
 
 % Initialize variables
 continueBool = 0;
