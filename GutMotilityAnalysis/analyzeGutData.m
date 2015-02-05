@@ -26,7 +26,7 @@ ylabel('Marker number','FontSize',20);
 
 %% Transverse Motion as a surface
 
-surfL=squeeze(mean(gutMeshVelsPCoords(:,:,2,1:end/totalTimeFraction),1));
+surfL=squeeze((mean(gutMeshVelsPCoords(1:end/2,:,2,1:end/totalTimeFraction),1)-mean(gutMeshVelsPCoords((end/2+1):end,:,2,1:end/totalTimeFraction),1))/2); % Transverse components will be opposite sign across gut line
 
 figure;
 surf(time,markerNum,surfL,'LineStyle','none');
