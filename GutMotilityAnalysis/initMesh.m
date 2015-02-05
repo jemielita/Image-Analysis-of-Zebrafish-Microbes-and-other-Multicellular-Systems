@@ -3,6 +3,8 @@
 
 function [gutMesh, mSlopes, x, y, u_filt, v_filt] = initMesh(imPath,subDir)
 
+
+
 % Load data and image from directory
 matData=dir(strcat(imPath,filesep,subDir,filesep,'PIV*.mat'));
 maskVars=dir(strcat(imPath,filesep,'maskVars*.mat'));
@@ -14,6 +16,7 @@ ex=x{1};
 why=y{1};
 continueBool=0;
 splineNFineness=10000;
+
 
 % Dynamically allocate mesh points
 % Determine useful points, dynamically allocate NU, NV (points

@@ -20,7 +20,7 @@ for i=1:nT
     
     % Get image
     im=imread(strcat(imPath,filesep,ims(i).name));
-    
+   
     % Get full vector field for quiver plot
     qx=gutMesh(:,:,1);
     qy=gutMesh(:,:,2);
