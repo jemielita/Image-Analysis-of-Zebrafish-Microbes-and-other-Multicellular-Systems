@@ -4,7 +4,7 @@ function analyzeGutData(gutMesh, gutMeshVels, gutMeshVelsPCoords, fps, scale)
 nV=size(gutMeshVels,1);
 nU=size(gutMeshVels,2);
 nT=size(gutMeshVels,4);
-totalTimeFraction=1;
+totalTimeFraction=4;
 time=1/fps:1/fps:nT/(fps*totalTimeFraction);
 markerNum=1:nU;
 
@@ -26,7 +26,7 @@ ylabel('Marker number','FontSize',20);
 
 %% Transverse Motion as a surface
 
-surfL=squeeze(mean(gutMeshVelsPCoords(:,:,2,1:end/totalTimeFraction),1));
+surfL=squeeze((mean(gutMeshVelsPCoords(1:end/2,:,2,1:end/totalTimeFraction),1)-mean(gutMeshVelsPCoords((end/2+1):end,:,2,1:end/totalTimeFraction),1))/2); % Transverse components will be opposite sign across gut line
 
 figure;
 surf(time,markerNum,surfL,'LineStyle','none');

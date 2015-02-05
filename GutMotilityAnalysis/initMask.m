@@ -23,7 +23,8 @@ while ( continueBool ~= 1 )
 %     gutMiddleTop = imfreehand( 'Closed', false );
 %     gutMiddleBottom = imfreehand( 'Closed', false );
     gutMiddleTop = impoly( 'Closed', false );
-    gutMiddleBottom = impoly( 'Closed', false );
+    %gutMiddleBottom = impoly( 'Closed', false );
+    gutMiddleBottom = gutMiddleTop;
     gutMiddlePolyTop=getPosition( gutMiddleTop );
     gutMiddlePolyBottom = getPosition( gutMiddleBottom );
     setColor( gutMiddleTop,'green' ); 
