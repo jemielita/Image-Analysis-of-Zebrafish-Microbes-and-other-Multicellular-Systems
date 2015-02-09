@@ -24,12 +24,14 @@ videoChoice = menu('Would you like to create a video?','Yes','No (already done)'
 dlgAns=inputdlg({'What image format: *.tif or *.png?', ...
     'What smallest template size should be used (for first pass)?',...
     'What framerate are you using (frames/sec)?:',...
-    'What scale will the final result be at (um/pix)?:'}, 'Title',1,{'*.png','32','5','0.65'});
+    'What scale will the final result be at (um/pix)?:'...
+    'What (linear) factor would you like to reduce your image size by?:'}, 'Title',1,{'*.png','32','5','0.65','2'});
 
 settings=dlgAns(1);
 settings{2}=str2double(dlgAns(2));
 fps=str2double(dlgAns(3));
 scale=str2double(dlgAns(4));
+resReduce=str2double(dlgAns(5));
 
 
 % Initialize variables
@@ -62,13 +64,12 @@ for i=1:nFD
             subSubFishDirect=tempDirs.name;
             imPath=strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j}, filesep, subSubFishDirect);
             filetype=settings{1};
-            savePrevDirBool=1;
+            resReduce=-1;
             
         else % Just use first element of multipage tiff
             
             imPath=strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j});
             filetype='*.tif';
-            savePrevDirBool=0;
             
         end
         
@@ -76,7 +77,7 @@ for i=1:nFD
         maskChoice=menu(strcat('Would you like to create a mask for files in directory:',imPath,'?'),'Yes','No (already done)');
         
         if(maskChoice==1)
-            initMask(imPath,filetype,savePrevDirBool);
+            initMask(imPath,filetype,resReduce);
         end
         
     end
@@ -100,7 +101,7 @@ for i=1:nFD
         for j=1:nSFD
             
             curDire=strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j}, filesep);
-            subSubFishDirect=tiffStackDeconstruction(curDire,subDir);
+            subSubFishDirect=tiffStackDeconstruction(curDire,subDir,resReduce);
             
         end
     % Need the directory name where images are if they weren't created just now    

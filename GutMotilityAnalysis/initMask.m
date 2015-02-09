@@ -1,8 +1,15 @@
-function initMask(imPath,filetype,savePrevDirBool)
+function initMask(imPath,filetype,resReduce)
 
 %% Read first image
+% Use resReduce if opening image for the first time (-1 indicates this
+% isn't the first time)
+if(resReduce==-1)
+    rR=0;
+else
+    rR=resReduce;
+end
 ims=dir(strcat(imPath,filesep,filetype));
- im=imread(strcat(imPath,filesep,ims(1).name));
+im=imread(strcat(imPath,filesep,ims(1).name),'ReductionLevel',resReduce);
 
 % Initialize variables
 continueBool = 0;
@@ -38,7 +45,7 @@ end
 
 close all;
 immPath=imPath;
-if( savePrevDirBool==1)
+if( resReduce==-1)
     immPath=strcat(immPath,filesep,'..');
 end
 theFileN=strcat(immPath,filesep,'maskVars_',date,'.mat');
