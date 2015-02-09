@@ -4,12 +4,11 @@
 %
 % To do:
 
-function subDir = tiffStackDeconstruction(directory,subDir)
+function subDir = tiffStackDeconstruction(directory,subDir,resReduce)
 
 %% Initialize variables
 filenames={};
 count=1; % Linear index that travels through all multipages monotonically
-resReduce=2;
 
 % Create directory
 mkdir([directory, filesep, subDir]);
@@ -54,7 +53,8 @@ for i=1:nF
         strcat(progtitle, sprintf('f %d of %d', i, nF)));
     
     % Open file as 1/4th resolution
-    image=imread(fullfile(filenames{i}.name), 'Index', filenames{i}.index,'PixelRegion', {[1 resReduce numCols], [1 resReduce numRows]}); % read images
+    %image=imread(fullfile(filenames{i}.name), 'Index', filenames{i}.index,'PixelRegion', {[1 resReduce numCols], [1 resReduce numRows]}); % read images
+    image=imread(fullfile(filenames{i}.name), 'Index', filenames{i}.index,'ReductionLevel', resReduce); % read images
     
     % Save as png in subDir
     iMO=i-1;
