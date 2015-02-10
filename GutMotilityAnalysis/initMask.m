@@ -1,15 +1,18 @@
 function initMask(imPath,filetype,resReduce)
 
 %% Read first image
+ims=dir(strcat(imPath,filesep,filetype));
+info = imfinfo(strcat(imPath,filesep,ims(1).name));
+nNumCols = info(1).Height;
+nNumRows = info(1).Width;
 % Use resReduce if opening image for the first time (-1 indicates this
 % isn't the first time)
 if(resReduce==-1)
-    rR=0;
+    im=imread(strcat(imPath,filesep,ims(1).name));
 else
     rR=resReduce;
+    im=imread(strcat(imPath,filesep,ims(1).name),'PixelRegion', {[1 rR nNumCols], [1 rR nNumRows]});
 end
-ims=dir(strcat(imPath,filesep,filetype));
-im=imread(strcat(imPath,filesep,ims(1).name),'ReductionLevel',resReduce);
 
 % Initialize variables
 continueBool = 0;
