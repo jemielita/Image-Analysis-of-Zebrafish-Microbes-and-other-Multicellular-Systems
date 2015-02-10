@@ -147,15 +147,15 @@ for i=1:NU
     
 end
 
-% Visualize
-for i=1:NV
-    for j=1:NU
-        plot(gutMesh(i,j,1),gutMesh(i,j,2),'gx');
-        hold on;
-    end
-end
-hold off;
-pause; % Wait till user likes what they see...
+% % Visualize
+% for i=1:NV
+%     for j=1:NU
+%         plot(gutMesh(i,j,1),gutMesh(i,j,2),'gx');
+%         hold on;
+%     end
+% end
+% hold off;
+% pause; % Wait till user likes what they see...
 
 % close all;
 

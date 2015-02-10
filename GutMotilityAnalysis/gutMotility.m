@@ -21,7 +21,7 @@ interpChoice = menu('Would you like to generate a mesh and interpolate the data?
 videoChoice = menu('Would you like to create a video?','Yes','No (already done)');
 
 % Prompt user for variables
-dlgAns=inputdlg({'What image format: *.tif or *.png?', ...
+dlgAns=inputdlg({'What image format would you like to save as: *.tif or *.png?', ...
     'What smallest template size should be used (for first pass)?',...
     'What framerate are you using (frames/sec)?:',...
     'What scale will the final result be at (um/pix)?:'...
@@ -83,6 +83,8 @@ for i=1:nFD
     end
     
 end
+
+filetype=settings{1};
 
 %% Loop through directories for deconstructing tiffs
 for i=1:nFD

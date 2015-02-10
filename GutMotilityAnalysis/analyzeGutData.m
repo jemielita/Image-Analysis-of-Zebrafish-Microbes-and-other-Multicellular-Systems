@@ -4,7 +4,7 @@ function analyzeGutData(gutMesh, gutMeshVels, gutMeshVelsPCoords, fps, scale)
 nV=size(gutMeshVels,1);
 nU=size(gutMeshVels,2);
 nT=size(gutMeshVels,4);
-totalTimeFraction=4;
+totalTimeFraction=1;
 time=1/fps:1/fps:nT/(fps*totalTimeFraction);
 markerNum=1:nU;
 
