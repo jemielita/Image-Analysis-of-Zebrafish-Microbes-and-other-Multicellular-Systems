@@ -9,7 +9,6 @@
 % To do: User choice of which processes to run should be one box, not three
 %        User defined contrast for video
 %        Inverse mask for registration
-%        Save data! (make data interpolation option)
 
 function gutMotilityAnalysis
 
@@ -18,9 +17,11 @@ mainDirectory=uigetdir(pwd,'Main directory containing fish to analyze'); %direct
 deconChoice = menu('Would you like to deconstruct sets of multipage tiffs?','Yes','No (already done)');
 PIVChoice = menu('Would you like to run the PIV tracking?','Yes','No (already done)');
 analysisChoice = menu('Would you like to analyze the data?','Yes','No (already done)');
+interpChoice = menu('Would you like to generate a mesh and interpolate the data?','Yes','No (already done)');
+videoChoice = menu('Would you like to create a video?','Yes','No (already done)');
 
 % Prompt user for variables
-dlgAns=inputdlg({'What image format to save as: *.tif or *.png?', ...
+dlgAns=inputdlg({'What image format: *.tif or *.png?', ...
     'What smallest template size should be used (for first pass)?',...
     'What framerate are you using (frames/sec)?:',...
     'What scale will the final result be at (um/pix)?:'...
@@ -138,23 +139,37 @@ if (analysisChoice==1)
         for j=1:nSFD
             
             imPath=strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j});
-            % Initialize the gut mesh
-            [gutMesh, mSlopes, x, y, u_filt, v_filt] = initMesh(imPath,subSubFishDirect);
+            
+            if( interpChoice==1)
+                
+                % Initialize the gut mesh
+                [gutMesh, mSlopes, x, y, u_filt, v_filt] = initMesh(imPath,subSubFishDirect);
+                
+                % Interpolate velocities from original grid onto gutMesh
+                gutMeshVels=interpolateVelocities(gutMesh, x, y, u_filt, v_filt);
+                
+                % Get local coordinates (longitudinal, transverse)
+                [gutMeshVelsPCoords, thetas] = mapToLocalCoords(gutMeshVels, mSlopes);
+                
+                % Save data!
+                save(strcat(imPath,filesep,'analyzedGutData',date),'gutMesh','mSlopes','gutMeshVels','gutMeshVelsPCoords','thetas');
+            else
+                aGDName=dir(strcat(imPath,filesep,'analyzedGutData*.mat'));
+                load(strcat(imPath,filesep,aGDName(1).name));
+            end
             
             % Full path
             imPath=strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j}, filesep, subSubFishDirect);
             
-            %interpolateVelocities
-            gutMeshVels=interpolateVelocities(gutMesh, x, y, u_filt, v_filt);
-            
-            %mapToLocalCoords
-            [gutMeshVelsPCoords, thetas] = mapToLocalCoords(gutMeshVels, mSlopes);
-            
-            %analyzeGutData
+            % Analyze data
             analyzeGutData(gutMesh, gutMeshVels, gutMeshVelsPCoords, fps, scale)
             
-            %displayGutVideo
-            displayGutVideo(gutMesh, gutMeshVels, gutMeshVelsPCoords, thetas, imPath, filetype)
+            if( videoChoice==1)
+                
+                % Display a video of the motion
+                displayGutVideo(gutMesh, gutMeshVels, gutMeshVelsPCoords, thetas, imPath, filetype)
+                
+            end
             
         end
     end
