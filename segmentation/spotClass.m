@@ -37,7 +37,8 @@ classdef spotClass
                ri = param.gutRegionsInd(nS,:);
                rProp(i).gutRegion = find(ind(i)>=ri, 1, 'last');
                if(isempty(rProp(i).gutRegion))
-                  b = 0; 
+                  rProp(i).gutRegion = 0; %For particles found before the beginning of the gut.
+                  %Might want to default to including these in the gut...
                end
            end           
        end

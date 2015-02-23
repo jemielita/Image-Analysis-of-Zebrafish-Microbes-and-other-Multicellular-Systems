@@ -24,7 +24,7 @@
     
     
     
-    switch whichType
+     switch whichType
         case 1
             imFileName = imFileNameTiff{1};
         case 2

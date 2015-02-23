@@ -45,7 +45,7 @@ classdef graphicsHandle
            %Setting all entries to cell arrays
            for j=1:obj.numScan
                for k=1:obj.numColor
-                   obj.g(i).val{i,j} = cell(1,1);
+                   obj.g(i).val{j,i} = cell(1,1);
                end
            end
            
@@ -65,7 +65,8 @@ classdef graphicsHandle
            switch obj.g(ind).type
                case 'point'
                    h =impoint(obj.imHandle);
-                   
+               case 'line'
+                   h = impoly(obj.imHandle);
            end
            
            obj.g(ind).handle{scanNum,colorNum} = ...
@@ -178,6 +179,20 @@ classdef graphicsHandle
                           f.scan(scanNum, colorNum).clumps.remInd = ...
                               unique([f.scan(scanNum, colorNum).clumps.remInd]);
                       end                      
+                 
+                  case 'regionRemove'
+                      pos = obj.g(i).val{scanNum, colorNum};
+                      if(isempty(pos))
+                          f.scan(scanNum, colorNum).removedRegion = [];
+                          break
+                          
+                      elseif(isempty(pos{1}))
+                          f.scan(scanNum, colorNum).removedRegion = [];
+                          break;
+                      else
+                          f.scan(scanNum, colorNum).removedRegion = pos;
+                          
+                      end
                       
               end
                

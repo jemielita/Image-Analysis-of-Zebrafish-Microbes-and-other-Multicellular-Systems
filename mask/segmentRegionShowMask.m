@@ -40,6 +40,10 @@ switch maskFeat.Type
             set(hAlpha, 'Tag', 'segMask');
         end
         
+    case 'preloaded'
+            hAlpha = alphamask(mask, [1 0 0], 0.5, imageRegion);
+            set(hAlpha, 'Tag', 'segMask');
+        
 end
 
 

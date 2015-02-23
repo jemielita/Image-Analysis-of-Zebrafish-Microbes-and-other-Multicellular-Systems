@@ -85,6 +85,7 @@ im = calculateProjection(type);
                         imwrite(uint16(mipR), [param.dataSaveDirectory filesep...
                             'mip', imVar.color, '_R', num2str(nR), '_nS', num2str(imVar.scanNum)], 'tiff');
                         
+                        mipR = mipR(xOutI:xOutF, yOutI:yOutF);
                     end
                 case 'total'
                     im = load3dVolume(param, imVar, 'single', nR, 'dataType', '32bit');
@@ -93,13 +94,15 @@ im = calculateProjection(type);
             
             mipR = double(mipR);
             
+            imTot(xOutI:xOutF, yOutI:yOutF) = mipR;
             
+
             
             imTot(xOutI:xOutF, yOutI:yOutF) = mipR + imTot(xOutI:xOutF, yOutI:yOutF);
 %                        imTot(xOutI:xOutF, yOutI:yOutF) = mipR ;
         end
         
-%         for regNum = 2:totNumRegions
+%         for regNum = 2:totNumRegionsx
 %             %Overlapping regions
 %             %This is potentially slow (however we need to be as quick as possible with this type of thing).
 %             %After we know this code works, we'll come back and write quicker code.

@@ -62,7 +62,7 @@ classdef fishClass
                 obj.totalNumColor = length(param.color);
                 
                 offset = 0;
-                obj = initScanArr(obj,param,offset);
+                obj = initScanArr(obj,param,offset,true);
                 obj.param{1} = param;
                 
             end
@@ -78,7 +78,7 @@ classdef fishClass
                 offset = 0;
                 for i=1:length(param)
                     obj.totalNumScans = obj.totalNumScans+param{i}.expData.totalNumberScans;
-                    obj = initScanArr(obj,param{i},offset);
+                    obj = initScanArr(obj,param{i},offset, false);
                     offset = param{i}.expData.totalNumberScans;
                     obj.param{i} = param{i};
                     
@@ -100,11 +100,13 @@ classdef fishClass
            end
         end
        
-        function obj = initScanArr(obj,param,offset)
-            
+        function obj = initScanArr(obj,param,offset, reset)
+            if(isempty(reset))
+               reset = false; 
+            end
             %See if we've already created the fish class, if so load in the
             %particulars for each scan
-            if(exist([param.dataSaveDirectory filesep 'fishAnalysis.mat'], 'file')==2)
+            if(exist([param.dataSaveDirectory filesep 'fishAnalysis.mat'], 'file')==2 &&reset ==false)
                inputVar = load([param.dataSaveDirectory filesep 'fishAnalysis.mat']);
                inF = inputVar.f;
                
@@ -117,13 +119,10 @@ classdef fishClass
                
             else
                 
-                
                 for s = 1:param.expData.totalNumberScans
-                    for c = 1:obj.totalNumColor
-                        
+                    for c = 1:obj.totalNumColor 
                         obj.scan(s+offset,c) = scanClass(param, s,c,offset);
-                    end
-                    
+                    end    
                 end
                 
             end
@@ -144,8 +143,7 @@ classdef fishClass
             end
         
         end
-        
-        
+       
         function obj = calcMasks(obj)
             
             for s = 1:obj.totalNumScans
@@ -156,9 +154,21 @@ classdef fishClass
             end
         end
         
+        function obj = filterMasks(obj)
+            %Filter down result from calcMask.
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c).filterMask();
+                    fprintf(1, '.');
+                end
+                
+            end
+            fprintf(1, '\n');
+        end
+        
         function obj = calcClumpCentroid(obj)
             for s = 1:obj.totalNumScans
-                for c = 2:obj.totalNumColor
+                for c = 1:obj.totalNumColor
                     obj.scan(s,c).clumps.calculateCentroid;
                 end
                 
@@ -175,6 +185,16 @@ classdef fishClass
                 
             end
             
+        end
+        
+        function updateClumpSliceNum(obj, param)
+           %Update the clump slice number for each found clump
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c).clumps.updateAllSliceNum(param);
+                end
+                
+            end 
         end
         
         function obj = calcColorOverlap(obj)
@@ -247,13 +267,31 @@ classdef fishClass
         end
         
         function obj = getClumps(obj)
-           
+           %Load in clump data into this instance.
+           fprintf(1, 'Loading in clump data');
             for s = 1:obj.totalNumScans
                 for c = 1:obj.totalNumColor
                     obj.scan(s,c) = obj.scan(s,c).getClumps;
+                    fprintf(1, '.');
                 end
                 
             end
+            fprintf(1, 'done!\n');
+        end
+        
+        function obj = combClumpIndiv(obj)
+            
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    
+                    obj.scan(s,c) = obj.scan(s,c).combClumpIndiv(obj.cut(c));
+                    
+                    fprintf(1, '.');
+                end
+                
+                
+            end
+            fprintf(1, '\n');
         end
         
         function obj = getTotPop(obj, varargin)
@@ -287,6 +325,7 @@ classdef fishClass
             end
             
             obj.totPop.(type) = sAll;
+            
         end
             
         function obj = removeCulledClumps(obj)
@@ -367,7 +406,6 @@ classdef fishClass
               type = varargin{1}; 
            end
            
-           
            if(nargin>2)
               cList = varargin{2}; 
            else
@@ -379,9 +417,32 @@ classdef fishClass
            switch type
                case 'tot'
                    %Confusing syntax-load in the total population data as
-                   %measured by the
+                   %measured by whether they are in clusters or individuals
                    type = 'clump';
                    pop = obj.totPop.(type);
+                   
+               case 'totAll'
+                   %Plot the total population in either color channel
+                   
+                   for cList=1:obj.totalNumColor
+                       pop = [obj.sL(:,cList)+obj.sH(:,cList), obj.sL(:,cList), obj.sH(:,cList)];
+                   end
+                   h = semilogy(obj.t,pop);
+                   set(h(1), 'Color', [0 0 0]);
+                   set(h(2), 'Color', [0.8 0.2 0.2]);
+                   set(h(3), 'Color', [0.4 0.8 0.2]);
+                   
+                   arrayfun(@(x)set(h(x), 'LineWidth', 2), 1:length(h));
+                   legend('Total population', 'individuals', 'clumps', 'Location', 'Northwest');
+                   
+                   l(1) = title(['Total population, color: ', num2str(cList)]);
+                   l(2) = xlabel('Time: hours');
+                   l(3) = ylabel('Population');
+                   l(4) = gca;
+                   arrayfun(@(x)set(x, 'FontSize', 24), l);
+            
+                   return
+                   
                    
                case 'clump'
                    pop = obj.sH;
@@ -429,6 +490,7 @@ classdef fishClass
            else
                arrayfun(@(x)set(h(x), 'Color', cM(cList(x),:)), cList);
            end
+           set(gca, 'XLim', [min(obj.t), max(obj.t)]);
            
            %Tweaking figures
            set(h, 'LineWidth', 2);
@@ -437,6 +499,8 @@ classdef fishClass
            xlabel('Time: hours');
            ylabel('Population');
            
+           print('-dpng', [obj.saveLoc filesep 'TotalPopulation.png']);
+
        
            
         end
@@ -831,9 +895,10 @@ classdef fishClass
             minS = 1;
             maxS = obj.totalNumScans;
 
-            for colorNum=2:obj.totalNumColor
+            for colorNum=1:obj.totalNumColor
            
                 colorList = {'488nm', '568nm'};
+               % colorList  = {'568nm'};
                 if(iscell(obj.saveLoc))
                     sl = obj.saveLoc{1};
                 else
@@ -846,25 +911,35 @@ classdef fishClass
                 zNum = [];
                 
                 for nS = minS:maxS
-                    inputVar = load([obj.scan(nS,colorNum).saveLoc filesep 'param.mat']);
-                    paramIn = inputVar.param;
                     
-                    scanNum = obj.scan(nS, colorNum).scanNum;
-                    im = selectProjection(paramIn, 'mip', 'true', scanNum,colorList{colorNum}, zNum,recalcProj);
-                    imshow(im, [0 1000]);
-                    
-                    %fileName = [obj.scan(nS,colorNum).saveLoc filesep 'masks' filesep 'clumpAndIndiv_nS' num2str(obj.scan(nS,colorNum).scanNum) '_' colorList{colorNum} '.mat'];
-                    fileName = [obj.scan(nS,colorNum).saveLoc filesep 'masks' filesep 'allRegMask_' num2str(obj.scan(nS,colorNum).scanNum) '_' colorList{colorNum} '.mat'];
-                    inputVar = load(fileName);
-                    segMask = inputVar.segMask;
-                    segMask = segMask>0;
-                    maskFeat.Type = 'perim';
-                    maskFeat.seSize = 5;
-                    segmentationType.Selection = 'clump and indiv';
-                    rgbIm = segmentRegionShowMask(segMask, maskFeat,segmentationType,gca);
-                   % hAlpha = alphamask(rgbIm, [1 0 0], 0.5, gca);
-                    
-                    print('-dpng', [fileDir filesep 'movie', sprintf('%03d', nS), '.png']);
+                    %For now let's just copy the original images into a
+                    %different subfolder, that we'll let work a bit with
+                    %imageJ
+                    inputFile = [obj.saveLoc filesep 'FluoroScan_' num2str(nS) '_' colorList{colorNum} '.tiff'];
+                    outputFile = [fileDir filesep 'FluoroScan_' colorList{colorNum} num2str(nS) '.tiff'];
+
+                    copyfile(inputFile, outputFile);
+%                     
+%                     inputVar = load([obj.scan(nS,colorNum).saveLoc filesep 'param.mat']);
+%                     paramIn = inputVar.param;
+%                     
+%                     scanNum = obj.scan(nS, colorNum).scanNum;
+%                     im = selectProjection(paramIn, 'mip', 'true', scanNum,colorList{colorNum}, zNum,recalcProj);
+%                    % imshow(im, [0 1000]);
+%                     im(im>1000) = 1000;
+%                     imwrite(uint16(im), [fileDir filesep 'movie', sprintf('%03d', nS), '.png']);
+%                     %fileName = [obj.scan(nS,colorNum).saveLoc filesep 'masks' filesep 'clumpAndIndiv_nS' num2str(obj.scan(nS,colorNum).scanNum) '_' colorList{colorNum} '.mat'];
+%                     fileName = [obj.scan(nS,colorNum).saveLoc filesep 'masks' filesep 'allRegMask_' num2str(obj.scan(nS,colorNum).scanNum) '_' colorList{colorNum} '.mat'];
+%                     inputVar = load(fileName);
+%                     segMask = inputVar.segMask;
+%                     segMask = segMask>0;
+%                     maskFeat.Type = 'perim';
+%                     maskFeat.seSize = 5;
+%                     segmentationType.Selection = 'clump and indiv';
+%                     rgbIm = segmentRegionShowMask(segMask, maskFeat,segmentationType,gca);
+%                    % hAlpha = alphamask(rgbIm, [1 0 0], 0.5, gca);
+                   
+%                    print('-dpng', [fileDir filesep 'movie', sprintf('%03d', nS), '.png']);
                     
                     fprintf(1, '.');
                 end
@@ -876,7 +951,48 @@ classdef fishClass
            f = obj;
            save([obj.saveLoc filesep obj.saveName], 'f', '-v7.3');
         end
+        
+        function calcAll(obj)
+           %Function that runs the entire analysis pipeline
+           inputVar = load([obj.saveLoc filesep 'param.mat']);
+           param = inputVar.param;
+           
+           %%Create masks
+           %Gut region masks
+           maskFish.getGutRegionMaskAll(param);
+           %Segmentation masks
+           obj = calcMasks(obj);
+           
+           %% Find all spots
+           s = spotFishClass(param);
+           s.findSpots(param);
+           s  = s.createClassificationPipeline('all');
+           for c =1:obj.totalNumColor
+              s.spotClassifier{c} = spotClassifier;
+              s.spotClassifier{c}.autoFluorMaxInten = 0;
+           end
+           s.saveInstance;
+                    
+           %%Find clumps
+           calcClumps(obj);
+           
+        end
+    end
 
-end
+    methods(Static)
+        function updateAllSliceNum(param)
+           %Update all the parts of the analysis that got messed up b/c of
+           %the param file center line not being appropriately resampled
+           scanParam.stepSize = 5;
+           param = resampleCenterLine(param, scanParam);
+            
+           param.gutRegionsInd = findGutRegionMaskNumber(param, true);
+           
+           spots = spotFishClass(param);
+           
+           spots.update('gutSlice',param);
+           
+        end
+    end
 end
     

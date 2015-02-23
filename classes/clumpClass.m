@@ -14,6 +14,8 @@ classdef clumpClass < clumpSClass
        surfaceArea = NaN;
        centroid = [NaN NaN NaN];
        mesh = struct('node', [], 'elem', [], 'face',[]);
+       
+       sliceinten = []; %Array that contains the total intensity in each of the slices of the gut that intersect this clump.
 
    end
    
@@ -29,8 +31,34 @@ classdef clumpClass < clumpSClass
            imVar.zNum = ''; imVar.scanNum = obj.scanNum; imVar.color = obj.colorStr;
          
            vol = load3dVolume(param, imVar, 'crop', obj.cropRect);
+          
        end
        
+       function obj = calculateSliceInten(obj, ns)
+          %Calculate the intensity in ech of the slices
+          vol = obj.loadVolume;
+          
+          inputVar = load([obj.saveLoc filesep 'masks' filesep 'maskUnrotated_' num2str(ns) '.mat']);
+          
+          gutMasktot = inputVar.gutMask;
+          
+          gutMask = zeros(size(vol,1), size(vol,2),size(gutMasktot,3));
+          xmax = min([obj.cropRect(2)+obj.cropRect(4),size(gutMasktot,1)]);
+          ymax = min([obj.cropRect(1)+obj.cropRect(3),size(gutMasktot,2)]);
+          
+          gutMask(1:xmax-obj.cropRect(2)+1, 1:ymax-obj.cropRect(1)+1,:) = gutMasktot(obj.cropRect(2):xmax, obj.cropRect(1):ymax,:);
+          
+          gutMask = max(gutMask,[],3);
+          
+          vol = vol.*(vol>obj.intenCutoff);
+          totinten = sum(vol,3);
+          
+          cc = regionprops(totinten, gutMask, 'Area','MeanIntensity');
+          
+          slicenum = unique(gutMask(:));
+          si = arrayfun(@(x)sum(totinten(gutMask==x)), slicenum);
+          obj.sliceinten = [slicenum, si];
+       end
        function obj = calcCentroid(obj,vol)
            vol = vol>obj.intenCutoff;
            
@@ -51,7 +79,6 @@ classdef clumpClass < clumpSClass
            c = obj;
            save([sl filesep num2str(c.IND) '.mat'], 'c');
        end
-       
        
        function obj = calcSurfaceArea(obj)
             
@@ -88,14 +115,7 @@ classdef clumpClass < clumpSClass
           obj.mesh.resized = resized;
        end
            
-           
        
-%        function display(obj)
-%           %Display the MIP of this particular bug
-%           %figure; 
-%           
-%        end
-      %Save class to file
       
    end
 end % classdef

@@ -12,8 +12,11 @@ classdef maskFish
         colorNum = NaN;
         
         bkgOffset = 1.8; %Scalar offset from the estimated background in each wedge of the gut.
-        colorInten = [1000,500]; %Intensity cutoff for each color channel (assuming 2) to produce the intensity cutoff mask.
+        colorInten = [800, 1000]; %Intensity cutoff for each color channel (assuming 2) to produce the intensity cutoff mask.
+        colorIntenMarker = [1200, 1200]; %Intensity cutoff for defining markers.
         saveDir = '';
+        
+        minClusterSize = 10000;
     end
     
    methods(Static)
@@ -45,7 +48,7 @@ classdef maskFish
            %gutMask = getGutRegionMask(param, scanNum): Construct a
            %mask of the gut that gives gut regions perpendicular to the
            %long axis of the gut for this scan.
-           poly = param.regionExtent.polyAll{ns};
+             poly = param.regionExtent.polyAll{ns};
            imSize = param.regionExtent.regImSize{1};
            gutMask = poly2mask(poly(:,1), poly(:,2), imSize(1), imSize(2));
            
@@ -61,17 +64,101 @@ classdef maskFish
            %subdirectory 'masks'.
            
            if(~isdir([param.dataSaveDirectory filesep 'masks']))
-              mkdir([param.dataSaveDirectory filesep 'masks']); 
+               mkdir([param.dataSaveDirectory filesep 'masks']);
            end
            for ns = 1:param.expData.totalNumberScans
                fprintf(1, ['Making mask for scan ', num2str(ns), '\n']);
                gutMask = maskFish.getGutRegionMask(param, ns);
-               
+               gutMask = maskFish.fillGap(gutMask,param);
                %Save result
                save([param.dataSaveDirectory filesep 'masks' filesep 'maskUnrotated_' num2str(ns) '.mat'], 'gutMask', '-v7.3');
            end
            
        end
+       
+       function gutMask = fillGapGutRegionMask(gutMask, param, ns)
+            m = maskFish.getGutFillMask(param, ns);
+            
+       end
+       
+       function fillGapAll(param)
+           for ns = 1:param.expData.totalNumberScans
+               fprintf(1, ['Making gaps for scan ', num2str(ns), '\n']);
+               %load result
+               inputVar = load([param.dataSaveDirectory filesep 'masks' filesep 'maskUnrotated_' num2str(ns) '.mat']);
+               gutMask = inputVar.gutMask;
+               
+               gutMask = maskFish.fillGap(gutMask,param);
+               
+               %Save result
+               save([param.dataSaveDirectory filesep 'masks' filesep 'maskUnrotated_' num2str(ns) '.mat'], 'gutMask', '-v7.3');
+           end
+       end
+       
+       function gutMask = fillGap(gutMask,param)
+           %% Fill in gaps in our gut region mask
+           
+           %% Get boundaries of each of the gut regions as currently found
+           pmask = zeros(size(gutMask,1),size(gutMask,2));
+           for i=1:size(gutMask,3)
+               r = gutMask(:,:,i);
+               numel = unique(r); numel(numel==0) = [];
+               
+               for j=1:length(numel)
+                   t = r==numel(j);
+                   t = bwperim(t);
+                   
+                   pmask(t) = numel(j);
+               end
+           end
+           
+           %% Get list of points that haven't been assigned to a region
+           c = maskFish.getGutFillMask(param,1);
+           c = c-(max(gutMask,[],3)>0);
+           
+           %% Find regions for each of the wedges that's missing
+           
+           cc = regionprops(logical(c));
+           
+           for i=1:size(gutMask,3)
+               r = gutMask(:,:,i);
+               ind = unique(r); ind(ind==0) =[];
+               t = regionprops(r);
+               
+               for j=1:length(ind)
+                   ccR(ind(j)) = t(ind(j));
+               end
+           end
+           
+           %% Get distances from each of the remaining wedges to the regions remaining
+           xy = [cc.Centroid];
+           xy = reshape(xy, 2,length(xy)/2);
+           
+           xyr = [ccR.Centroid];
+           xyr = reshape(xyr, 2,length(xyr)/2);
+           
+           d = dist(xy', xyr);
+           
+           [~,ind] = min(d,[],2);
+           
+           %% Update each of the missing wedges
+           b = bwlabel(c);
+           notzero = find(b(:)~=0);
+           
+           b(notzero) = ind(b(notzero));
+           %%
+           for i=1:size(gutMask,3)
+               el = unique(gutMask(:,:,i));
+               el(el==0) = [];
+               
+               t = gutMask(:,:,i);
+               t(ismember(b,el)) = b(ismember(b,el));
+               gutMask(:,:,i) = t;
+           end
+           
+       end
+           
+       
    end
    
        methods 
@@ -135,7 +222,7 @@ classdef maskFish
           
           recalcProj = false;
           im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
-          
+          param.dataSaveDirectory
           switch direction
               case 'gt'
                   m = im>obj.colorInten(colorNum);
@@ -154,7 +241,6 @@ classdef maskFish
            % algorithm.
            
           % segMask = maskFish.getBkgEstMask(param, scanNum, colorNum);
-           obj.colorInten = [300,500];
            segMask  = obj.getIntenMask(param, scanNum, colorNum,'lt');
            %  spotMask = obj.getSpotMask(param, scanNum, colorNum);
            spotMask = zeros(size(segMask));
@@ -162,7 +248,8 @@ classdef maskFish
            im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
            obj.colorInten(colorNum)  = obj.getIntensityCutoff(im, spotMask);
            
-           obj.colorInten(colorNum) = 600;
+           
+           obj.colorInten = obj.colorIntenMarker;
            intenMask = obj.getIntenMask(param, scanNum, colorNum);
            
            intenMask = obj.removeSmallObj(intenMask, spotMask);
@@ -334,12 +421,41 @@ classdef maskFish
            
        end
        
+       function m = filterMask(obj, scanNum,colorStr)
+           saveLoc = [obj.saveDir filesep 'allRegMask_' num2str(scanNum) '_' colorStr '.mat'];
+           inputVar = load(saveLoc); segMask = inputVar.segMask;
+           segMask = bwlabel(segMask>0);
+           
+           
+           segMaskNew = bwareaopen(segMask, obj.minClusterSize);
+           
+           %Save result, backup old result
+           if(~isdir([obj.saveDir filesep 'maskBackup']))
+              mkdir([obj.saveDir filesep 'maskBackup']); 
+           end
+           save([obj.saveDir filesep 'maskBackup' filesep 'allRegMask_' num2str(scanNum) '_' colorStr '.mat'], 'segMask');
+           
+
+           segMask = bwlabel(segMaskNew);
+%Save output as a label matrix, not a binary mask.           
+           save([obj.saveDir filesep 'allRegMask_' num2str(scanNum) '_' colorStr '.mat'], 'segMask');
+           
+           m = segMask;
+       end
+       
+       
        function saveInstance(obj)
           %saveInstance(): save this instance of maskFIsh to
           %(obj.saveDir/'masks.mat). This will almost always be in
           %the subfolder /gutOutline/masks
-          spots = obj;
-          save([obj.saveDir filesep 'mask.mat'], 'spots');     
+          mask = obj;
+          
+          if(~isdir(obj.saveDir))
+              fprintf(1, 'Making directory for masks.\n');
+              mkdir(obj.saveDir)
+          end
+              
+          save([obj.saveDir filesep 'mask.mat'], 'mask');     
           fprintf(1, 'maskFish instance saved!\n');
        end
    end

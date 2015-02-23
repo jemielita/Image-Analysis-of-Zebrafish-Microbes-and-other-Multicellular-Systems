@@ -13,7 +13,7 @@
 %        
 %AUTHOR: Matthew Jemielita, Oct 29, 2013
 
-function [pAll,varargout] = analyzeGutGetParameters()
+function [pAll,varargout] = analyzeGutGetParameters(varargin)
 
 dirNames = uipickfiles();
 
@@ -26,16 +26,38 @@ if(length(dirNames)==1)
     
     dirNamesTemp = [];
     for i=1:length(subDir)
-        dirNamesTemp{i} = subDir(i).name;
+        dirNamesTemp{i} = [pwd filesep subDir(i).name];
     end
     dirNames = dirNamesTemp;
 else
-   %Get the location of the param file for each of these entries
-   for i=1:length(dirNames)
-      dirNames{i} = [dirNames{i} filesep 'gutOutline' filesep 'param.mat']; 
+    
+if(nargin>0)
+   findSubDir = varargin{1};
+   if(findSubDir ==true)
+       allDir = [];
+       n = 1;
+      for i=1:length(dirNames)
+          cd(dirNames{i});
+          subDir = rdir('**\param.mat');
+          
+          for j=1:length(subDir)
+             allDir{n} = [pwd filesep subDir(j).name]; 
+             n = n+1;
+          end
+      end
    end
+   
+   dirNames = allDir;
+else
+    
+    %Get the location of the param file for each of these entries
+    for i=1:length(dirNames)
+        dirNames{i} = [dirNames{i} filesep 'gutOutline' filesep 'param.mat'];
+    end
 end
 
+
+end
 
 pAll = cell(length(dirNames),1);
 for nF=1:length(dirNames)
@@ -43,10 +65,62 @@ for nF=1:length(dirNames)
     pAll{nF} = inputVar.param;
 end
 
+
+if(nargin==2)
+   %Check fields in all the param files
+   
+
+   for i=1:length(pAll)
+      fprintf(1,['Checking param file: ', pAll{i}.dataSaveDirectory]);
+      
+      %Make sure we have the right save directory
+      if(strcmp(pAll{i}.dataSaveDirectory, dirNames{i}(1:end-10))==0)
+       fprintf(2, 'Save directory set wrong (maybe because of transfering files.\n')
+       prompt = input('Do you want to auto correct and resave param file (y/n)?\n', 's');
+       
+       if(prompt=='y')
+          pAll{i}.dataSaveDirectory = dirNames{i}(1:end-10);
+          pAll{i}.directoryName = dirNames{i}(1:end-21);
+          param = pAll{i};
+          
+          save([pAll{i}.dataSaveDirectory filesep 'param.mat'], 'param');
+       end
+       
+      end
+       
+      %Check to make sure that all the fields have been set
+      fields = {'endGutPos', 'autoFluorEndPos', 'autoFluorPos', 'beginGutPos'};
+      for nf = 1:length(fields)
+         if(~isfield(pAll{i},fields{nf}))
+             
+            fprintf(2, ['\n field ', fields{nf}, 'not set. Exiting!\n']);
+         end
+          
+      end
+      
+      
+      
+      
+      
+      
+      fprintf(1, '\n');
+   end
+   
+   
+    
+    
+end
+
 if(nargout==1)
    %Return if we only want these param files
    return 
 end
+
+
+
+
+
+
 
 
 %% Get code repository location

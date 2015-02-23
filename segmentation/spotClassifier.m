@@ -10,7 +10,7 @@ classdef spotClassifier
        svmStruct = [];
        tList = [];
        autoFluorMaxInten = [];
-       feat = {'objMean','bkgMean', 'wvlMean','objStd','bkgStd','Volume', 'ksTest','centroidFit','MajorAxisLength','MinorAxisLength','Area','Eccentricity', 'convexArea'};
+       feat = {'objMean','bkgMean', 'wvlMean','objStd','stdMean','volume', 'ksTest','MajorAxisLength','MinorAxisLength','Area2d', 'convexArea'};
        rescaleFactor = [];
        boxVal = []; %For giving the softness of the SVM margins.
       
@@ -49,16 +49,18 @@ classdef spotClassifier
                numKeptSpots = sum(keptSpots);
                numRemSpots = sum(remSpots);
                
-               
                %Should be written more generally to call any number of
                %classification features
                t = zeros(length(rProp), length(obj.feat));
                for j = 1:length(obj.feat)
                    t(:,j) = [[rProp(keptSpots).(obj.feat{j})], [rProp(remSpots).(obj.feat{j})]];
                end
-               t(1:numKeptSpots-1,length(obj.feat)+1) = 1;
-               t(numKeptSpots:end,length(obj.feat)+1) = 0;  
-               
+               if(numKeptSpots==0)
+                   t(1:end,length(obj.feat)+1) = 0;                 
+               else
+                   t(1:numKeptSpots-1,length(obj.feat)+1) = 1;
+                   t(numKeptSpots:end,length(obj.feat)+1) = 0;
+               end
                obj.tList = [obj.tList; t];
            end   
        end
@@ -88,16 +90,16 @@ classdef spotClassifier
            boxCon = [obj.boxVal(1)*ones(numKeptSpots,1); obj.boxVal(2)*ones(size(tList,1)-numKeptSpots,1)];
            displayData = true;
            if(displayData==true)
-               svmStruct = svmtrain(tList(:,[4,2]), Ynom, 'showplot', true, 'Kernel_Function', 'linear', 'boxconstraint', boxCon, ...
+               svmStruct = svmtrain(tList(:,[1,2]), Ynom, 'showplot', true, 'Kernel_Function', 'quadratic', 'boxconstraint', boxCon, ...
                    'autoscale', true);
                
            end
            
-           svmStruct = svmtrain(tList(:,1:13), Ynom, 'showplot', true, 'Kernel_Function', 'linear','boxconstraint', boxCon,'autoscale', true);
+           svmStruct = svmtrain(tList(:,1:11), Ynom, 'showplot', true, 'Kernel_Function', 'quadratic','boxconstraint', boxCon,'autoscale', true);
            
            % Calculate the confusion matrix
            
-           group = svmclassify(svmStruct,tList(:,1:13));
+           group = svmclassify(svmStruct,tList(:,1:11));
            
            N = length(group);
            
@@ -144,7 +146,7 @@ classdef spotClassifier
            %Remove low intensity points in this region
            outsideAutoFluor = [rProp.gutRegion]~=3;
            
-           inAutoFluorKept = [rProp.MeanIntensity]>obj.autoFluorMaxInten;
+           inAutoFluorKept = [rProp.objMean]>obj.autoFluorMaxInten;
            inAutoFluor = and(inAutoFluor,inAutoFluorKept);
            
            keptSpots = or(outsideAutoFluor, inAutoFluor);
@@ -153,13 +155,13 @@ classdef spotClassifier
       
        function obj = setAutoFluorCutoff(obj, rProp)
           %inten = setAutoFluorCutoff(obj, rProp): Set the autofluorescent 
-          %cutoff to be used. The cuttoff will be set to mean +2*stdDev of 
+          %cutoff to be used. The cuttoff will be set to mean +stdDev of 
           %the mean intensity of the spots given as input. Other schemes
           %would work as well. Suggest giving the input rProp as one of the
           %1st scans, where there are very few bacteria in this region
           inAutoFluor = [rProp.gutRegion]==3; 
           rProp = rProp(inAutoFluor);
-          inten = mean([rProp.objMean]) +std([rProp.objMean]);
+          inten = mean([rProp.objMean])+std([rProp.objMean]);
           obj.autoFluorMaxInten = inten;
        end
        
@@ -174,6 +176,7 @@ classdef spotClassifier
        function rProp = removeOutsideRang(obj, rProp)
            %Remove all objects that fall outside the range that we've prescribed for the spot values    
            for i=1:length(obj.feat)
+               
                ind = [rProp.(obj.feat{i})]> obj.featRng.minR.(obj.feat{i}) & ...
                    [rProp.(obj.feat{i})]< obj.featRng.maxR.(obj.feat{i});
                

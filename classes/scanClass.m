@@ -34,6 +34,8 @@ classdef scanClass
         %One dimensional line distribution for this bacterial population.
         lineDist = [];
         
+        removedRegion = [];%Regions to manually remove from these scans (this will likely be regions by the vent).
+        
         
     end
     
@@ -178,6 +180,17 @@ classdef scanClass
             save(saveLoc, 'segMask');           
         end
         
+        function obj = filterMask(obj)
+            %Filter down the calculated cluster map produced by .calcMask
+            %(graph cut approach)
+            
+            inputVar = load([obj.saveLoc filesep 'masks' filesep 'mask.mat']);
+            mask = inputVar.mask;
+            m = mask.filterMask(obj.scanNum, obj.colorStr);
+            
+            
+        end
+        
         function obj = calcIndivClumpMask(obj, cut)
 %            obj = obj.createLabelMask;
             inputVar = load([obj.saveLoc filesep 'param.mat']);
@@ -205,6 +218,7 @@ classdef scanClass
             
             switch type
                 case 'clump'
+                 
                     if(isempty(obj.clumps.allData))
                         obj.totVol = 0;
                         obj.totInten = 0;
@@ -248,7 +262,6 @@ classdef scanClass
                     %Total number of clumps and individuals
                     obj.nL = sum(pL);
                     obj.nH = sum(pH);
-                    
                     
                     obj.totVol = sum(obj.totVol);
                     obj.totInten = sum(obj.totInten);
@@ -312,8 +325,6 @@ classdef scanClass
                   a = a+ arrayfun(@(x)sum(cmask(mask(:,:,j)==x)), indm);
               end
               
-              b = 0;
-              
               %Remove areas outside region we're interested in.
               a(~ismember(indm,  obj.gutRegionsInd(1):obj.gutRegionsInd(5))) = [];
               indm(~ismember(indm,  obj.gutRegionsInd(1):obj.gutRegionsInd(5))) = [];
@@ -324,16 +335,14 @@ classdef scanClass
                   
               end
               
-              
               %Assign to lineDist based on intensity
               totPop = obj.clumps.allData(i).totalInten/9.5e+05;
               
-              
-              obj.lineDist(indm) = obj.lineDist(indm)+ (a/sum(a))*totPop;
+            %  obj.lineDist(indm) = obj.lineDist(indm)+ (a/sum(a))*totPop;
+              obj.lineDist(indm) = obj.lineDist(indm) + (a/sum(a))*totPop;
            end
            
            fprintf(1, '\n');
-           
            
         end
         
@@ -346,34 +355,58 @@ classdef scanClass
             inputVar = load([obj.saveLoc filesep 'singleBacCount' filesep 'spotClassifier.mat']);
             spots = inputVar.spots;
             
-            
-            rProp = spotClass.keptManualSpots(rProp, spots.removeBugInd{obj.scanNum, obj.colorNum});
+            if(~isempty(rProp))
+            rProp = spots.classifyThisSpot(rProp, obj.scanNum, obj.colorNum);
+            end
+            %rProp = spotClass.keptManualSpots(rProp, spots.removeBugInd{obj.scanNum, obj.colorNum});
             
             newClump = rProp;
             
             %Intensity cutoff for individual bacteria
+            
+            %mlj: temporary
+            newClump([newClump.sliceNum]>=obj.gutRegionsInd(4)) = [];
+            
+            obj.totPop = length(newClump);
             
             ind = [newClump.totInten]<cut;
             
             %Cheater holder place for single bac intensity.
             obj.totInten = mean([newClump(ind).totInten]);
             
-            %Remove clumps that we've manually culled
-            ind = ismember([obj.clumps.allData.IND],obj.clumps.remInd);
-            obj.clumps.allData(ind) = [];
-            maxInd = max([obj.clumps.allData.IND]);
-              
+            %            if(~isfield(obj.clumps, 'allData'))
+            %
+            %                 return
+            %             end
             inputVar = load([obj.saveLoc filesep 'param.mat']);
             param = inputVar.param;
             
+            if(isempty(obj.clumps.allData))
+                maxInd = 0;
+                obj.clumps.allData = clumpClass(obj.scanNum, obj.colorNum,param, 0);
+            else
+                %Remove clumps that we've manually culled
+                ind = ismember([obj.clumps.allData.IND],obj.clumps.remInd);
+                obj.clumps.allData(ind) = [];
+                maxInd = max([obj.clumps.allData.IND]);
+            end
+
             numClumps = length(obj.clumps.allData);
+            
             for i=1:length(newClump)
-               obj.clumps.allData(numClumps+i) = clumpClass(obj.scanNum, obj.colorNum, param, maxInd+i) ;
-               obj.clumps.allData(numClumps+i).totalInten = newClump(i).totInten;
+                obj.clumps.allData(numClumps+i) = clumpClass(obj.scanNum, obj.colorNum, param, maxInd+i) ;
+                obj.clumps.allData(numClumps+i).totalInten = newClump(i).totInten;
+                obj.clumps.allData(numClumps+i).sliceNum = newClump(i).sliceNum;
+                obj.clumps.allData(numClumps+i).gutRegion = newClump(i).gutRegion;
+                obj.clumps.allData(numClumps+i).centroid = newClump(i).CentroidOrig;
+                obj.clumps.allData(numClumps+i).IND = 0; %We'll use this to indicate that this is a spot
             end
             
         end
         
+        function obj = updateSliceNum(obj,param)
+            obj.gutRegionsInd = param.gutRegionsInd(obj.scanNum,:);
+        end
         
     end
     
