@@ -96,8 +96,10 @@ im = calculateProjection(type);
             
             imTot(xOutI:xOutF, yOutI:yOutF) = mipR;
             
-          %  imTot(xOutI:xOutF, yOutI:yOutF) = mipR(xInI:xInF, yInI:yInF) + imTot(xOutI:xOutF, yOutI:yOutF);
-                  %      imTot(xOutI:xOutF, yOutI:yOutF) = mipR(xInI:xInF, yInI:yInF) ;
+
+            
+            imTot(xOutI:xOutF, yOutI:yOutF) = mipR + imTot(xOutI:xOutF, yOutI:yOutF);
+%                        imTot(xOutI:xOutF, yOutI:yOutF) = mipR ;
         end
         
 %         for regNum = 2:totNumRegionsx

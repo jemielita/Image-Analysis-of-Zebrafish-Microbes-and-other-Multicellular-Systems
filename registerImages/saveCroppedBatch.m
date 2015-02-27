@@ -67,7 +67,7 @@ end
 if(minCrop==true)
     [~, param] = calcMinCrop(param, false, minCropBorderSize);
 end
-
+calcProjections(param);
 %Get some needed variables.
 allRegion = [param.expData.Scan.region];
 isScan =  cellfun(@(x)strcmp(x, 'true'), {param.expData.Scan.isScan});
@@ -185,7 +185,7 @@ for thisS=1:length(sList);
     fprintf(2, '\n');
 end
 
-
+calcProjections(param);
 %Saving the new range of pixel locations
 for nC = 1:totalNumColors
     
@@ -216,7 +216,7 @@ save([cropDir filesep 'ExperimentData.mat'], 'parameters', 'timeData', 'param');
 
 
 %Recalculate the MIP for this new cropping region
-calcProjections(param);
+%calcProjections(param);
 
 
     function [] = saveIndividualImages()

@@ -49,7 +49,7 @@ classdef pivanalysis
         end
         
         
-        function obj = calcShearAngle(obj)
+        function obj = dispDisplacements(obj)
           
             nV=size(obj.gutMeshVels,1);
             nU=size(obj.gutMeshVels,2);
@@ -138,7 +138,7 @@ classdef pivanalysis
         end
         
         function obj = calcPeaks(obj)
-           %Find peaks in the power spectrum and calculat their
+           %Find peaks in the power spectrum and calculate their
            %contribution to signal (area at FWHM).
            
            [pks, locs] = findpeaks(obj.avgSpectra(1,:), obj.freqRange);
@@ -189,7 +189,6 @@ classdef pivanalysis
                func = @(x,c,a)a*exp(-(x/c).^2);
                a = 2* integral(@(x)func(x,f.c1, f.a1),0, f.c1*sqrt(log(2)));
                
-               
                obj.peakArea(i,1) = locs(i);
                obj.peakArea(i,2) = a;
            end
@@ -198,7 +197,7 @@ classdef pivanalysis
            ind = find(obj.peakArea(:,1)==0);
            obj.peakArea(ind,:) = [];
            
-           [~,ind] = sort(obj.peakArea(:,2));
+           [~,ind] = sort(obj.peakArea(:,2),1,'ascend');
            obj.peakArea = obj.peakArea(ind,:);
            
         end
@@ -210,8 +209,8 @@ classdef pivanalysis
             plot(obj.freqRange, obj.avgSpectra(1,:)); hold on;
            % plot(f,pxxc,'r--','linewidth',2);
           
-            xlabel('Hz'); ylabel('dB');
-            title('Periodogram with 95%-Confidence Bounds');
+            xlabel('Hz'); 
+           
             %set(gca, 'YScale', 'log'); 
         end
         

@@ -57,8 +57,10 @@ for i=1:length(scanList)
         imVar.color =colorList{nC};
         imVar.zNum = '';%Won't need this for mip
         imVar.scanNum = nS;
-        recalcProj = true;
-        mip{nC} = selectProjection(param, 'mip',1, imVar.scanNum, imVar.color, imVar.zNum, recalcProj);
+
+        recalcProj = false;
+        mip{nC} = selectProjection(param, 'mip',0, imVar.scanNum, imVar.color, imVar.zNum, recalcProj);
+
         fprintf(2, '\n');
     end
     

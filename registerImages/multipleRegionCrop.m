@@ -141,10 +141,15 @@ hMenuFile = uimenu('Label', 'File');
 uimenu(hMenuFile, 'Label', 'Load scan stack', 'Callback', @loadScan_Callback);
 uimenu(hMenuFile, 'Label', 'Save single image', 'Callback', @saveImage_Callback);
 uimenu(hMenuFile, 'Label', 'Save scan stack', 'Callback', @saveScan_Callback);
+uimenu(hMenuFile, 'Label', 'Save as, param and fish file', 'Callback', @saveAsParam_Callback);
 uimenu(hMenuFile, 'Label', 'Save param and fish file', 'Callback', @saveParam_Callback);
+
 uimenu(hMenuFile, 'Label', 'Load fish analysis file', 'Separator', 'on' ,'Callback', @loadFishAnalysis_Callback);
 uimenu(hMenuFile, 'Separator', 'on', 'Label', 'Change key-stroke value', 'Callback', @changeKeystroke_Callback);
 uimenu(hMenuFile, 'Label', 'Set default GUI screen location', 'Callback', @saveWindowLocation_Calback);
+
+
+uimenu(hMenuFile, 'Separator', 'on', 'Label', 'Analysis sequence', 'Callback', @analysisSequence_Callback);
 
 hMenuCrop = uimenu('Label','Crop Images');
 uimenu(hMenuCrop,'Label','Create cropping boxes','Callback',@createCropBox_Callback);
@@ -708,7 +713,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
               
     end
 
-    function saveParam_Callback(hObject, eventdata)
+    function saveAsParam_Callback(~,~)
         
        %checkFields(param);
 
@@ -725,12 +730,23 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
        if(fileName==0)
            return
        end
-       %Save the result to the param file associated with the data.
-       saveFile = [saveDir fileName];
        
-       param.gutRegionsInd = findGutRegionMaskNumber(param,false);
        %Remove the last backspace
        saveDir = saveDir(1:end-1);
+       %Save the result to the param file associated with the data.
+       saveFile = [saveDir filesep fileName];
+       saveParam(saveFile, saveDir);
+       
+    end
+
+    function saveParam_Callback(~,~)
+        saveParam(param.dataSaveDirectory, [param.dataSaveDirectory filesep 'param.mat']);
+        fprintf(1, 'Param file saved!\n');
+    end
+
+    function saveParam(saveDir, saveFile)
+       
+       param.gutRegionsInd = findGutRegionMaskNumber(param,false);
        %Update param.dataSaveDirectory to where we are saving param
        param.dataSaveDirectory = saveDir;
        save(saveFile, 'param');
@@ -745,6 +761,8 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
  %      save(saveFishFile, 'f');
        
     end
+
+
 
     function err = checkFields(param)
        %Check to make sure that we updated all the necessary fields.
@@ -809,6 +827,41 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
        
     end
 
+
+    function analysisSequence_Callback(~,~)
+       %Series of scripts to run for single time point fish
+       set(fGui, 'Name', 'Step 1: outline the gut');
+       createFreeHandPoly_Callback('','');
+       set(fGui, 'Name', 'Step 1: draw center of the gut');
+       drawGutCenter_Callback('','');
+       
+       set(fGui, 'Name', 'Step 3: Mark beginning of the gut');
+       beginGut_Callback('','');
+       
+       set(fGui, 'Name', 'Step 4: Mark ~ end of bulb');
+       endBulb_Callback('','');
+       
+       set(fGui, 'Name', 'Step 5: Mark beginning of autofluorescent cells');
+       autoFluorGut_Callback('','');
+       
+       set(fGui, 'Name', 'Step 6: Mark end of autofluorescent cells');
+       autoFluorEnd_Callback('','');
+       
+       set(fGui, 'Name', 'Step 7: Mark end of gut');
+       endGut_Callback('','');
+       
+       smoothAll_Callback('','');
+       
+       answer = questdlg('Save and quit?');
+      switch answer
+          case 'Yes'
+              saveParam_Callback
+              close(fGui);
+          otherwise
+              %Keep on going
+      end
+    end
+        
     function saveScan_Callback(hObject, eventdata)
         prompt = {'Scan range: initial', 'Scan range: final',...
             'Z depth: initial', 'Z depth: final'};
@@ -3240,8 +3293,8 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         end
         
         
-         userG = userG.saveG(scanNumPrev, colorNum);
-         userG = userG.newG(scanNum, scanNumPrev,colorNum);
+%         userG = userG.saveG(scanNumPrev, colorNum);
+ %        userG = userG.newG(scanNum, scanNumPrev,colorNum);
       %   [f, param] = updateField(userG, f, param, scanNum, colorNum);
 
         %Display the new image
@@ -4560,7 +4613,11 @@ switch paramFileExist
                 param.color= {'568nm'};
             end
         end
-        
+
+        switch allColors{1}
+            case  'Brightfield (no filter)'
+                param.color = {'brightfield'};
+        end
         %For the parameters above construct a structure that will contain all the
         %results of this calculation.
         
