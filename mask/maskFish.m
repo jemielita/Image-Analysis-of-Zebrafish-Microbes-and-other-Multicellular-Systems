@@ -69,7 +69,7 @@ classdef maskFish
            for ns = 1:param.expData.totalNumberScans
                fprintf(1, ['Making mask for scan ', num2str(ns), '\n']);
                gutMask = maskFish.getGutRegionMask(param, ns);
-               gutMask = maskFish.fillGap(gutMask,param);
+               gutMask = maskFish.fillGap(gutMask,param,ns);
                %Save result
                save([param.dataSaveDirectory filesep 'masks' filesep 'maskUnrotated_' num2str(ns) '.mat'], 'gutMask', '-v7.3');
            end
@@ -88,14 +88,14 @@ classdef maskFish
                inputVar = load([param.dataSaveDirectory filesep 'masks' filesep 'maskUnrotated_' num2str(ns) '.mat']);
                gutMask = inputVar.gutMask;
                
-               gutMask = maskFish.fillGap(gutMask,param);
+               gutMask = maskFish.fillGap(gutMask,param,ns);
                
                %Save result
                save([param.dataSaveDirectory filesep 'masks' filesep 'maskUnrotated_' num2str(ns) '.mat'], 'gutMask', '-v7.3');
            end
        end
        
-       function gutMask = fillGap(gutMask,param)
+       function gutMask = fillGap(gutMask,param, scannum)
            %% Fill in gaps in our gut region mask
            
            %% Get boundaries of each of the gut regions as currently found
@@ -113,7 +113,7 @@ classdef maskFish
            end
            
            %% Get list of points that haven't been assigned to a region
-           c = maskFish.getGutFillMask(param,1);
+           c = maskFish.getGutFillMask(param,scannum);
            c = c-(max(gutMask,[],3)>0);
            
            %% Find regions for each of the wedges that's missing

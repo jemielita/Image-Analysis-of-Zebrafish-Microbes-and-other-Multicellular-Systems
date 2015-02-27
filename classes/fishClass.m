@@ -959,7 +959,7 @@ classdef fishClass
            
            %%Create masks
            %Gut region masks
-           maskFish.getGutRegionMaskAll(param);
+          % maskFish.getGutRegionMaskAll(param);
            %Segmentation masks
            obj = calcMasks(obj);
            
