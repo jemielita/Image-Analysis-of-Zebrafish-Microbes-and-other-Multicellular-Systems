@@ -247,7 +247,7 @@ classdef clumpSClass
                 c = inputVar.c;
                 
                 c = c.calculateSliceInten(obj.scanNum);
-                c.save;
+                c.save; 
                 fprintf(1, '.');
             end
             fprintf(1, '\n');

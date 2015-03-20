@@ -445,7 +445,7 @@ classdef maskFish
        
        
        function saveInstance(obj)
-          %saveInstance(): save this instance of maskFIsh to
+          %saveInstance(): save this instance of maskFish to
           %(obj.saveDir/'masks.mat). This will almost always be in
           %the subfolder /gutOutline/masks
           mask = obj;
