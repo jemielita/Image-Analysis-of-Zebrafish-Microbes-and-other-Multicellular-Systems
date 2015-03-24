@@ -5,10 +5,10 @@ matData=dir(strcat(imPath,filesep,'*.mat')); % Assumes filesep at end of imPath
 load(strcat(imPath,filesep,matData(1).name));
 ims=dir(strcat(imPath,filesep,filetype));
 nT=size(ims,1)-1; % differencing frames obviously leads to n-1 frames
-cd(imPath);
+%cd(imPath);
 
 % Initialize variables
-writerObj = VideoWriter('animation.avi');
+writerObj = VideoWriter('animation.avi','Uncompressed AVI');
 velMultiple=5;
 
 % Open video writing code, initialize settings
@@ -47,8 +47,8 @@ for i=1:nT
     imshow(im, []);
     hold on;
     quiver(qx,qy,qu,qv,0,'r');
-    quiver(qx,qy,qupx,qupy,0,'b');
-    quiver(qx,qy,qvpx,qvpy,0,'b');
+    %quiver(qx,qy,qupx,qupy,0,'b');
+    %quiver(qx,qy,qvpx,qvpy,0,'b');
     hold off;
     
     % Write image to video
