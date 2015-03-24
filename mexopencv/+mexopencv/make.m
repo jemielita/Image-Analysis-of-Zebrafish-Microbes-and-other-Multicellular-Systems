@@ -203,6 +203,10 @@ end
 function s = compiler_str()
     %COMPILER_STR  return compiler shortname
     c = mex.getCompilerConfigurations;
+    
+    %mlj: added this because we're getting two visual studio compilers for
+    %some reason, though I don't think there's a difference
+    c = c(1);
     if ~isempty(strfind(c.Name, 'Visual'))
         if ~isempty(strfind(c.Version, '11.0'))       % vc2012
             s = 'vc11';
@@ -232,6 +236,8 @@ function [comp_flags,link_flags] = compilation_flags(opts)
     % override _SECURE_SCL for VS versions prior to VS2010,
     % or when linking against debug OpenCV binaries
     c = mex.getCompilerConfigurations();
+    %mlj: again two of them
+    c = c(1);
     isVS = strcmp(c.Manufacturer,'Microsoft') && ~isempty(strfind(c.Name,'Visual'));
     if isVS && (str2double(c.Version) < 10 || opts.debug)
         comp_flags{end+1} = '/D_SECURE_SCL=1';
@@ -320,7 +326,7 @@ function opts = getargs(varargin)
     %GETARGS  Process parameter name/value pairs
 
     % default values
-    opts.opencv_path = 'C:\opencv';  % OpenCV location
+    opts.opencv_path = 'C:\openCV\opencv';  % OpenCV location
     opts.clean = false;              % clean mode
     opts.test = false;               % unittest mode
     opts.dryrun = false;             % dry run mode
