@@ -271,7 +271,7 @@ classdef scanClass
             
         end
         
-        function obj = calc1DProj(obj)
+        function obj = calc1DProj(obj, singlebacinten)
             %obj = calc1DProj(obj): Calculate the 1d line distribution for
             %this scan, by combining together the spots and clumps
             %analysis. Doing this in a somewhat crude fashion right now.
@@ -336,7 +336,7 @@ classdef scanClass
               end
               
               %Assign to lineDist based on intensity
-              totPop = obj.clumps.allData(i).totalInten/9.5e+05;
+              totPop = obj.clumps.allData(i).totalInten/singlebacinten;
               
             %  obj.lineDist(indm) = obj.lineDist(indm)+ (a/sum(a))*totPop;
               obj.lineDist(indm) = obj.lineDist(indm) + (a/sum(a))*totPop;
@@ -358,14 +358,14 @@ classdef scanClass
             if(~isempty(rProp))
             rProp = spots.classifyThisSpot(rProp, obj.scanNum, obj.colorNum);
             end
-            %rProp = spotClass.keptManualSpots(rProp, spots.removeBugInd{obj.scanNum, obj.colorNum});
+            rProp = spotClass.keptManualSpots(rProp, spots.removeBugInd{obj.scanNum, obj.colorNum});
             
             newClump = rProp;
             
             %Intensity cutoff for individual bacteria
             
             %mlj: temporary
-            newClump([newClump.sliceNum]>=obj.gutRegionsInd(4)) = [];
+           % newClump([newClump.sliceNum]>=obj.gutRegionsInd(4)) = [];
             
             obj.totPop = length(newClump);
             
