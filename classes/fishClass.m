@@ -266,6 +266,26 @@ classdef fishClass
             fprintf(1, '\n'); 
         end
         
+        function spotOverlapList = calcClumpSpotOverlap(obj)
+            %Find all spots that are overlapping with found clusters. Save
+            %this list of spots to singleBacCount/spotClumpOverlap.mat
+            fprintf(1, 'Calculating spots overlapping with clumps\n');
+            spotOverlapList = cell(obj.totalNumScans, obj.totalNumColor);
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    inputVar = load([obj.saveLoc filesep 'singleBacCount' filesep 'bacCount' num2str(s) '.mat']);
+                    spot = inputVar.rProp{c};
+                    ind = obj.scan(s,c).clumps.calcSpotClumpOverlap(spot);
+                    spotOverlapList{s,c} = [spot(ind).ind];
+                    fprintf(1, '.');
+                end
+                
+            end
+            fprintf(1, '\n');
+            save( [obj.saveLoc filesep 'singleBacCount' filesep 'spotClumpOverlap.mat'],'spotOverlapList');
+            
+        end
+        
         function obj = getClumps(obj)
            %Load in clump data into this instance.
            fprintf(1, 'Loading in clump data');

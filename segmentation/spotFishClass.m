@@ -495,11 +495,12 @@ classdef spotFishClass
                %mlj: Don't do this for now until we clean up the
                %indexing in multipleRegionCrop for identifying particles
                %to remove.
-%               rProp = obj.spotClassifier{nc}.manuallyRemovedBugs(rProp, obj.removeBugInd{ns,nc});
+               %               rProp = obj.spotClassifier{nc}.manuallyRemovedBugs(rProp, obj.removeBugInd{ns,nc});
                rProp = spotClass.keptManualSpots(rProp, obj.removeBugInd{ns,nc});
                rProp = obj.spotClassifier{nc}.autoFluorCutoff(rProp);
            
-           
+               %Remove all spots that overlap with found clusters
+               rProp = spotClass.removeClumpOverlap(rProp, obj.saveDir, ns,nc);
        end
        
        function [loc, rProp] = getSpotLoc(obj,rProp, type, scanNum, colorNum)
@@ -531,8 +532,7 @@ classdef spotFishClass
                    rProp = obj.classifyThisSpot(rProp, scanNum,colorNum);
                    loc = [rProp.CentroidOrig];
                    loc = reshape(loc,3,length(loc)/3);
-
-                   
+   
                case 'all' 
                    rProp = spotClass.keptManualSpots(rProp, obj.removeBugInd{scanNum, colorNum});
 
