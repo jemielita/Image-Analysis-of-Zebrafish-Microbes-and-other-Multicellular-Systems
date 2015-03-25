@@ -400,7 +400,8 @@ classdef spotFishClass
            for ns=1:obj.numScan
                for nc=1:obj.numColor
                    rProp = obj.loadFinalSpot(ns,nc);
-                   %Save the result                   
+                   %Save the result
+                   rPropAll{ns,nc} = rProp;
                    fprintf(1, '.');
                end
            end
@@ -500,7 +501,7 @@ classdef spotFishClass
                rProp = obj.spotClassifier{nc}.autoFluorCutoff(rProp);
            
                %Remove all spots that overlap with found clusters
-               rProp = spotClass.removeClumpOverlap(rProp, obj.saveDir, ns,nc);
+               rProp = spotClass.removeClumpOverlap(rProp, obj.saveDir);
        end
        
        function [loc, rProp] = getSpotLoc(obj,rProp, type, scanNum, colorNum)
