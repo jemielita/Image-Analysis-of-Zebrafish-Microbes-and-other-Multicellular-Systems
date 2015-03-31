@@ -104,18 +104,18 @@ classdef spotClass
        end
        
        function rProp = removeClumpOverlap(rProp, saveDir,ns,nc)
-       %Remove all spots that overlap with found clusters, if this type of
-       %analysis was done
-       if(exist([saveDir filesep 'spotClumpOverlap.mat'])==2)
-           inputVar = load([saveDir filesep 'spotClumpOverlap.mat']);
-           
-           spotOverlapList = inputVar.spotOverlapList;
-           
-           ind = spotOverlapList{ns,nc};
-           keptInd = ~ismember([rProp.ind], ind);
-           rProp = rProp(keptInd);
-          
-       end
+           %Remove all spots that overlap with found clusters, if this type of
+           %analysis was done
+           if(exist([saveDir filesep 'spotClumpOverlap.mat'])==2)
+               inputVar = load([saveDir filesep 'spotClumpOverlap.mat']);
+               
+               spotOverlapList = inputVar.spotOverlapList;
+               
+               ind = spotOverlapList{ns,nc};
+               keptInd = ~ismember([rProp.ind], ind);
+               rProp = rProp(keptInd);
+               
+           end
            
        end
        

@@ -215,6 +215,31 @@ classdef fishClass
            
         end
         
+        function obj = calcSliceInten(obj)
+            fprintf(1, 'Calculating along each cluster');
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c).clumps.getAllSliceInten;
+                    fprintf(1, '.');
+                end
+                
+            end
+            fprintf(1, '\n');
+            
+        end
+        
+        function obj = calc1dProj(obj)
+           fprintf(1, 'Calculating 1d projections');
+           for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c) = obj.scan(s,c).calc1DProj(obj.singleBacInten(c));
+                    fprintf(1, '.');
+                end
+                
+            end
+            fprintf(1, '\n');
+             
+        end
         function obj = getOutlines(obj)
             fprintf(1, 'Calculating indiv/clump masks');
             for s = 1:obj.totalNumScans
