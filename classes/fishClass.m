@@ -130,7 +130,7 @@ classdef fishClass
         
         function obj = calc(obj, field)
         %obj = calc(obj, field)
-        %High level functions for running calculations os particular scans.
+        %High level functions for running calculations on particular scans.
         %This function will only update field in obj.scan for the
         %appropriate field
             for s = 1:obj.totalNumScans
