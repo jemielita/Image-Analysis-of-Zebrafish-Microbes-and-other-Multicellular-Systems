@@ -411,8 +411,8 @@ classdef fishClass
             
             sAll = zeros(obj.totalNumScans, obj.totalNumColor);
             
-            for c = 1:obj.totalNumColor
-                for s = 1:obj.totalNumScans
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
                     obj.scan(s,c) = ...
                         obj.scan(s,c).getTotPop(obj.totPopRegCutoff, type, obj.cut(c), obj.singleBacInten(c));
                     sAll(s,c) = obj.scan(s,c).totInten;
@@ -793,49 +793,50 @@ classdef fishClass
            shadedErrorBar(cen(:,1), cen(:,3), cen(:,2), {},1, 'vertical')
         end
         
-        function plot1dDistribution(obj)
+        function plot1dDistribution(obj, colorList)
+            %Plot the 1d distribution of bacteria over time
+            % colorList: List of 
+            %
+            
             %% Line-by-line plots
             f = obj;
             NtimePoints = f.totalNumScans-2;
-            cData_green = summer(ceil(2*NtimePoints));
-            cData_red = hot(ceil(2*NtimePoints));
+            cData{1} = summer(ceil(2*NtimePoints));
+            cData{2} = hot(ceil(2*NtimePoints));
             
             % Plot all green data, line-by-line
             figure();
             hold on
             clear hp
-            for j=1:NtimePoints
-                pop{1} = f.scan(j,1).lineDist;
-                pop{2} = f.scan(j,2).lineDist;
-                
-                
-                
-                %Remove everything after the autofluorescent cells
-                pop{1} = pop{1}(1:f.scan(j,1).gutRegionsInd(4));
-                pop{2} = pop{2}(1:f.scan(j,1).gutRegionsInd(4));
-                
-                %Normalize the populations
-                pop{1} = pop{1}/sum(pop{1});
-                pop{2} = pop{2}/sum(pop{2});
-                
-                
-                %Smooth out population curves, so that early time vibrio don't look so
-                %noisy
-                pop{1} = smooth(pop{1}, 'moving',3);
-                pop{2} = smooth(pop{2}, 'moving',3);
-                
-                
-                x = 1:length(pop{1});
-                x = 5*0.1625*x;
-                t = j*0.33*ones(length(x),1);
-                
-                hp(j,1) = plot3(x, t, pop{1}, 'Color', cData_green(NtimePoints,:));
-                hp(j,2) = plot3(x, t, pop{2}, 'Color', cData_red(NtimePoints,:));
-                hp(j,3) = plot3(x, t, zeros(length(pop{1}),1), 'Color', [0.9 0.9 0.9]);
+            
+            for i = 1:length(colorList)
+                nc = colorList(i);
+                for j=1:NtimePoints
+                    pop{nc} = f.scan(j,nc).lineDist;
+                    %pop{2} = f.scan(j,2).lineDist;
+                    
+                    %Remove everything after the autofluorescent cells
+                    pop{nc} = pop{nc}(1:f.scan(j,nc).gutRegionsInd(4));
+                    
+                    %Normalize the populations
+                    %pop{nc} = pop{nc}/sum(pop{nc});
+                    
+                    %Smooth out population curves, so that early time vibrio don't look so
+                    %noisy
+                    %pop{nc} = smooth(pop{nc}, 'moving',3);
+                    
+                    x = 1:length(pop{nc});
+                    x = 5*x;
+                    t = obj.t(j)*ones(length(x),1);
+                    
+                    hp(j,i) = plot3(x, t, pop{nc}, 'Color', cData{nc}(NtimePoints,:));
+                    %hp(j,2) = plot3(x, t, pop{2}, 'Color', cData_red(NtimePoints,:));
+                    hp(j,length(colorList)+1) = plot3(x, t, zeros(length(pop{nc}),1), 'Color', [0.9 0.9 0.9]);
+                end
             end
             
             %Set range appropriately
-            m = arrayfun(@(x)get(x, 'ZData'), hp(:,1:2), 'UniformOutput', false);
+            m = arrayfun(@(x)get(x, 'ZData'), hp(:,1:length(colorList)), 'UniformOutput', false);
             m = cellfun(@(x)max(x), m);
             maxZ = max(m(:));
             set(gca, 'ZLim', [0 maxZ]);

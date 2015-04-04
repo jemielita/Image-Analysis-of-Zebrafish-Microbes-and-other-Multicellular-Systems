@@ -388,9 +388,9 @@ classdef scanClass
             spots = inputVar.spots;
             
             if(~isempty(rProp))
-            rProp = spots.classifyThisSpot(rProp, obj.scanNum, obj.colorNum);
-            end
-            rProp = spotClass.keptManualSpots(rProp, spots.removeBugInd{obj.scanNum, obj.colorNum});
+                rProp = spots.classifyThisSpot(rProp, obj.scanNum, obj.colorNum);
+                
+                rProp = spotClass.keptManualSpots(rProp, spots.removeBugInd{obj.scanNum, obj.colorNum});
             
             newClump = rProp;
             
@@ -410,6 +410,13 @@ classdef scanClass
             %
             %                 return
             %             end
+            
+            else
+               newClump = rProp;
+               obj.totInten = NaN;
+               obj.totPop = NaN;
+               
+            end
             inputVar = load([obj.saveLoc filesep 'param.mat']);
             param = inputVar.param;
             

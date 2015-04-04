@@ -122,6 +122,7 @@ classdef spotFishClass
                        im = double(repmat(regMask,1,1,size(im,3))).*double(im);
                        
                        %% Get putative bacterial spots
+                       
                        im(im<obj.intenThresh) = obj.intenThresh;
                        spotLoc = countSingleBacteria(im,'', colorNum, param,regMask,obj.intenThresh, obj.objThresh);
                        if(isempty(spotLoc))
