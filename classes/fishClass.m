@@ -219,8 +219,7 @@ classdef fishClass
                         if(growthRate.(type)(nS)==-Inf)
                             growthRate.(type)(nS) = NaN;
                         end
-                    end
-                    
+                    end                
                 end
             end
             
