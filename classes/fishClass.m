@@ -25,7 +25,9 @@ classdef fishClass
         clumpRegionList = cell(2,1);
         indivRegionList = cell(2,1);
         
-        
+        %For calculating instantaneous growth rates
+        growthRateWindow = [];
+        wSize = 2;
         
         highPopFrac = [];
         
@@ -187,6 +189,42 @@ classdef fishClass
             
         end
         
+        
+        function obj = calcGrowthRateWindow(obj)
+            typeList = {'clump', 'indiv'};
+            
+            obj.growthRateWindow = arrayfun(@(x)growthRateFun(obj,x), 1:obj.totalNumColor);
+            
+            function growthRate =  growthRateFun(obj, cN)
+                
+                for nT = 1:length(typeList)
+                    type = typeList{nT};
+                    growthRate.(type) = nan(obj.totalNumScans,1);
+                    for nS=1+obj.wSize:obj.totalNumScans-obj.wSize
+                        x = obj.t;
+                        
+                        switch type
+                            case 'clump'
+                                y = obj.sH(:,cN);
+                            case 'indiv'
+                                y = obj.sL(:,cN);
+                        end
+                        y = log(y);
+                        y = y(nS-obj.wSize:nS+obj.wSize);
+                        x = x(nS-obj.wSize:nS+obj.wSize);
+                        
+                        
+                        [growthRate.(type)(nS), ~,~,~] = fityeqbx(x', y);
+                        
+                        if(growthRate.(type)(nS)==-Inf)
+                            growthRate.(type)(nS) = NaN;
+                        end
+                    end                
+                end
+            end
+            
+        end
+
         function updateClumpSliceNum(obj, param)
            %Update the clump slice number for each found clump
             for s = 1:obj.totalNumScans
@@ -922,7 +960,7 @@ classdef fishClass
             
         end
         
-        function obj = fitLogisticCurve(obj, fitType)
+        function [obj, Nth] = fitLogisticCurve(obj, fitType)
             
             fitField = {'r', 'K', 'N0', 't_lag', 'sigr', 'sigK', 'sigN0', 'sigt_lag'};
             
