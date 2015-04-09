@@ -40,7 +40,8 @@ subDir='DeconstructedImages';
 % Go into directory (for ease of writing code)
 cd(mainDirectory);
 fishDirect=dir;
-fishDirect(1:2)=[]; % Remove . and .., assumes ONLY directories here
+% fishDirect(1:2)=[]; % Remove . and .., assumes ONLY directories here
+fishDirect(strncmp({fishDirect.name}, '.', 1)) = []; % Removes . and .. and hidden files
 nFD=size(fishDirect,1);
 subFishDirect={};
 
@@ -60,7 +61,7 @@ for i=1:nFD
             
             temp=dir(strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{1}, filesep));
             tempDirs=temp([temp.isdir]==1); % Takes only folders (not files)
-            tempDirs(strncmp({tempDirs.name}, '.', 1)) = []; % Removes . and ..
+            tempDirs(strncmp({tempDirs.name}, '.', 1)) = []; % Removes . and .. and hidden files
             subSubFishDirect=tempDirs.name;
             imPath=strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j}, filesep, subSubFishDirect);
             filetype=settings{1};
@@ -164,7 +165,7 @@ if (analysisChoice==1)
             imPath=strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j}, filesep, subSubFishDirect);
             
             % Analyze data
-            analyzeGutData(gutMesh, gutMeshVels, gutMeshVelsPCoords, fps, scale)
+            analyzeGutData(gutMesh, gutMeshVels, gutMeshVelsPCoords, fps, scale, imPath)
             
             if( videoChoice==1)
                 

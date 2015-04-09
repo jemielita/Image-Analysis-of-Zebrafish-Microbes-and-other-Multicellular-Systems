@@ -3,12 +3,15 @@
 % a subdirectory given by subDir
 %
 % To do:
+%       Remove 8 bit optimization during registration
 
 function subDir = tiffStackDeconstruction(directory,subDir,resReduce)
 
 %% Initialize variables
 filenames={};
 count=1; % Linear index that travels through all multipages monotonically
+regReduce=8;
+sizeToSearch=2*regReduce*resReduce;
 
 % Create directory
 mkdir([directory, filesep, subDir]);
@@ -44,16 +47,27 @@ nDigits=numel(num2str(nF));
 % Registration variables
 % Get mask variables for registration
 maskVars=dir(strcat(directory,filesep,'maskVars*.mat'));
-maskFile=strcat(imPath,filesep,maskVars(1).name);
+maskFile=strcat(directory,filesep,maskVars(1).name);
 load(maskFile);
-ex=x{1};
-why=y{1};
-psIn=inpolygon(ex(:),why(:),gutOutlinePoly(:,1),gutOutlinePoly(:,2));
-logicPsIn = reshape(psIn,size(ex));
+
 % Get first image for registration
 firstIm=imread(fullfile(filenames{1}.name), 'Index', filenames{1}.index,'PixelRegion', {[1 resReduce numCols], [1 resReduce numRows]}); % read images
+firstIm=im2uint8(firstIm);
+firstImReg=imread(fullfile(filenames{1}.name), 'Index', filenames{1}.index,'PixelRegion', {[1 regReduce numCols], [1 regReduce numRows]});
+firstImReg=im2uint8(firstImReg);
+
+% Mask parameters
+x=size(firstIm,1);
+y=size(firstIm,2);
+r=x;
+c=y;
+arr=repmat((1:r)',1,c);
+see=repmat(1:c,r,1);
+psIn=inpolygon(see(:),arr(:),gutOutlinePoly(:,1),gutOutlinePoly(:,2));
+logicPsIn = reshape(psIn,size(see));
+
 % Initialize registration parameters
-[optimizer, metric]  = imregconfig('monomodal');
+[optimizer, metric] = imregconfig('monomodal');
 
 %% Loop through each element in array
 warning('off','all') % WARNING: Removed annoying message about strip range
@@ -68,18 +82,31 @@ for i=1:nF
     waitbar(i/nF, progbar, ...
         strcat(progtitle, sprintf('f %d of %d', i, nF)));
     
-    % Open file as 1/(resReduce)th resolution
+    % Open file as 1/(resReduce)th resolution, lower bit depth
     image=imread(fullfile(filenames{i}.name), 'Index', filenames{i}.index,'PixelRegion', {[1 resReduce numCols], [1 resReduce numRows]}); % read images
+    image=im2uint8(image);
+    
+    % Open file as 1/(regReduce)th resolution, lower bit depth
+    imageReg=imread(fullfile(filenames{i}.name), 'Index', filenames{i}.index,'PixelRegion', {[1 regReduce numCols], [1 regReduce numRows]}); % read images
+    imageReg=im2uint8(imageReg);
     
     % Do a rough registration (so large drift doesn't lead to mask failing)
-    image = imregister(image,firstIm,'affine',optimizer, metric);
+    %*** image = imregister(image,firstIm,'rigid',optimizer, metric);
+    TReg = imregtform(imageReg,firstImReg,'rigid',optimizer,metric); % Find transform with masked image2
+    % Rescale translation by regReduce/resReduce
+    TRegFull = TReg;
+    TRegFull.T(3,1:2)=regReduce/resReduce*TRegFull.T(3,1:2);
+    % Move image by that amount 
+    image = imwarp(image,TRegFull,'OutputView',imref2d(size(firstIm))); % Actually do the transform with unmasked image
     
-    % Mask gut, do fine registration using all other features FINISH
-    % LATER**********************************************************
-%     image2=image;
-%     imMat=image2(logicPsIn);
-%     image2(logicPsIn)=mean(imMat(:));
-%     [~, R_reg] = imregister(image2,firstIm,'affine',optimizer, metric);
+    % Mask gut, do fine registration using all other features
+    image2=image;
+    imMat=image2(logicPsIn);
+    image2(logicPsIn)=mean(imMat(:));
+%     T = imregtform(image2,firstIm,'rigid',optimizer,metric); % Find transform with masked image2
+%     image = imwarp(image,T,'OutputView',imref2d(size(firstIm))); % Actually do the transform with unmasked image
+    image=gutRegistration(firstIm,image,image2,sizeToSearch);
+
     
     % Save as png in subDir
     iMO=i-1;

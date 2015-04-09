@@ -52,7 +52,7 @@ if( resReduce==-1)
     immPath=strcat(immPath,filesep,'..');
 end
 theFileN=strcat(immPath,filesep,'maskVars_',date,'.mat');
-clear imH;
+clear imH resReduce;
 save(theFileN);
 
 end
