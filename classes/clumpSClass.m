@@ -247,7 +247,7 @@ classdef clumpSClass
                 c = inputVar.c;
                 
                 c = c.calculateSliceInten(obj.scanNum);
-                c.save;
+                c.save; 
                 fprintf(1, '.');
             end
             fprintf(1, '\n');
@@ -311,6 +311,65 @@ classdef clumpSClass
             end
             fprintf(1, '\n');
            
+        end
+        
+        function indOverlap = calcSpotClumpOverlap(obj, spot)
+            %Calculate a list of spots that overlap with found clumps. To
+            %be used to remove clumps
+            fileDir = [obj.saveLoc filesep 'clump' filesep 'clump_' obj.colorStr '_nS' num2str(obj.scanNum)];
+            fprintf(1, 'Finding spots that overlap with clumps');
+            
+            %Defining variables in case nothing is assigned
+            ind = [];
+            indOverlap = [];
+            
+            for i = 1:obj.numClumps
+                fileName = [fileDir filesep num2str(i) '.mat'];
+                if(exist(fileName,'file')==0)
+                    continue
+                end
+                
+                inputVar = load(fileName);
+                c = inputVar.c;
+                c.saveLoc = obj.saveLoc;
+                
+                vol = c.loadVolume;
+
+                %Find spots that overlap with this clump
+                
+                cen = [spot.CentroidOrig];
+                cen = reshape(cen, 3, length(cen)/3);
+                indX = find(cen(1,:)>c.cropRect(1) & cen(1,:)<(c.cropRect(1)+c.cropRect(3)));
+                indY = find(cen(2,:)>c.cropRect(2) & cen(2,:)<(c.cropRect(2)+c.cropRect(4)));
+                indZ = find(cen(3,:)>c.zRange(1) & cen(3,:)<=c.zRange(2));
+                
+                ind = intersect(indX, indY);
+                ind = intersect(ind, indZ);
+                
+                %Checking for strict overlap between these spots and the
+                %volume
+                vol = vol>c.intenCutoff;
+                
+                cenTest = cen(:,ind);
+                cenTest(1,:) = cenTest(1,:)-c.cropRect(1);
+                cenTest(2,:) = cenTest(2,:)-c.cropRect(2);
+                %The volume returned by c.loadVolume isn't cropped in the
+                %z-direction, so don't adjust that one.
+                
+                cenTest = round(cenTest);
+                %Make sure all point are in the correct range
+                cenTest(cenTest(:)<1) = 1;
+                
+                %Check if these points are within the volume or not
+                
+                indOverlap = vol(sub2ind(size(vol), cenTest(2,:), cenTest(1,:), cenTest(3,:)));
+                indOverlap = indOverlap==1;
+                indOverlap = ind(indOverlap); %Finding the indices of the spots that are overlaping with found clusters.
+ 
+                fprintf(1, '.');
+            end
+            fprintf(1, '\n');
+            
         end
         
         function obj = calcCenterMass(obj,cut,maxRegNum)

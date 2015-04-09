@@ -79,7 +79,7 @@ for nZ=1:size(im,3)
     
     switch inPlace
         case false
-            imSeg(yMin:yMax, xMin:xMax,nZ) = cv.spotDetectorFast(imIn,4);
+            imSeg(yMin:yMax, xMin:xMax,nZ) = cv.spotDetectorFast_v2(imIn,4);
             
             %Clean up small regions
            %imSeg(yMin:yMax, xMin:xMax,nZ) = bwareaopen(imSeg(yMin:yMax, xMin:xMax,nZ)>maxThresh, 10);
@@ -89,7 +89,7 @@ for nZ=1:size(im,3)
             bw(yMin:yMax, xMin:xMax,nZ) = imclearborder( bw(yMin:yMax, xMin:xMax,nZ)==1);
         case true
             
-            im(yMin:yMax, xMin:xMax,nZ) = cv.spotDetectorFast(imIn,4);
+            im(yMin:yMax, xMin:xMax,nZ) = cv.spotDetectorFast_v2(imIn,4);
     end
     %Using a median filter on each frame to remove salt and pepper noise
     %thisFrame(yMin:yMax, xMin:xMax) = medfilt2(thisFrame(yMin:yMax, xMin:xMax), [5 5]);

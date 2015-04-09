@@ -43,7 +43,7 @@ classdef spotClassifier
                rProp = obj.removeOutsideRang(rProp);
                
                %Find manually kept and removed spots
-               %ind = removeBugInd{ns, nc};
+               ind = removeBugInd{ns, nc};
                remSpots = ismember([rProp.ind],ind);
                keptSpots = ~ismember([rProp.ind],ind);
                numKeptSpots = sum(keptSpots);
@@ -64,6 +64,7 @@ classdef spotClassifier
                obj.tList = [obj.tList; t];
            end   
        end
+       
        
        function obj = createSVMclassifier(obj)
            if(isempty(obj.tList))
@@ -90,9 +91,8 @@ classdef spotClassifier
            boxCon = [obj.boxVal(1)*ones(numKeptSpots,1); obj.boxVal(2)*ones(size(tList,1)-numKeptSpots,1)];
            displayData = true;
            if(displayData==true)
-               svmStruct = svmtrain(tList(:,[1,2]), Ynom, 'showplot', true, 'Kernel_Function', 'quadratic', 'boxconstraint', boxCon, ...
+               svmStruct = svmtrain(tList(:,[2,10]), Ynom, 'showplot', true, 'Kernel_Function', 'quadratic', 'boxconstraint', boxCon, ...
                    'autoscale', true);
-               
            end
            
            svmStruct = svmtrain(tList(:,1:11), Ynom, 'showplot', true, 'Kernel_Function', 'quadratic','boxconstraint', boxCon,'autoscale', true);
@@ -107,7 +107,6 @@ classdef spotClassifier
            ldaResubErr  = sum(bad)/N;
            
            [ldaResubCM,grpOrder] = confusionmat(Ynom,group)
-           
            
            obj.svmStruct = svmStruct;
           

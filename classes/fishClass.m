@@ -17,7 +17,7 @@ classdef fishClass
         
         nL = [];
         nH = [];
-        
+        grwth = [];
         
         %For our analysis of clump and individuals distributions
         clumpCentroid = cell(2,1);
@@ -25,7 +25,9 @@ classdef fishClass
         clumpRegionList = cell(2,1);
         indivRegionList = cell(2,1);
         
-        
+        %For calculating instantaneous growth rates
+        growthRateWindow = [];
+        wSize = 2;
         
         highPopFrac = [];
         
@@ -130,7 +132,7 @@ classdef fishClass
         
         function obj = calc(obj, field)
         %obj = calc(obj, field)
-        %High level functions for running calculations os particular scans.
+        %High level functions for running calculations on particular scans.
         %This function will only update field in obj.scan for the
         %appropriate field
             for s = 1:obj.totalNumScans
@@ -187,6 +189,42 @@ classdef fishClass
             
         end
         
+        
+        function obj = calcGrowthRateWindow(obj)
+            typeList = {'clump', 'indiv'};
+            
+            obj.growthRateWindow = arrayfun(@(x)growthRateFun(obj,x), 1:obj.totalNumColor);
+            
+            function growthRate =  growthRateFun(obj, cN)
+                
+                for nT = 1:length(typeList)
+                    type = typeList{nT};
+                    growthRate.(type) = nan(obj.totalNumScans,1);
+                    for nS=1+obj.wSize:obj.totalNumScans-obj.wSize
+                        x = obj.t;
+                        
+                        switch type
+                            case 'clump'
+                                y = obj.sH(:,cN);
+                            case 'indiv'
+                                y = obj.sL(:,cN);
+                        end
+                        y = log(y);
+                        y = y(nS-obj.wSize:nS+obj.wSize);
+                        x = x(nS-obj.wSize:nS+obj.wSize);
+                        
+                        
+                        [growthRate.(type)(nS), ~,~,~] = fityeqbx(x', y);
+                        
+                        if(growthRate.(type)(nS)==-Inf)
+                            growthRate.(type)(nS) = NaN;
+                        end
+                    end                
+                end
+            end
+            
+        end
+
         function updateClumpSliceNum(obj, param)
            %Update the clump slice number for each found clump
             for s = 1:obj.totalNumScans
@@ -215,6 +253,31 @@ classdef fishClass
            
         end
         
+        function obj = calcSliceInten(obj)
+            fprintf(1, 'Calculating along each cluster');
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c).clumps.getAllSliceInten;
+                    fprintf(1, '.');
+                end
+                
+            end
+            fprintf(1, '\n');
+            
+        end
+        
+        function obj = calc1dProj(obj)
+           fprintf(1, 'Calculating 1d projections');
+           for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    obj.scan(s,c) = obj.scan(s,c).calc1DProj(obj.singleBacInten(c));
+                    fprintf(1, '.');
+                end
+                
+            end
+            fprintf(1, '\n');
+             
+        end
         function obj = getOutlines(obj)
             fprintf(1, 'Calculating indiv/clump masks');
             for s = 1:obj.totalNumScans
@@ -264,6 +327,88 @@ classdef fishClass
                 
             end
             fprintf(1, '\n'); 
+        end
+        
+        function obj = calcRegionalGrowth(obj)
+           %Calculate regions in the gut that have high growth rates
+           
+           bugpos = cell(obj.totalNumScans,1);
+           for ns= 1:obj.totalNumScans
+               for nc =1:obj.totalNumColor
+                   
+               clmp = obj.scan(ns,nc).clumps.allData;
+               
+               
+               bugpos{ns,nc} = zeros(...
+                   obj.scan(ns,nc).gutRegionsInd(obj.totPopRegCutoff),1);
+               for i=1:length(clmp)
+                  val = clmp(i).sliceinten;
+                  
+                  %Remove zero elements, and element beyond range
+                  ind = find(val(:,1)==0);
+                  val(ind,:) = [];
+                  ind = find(val(:,1)>obj.scan(ns,nc).gutRegionsInd(obj.totPopRegCutoff));
+                  val(ind,:) = [];
+                  
+                  bugpos{ns,nc}(val(:,1)) = val(:,2)+bugpos{ns,nc}(val(:,1));
+               end
+               %Reshape this array so that everything is on a grid of the
+               %same length (200)
+               valnew = interp1(bugpos{ns,nc}, 1:length(bugpos{ns,nc})/200:length(bugpos{ns,nc}));
+               bugpos{ns,nc} = valnew;
+               
+               end
+           end
+           
+           %mlj Note: this code will have to be changed once I look at two
+           %color data
+           poporig = cell2mat(bugpos);
+           
+           %Temp, to avoid bug in code that has been fixed.
+           %poporig = poporig(:,1:100);
+           %Average over these windows in time and space to calculate the
+           %region specific growth rate
+           wdw.pos = 10; 
+           wdw.t = 3; 
+           
+           %Averaging in space
+           for i=1:size(poporig,2)/wdw.pos - 1
+              pop(:,i) =  mean(poporig(:,(i-1)*wdw.pos+1:(i-1)*wdw.pos + wdw.pos),2);
+           end
+           
+           %Calculating the growth rate-fixing in place the growth rate
+           %window shown above
+           for i=2:size(pop,1)-1
+               
+               for j=1:size(pop,2)
+                   
+                   [~,~,obj.grwth(i-1,j), ~]= fitline(0.33:0.33:1, pop(i-1:i+1,j));
+               
+               end
+           end
+           
+            
+        end
+        
+        
+        function spotOverlapList = calcClumpSpotOverlap(obj)
+            %Find all spots that are overlapping with found clusters. Save
+            %this list of spots to singleBacCount/spotClumpOverlap.mat
+            fprintf(1, 'Calculating spots overlapping with clumps\n');
+            spotOverlapList = cell(obj.totalNumScans, obj.totalNumColor);
+            for s = 1:obj.totalNumScans
+                for c = 1:obj.totalNumColor
+                    inputVar = load([obj.saveLoc filesep 'singleBacCount' filesep 'bacCount' num2str(s) '.mat']);
+                    spot = inputVar.rProp{c};
+                    ind = obj.scan(s,c).clumps.calcSpotClumpOverlap(spot);
+                    spotOverlapList{s,c} = [spot(ind).ind];
+                    fprintf(1, '.');
+                end
+                
+            end
+            fprintf(1, '\n');
+            save( [obj.saveLoc filesep 'singleBacCount' filesep 'spotClumpOverlap.mat'],'spotOverlapList');
+            
         end
         
         function obj = getClumps(obj)
@@ -814,7 +959,7 @@ classdef fishClass
             
         end
         
-        function obj = fitLogisticCurve(obj, fitType)
+        function [obj, Nth] = fitLogisticCurve(obj, fitType)
             
             fitField = {'r', 'K', 'N0', 't_lag', 'sigr', 'sigK', 'sigN0', 'sigt_lag'};
             
@@ -959,9 +1104,9 @@ classdef fishClass
            
            %%Create masks
            %Gut region masks
-          % maskFish.getGutRegionMaskAll(param);
+           % maskFish.getGutRegionMaskAll(param);
            %Segmentation masks
-           obj = calcMasks(obj);
+           % obj = calcMasks(obj);
            
            %% Find all spots
            s = spotFishClass(param);
@@ -974,7 +1119,7 @@ classdef fishClass
            s.saveInstance;
                     
            %%Find clumps
-           calcClumps(obj);
+           %calcClumps(obj);
            
         end
     end
