@@ -396,9 +396,6 @@ classdef scanClass
             
             %Intensity cutoff for individual bacteria
             
-            %mlj: temporary
-           % newClump([newClump.sliceNum]>=obj.gutRegionsInd(4)) = [];
-            
             obj.totPop = length(newClump);
             
             ind = [newClump.totInten]<cut;
