@@ -15,7 +15,7 @@
 
 function [pAll,varargout] = analyzeGutGetParameters(varargin)
 
-dirNames = uipickfiles();
+dirNames = uipickfiles_sys();
 
 %% Unpack param files.
 
