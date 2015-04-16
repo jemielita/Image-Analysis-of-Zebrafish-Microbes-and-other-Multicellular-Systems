@@ -313,7 +313,7 @@ classdef clumpSClass
            
         end
         
-        function indOverlap = calcSpotClumpOverlap(obj, spot)
+        function indOverlapAll = calcSpotClumpOverlap(obj, spot)
             %Calculate a list of spots that overlap with found clumps. To
             %be used to remove clumps
             fileDir = [obj.saveLoc filesep 'clump' filesep 'clump_' obj.colorStr '_nS' num2str(obj.scanNum)];
@@ -323,6 +323,7 @@ classdef clumpSClass
             ind = [];
             indOverlap = [];
             
+            indOverlapAll = [];
             for i = 1:obj.numClumps
                 fileName = [fileDir filesep num2str(i) '.mat'];
                 if(exist(fileName,'file')==0)
@@ -366,6 +367,7 @@ classdef clumpSClass
                 indOverlap = indOverlap==1;
                 indOverlap = ind(indOverlap); %Finding the indices of the spots that are overlaping with found clusters.
  
+                indOverlapAll = [indOverlapAll, indOverlap];
                 fprintf(1, '.');
             end
             fprintf(1, '\n');
