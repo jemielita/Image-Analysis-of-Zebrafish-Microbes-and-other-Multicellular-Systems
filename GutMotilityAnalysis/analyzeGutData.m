@@ -1,3 +1,5 @@
+%% Fix later blue overwriting red
+
 function analyzeGutData(gutMesh, gutMeshVels, gutMeshVelsPCoords, fps, scale, imPath)
 
 curDir=pwd;
@@ -58,4 +60,42 @@ cd(imPath);
 % % set(findall(h,'type','axes'),'fontsize',15,'fontWeight','bold')
 % % print('-dtiff','-r300','WT_7_22_Fish2_Marker_Tracks');
 %  cd(curDir);
+
+%% Tau Autocorrelations of wave propagations
+tauSubdiv=1;
+colorSize=size(surfL,1);
+erx=int16(size(gutMeshVelsPCoords,4)/fractionOfTimeStart:(size(gutMeshVelsPCoords,4)/(fractionOfTimeStart)+size(gutMeshVelsPCoords,4)/totalTimeFraction-1));
+surfL=squeeze(-mean(gutMeshVelsPCoords(:,markerNumStart:markerNumEnd,1,erx),1));
+figure
+hold all;
+for i=1:tauSubdiv:size(surfL,1)
+    r=xcorr(surfL(i,:),'coeff');
+    x=0:size(r,2)/2;
+    dt=x/fps;
+    plot(dt,r(end/2:end),'Color',[sin(3.1415/(2*colorSize)*(i-1)),0,cos(3.1415/(2*colorSize)*(i-1))]);
+end
+plot(dt,zeros(1,size(dt,2)),'k-');
+hold off;
+title('Autocorrelations of Anterior-Posterior velocities over time (Blue=Anterior, Red=Posterior)','FontSize',12,'FontWeight','bold');
+xlabel('\tau (s)','FontSize',20);
+ylabel('Correlation','FontSize',20);
+
+%% Tau Correlations of wave propagations
+erx=int16(size(gutMeshVelsPCoords,4)/fractionOfTimeStart:(size(gutMeshVelsPCoords,4)/(fractionOfTimeStart)+size(gutMeshVelsPCoords,4)/totalTimeFraction-1));
+surfL=squeeze(-mean(gutMeshVelsPCoords(:,markerNumStart:markerNumEnd,1,erx),1));
+figure
+hold all;
+for i=1:size(surfL,1)
+    for j=(i+1):size(surfL,1)
+        r=xcorr(surfL(i,:),surfL(j,:),'coeff');
+        x=0:size(r,2)/2;
+        dt=x/fps;
+        dc=j-i-1;
+        plot(dt,r(end/2:end),'Color',[sin(3.1415/(2*(size(surfL,1)-2))*dc),0,cos(3.1415/(2*(size(surfL,1)-2))*dc)]);
+    end
+end
+hold off;
+title('Correlations between Anterior-Posterior velocities over time (Blue=Anterior, Red=Posterior)','FontSize',12,'FontWeight','bold');
+xlabel('\tau (s)','FontSize',20);
+ylabel('Correlation','FontSize',20);
 end
