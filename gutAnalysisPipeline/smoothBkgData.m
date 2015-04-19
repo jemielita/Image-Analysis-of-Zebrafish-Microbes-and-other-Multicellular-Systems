@@ -11,7 +11,7 @@
 
 function locMaster = smoothBkgData(param,colorNum, plotData, minS, maxS,timeCut)
 
-window= 10;
+window = 10;
 
 % for line-by-line plots
 cData = summer(ceil(2*(maxS-minS+1)));
@@ -122,7 +122,7 @@ for i=minL:maxL
 end
 %Now smooth out the data along the length of the gut
 locAll = smooth(indAll,locAll, 51, 'sgolay',3);
-%If the smoothing give negeative values, replace the with the closest
+%If the smoothing give negative values, replace the with the closest
 %one-should only be an issue near the beginning of the gut
 nonEmpty = find(locAll>00);
 for i=minL:maxL

@@ -153,6 +153,8 @@ classdef scanClass
                 mask = inputVar.mask;
             else
                 mask = maskFish;
+                mask.saveDir = [obj.saveLoc filesep 'masks'];
+                mask.saveInstance;
             end
             %maskFish.getBkgEstMask(param, obj.scanNum, obj.colorNum);
             
@@ -183,13 +185,12 @@ classdef scanClass
         function obj = filterMask(obj)
             %Filter down the calculated cluster map produced by .calcMask
             %(graph cut approach)
-            
             inputVar = load([obj.saveLoc filesep 'masks' filesep 'mask.mat']);
             mask = inputVar.mask;
             m = mask.filterMask(obj.scanNum, obj.colorStr);
             
-            
         end
+        
         
         function obj = calcIndivClumpMask(obj, cut)
 %            obj = obj.createLabelMask;

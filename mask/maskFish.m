@@ -12,11 +12,12 @@ classdef maskFish
         colorNum = NaN;
         
         bkgOffset = 1.8; %Scalar offset from the estimated background in each wedge of the gut.
-        colorInten = [800, 1000]; %Intensity cutoff for each color channel (assuming 2) to produce the intensity cutoff mask.
-        colorIntenMarker = [1200, 1200]; %Intensity cutoff for defining markers.
         saveDir = '';
         
         minClusterSize = 10000;
+        
+        colorInten = [1500 1500]; %Intensity cutoff for each color channel (assuming 2) to produce the intensity cutoff mask.
+        colorIntenMarker = [2000 2000];%Intensity cutoff for defining markers.
     end
     
    methods(Static)
@@ -194,17 +195,76 @@ classdef maskFish
            %estimate of the background intensity. This function requires
            %the creation of the background estimator for each wedge in the
            %gut-this is somewhat old code that I'm hoping to retire.
-           fN = [param.dataSaveDirectory filesep 'bkgEst' filesep 'bkgEst_' param.color{colorNum} '_nS_' num2str(scanNum) '.mat'];
-           if(exist(fN, 'file')~=2)
-               makeUnrotatedMask(param, scanNum, colorNum);
-               makeBkgSegmentMask(param, scanNum, colorNum);
-           else
-               
-               recalcProj = false;
-               im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
-               
-               m = showBkgSegment(im, scanNum, colorNum, param, obj.bkgOffset);
+
+           %New code: construct an estimator of the background from just
+           %the MIP
+           recalcProj = false;
+           im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
+           m = maskFish.getGutFillMask(param, scanNum);
+           im(~m) = nan;
+           inputVar = load([param.dataSaveDirectory filesep 'masks' filesep 'maskUnrotated_' num2str(scanNum) '.mat']);
+           gutMask = inputVar.gutMask;
+           
+           histInd = unique(gutMask(:));
+           histInd(histInd==0) = [];
+           
+           histAll = cell(length(histInd),1);
+           
+           for i=1:length(param.centerLineAll{scanNum})
+              %Get region just around each of these lines-use this to estimate the background to subtract 
+              cl = param.centerLineAll{scanNum}(i,:);
+              minX = max([1, cl(1)-20]);
+              maxX = min([size(im,2),cl(1)+20]);
+              minY = max([1, cl(2)-20]);
+              maxY = min([size(im,1),cl(2)+20]);
+              imc = im(minY:maxY, minX:maxX);
+              meanv(i) = nanmean(imc(:)) + 3*nanstd(double(imc(:)));
            end
+           
+           m = smooth(meanv, 10);
+           %Force everything after the end of the bulb to go to a constant
+           %background intensity
+           m(round(0.75*param.gutRegionsInd(2)/2):end) = m(round(0.75*param.gutRegionsInd(2)/2));
+           
+           maskAll = zeros(size(im));
+           
+           
+           for i=1:length(histInd)
+               for nm =1:size(gutMask,3)
+                   mask = gutMask(:,:,nm)== histInd(i);
+                   if(sum(mask(:))==0)
+                       %Wrong stack
+                       continue;
+                   else
+                       maskAll(mask) = meanv(i);
+                   end
+                   i
+               end
+           end
+%            
+%            for i=1:length(histInd)
+%                ind = 0:10:4000;
+%                data = histAll{i};
+%                smth = smooth(ind,data, 51, 'sgolay',3);
+%                
+%                minP = data(end)+ 500;
+%                [pks,loc] = findpeaks(smth, 'MINPEAKHEIGHT', minP,...
+%                    'MINPEAKDISTANCE', 20);
+%                
+%            end
+           
+%            
+%            fN = [param.dataSaveDirectory filesep 'bkgEst' filesep 'bkgEst_' param.color{colorNum} '_nS_' num2str(scanNum) '.mat'];
+%            if(exist(fN, 'file')~=2)
+%                makeUnrotatedMask(param, scanNum, colorNum);
+%                makeBkgSegmentMask(param, scanNum, colorNum);
+%            else
+%                
+%                recalcProj = false;
+%                im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
+%                
+%                m = showBkgSegment(im, scanNum, colorNum, param, obj.bkgOffset);
+%            end
        end
        
        function m = getIntenMask(obj,param, scanNum, colorNum, varargin)
@@ -236,18 +296,18 @@ classdef maskFish
        end
        
        function m = getGraphCutMask(obj,param, scanNum, colorNum)
+           
            % m = getGraphCutMask(param, scanNum, colorNum): Construct a
            % segmented image of the gut using a graph cut segmentation
            % algorithm.
            
           % segMask = maskFish.getBkgEstMask(param, scanNum, colorNum);
            segMask  = obj.getIntenMask(param, scanNum, colorNum,'lt');
-           %  spotMask = obj.getSpotMask(param, scanNum, colorNum);
-           spotMask = zeros(size(segMask));
+           spotMask = obj.getSpotMask(param, scanNum, colorNum);
+          
            recalcProj = false;
            im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
            obj.colorInten(colorNum)  = obj.getIntensityCutoff(im, spotMask);
-           
            
            obj.colorInten = obj.colorIntenMarker;
            intenMask = obj.getIntenMask(param, scanNum, colorNum);
@@ -377,8 +437,7 @@ classdef maskFish
                 %than the max intensity-effectively counting zero bacteria.
                 inten = max(im(:));
             else
-                %Cutoff equal to intensity at which %80 of bacteria signal
-                %present-somewhat arbitrary
+                %Cutoff equal to intensity of the 90% percentile of bugs.
                 inten = b(round(0.2*length(b)));
             end
        end
