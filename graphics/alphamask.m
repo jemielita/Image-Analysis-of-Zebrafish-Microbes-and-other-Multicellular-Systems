@@ -40,3 +40,4 @@ hold on,
 hOVM = imshow(rgbI, 'Parent', axHandle);
 set(hOVM, 'AlphaData', bwMask*transparency);       % use mask values as alpha channel of overlay
 hold off;
+end
