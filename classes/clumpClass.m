@@ -59,6 +59,7 @@ classdef clumpClass < clumpSClass
           si = arrayfun(@(x)sum(totinten(gutMask==x)), slicenum);
           obj.sliceinten = [slicenum, si];
        end
+       
        function obj = calcCentroid(obj,vol)
            vol = vol>obj.intenCutoff;
            

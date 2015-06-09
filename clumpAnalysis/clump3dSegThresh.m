@@ -19,6 +19,10 @@ mask = maskAll==ind;
 
 if(sum(mask(:))<9)
     fprintf(1, 'Region too small! Skipping\n');
+    
+    if(nargout==1)
+        varargout{1} = cc;
+    end
     return
 end
 
@@ -99,7 +103,9 @@ end
 
 if(nargout==1)
     varargout{1} = cc;
+else
+
+    clear all
 end
 
-clear all
 end
