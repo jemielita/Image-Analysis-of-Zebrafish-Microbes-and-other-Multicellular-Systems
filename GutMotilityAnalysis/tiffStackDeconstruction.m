@@ -5,13 +5,14 @@
 % To do:
 %       Remove 8 bit optimization during registration
 
-function subDir = tiffStackDeconstruction(directory,subDir,resReduce)
+function [subDir, tRegCell] = tiffStackDeconstruction(directory,subDir,resReduce)
 
 %% Initialize variables
 filenames={};
 count=1; % Linear index that travels through all multipages monotonically
 regReduce=8;
-sizeToSearch=2*regReduce*resReduce;
+sizeToSearch=regReduce*resReduce/2;
+tRegCell={};
 
 % Create directory
 mkdir([directory, filesep, subDir]);
@@ -84,29 +85,27 @@ for i=1:nF
     
     % Open file as 1/(resReduce)th resolution, lower bit depth
     image=imread(fullfile(filenames{i}.name), 'Index', filenames{i}.index,'PixelRegion', {[1 resReduce numCols], [1 resReduce numRows]}); % read images
-    image=im2uint8(image);
+%     image=im2uint8(image);
     
     % Open file as 1/(regReduce)th resolution, lower bit depth
     imageReg=imread(fullfile(filenames{i}.name), 'Index', filenames{i}.index,'PixelRegion', {[1 regReduce numCols], [1 regReduce numRows]}); % read images
-    imageReg=im2uint8(imageReg);
+%     imageReg=im2uint8(imageReg);
     
     % Do a rough registration (so large drift doesn't lead to mask failing)
-    %*** image = imregister(image,firstIm,'rigid',optimizer, metric);
     TReg = imregtform(imageReg,firstImReg,'rigid',optimizer,metric); % Find transform with masked image2
     % Rescale translation by regReduce/resReduce
     TRegFull = TReg;
     TRegFull.T(3,1:2)=regReduce/resReduce*TRegFull.T(3,1:2);
     % Move image by that amount 
-    image = imwarp(image,TRegFull,'OutputView',imref2d(size(firstIm))); % Actually do the transform with unmasked image
-    
-    % Mask gut, do fine registration using all other features
-    image2=image;
+%     image = imwarp(image,TRegFull,'OutputView',imref2d(size(firstIm))); % Actually do the transform with unmasked image
+    image2 = imwarp(image,TRegFull,'OutputView',imref2d(size(firstIm))); % Actually do the transform with unmasked image
+%     
+%     % Mask gut, do fine registration using all other features
+%     image2=image;
     imMat=image2(logicPsIn);
     image2(logicPsIn)=mean(imMat(:));
-%     T = imregtform(image2,firstIm,'rigid',optimizer,metric); % Find transform with masked image2
-%     image = imwarp(image,T,'OutputView',imref2d(size(firstIm))); % Actually do the transform with unmasked image
-    image=gutRegistration(firstIm,image,image2,sizeToSearch);
-
+    TReg2=gutPolyRegistration(firstIm,image,image2,sizeToSearch);
+    tRegCell=[tRegCell;TReg,TReg2];
     
     % Save as png in subDir
     iMO=i-1;
