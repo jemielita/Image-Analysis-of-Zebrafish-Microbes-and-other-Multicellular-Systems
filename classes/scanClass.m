@@ -427,7 +427,10 @@ classdef scanClass
                 obj.clumps.allData(ind) = [];
                 maxInd = max([obj.clumps.allData.IND]);
             end
-
+            %Remove spots already in the list
+            remInd = [obj.clumps.allData.IND]==0;
+            obj.clumps.allData(remInd) = [];
+            
             numClumps = length(obj.clumps.allData);
             
             for i=1:length(newClump)

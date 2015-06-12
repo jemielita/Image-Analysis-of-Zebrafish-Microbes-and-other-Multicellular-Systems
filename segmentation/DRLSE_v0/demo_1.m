@@ -36,7 +36,7 @@ g=1./(1+f);  % edge indicator function.
 c0=2;
 initialLSF = c0*ones(size(Img));
 
-initialLSF(mIm>0.5*otsuT) = -c0;
+initialLSF(otsuT) = -c0;
 % generate the initial region R0 as two rectangles
 %initialLSF(25:35,20:25)=-c0; 
 %initialLSF(25:35,40:50)=-c0;
@@ -69,6 +69,7 @@ for n=1:iter_outer
   %  if mod(n,2)==0
         figure(2);
         imagesc(Img,[0, 2000]); axis off; axis equal; colormap(gray); hold on;  contour(phi, [0,0], 'r');
+        drawnow
    % end
 end
 

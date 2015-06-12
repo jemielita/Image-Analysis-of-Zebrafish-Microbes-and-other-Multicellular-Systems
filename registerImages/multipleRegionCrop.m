@@ -75,7 +75,6 @@ maxColor = numColor;
 colorType = [param.color];
 colorNum = 1;
 
-
 %Load in fish analysis class-over time most of what we do in this program
 %that has a bearing on curating the *analysis* of our data should be moved
 %here (e.g. spot detection filtering, clump filtering, etc.). The param
@@ -126,6 +125,8 @@ fGui = figure('Name', figName, 'Menubar', 'none', 'Tag', 'fGui',...
 %Can be changed by the user in File/change key-stroke value
 set(fGui, 'KeyPressFcn', @(fGui, evt)keyPressGUI(fGui, evt));
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 %Handle to GUI data-will be used to pass information out
 myhandles = guihandles(fGui);
@@ -147,7 +148,6 @@ uimenu(hMenuFile, 'Label', 'Save param and fish file', 'Callback', @saveParam_Ca
 uimenu(hMenuFile, 'Label', 'Load fish analysis file', 'Separator', 'on' ,'Callback', @loadFishAnalysis_Callback);
 uimenu(hMenuFile, 'Separator', 'on', 'Label', 'Change key-stroke value', 'Callback', @changeKeystroke_Callback);
 uimenu(hMenuFile, 'Label', 'Set default GUI screen location', 'Callback', @saveWindowLocation_Calback);
-
 
 uimenu(hMenuFile, 'Separator', 'on', 'Label', 'Analysis sequence', 'Callback', @analysisSequence_Callback);
 
@@ -383,13 +383,12 @@ set(hMenuAlternateRegions, 'Visible', 'off');
 
 %%%%%%Create the displayed control panels
 
-hImPanel = uipanel('BackgroundColor', 'white', 'Position', [0.01, .18, .98, .8],...
+hImPanel = uipanel('BackgroundColor', 'black', 'Position', [0.01, .18, .98, .8],...
     'Units', 'Normalized');
+%imageRegion = axes('Parent', hImPanel,'Tag', 'imageRegion', 'Position', [0, 0 , 1,1], 'Visible', 'on',...
+ %   'XTick', [], 'YTick', [], 'DrawMode', 'fast');
 imageRegion = axes('Parent', hImPanel,'Tag', 'imageRegion', 'Position', [0, 0 , 1,1], 'Visible', 'on',...
-    'XTick', [], 'YTick', [], 'DrawMode', 'fast');
-
-
-
+    'XTick', [], 'YTick', []);
 %Handle to the scroll panel, if we make it.
 hScroll = '';
 
@@ -442,8 +441,6 @@ hProj1 = uicontrol('Parent', hMenuProjectionType,'Style', 'Radio', 'String', 'mu
 
 set(hMenuProjectionType, 'SelectionChangeFcn', @projectionType_Callback);
 
-
-
 %Create a data table where the user can give the upper and upper bound (in
 %terms of the z level) for different regions.
  cnames = {'Bottom', 'Top'};
@@ -493,12 +490,17 @@ projectionType = 'mip';
 
 hIm = imshow(im, [],'Parent', imageRegion);
 
-im = getRegisteredImage(scanNum, color, 0, im, data, param );
-im(im(:)>40000) = 0;
+%im = getRegisteredImage(scanNum, color, 0, im, data, param );
+%im(im(:)>40000) = 0;
 
 set(imageRegion, 'CLim', [0 1000]);
 
 numColor = length(param.color);
+
+set(fGui, 'Visible', 'on');
+
+%Handle to image contrast toolbar
+%hContrast = imcontrast(imageRegion);
 
 %%% quick Z cropping variables
 imArray = cell(numColor,totalNumRegions); %Will be used for quickly registering the different regions of the image.
@@ -555,16 +557,12 @@ getRegisteredImage(scanNum, color, zNum, im, data, param )
 initMag = apiScroll.findFitMag();
 apiScroll.setMagnification(initMag);
 
-
-%outlineRegions(); %Outline the different regions that makes up the composite region.
-
 set(fGui, 'Visible', 'on');
 
 %Handle to image contrast toolbar
 hContrast = imcontrast(imageRegion);
-
-
-
+        
+               
 
 %Structure to hold all user manipulable objects on the gui
 userG = graphicsHandle(param, numScans, numColor, imageRegion);
@@ -1048,7 +1046,17 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 maskFeat.Type = 'perim';
                 maskFeat.seSize = 5;
                 
-                rgbIm = segmentRegionShowMask(segMask, maskFeat, segmentationType, imageRegion);
+               rgbIm = segmentRegionShowMask(segMask, maskFeat, segmentationType, imageRegion);
+                
+                
+%                 % Create colour image and overlay it
+%                 rgbI = cat(3, 1*ones(size(segMask)), 0*ones(size(segMask)), 0*ones(size(segMask)));
+%                 hold on,
+%                 hOVM = imshow(rgbI, 'Parent', imageRegion);
+%                 transparency = 0.5;
+%                 set(hOVM, 'AlphaData', segMask*transparency);
+
+
             else
                 
                 maskFeat.Type = 'preloaded';
@@ -4075,7 +4083,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 im(im(:)>50000) = 0;
         
             case 'mip'
-                 set(hIm, 'Visible', 'off');drawnow;
+               %  set(hIm, 'Visible', 'off');drawnow;
                 param.dataSaveDirectory = [param.directoryName filesep 'gutOutline'];
                 %If we're going to overlap the colors then load in all
                 %colors
@@ -4202,7 +4210,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 %folder
                 varargout{1} = im;
         end        
-        set(hIm, 'Visible', 'on');
+        set(hIm, 'Visible', 'on');drawnow;
 
         if(overlapBugs==true)
             rProp = getrPropFile();

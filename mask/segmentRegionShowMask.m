@@ -46,5 +46,4 @@ switch maskFeat.Type
         
 end
 
-
 end
