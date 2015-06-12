@@ -141,13 +141,13 @@ classdef pivanalysis
            %Find peaks in the power spectrum and calculate their
            %contribution to signal (area at FWHM).
            
-           [pks, locs] = findpeaks(obj.avgSpectra(1,:), obj.freqRange);
+           [pks, locs] = findpeaks(obj.avgSpectra(1,:));
            
            
            %Find full width at half maximum
            fitwidth = 5;
            for i=1:length(locs)
-               ind = find(obj.freqRange==locs(i));
+               ind = locs(i);
                
                %If we're close to the border
                if(ind-fitwidth<1)
@@ -183,13 +183,12 @@ classdef pivanalysis
                x(rem) = [];
                y(rem) = [];
                
-               
                f = fit(x.',y.','gauss1');
                %Calculate the area under the curve up until the FWHM
                func = @(x,c,a)a*exp(-(x/c).^2);
                a = 2* integral(@(x)func(x,f.c1, f.a1),0, f.c1*sqrt(log(2)));
                
-               obj.peakArea(i,1) = locs(i);
+               obj.peakArea(i,1) = obj.freqRange(locs(i));
                obj.peakArea(i,2) = a;
            end
            

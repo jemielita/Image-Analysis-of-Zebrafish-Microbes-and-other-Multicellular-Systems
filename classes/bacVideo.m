@@ -1,5 +1,5 @@
 classdef bacVideo
- %Analysis of a single video of bacterial motility in the gut.   
+    %Analysis of a single video of bacterial motility in the gut.
     properties
         frameRate = NaN;
       
@@ -137,8 +137,9 @@ classdef bacVideo
                return;
             end
             fprintf(1, 'Finding putative bacteria in video');
-            for nS=1:obj.numFrames
-               %[obj.vid(:,:,nS),im] = spotDetector(obj.vid(:,:,nS));
+            %for nS=1:obj.numFrames
+            for nS = 1:10
+               [obj.vid(:,:,nS),im] = spotDetector(obj.vid(:,:,nS));
                
               
                %Cleaning up our spots some more
@@ -154,7 +155,7 @@ classdef bacVideo
                cen = reshape(cen, 2, length(cen)/2);
                
                obj.foundSpots{nS} = cen;
-              % pos = [pos, cen];
+               % pos = [pos, cen];
                
                fprintf(1, '.');
             end
@@ -289,13 +290,13 @@ classdef bacVideo
         end
        
         function obj = loadVideo(obj)
-            info = imfinfo([obj.vidLoc filesep obj.vidName num2str(obj.vidMinS) '.' obj.vidSaveType]);
+            info = imfinfo([obj.vidLoc filesep obj.vidName sprintf('%04d', obj.vidMinS) '.' obj.vidSaveType]);
                    obj.vid = zeros(info.Height, info.Width, obj.vidMaxS-obj.vidMinS+1);
                    n = 1;
                    fprintf(1, 'Loading image stack');
                    for ns = obj.vidMinS:obj.vidMaxS
                        
-                       im = imread([obj.vidLoc filesep obj.vidName num2str(ns) '.' obj.vidSaveType]);
+                       im = imread([obj.vidLoc filesep obj.vidName sprintf('%04d', ns) '.' obj.vidSaveType]);
                        obj.vid(:,:,n) = im;
                        n = n+1;
                        fprintf(1, '.');
