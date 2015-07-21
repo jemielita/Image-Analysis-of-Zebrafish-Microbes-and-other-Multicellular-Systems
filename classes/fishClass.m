@@ -1105,22 +1105,25 @@ classdef fishClass
            
            %%Create masks
            %Gut region masks
-           % maskFish.getGutRegionMaskAll(param);
-           %Segmentation masks
-           % obj = calcMasks(obj);
+            maskFish.getGutRegionMaskAll(param);
            
            %% Find all spots
            s = spotFishClass(param);
            s.findSpots(param);
+           s.resortFoundSpot(param);
            s  = s.createClassificationPipeline('all');
            for c =1:obj.totalNumColor
               s.spotClassifier{c} = spotClassifier;
               s.spotClassifier{c}.autoFluorMaxInten = 0;
            end
            s.saveInstance;
-                    
+
+           %Segmentation masks
+           obj = calcMasks(obj);
+           
+           
            %%Find clumps
-           %calcClumps(obj);
+           calcClumps(obj);
            
         end
     end

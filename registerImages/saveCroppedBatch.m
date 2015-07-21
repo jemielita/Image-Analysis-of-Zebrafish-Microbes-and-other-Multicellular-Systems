@@ -62,23 +62,60 @@ if(~ismember(cropType, ['all', 'xy', 'z']))
 end
     
 
-
-%Auto crop down if desired.
-if(minCrop==true)
-    [~, param] = calcMinCrop(param, false, minCropBorderSize);
-end
-calcProjections(param);
 %Get some needed variables.
 allRegion = [param.expData.Scan.region];
 isScan =  cellfun(@(x)strcmp(x, 'true'), {param.expData.Scan.isScan});
 %Remove regions that are not scans (i.e. videos)
 allRegion = allRegion(isScan==1);
 
+
+%Variables for the scans
 totalNumRegions = length(unique(allRegion));
-
-
 totalNumScans = param.expData.totalNumberScans;
 totalNumColors = size(param.color,2);
+
+
+%Check to make sure that every scan has the same number of images in it
+    for nS=1:totalNumScans
+        for nR = 1:totalNumRegions
+            for nC = 1:totalNumColors
+                dirName = [param.directoryName filesep 'Scans' filesep 'scan_', num2str(nS), filesep ...
+                    'region_', num2str(nR), filesep param.color{nC}];
+                
+                imComp{nR}(nS,nC) = length(ls(dirName));
+                
+            end
+        end
+    end
+    checkSz = cellfun(@(x)length(unique(x)), imComp);
+    if(unique(checkSz)==1)
+        fprintf(1, 'All scans have the same number of images!\n');
+       
+    else
+        fprintf(2, 'Scans contains a different number of images in each scan! Fix!\n')
+        %Output list of scans so the user can check things:
+        
+        for nR = 1:totalNumRegions
+            for nS=1:totalNumScans
+                    for nC=1:totalNumColors
+                       numIm(nC) = imComp{nR}(nS, nC);
+                    end
+                    fprintf(1, ['Region: ', num2str(nR) 'Scan ' num2str(nS), ' # images:  ' num2str(numIm) , '\n']);
+                    
+            end
+        end
+        
+        return
+    end
+    
+%Auto crop down if desired.
+if(minCrop==true)
+    [~, param] = calcMinCrop(param, false, minCropBorderSize);
+end
+%calculate maximum intensity projections
+calcProjections(param);
+
+
 
 %See if we're cropping a subset or all of the images otherwise use the
 %input scan list
@@ -108,6 +145,8 @@ if(~strcmp(cropDir, param.directoryName))
         end
     end
 end
+
+
 
 parameters = param.expData;
 timeData = param.expData.timeData;

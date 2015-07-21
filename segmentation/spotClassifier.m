@@ -34,7 +34,6 @@ classdef spotClassifier
                keptSpots = setdiff(1:length(rProp), removeBugInd{ns, nc});
                remSpots = removeBugInd{ns,nc};
                
-               %ind = [rProp(keptSpots).ind];
                ind = [rProp(remSpots).ind];
                
                %Only build classifier for points before the autofluorescent
@@ -78,6 +77,7 @@ classdef spotClassifier
            for i=1:length(obj.feat)
            %    tList(:,i)  = obj.tList(:,i)./obj.featRng.maxR.(obj.feat{i});
                tList(:,i)  = obj.tList(:,i)./max(obj.tList(:,i));
+          
            end
            
            for i=1:length(obj.feat)
@@ -92,8 +92,9 @@ classdef spotClassifier
            boxCon = [obj.boxVal(1)*ones(numKeptSpots,1); obj.boxVal(2)*ones(size(tList,1)-numKeptSpots,1)];
            displayData = true;
           
+           
            if(displayData==true)
-               svmStruct = svmtrain(tList(:,[2,10]), Ynom, 'showplot', true, 'Kernel_Function', 'q', 'boxconstraint', boxCon, ...
+               svmStruct = svmtrain(tList(:,[1,6]), Ynom, 'showplot', true, 'Kernel_Function', 'quadratic', 'boxconstraint', boxCon, ...
                   'autoscale', true);
               
            end
