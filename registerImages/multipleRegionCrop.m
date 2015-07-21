@@ -744,7 +744,9 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
 
     function saveParam(saveDir, saveFile)
        
-       param.gutRegionsInd = findGutRegionMaskNumber(param,false);
+        if(isfield(param, 'centerLineAll'))
+            param.gutRegionsInd = findGutRegionMaskNumber(param,false);
+        end
        %Update param.dataSaveDirectory to where we are saving param
        param.dataSaveDirectory = saveDir;
        save(saveFile, 'param');

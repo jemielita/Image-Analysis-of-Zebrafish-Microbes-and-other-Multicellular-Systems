@@ -76,7 +76,6 @@ allRegion = allRegion(isScan==1);
 
 totalNumRegions = length(unique(allRegion));
 
-
 totalNumScans = param.expData.totalNumberScans;
 totalNumColors = size(param.color,2);
 
@@ -185,7 +184,8 @@ for thisS=1:length(sList);
     fprintf(2, '\n');
 end
 
-calcProjections(param);
+%mlj:commented out
+%calcProjections(param);
 %Saving the new range of pixel locations
 for nC = 1:totalNumColors
     

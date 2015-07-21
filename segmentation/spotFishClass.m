@@ -119,7 +119,7 @@ classdef spotFishClass
                        
                        regMask = mask(xOutI:xOutF, yOutI:yOutF);
                        im = im(xOutI:xOutF, yOutI:yOutF,:);
-                       im = double(repmat(regMask,1,1,size(im,3))).*double(im);
+                       im = double(repmat(regMask,[1,1,size(im,3)])).*double(im);
                        
                        %% Get putative bacterial spots
                        

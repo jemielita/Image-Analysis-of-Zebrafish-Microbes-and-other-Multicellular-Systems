@@ -287,7 +287,7 @@ for multipass=1:passes-1
         mask=zeros(size(image1_roi));
     end
     mask(mask>1)=1;
-    
+
     miniy=1+(ceil(interrogationarea/2));
     minix=1+(ceil(interrogationarea/2));
     maxiy=step*(floor(size(image1_roi,1)/step))-(interrogationarea-1)+(ceil(interrogationarea/2)); %statt size deltax von ROI nehmen
