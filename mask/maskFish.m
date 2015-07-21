@@ -371,6 +371,8 @@ classdef maskFish
                %To generate a histogram of potential intensities from source and
                %sink, dilate mask by a given amount and use that as the cutoff
                %between the two regions.
+               %mlj: Note this value here is probably too small-should
+               %probably increase this.
                se = strel('disk',5);
                
                maskD = imdilate(maskM,se);

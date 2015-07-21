@@ -4673,7 +4673,7 @@ if(~isdir(param.dataSaveDirectory))
     fprintf(1, 'Making gut outline directory.\n');
     mkdir(param.dataSaveDirectory);
 end
-%Save the calculated parameters, unless they've been
+%Save the calculated parameters, unless they've been 
 %calculated before.
 saveParamFile = true;
 if(dataFileExist~=2 &&saveParamFile ==true)
