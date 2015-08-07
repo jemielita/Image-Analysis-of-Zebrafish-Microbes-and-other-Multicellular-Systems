@@ -2,7 +2,7 @@
 function param = resampleCenterLine(param, scanParam)
 
 for nS=1:size(param.centerLineAll,1)
-    clear polyT
+    clear polyT polyFit
    
     poly = param.centerLineAll{nS};
     

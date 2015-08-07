@@ -743,7 +743,9 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
 
     function saveParam(saveDir, saveFile)
        
-       param.gutRegionsInd = findGutRegionMaskNumber(param,false);
+        if(isfield(param, 'centerLineAll'))
+            param.gutRegionsInd = findGutRegionMaskNumber(param,false);
+        end
        %Update param.dataSaveDirectory to where we are saving param
        param.dataSaveDirectory = saveDir;
        save(saveFile, 'param');
@@ -3706,7 +3708,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         end
         
         %Remove double counted elements in allLine
-        allLine =cellfun(@(allLine) unique(allLine, 'rows'), allLine,...
+        allLine = cellfun(@(allLine) unique(allLine, 'rows'), allLine,...
             'UniformOutput', false);
         
         allLine = cellfun(@(allLine) splineSmoothPolygon(allLine), allLine,...
