@@ -172,17 +172,11 @@ hMenuOutline = uimenu('Label', 'Outline region');
 
 uimenu(hMenuOutline,'Label','Freehand polygon outline','Callback',@createFreeHandPoly_Callback);
 uimenu(hMenuOutline, 'Label', 'Load Outline', 'Callback', @loadPoly_Callback);
-%mlj: Never used-consider deleting completely
-%uimenu(hMenuOutline,'Label','Save outline','Callback',@savePoly_Callback);
-%uimenu(hMenuOutline, 'Label', 'Smooth Polygon', 'Callback', @smoothPoly_Callback);
 uimenu(hMenuOutline,'Label','Clear outline ','Callback',@clearPoly_Callback);
 
 uimenu(hMenuOutline, 'Label', 'Draw center of gut', 'Separator', 'on', ...
     'Callback',@drawGutCenter_Callback);
 uimenu(hMenuOutline, 'Label', 'Load center of gut', 'Callback', @loadGutCenter_Callback);
-%mlj: Never used-consider deleting completely
-%uimenu(hMenuOutline, 'Label', 'Smooth line', 'Callback', @smoothGutCenter_Callback);
-%uimenu(hMenuOutline, 'Label', 'Save line', 'Callback', @saveGutCenter_Callback);
 uimenu(hMenuOutline, 'Label', 'Clear center of gut line', 'Callback', @clearGutCenter_Callback);
 
 uimenu(hMenuOutline, 'Label', 'Smooth/extrapolate all outlines & centers',...
@@ -284,11 +278,6 @@ hMenuShowAllBugs = uimenu(hMenuDisplay, 'Label', 'Show ALL found bugs', 'Callbac
 hMenuVariableZ = uimenu(hMenuDisplay, 'Label', 'Only z slices with found bugs', 'Callback', @variableZ_Callback);
 useSubsetZList = false;
 zSubsetList = [];
-
-hMenuManualParticleThresh = uimenu(hMenuDisplay, 'Label', 'Manual thresholding for particles','Callback', @manualThresh_Callback);
-useManualParticleThresh = false;
-manualParticleThresh = zeros(numScans, numColor,2);
-%hMenuManualParticleThreshChange = uimenu(hMenuDisplay, 'Label', 'Change manual threshold value', 'Callback', @changeManualThresh_Callback);
 
 
 
@@ -644,9 +633,6 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 set(hZSlider, 'Value',double(zNum));
 
                 z_Callback('','');
-                
-            case 't'
-               updateManualThresholdValues();
                
             case 'n'
                 %Create a new gut clump cropping box
@@ -1443,38 +1429,6 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         end
     end
 
-    function manualThresh_Callback(hObject, eventdata)
-       
-        if(strcmp(get(hMenuManualParticleThresh, 'Checked'), 'on'))
-            set(hMenuManualParticleThresh, 'Checked', 'off');
-            useManualParticleThresh = false;
-        else
-            set(hMenuManualParticleThresh, 'Checked', 'on');
-            useManualParticleThresh = true;
-        end
-        
-    end
-    function changeManualThresh_Callback(hObject, eventdata)
-       updateManualThresholdValues(); 
-    end
- 
-    function updateManualThresholdValues()
-        %Set the manual threshold for this scan and color
-        scanNum = get(hScanSlider, 'Value');
-        scanNum = int16(scanNum);
-        prompt = {'Minimum intensity','Minimum area'};
-        name = 'Manual thresholding for particles';
-        numlines = 1;
-        defaultanswer = {num2str(manualParticleThresh(scanNum, colorNum,1)), ...
-            num2str(manualParticleThresh(scanNum, colorNum,2))};
-        answer = inputdlg(prompt, name, numlines, defaultanswer);
-        manualParticleThresh(scanNum, colorNum,1) = str2num(answer{1});
-        manualParticleThresh(scanNum, colorNum,2) = str2num(answer{2});
-        
-        removeBugBox('')
-    end
-
-
     function removeBugBox(position)
         scanNum = get(hScanSlider, 'Value');
         scanNum = int16(scanNum);
@@ -1484,34 +1438,10 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         zNum = get(hZSlider, 'Value');
         zNum = int16(zNum);
         
-        %Apply a user defined harsh threshold for all bacteria, different
-        %for different scan numbers and intensities
-        if(useManualParticleThresh==true)
-           intenThresh = manualParticleThresh(scanNum, colorNum,1);
-           sizeThresh = manualParticleThresh(scanNum, colorNum,2);
-           indI = find([rProp.CentroidOrig]<intenThresh);
-           indA = find([rProp.Area]<sizeThresh);
-           
-           indAll = union(indI, indA);
-       
-           if(isempty(position))
-               %Remove these bugs from the list of z-depths to go to.
-               findBugZLocation();
-               rProp = getrPropFile();
-              
-               spots.removeBugInd{scanNum,colorNum} = spotClass.updateManualBug(spots.removeBugInd{scanNum,colorNum},rProp, indAll);
-            
-               displayOverlappedBugs(rProp)
-               return;
-           end
-            xyz = [rProp.CentroidOrig];
-            xyz = reshape(xyz,3,length(xyz)/3);
-            
-        else
-            
-            xyz = [rProp.CentroidOrig];
-            xyz = reshape(xyz,3,length(xyz)/3);
-        end
+        %Get spot xyz location
+        xyz = [rProp.CentroidOrig];
+        xyz = reshape(xyz,3,length(xyz)/3);
+
         bugWindow = 1;
         indAll = findBugsBox(position, xyz);
         %If looking at the MIP then remove all bugs in the entire z-stack.
