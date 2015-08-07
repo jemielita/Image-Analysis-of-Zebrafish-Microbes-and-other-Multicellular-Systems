@@ -107,7 +107,7 @@ classdef pivanalysis
             end
             fprintf(1,'\n');
             
-            obj.avgNormSpectra = [mean(powerAllNorm,1); std(powerAllNorm,1)];
+            obj.avgNormSpectra = [ orm,1); std(powerAllNorm,1)];
            
         end
         

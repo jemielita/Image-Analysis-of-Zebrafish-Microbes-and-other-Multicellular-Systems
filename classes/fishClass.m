@@ -1065,27 +1065,27 @@ classdef fishClass
                     outputFile = [fileDir filesep 'FluoroScan_' colorList{colorNum} num2str(nS) '.tiff'];
 
                     copyfile(inputFile, outputFile);
-%                     
-%                     inputVar = load([obj.scan(nS,colorNum).saveLoc filesep 'param.mat']);
-%                     paramIn = inputVar.param;
-%                     
-%                     scanNum = obj.scan(nS, colorNum).scanNum;
-%                     im = selectProjection(paramIn, 'mip', 'true', scanNum,colorList{colorNum}, zNum,recalcProj);
-%                    % imshow(im, [0 1000]);
-%                     im(im>1000) = 1000;
-%                     imwrite(uint16(im), [fileDir filesep 'movie', sprintf('%03d', nS), '.png']);
-%                     %fileName = [obj.scan(nS,colorNum).saveLoc filesep 'masks' filesep 'clumpAndIndiv_nS' num2str(obj.scan(nS,colorNum).scanNum) '_' colorList{colorNum} '.mat'];
-%                     fileName = [obj.scan(nS,colorNum).saveLoc filesep 'masks' filesep 'allRegMask_' num2str(obj.scan(nS,colorNum).scanNum) '_' colorList{colorNum} '.mat'];
-%                     inputVar = load(fileName);
-%                     segMask = inputVar.segMask;
-%                     segMask = segMask>0;
-%                     maskFeat.Type = 'perim';
-%                     maskFeat.seSize = 5;
-%                     segmentationType.Selection = 'clump and indiv';
-%                     rgbIm = segmentRegionShowMask(segMask, maskFeat,segmentationType,gca);
-%                    % hAlpha = alphamask(rgbIm, [1 0 0], 0.5, gca);
+                    
+                    inputVar = load([obj.scan(nS,colorNum).saveLoc filesep 'param.mat']);
+                    paramIn = inputVar.param;
+                    
+                    scanNum = obj.scan(nS, colorNum).scanNum;
+                    im = selectProjection(paramIn, 'mip', 'true', scanNum,colorList{colorNum}, zNum,recalcProj);
+                   % imshow(im, [0 1000]);
+                    im(im>1000) = 1000;
+                    imwrite(uint16(im), [fileDir filesep 'movie', sprintf('%03d', nS), '.png']);
+                    %fileName = [obj.scan(nS,colorNum).saveLoc filesep 'masks' filesep 'clumpAndIndiv_nS' num2str(obj.scan(nS,colorNum).scanNum) '_' colorList{colorNum} '.mat'];
+                    fileName = [obj.scan(nS,colorNum).saveLoc filesep 'masks' filesep 'allRegMask_' num2str(obj.scan(nS,colorNum).scanNum) '_' colorList{colorNum} '.mat'];
+                    inputVar = load(fileName);
+                    segMask = inputVar.segMask;
+                    segMask = segMask>0;
+                    maskFeat.Type = 'perim';
+                    maskFeat.seSize = 5;
+                    segmentationType.Selection = 'clump and indiv';
+                    rgbIm = segmentRegionShowMask(segMask, maskFeat,segmentationType,gca);
+                   % hAlpha = alphamask(rgbIm, [1 0 0], 0.5, gca);
                    
-%                    print('-dpng', [fileDir filesep 'movie', sprintf('%03d', nS), '.png']);
+                   print('-dpng', [fileDir filesep 'movie', sprintf('%03d', nS), '.png']);
                     
                     fprintf(1, '.');
                 end

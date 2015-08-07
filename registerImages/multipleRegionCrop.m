@@ -15,7 +15,7 @@ switch nargin
         %global param
         param = varargin{1};
         %global data
-        data  = varargin{2};
+        data  = varargin{2};bug
 end
 
 multipleRegionCropGUI(param,data);
@@ -254,7 +254,6 @@ hP{1} = ''; %Handle to bugs located above, at the current (or near to) z-slice, 
 hP{2} = '';
 hP{3} = '';
 hMenuOverlapBugs = uimenu(hMenuDisplay, 'Label', 'Show found bugs', 'Separator', 'on', 'Callback', @overlapBugs_Callback, 'Checked', 'off');
-hMenuOverlapBugOptions = uimenu(hMenuDisplay, 'Label', 'Bug label options', 'Callback', @overlapBugOptions_Callback);
 hMenuRemoveBugs = uimenu(hMenuDisplay, 'Label', 'Remove bugs', 'Callback', @removeBugs_Callback, 'Checked', 'off');
 rProp = ''; %Will be filled with information about current scans found bacteria
 spots = []; %Class for filtering spots for this particular fish.
@@ -1322,10 +1321,6 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         
     end
 
-    function overlapBugOptions_Callback(hObject, eventdata)
-       
-        
-    end
 
     function findBugZLocation        
 
