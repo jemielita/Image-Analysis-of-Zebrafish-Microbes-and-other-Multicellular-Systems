@@ -237,8 +237,6 @@ hMenuRemoveClump = uimenu(hMenuSpotSelectorMenu, 'Separator', 'on', 'Label', 'Be
 hMenuAddRemoveClump = uimenu(hMenuSpotSelectorMenu,'Label', 'Remove clump', 'Callback', @removeThisClump_Callback);
 hMenuLoadClumpData = uimenu(hMenuSpotSelectorMenu, 'Label', 'Load clump data', 'Callback', @loadClump_Callback);
 
-hMenuRandomSpots = uimenu(hMenuSpotSelectorMenu, 'Separator', 'on', 'Label', 'Randomly choose spots',...
-    'Callback', @randomSpot_Callback);
 %% 
 hManualSpotPlot = [];
 hSpotSelect = [];
@@ -257,7 +255,6 @@ if(exist(remBugsSaveDir, 'file')==2)
    removeBugInd = removeBugInd.removeBugInd;
 end
 
-hMenuUseSavedRemBugList = uimenu(hMenuDisplay, 'Label', 'Use only saved removed bug list', 'Callback', @useSaveRemBug_Callback);
 
 hMenuKeepBugs = uimenu(hMenuDisplay, 'Label', 'Label bugs (instead of removing)', 'Callback', @keepBugs_Callback, 'Checked', 'off');
 % keepBugInd = cell(numScans, numColor); %Variable to save culled bacteria points.
@@ -1207,66 +1204,6 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
         fprintf(1, '.succesful!\n');
     end
 
-    function randomSpot_Callback(hObject, eventdata)
-       %Randomly scroll through different found spots and let the user decide whether they are spots or not
-       set(hMenuUseSavedRemBugList, 'Checked', 'on');
-   
-       ind = cell(2,1);
-       
-       for nS=1:3:maxScan
-       
-           for nC=1:numColor
-               colorNum = nC;
-               scanNum = nS;
-               
-               %Get color and scan number
-               set(hColorSlider, 'Value', nC);
-               set(hScanSlider, 'Value', nC);
-               
-               
-               rPropAll = getrPropFile();
-               [~, ~,  ~,rPropAll] = getBugList(rPropAll);
-               
-               perm = randperm(length(rPropAll));
-               
-               count = 0;
-               maxCount = min(length(perm), 5);
-               for i=1:length(perm)
-                   rProp = rPropAll(perm(i));
-                   
-                   xyz = [rProp.CentroidOrig];
-                   xyz = reshape(xyz,3,length(xyz)/3);
-                   xyz = round(xyz);
-                   zNum = xyz(3);
-                   projectionType = 'none';
-                   getRegisteredImage(scanNum, param.color{nC}, zNum, im, data, param);
-                   displayOverlappedBugs(rProp, xyz);
-                   %
-                   
-         %          answer = inputdlg('Is this a bacteria 1=yes, 0=no', '', 1, {'1'});
-%                    if(isempty(answer))
-%                        answer{1} = '0';
-%                    end
-%                    answer = answer{1};
-%                    if(strcmp(answer, '1'))
-%                        count = count+1;
-%                        ind{colorNum} = [ind{colorNum}; [xyz' perm(i) scanNum]];
-%                    end
-%                    
-                   if(count>=maxCount)
-                       break
-                   end
-                   
-               end
-               
-           end
-           
-           save([param.dataSaveDirectory filesep 'singleBacCount' filesep 'randBac.mat'], 'ind');
-       end
-       
-       
-       
-    end
     function overlapBugs_Callback(hObject, eventdata)
        
         if strcmp(get(hMenuOverlapBugs, 'Checked'),'on')
@@ -1353,19 +1290,6 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                 removeBugBox(position)
             end
         end
-    end
-
-    function useSaveRemBug_Callback(hObject, eventdata)
-       %Check box indicates whether in getBugList(rProp) we will
-       %exclusively use the list of removed bugs that are saved in
-       %gutOutline/singleBacCount or if we will use the list in
-       %multipleRegionCrop that's updated by the user while removing false
-       %positive spots.
-        if(strcmp(get(hMenuUseSavedRemBugList, 'Checked'), 'on'))
-          set(hMenuUseSavedRemBugList, 'Checked', 'off'); 
-       else
-           set(hMenuUseSavedRemBugList, 'Checked', 'on')
-       end
     end
 
     function keepBugs_Callback(hObject, eventdata)
