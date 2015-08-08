@@ -20,7 +20,22 @@ classdef spotClassifier
    methods
        
        function obj = createTrainingList(obj, nc,sList, removeBugInd, saveDir)
-           %Assemble a training list from this data
+           % USAGE obj = createTrainingList(nc,sList, removeBugInd, saveDir)
+           % Assemble a training list to be used for constructing a
+           % classifier
+           % 
+           % INPUT nc: color number 
+           %       sList: array of scans used for constructing the
+           %              classifier
+           %       removeBugInd: cell array containing all of the removed
+           %              spots for this particular fihs
+           %       saveDir: directory data is located. This is the
+           %       */gutOutline' folder for a particular fish.
+           % 
+           % As the class SpotClassifier is often found within a given
+           % instance of spotClass a common way to call this function is:
+           % spots.spotClassifier{nc}.createTrainigList(nc, sList,
+           % spots.removeBugInd, spots.saveDir)
            
            %Clear previously made training list
            obj.tList = [];
@@ -92,11 +107,9 @@ classdef spotClassifier
            boxCon = [obj.boxVal(1)*ones(numKeptSpots,1); obj.boxVal(2)*ones(size(tList,1)-numKeptSpots,1)];
            displayData = true;
           
-           
            if(displayData==true)
                svmStruct = svmtrain(tList(:,[1,6]), Ynom, 'showplot', true, 'Kernel_Function', 'quadratic', 'boxconstraint', boxCon, ...
-                  'autoscale', true);
-              
+                   'autoscale', true);
            end
            
            svmStruct = svmtrain(tList(:,1:11), Ynom, 'showplot', true, 'Kernel_Function', 'polynomial','boxconstraint', boxCon,'autoscale', true);

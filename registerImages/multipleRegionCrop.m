@@ -276,8 +276,6 @@ hMenuVariableZ = uimenu(hMenuDisplay, 'Label', 'Only z slices with found bugs', 
 useSubsetZList = false;
 zSubsetList = [];
 
-
-
 hMenuRegister = uimenu('Label', 'Registration');
 hMenuRegisterManual = uimenu(hMenuRegister, 'Label', 'Manually register images',...
     'Callback', @getImageArray_Callback);
@@ -287,9 +285,6 @@ hMenuRegisterResize = uimenu(hMenuRegister, 'Label', 'Minimize total image size'
 
 hMenuGlobalOffsetSave = uimenu(hMenuRegister, 'Label', 'Save global offset in registration',...
     'Callback', @saveRegisterGlobalOffset_Callback, 'Separator', 'on');
-
-
-
 
 
 hMenuSeg = uimenu('Label', 'Segment');
@@ -1500,8 +1495,9 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
                     set(hP{4},'XData', locData{4}(1,:));
                     set(hP{4}, 'YData', locData{4}(2,:));
                     
-                    set(hP{1}, 'XData', []);
-                    set(hP{1}, 'YData', []);
+                    %mlj: remove
+%                    set(hP{1}, 'XData', []);
+ %                   set(hP{1}, 'YData', []);
                 end
                 
                 

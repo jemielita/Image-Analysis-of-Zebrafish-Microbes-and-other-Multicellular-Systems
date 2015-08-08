@@ -55,6 +55,10 @@ classdef fishClass
     methods
         
         function obj = fishClass(param)
+            %obj = fishClass(param): construct an instance for a given fish.
+            % param can be a cell array: useful if there were multiple
+            % takes for the same fish.
+            
             
             %Check if the input is a cell array-if it is then load in two
             %entries for number of scans etc.
@@ -103,12 +107,22 @@ classdef fishClass
         end
        
         function obj = initScanArr(obj,param,offset, reset)
+            %obj = initScanArr(obj, param, offset, reset)
+            % USAGE Initialize the array of scan classes that will be used to
+            %       store information about each particular scan
+            % INPUT param: The usual
+            %       offset: If we're trying to link together multiple
+            %       different takes, this gives the offset (in total number
+            %       of scans) for this take
+            %       reset (optional, default= false), if false just reload
+            %       in previous fishAnalysis.mat file
+            
             if(isempty(reset))
                reset = false; 
             end
             %See if we've already created the fish class, if so load in the
             %particulars for each scan
-            if(exist([param.dataSaveDirectory filesep 'fishAnalysis.mat'], 'file')==2 &&reset ==false)
+            if(exist([param.dataSaveDirectory filesep 'fishAnalysis.mat'], 'file')==2 &&reset == false)
                inputVar = load([param.dataSaveDirectory filesep 'fishAnalysis.mat']);
                inF = inputVar.f;
                
@@ -131,10 +145,21 @@ classdef fishClass
         end
         
         function obj = calc(obj, field)
-        %obj = calc(obj, field)
-        %High level functions for running calculations on particular scans.
-        %This function will only update field in obj.scan for the
-        %appropriate field
+        % obj = calc(obj, field)
+        % USAGE High level functions for running calculations on particular scans.
+        %       This function will, for each scan run the method 'field'.
+        %       Example: obj.calc('calcMask') calculates a segmented mask
+        %       of the MIP.
+        %       Note: this function will only work properly for methods in
+        %       scanClass that only return an instance of scanClass, 
+        %       e.g.: obj.scan = obj.scan.field
+        % INPUT field: string giving the method to be run. Will give an
+        %       uncontrolled error if this doesn't work properly.
+        %     
+        % I don't really use this function enough, but it could be used to
+        % write some decently quick code/replace many of the specific
+        % methods in this class
+        
             for s = 1:obj.totalNumScans
                 fprintf(1, ['Scan: ' num2str(s)]);
                 for c = 1:obj.totalNumColor
@@ -147,7 +172,7 @@ classdef fishClass
         end
        
         function obj = calcMasks(obj)
-            
+            % obj = calcMasks(obj)
             for s = 1:obj.totalNumScans
                 for c = 1:obj.totalNumColor
                     obj.scan(s,c).calcMask();
@@ -188,8 +213,7 @@ classdef fishClass
             end
             
         end
-        
-        
+     
         function obj = calcGrowthRateWindow(obj)
             typeList = {'clump', 'indiv'};
             
@@ -212,7 +236,6 @@ classdef fishClass
                         y = log(y);
                         y = y(nS-obj.wSize:nS+obj.wSize);
                         x = x(nS-obj.wSize:nS+obj.wSize);
-                        
                         
                         [growthRate.(type)(nS), ~,~,~] = fityeqbx(x', y);
                         
@@ -278,23 +301,12 @@ classdef fishClass
             fprintf(1, '\n');
              
         end
+        
         function obj = getOutlines(obj)
             fprintf(1, 'Calculating indiv/clump masks');
             for s = 1:obj.totalNumScans
                 for c = 1:obj.totalNumColor
                     obj.scan(s,c) = obj.scan(s,c).getOutlines;
-                    fprintf(1, '.');
-                end
-                
-            end
-            fprintf(1, '\n');
-        end
-        
-        function obj.calcGutWidth(obj)
-            fprintf(1, 'Calculating gutwidth');
-            for s = 1:obj.totalNumScans
-                for c = 1:obj.totalNumColor
-                    obj.gutWidth{s,c} = obj.scan(s,c).calcGutWidth(obj.cut(c));
                     fprintf(1, '.');
                 end
                 
@@ -389,7 +401,6 @@ classdef fishClass
            
             
         end
-        
         
         function spotOverlapList = calcClumpSpotOverlap(obj)
             %Find all spots that are overlapping with found clusters. Save
@@ -904,6 +915,7 @@ classdef fishClass
               
            end
         end
+        
         function pop = getPopData(obj)
 %             pop = cell(obj.totalNumScans,1);
 %             for ns=1:obj.totalNumScans
@@ -1106,14 +1118,11 @@ classdef fishClass
            %%Create masks
            %Gut region masks
             maskFish.getGutRegionMaskAll(param);
-<<<<<<< HEAD
+
            %Segmentation masks
             obj = calcMasks(obj);
             obj = obj.filterMasks;
             
-=======
-           
->>>>>>> 81976a93167904356c40fcfdeaa84b14888e1f87
            %% Find all spots
            s = spotFishClass(param);
            s.findSpots(param);
@@ -1127,7 +1136,6 @@ classdef fishClass
 
            %Segmentation masks
            obj = calcMasks(obj);
-           
            
            %%Find clumps
            calcClumps(obj);
