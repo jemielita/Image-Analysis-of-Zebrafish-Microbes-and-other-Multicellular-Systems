@@ -86,7 +86,6 @@ classdef spotClassifier
                return
            end
            
-           
            Y = obj.tList(:,end); Ynom = nominal(Y==1);
            
            for i=1:length(obj.feat)

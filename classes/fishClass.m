@@ -1117,11 +1117,7 @@ classdef fishClass
            
            %%Create masks
            %Gut region masks
-            maskFish.getGutRegionMaskAll(param);
-
-           %Segmentation masks
-            obj = calcMasks(obj);
-            obj = obj.filterMasks;
+          %  maskFish.getGutRegionMaskAll(param);
             
            %% Find all spots
            s = spotFishClass(param);
@@ -1136,6 +1132,7 @@ classdef fishClass
 
            %Segmentation masks
            obj = calcMasks(obj);
+           obj = obj.filterMasks;
            
            %%Find clumps
            calcClumps(obj);
