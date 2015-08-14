@@ -31,22 +31,10 @@ inPlace = false;
 %our spot detection stuff at the last step of our analysis.
 im(isnan(im)) = 0;
 
-minThresh = 100;
-
-%mlj: maxThresh = 200 is decent for green, maxThresh = 30 should work for
-%red-we'll see tomorrow
-% if(isempty(spotFeatures))
-%     maxThresh = 400;
-% else
-%     maxThresh = spotFeatures.intenThresh(colorNum);
-% end
-
-%maskAll = zeros(size(im), 'uint8');
-% Filter image using wavelet filter
+%Filter image using wavelet filter
 fprintf(1, 'Filtering image and segmenting.');
 
 thisFrame = zeros(size(im,1), size(im,2));
-tic;
 
 height = size(im,1);
 width = size(im,2);
@@ -80,11 +68,7 @@ for nZ=1:size(im,3)
     switch inPlace
         case false
             imSeg(yMin:yMax, xMin:xMax,nZ) = cv.spotDetectorFast_v2(imIn,4);
-            
             %Clean up small regions
-           %imSeg(yMin:yMax, xMin:xMax,nZ) = bwareaopen(imSeg(yMin:yMax, xMin:xMax,nZ)>maxThresh, 10);
-            %imSeg(yMin:yMax, xMin:xMax,nZ) = imclearborder(imSeg(yMin:yMax, xMin:xMax,nZ)==1);
-
             bw(yMin:yMax, xMin:xMax,nZ) = bwareaopen(imSeg(yMin:yMax, xMin:xMax,nZ)>maxThresh, 10);
             bw(yMin:yMax, xMin:xMax,nZ) = imclearborder( bw(yMin:yMax, xMin:xMax,nZ)==1);
         case true
@@ -167,7 +151,7 @@ end
 
 bwBkg(bwBkg<0) = 0;
 propBkg = regionprops(bwBkg, im, 'Centroid', 'Area', 'MeanIntensity', 'BoundingBox', 'MaxIntensity', 'MinIntensity', 'WeightedCentroid','PixelIdxList');
-
+ 
 %Construct intensity histograms for each of these found spots
 histIm = arrayfun(@(x)hist(im(prop(x).PixelIdxList),xlist),1:length(prop), 'UniformOutput', false); 
 histWv = arrayfun(@(x)hist(imSeg(propWv(x).PixelIdxList),xlist),1:length(propWv), 'UniformOutput', false); 
