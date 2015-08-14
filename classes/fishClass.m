@@ -1117,7 +1117,7 @@ classdef fishClass
            
            %%Create masks
            %Gut region masks
-          %  maskFish.getGutRegionMaskAll(param);
+            maskFish.getGutRegionMaskAll(param);
             
            %% Find all spots
            s = spotFishClass(param);
