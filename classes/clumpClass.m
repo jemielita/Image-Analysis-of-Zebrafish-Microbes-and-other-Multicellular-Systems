@@ -57,6 +57,7 @@ classdef clumpClass < clumpSClass
           
           slicenum = unique(gutMask(:));
           si = arrayfun(@(x)sum(totinten(gutMask==x)), slicenum);
+          obj.sliceNum = min(slicenum);%The most anterior slice is going to be the 'main' number for a given clump
           obj.sliceinten = [slicenum, si];
        end
        

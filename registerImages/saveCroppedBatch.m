@@ -77,6 +77,7 @@ totalNumColors = size(param.color,2);
 %Check to make sure that the directories all have the same number of images
 err = checkScanImageNumber(totalNumScans, totalNumRegions, totalNumColors, param);
 if(err==1)
+    fprintf(2, 'Number of scans is different!\n');
     return;
 end
 

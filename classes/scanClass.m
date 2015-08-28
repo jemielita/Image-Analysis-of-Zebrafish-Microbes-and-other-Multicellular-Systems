@@ -16,7 +16,8 @@ classdef scanClass
         sL;
         sH;
         mL;
-        mH;
+        mH;%of mass position (in sliceNum) plus the region that
+        %cont
         nL;
         nH;
         highPopFrac;
@@ -25,8 +26,7 @@ classdef scanClass
         gutWidth; 
         centerLine;
         gutOutline;
-        %Center of mass position (in sliceNum) plus the region that
-        %contains centerMassFound percent of the population (gives an
+        %Center ains centerMassFound percent of the population (gives an
         %estimate of how 
         centerMass;
         centerMassBound = 0.5;
