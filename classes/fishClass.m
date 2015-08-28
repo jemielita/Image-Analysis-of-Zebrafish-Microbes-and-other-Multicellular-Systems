@@ -278,8 +278,14 @@ classdef fishClass
         
         function obj = calcSliceInten(obj)
             fprintf(1, 'Calculating along each cluster');
+            
             for s = 1:obj.totalNumScans
                 for c = 1:obj.totalNumColor
+                    if(isempty(obj.scan(s,c).clumps))
+                        fprintf(2,'Need to load in clumps before running!\n');
+                        return;
+                    end
+                    
                     obj.scan(s,c).clumps.getAllSliceInten;
                     fprintf(1, '.');
                 end
