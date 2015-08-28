@@ -35,6 +35,7 @@ classdef scanClass
         lineDist = [];
         
         removedRegion = [];%Regions to manually remove from these scans (this will likely be regions by the vent).
+        globalCenterMass;
         
         
     end
@@ -447,6 +448,26 @@ classdef scanClass
         function obj = updateSliceNum(obj,param)
             obj.gutRegionsInd = param.gutRegionsInd(obj.scanNum,:);
         end
+        
+        
+        function obj = calcGlobalCenterOfMass(obj)
+            % Calculate center of mass of all found objects.  "Global"
+            % refers to the whole gut, as opposed to the center of mass of
+            % a clump.  -BHS 8/28/15
+            
+            if isempty(obj.lineDist)
+                fprintf(2,'Need to calcSliceInten before calcGlobalCenterOfMass\n')
+                return
+            end
+            
+            slicenumbers = 1:numel(obj.lineDist);
+            slicenumbers = slicenumbers';
+            Itot = sum(obj.lineDist);
+            
+            % If Itot == 0 will get NaNs
+            obj.globalCenterMass = sum(slicenumbers.*double(obj.lineDist))./Itot;  
+            
+        end    
         
     end
     

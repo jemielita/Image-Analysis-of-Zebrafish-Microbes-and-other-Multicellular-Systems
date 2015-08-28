@@ -50,6 +50,8 @@ classdef fishClass
         singleBacInten = [];
         
         fitParam = [];
+        
+        globalCenterMass = [];
     end
     
     methods
@@ -561,6 +563,19 @@ classdef fishClass
             
             
         end
+        
+        function obj = getGlobalCentersOfMass(obj)
+            % Calculate global center of mass of found objects over time.
+            % Results are stored both individually in scanClass as well as
+            % collected as a fishClass property. -BHS 8/28/15
+            for ns = 1:obj.totalNumScans
+                for nc=1:obj.totalNumColor
+                    obj.scan(ns,nc) = obj.scan(ns,nc).calcGlobalCenterOfMass;
+                    obj.globalCenterMass(ns,nc) = obj.scan(ns,nc).globalCenterMass;
+                end
+            end
+        end
+            
         
         % Plotting functions for fish data
         

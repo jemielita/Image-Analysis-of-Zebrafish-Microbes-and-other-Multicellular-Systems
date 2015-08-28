@@ -33,7 +33,7 @@ for i=1:nFD
         cd(subDire(1).name);
         cd(subDir);
         cd 'Data';
-        load 'GutParameters26-Aug-2015.mat'; % 8.21.15
+        load 'GutParameters26-Aug-2015.mat'; % 8.20.15
         % load 'GutParameters27-Aug-2015.mat'; % 8.21.15
         
         curFish=fishDirect(i).name;
@@ -60,7 +60,7 @@ meanAmpOdd=mean(paramsOdd(:,1));
 stdAmpOdd=std(paramsOdd(:,1));
 
 % For 8.20.15
-% plot([paramsEven(6,1);paramsEven(13:15,1);paramsEven(1:5,1);paramsEven(7:12,1)],'r-');hold on;plot([paramsOdd(1,1);paramsOdd(11:14,1);paramsOdd(2:10,1)],'b-');hold off;
+figure;plot([paramsEven(6,1);paramsEven(13:15,1);paramsEven(1:5,1);paramsEven(7:12,1)],'b-');hold on;plot([paramsOdd(1,1);paramsOdd(11:14,1);paramsOdd(2:10,1)],'r-');hold off;
 
 % For 8.21.15
-% plot([paramsEven(12:14,1);paramsEven(1:11,1)],'r-');hold on;plot([paramsOdd(1,1);paramsOdd(11:14,1);paramsOdd(2:10,1)],'b-');hold off;
+% figure;plot([paramsEven(12:14,1);paramsEven(1:11,1)],'r-');hold on;plot([paramsOdd(1,1);paramsOdd(11:14,1);paramsOdd(2:10,1)],'b-');hold off;
