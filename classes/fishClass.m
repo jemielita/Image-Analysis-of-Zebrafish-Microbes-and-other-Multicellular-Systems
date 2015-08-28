@@ -277,6 +277,12 @@ classdef fishClass
         end
         
         function obj = calcSliceInten(obj)
+            %Calculate the total intensity in each wedge for found
+            %clusters. Need to initialize clumpClass (run f = f.getClumps)
+            %before calling this function.
+            %After running this function reload clumpClass: run f =
+            %f.getClumps.
+            
             fprintf(1, 'Calculating along each cluster');
             
             for s = 1:obj.totalNumScans
