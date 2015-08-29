@@ -568,9 +568,11 @@ classdef fishClass
             % Calculate global center of mass of found objects over time.
             % Results are stored both individually in scanClass as well as
             % collected as a fishClass property. -BHS 8/28/15
+            regCutoff = obj.totPopRegCutoff;
+            
             for ns = 1:obj.totalNumScans
                 for nc=1:obj.totalNumColor
-                    obj.scan(ns,nc) = obj.scan(ns,nc).calcGlobalCenterOfMass;
+                    obj.scan(ns,nc) = obj.scan(ns,nc).calcGlobalCenterOfMass(regCutoff);
                     obj.globalCenterMass(ns,nc) = obj.scan(ns,nc).globalCenterMass;
                 end
             end

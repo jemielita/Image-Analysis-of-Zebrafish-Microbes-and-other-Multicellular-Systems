@@ -450,7 +450,7 @@ classdef scanClass
         end
         
         
-        function obj = calcGlobalCenterOfMass(obj)
+        function obj = calcGlobalCenterOfMass(obj,regCutoff)
             % Calculate center of mass of all found objects.  "Global"
             % refers to the whole gut, as opposed to the center of mass of
             % a clump.  -BHS 8/28/15
@@ -460,12 +460,14 @@ classdef scanClass
                 return
             end
             
-            slicenumbers = 1:numel(obj.lineDist);
+            stopslice = obj.gutRegionsInd(regCutoff);
+            lineDistNotVent = obj.lineDist(1:stopslice);
+            slicenumbers = 1:numel(lineDistNotVent);
             slicenumbers = slicenumbers';
-            Itot = sum(obj.lineDist);
+            Itot = sum(lineDistNotVent);
             
             % If Itot == 0 will get NaNs
-            obj.globalCenterMass = sum(slicenumbers.*double(obj.lineDist))./Itot;  
+            obj.globalCenterMass = sum(slicenumbers.*lineDistNotVent)./Itot;  
             
         end    
         
