@@ -88,6 +88,10 @@ d = sqrt((cl(:,1)-rp(1)).^2 + (cl(:,2)-rp(2)).^2);
 [~,cc.sliceNum] =  min(d);
 cc.gutRegion  = find(cc.sliceNum > param.gutRegionsInd(cc.scanNum,:),1, 'last');
 
+%Calculate the intensity in each slice of the gut
+gutMask = cc.loadGutMask;
+cc = cc.calculateThisSliceInten(vol, gutMask);
+
 
 %Calculate a 3d mesh for each region
 %[node,elem,face]=v2m(bw,0.7,5,40);

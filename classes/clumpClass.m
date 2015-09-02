@@ -34,21 +34,34 @@ classdef clumpClass < clumpSClass
           
        end
        
-       function obj = calculateSliceInten(obj, ns)
-          %Calculate the intensity in ech of the slices
-          vol = obj.loadVolume;
-          
-          inputVar = load([obj.saveLoc filesep 'masks' filesep 'maskUnrotated_' num2str(ns) '.mat']);
+       function gutMask = loadGutMask(obj)
+          %Load the range of the gut mask (wedges down the long axis of 
+          %the intestine) that span the region contained by this clump
+         
+          inputVar = load([obj.saveLoc filesep 'masks' filesep 'maskUnrotated_' num2str(obj.scanNum) '.mat']);
           
           gutMasktot = inputVar.gutMask;
           
-          gutMask = zeros(size(vol,1), size(vol,2),size(gutMasktot,3));
+          gutMask = zeros(size(obj.cropRect(4),1), size(obj.cropRect(3),2),size(gutMasktot,3));
           xmax = min([obj.cropRect(2)+obj.cropRect(4),size(gutMasktot,1)]);
           ymax = min([obj.cropRect(1)+obj.cropRect(3),size(gutMasktot,2)]);
           
           gutMask(1:xmax-obj.cropRect(2)+1, 1:ymax-obj.cropRect(1)+1,:) = gutMasktot(obj.cropRect(2):xmax, obj.cropRect(1):ymax,:);
           
           gutMask = max(gutMask,[],3);
+       end
+       
+       function obj = calculateSliceInten(obj)
+          %Calculate the intensity in each of the slices for a given clump
+          
+          vol = obj.loadVolume;
+          
+          gutMask = obj.loadGutMask;
+          
+          obj = obj.calculateThisSliceInten(vol, gutMask);
+       end
+       
+       function obj = calculateThisSliceInten(obj, vol, gutMask)
           
           vol = vol.*(vol>obj.intenCutoff);
           totinten = sum(vol,3);
@@ -58,7 +71,7 @@ classdef clumpClass < clumpSClass
           slicenum = unique(gutMask(:));
           si = arrayfun(@(x)sum(totinten(gutMask==x)), slicenum);
           obj.sliceNum = min(slicenum);%The most anterior slice is going to be the 'main' number for a given clump
-          obj.sliceinten = [slicenum, si];
+          obj.sliceinten = [slicenum, si]; 
        end
        
        function obj = calcCentroid(obj,vol)

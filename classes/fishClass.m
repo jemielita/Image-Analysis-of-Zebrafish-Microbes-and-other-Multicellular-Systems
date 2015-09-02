@@ -1167,6 +1167,21 @@ classdef fishClass
            calcClumps(obj);
            
         end
+        
+        function obj = fUpdateTotNumScans(obj,param)
+        % Quick function for updating Total Number of Scans, assuming it
+        % has already been updated in the param file, with, i.e.
+        % updateParamTotNumScans.
+        
+            obj.param = param;
+            nsNew =  param.expData.totalNumberScans;
+            obj.totalNumScans = nsNew;
+            obj.scan(nsNew+1:end,:) = [];
+            obj.t(nsNew+1:end) = [];
+            
+            % are there other fields that need to get updated??
+            
+        end
     end
 
     methods(Static)

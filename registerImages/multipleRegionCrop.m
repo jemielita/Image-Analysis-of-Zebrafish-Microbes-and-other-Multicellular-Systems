@@ -15,7 +15,7 @@ switch nargin
         %global param
         param = varargin{1};
         %global data
-        data  = varargin{2};bug
+        data  = varargin{2};
 end
 
 multipleRegionCropGUI(param,data);
