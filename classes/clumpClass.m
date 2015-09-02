@@ -69,8 +69,12 @@ classdef clumpClass < clumpSClass
           cc = regionprops(totinten, gutMask, 'Area','MeanIntensity');
           
           slicenum = unique(gutMask(:));
+          %Remove slicenum that are equal to 0-these don't correspond to
+          %regions inside the gut
+          slicenum(slicenum==0) = [];
+          
           si = arrayfun(@(x)sum(totinten(gutMask==x)), slicenum);
-          obj.sliceNum = min(slicenum);%The most anterior slice is going to be the 'main' number for a given clump
+
           obj.sliceinten = [slicenum, si]; 
        end
        

@@ -280,6 +280,7 @@ classdef clumpSClass
                 d = dist(c.centroid, cl');
                 [~,ind] = min(d);
                 c.sliceNum = ind;
+                
                 c.gutRegion  = find(c.sliceNum > param.gutRegionsInd(obj.scanNum,:),1, 'last');
                 
                 save([fileDir filesep b(i).name], 'c');
