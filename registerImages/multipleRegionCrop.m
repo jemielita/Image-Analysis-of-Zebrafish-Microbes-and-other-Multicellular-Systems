@@ -15,7 +15,7 @@ switch nargin
         %global param
         param = varargin{1};
         %global data
-        data  = varargin{2};bug
+        data  = varargin{2};
 end
 
 multipleRegionCropGUI(param,data);
@@ -2251,7 +2251,7 @@ userG = graphicsHandle(param, numScans, numColor, imageRegion);
             cMinX(i) = min(thisColor(:,1));
             cMinY(i) = min(thisColor(:,2));
             
-            cMaxX(i) = max(thisColor(:,1)+thisColor(:,3));
+            cMaxX(i) = max(thisColor(:,1) + thisColor(:,3));
             cMaxY(i) = max(thisColor(:,2) + thisColor(:,4));
             
         end
