@@ -226,15 +226,15 @@ classdef scanClass
                         obj.totInten = 0;
                         return;
                     end
-                    obj.totVol = [obj.clumps.allData.volume];
-                    obj.totInten = [obj.clumps.allData.totalInten];
+                    totVolAll = [obj.clumps.allData.volume];
+                    totIntenAll = [obj.clumps.allData.totalInten];
                     
                     %Only consider spots before the gut region cutoff
                     
                     gutInd = [obj.clumps.allData.sliceNum];
                     gutInd = gutInd<obj.gutRegionsInd(regCutoff);
-                    obj.totVol = obj.totVol(gutInd);
-                    obj.totInten = obj.totInten(gutInd);
+                    obj.totVol = totVolAll(gutInd);
+                    obj.totInten = totIntenAll(gutInd);
                     
                     %Getting clumps above and below our single bacteria
                     %intensity cutoff
