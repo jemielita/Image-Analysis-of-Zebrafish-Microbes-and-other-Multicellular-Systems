@@ -118,9 +118,12 @@ classdef collapsesClass
                     pop = [f.nL(:,1), f.sH(:,2)+f.sL(:,2)];
                 case 'vibrio'
                     pop = f.nL(:,1);
+                    species = {species};
                 case 'aero'
+                    species = {species};
                     pop = f.sH(:,2)+f.sL(:,2);
                 case 'aeromono'
+                    species = {species};
                     pop = f.sH + f.sL;
             end
             
@@ -141,8 +144,10 @@ classdef collapsesClass
             % call.  Why not?
             for i = 1:nspecies
                 
-                startzeroindex(i) = find(pop(:,i)==0,1);
-           
+                if ~isempty(find(pop(:,i)==0,1))
+                    startzeroindex(i) = find(pop(:,i)==0,1);
+                end
+                
                 if ~isempty(startzeroindex)
                     
                     thispop = pop(1:startzeroindex(i)-1,i);
@@ -270,10 +275,13 @@ classdef collapsesClass
                         species = {'vibrio','aero'};
                     case 'vibrio'
                         nc = 1;
+                        species = {species};
                     case 'aero'
                         nc = 2;
+                        species = {species};
                     case 'aeromono'
                         nc = 1;
+                        species = {species};
                 end
             else
                 disp('wrong number of inputs in update1dDists')
