@@ -25,9 +25,13 @@ classdef collapsesClass
     %               series; total time for each fish;
     %
     % Brandon Schloman
-    % September 11, 2015
-    %
-    % NOT DONE YET!!!
+    % September 11, 2015:  First version 
+    % September 17, 2015:  -1dDistribution function added 
+    %                      -Expanded for option (now default) to 
+    %                       calculate everything for both
+    %                       vibrio and aero
+    % 
+    % Work in progress
     
     properties
         savedir = '';
@@ -73,120 +77,241 @@ classdef collapsesClass
         end
         
         
-        function obj = appendFish(obj,species,f,varargin)
+        function obj = appendFish(obj,f,varargin)
             
-            % varargin can be a name for the fish
-            if nargin == 3
+            % varargin can incluce:
+            %   varargin{1} = 'species'
+            %   varargin{2} = optional name
+            if nargin == 1
+                disp('appendFish needs a fish!')
+                return
+                
+            elseif nargin == 2
+                species  = 'both';
+
+                fname = f.param{1}.directoryName(end-4:end);
+                
+            elseif nargin == 3
+                species = varargin{1};
                 % if user doesn't provide a name, dig into the param file
                 fname = f.param{1}.directoryName(end-4:end);
+                
             elseif nargin==4
-                fname = varargin{1};
+                species = varargin{1};
+                fname = varargin{2};
+                
             else
                 disp('appendFish takes at most 3 arguments')
                 return
+                
             end
+            
+            %get the spatial distributions
+            obj = obj.update1dDists(f,fname,species);
+
             
             % get the population time series
             switch species
                 
+                case 'both'
+                    species = {'vibrio','aero'};
+                    pop = [f.nL(:,1), f.sH(:,2)+f.sL(:,2)];
                 case 'vibrio'
-                    pop = f.sH(:,1)+f.sL(:,1);
+                    pop = f.nL(:,1);
                 case 'aero'
                     pop = f.sH(:,2)+f.sL(:,2);
                 case 'aeromono'
                     pop = f.sH + f.sL;
             end
             
+            nspecies = size(pop,2);
+            
+            % preallocate arrays
+            for o = 1:nspecies
+                obj.(species{o}).fish.(fname).mag = [];
+                obj.(species{o}).fish.(fname).prob = [];
+                obj.(species{o}).fish.(fname).scan = [];
+            end
             
             % sometimes pop can contains exact zeros, not trusting those
             % for now
-            startzeroindex = find(pop==0,1);
-            if ~isempty(startzeroindex)
-                pop=pop(1:startzeroindex-1);
-                disp(strcat('Truncating ',fname,' time series due to zeros'));
-            end
-
-            % get collapse time and magnitude by calling external function
-            [obj.(species).fish.(fname).scan, obj.(species).fish.(fname).mag] = getCollapseTimePointAndMag(pop);
+            startzeroindex = zeros(1,nspecies);
             
-            % store pop
-            obj.(species).fish.(fname).pop = pop;
+            % big loop over species to update both aero and vibrio with one
+            % call.  Why not?
+            for i = 1:nspecies
+                
+                startzeroindex(i) = find(pop(:,i)==0,1);
+           
+                if ~isempty(startzeroindex)
+                    
+                    thispop = pop(1:startzeroindex(i)-1,i);
+                    disp(strcat('Truncating ',fname,' time series due to zeros'));
+                    
+                end
+                
+               % store pop
+                obj.(species{i}).fish.(fname).pop = thispop;
+                
+                % get collapse time and magnitude by calling external function
+                [obj.(species{i}).fish.(fname).scan, obj.(species{i}).fish.(fname).mag] = getCollapseTimePointAndMag(thispop);
             
-            % total time for this fish
-            ttot = max(f.t);
-            obj.(species).fish.(fname).totaltime = ttot;
-            
-            % prob per hour of collapse for this fish
-            obj.(species).fish.(fname).prob = numel(obj.(species).fish.(fname).mag)/ttot;
-            
-            % append array of probs
-            obj.(species).probs = [obj.(species).probs, obj.(species).fish.(fname).prob];
-            
-            % update average
-            obj.(species).p = mean(obj.(species).probs);
-            
-            % update sigp
-            obj.(species).sigp = std(obj.(species).probs);
-            
-            % update mags
-            obj.(species).mags = [obj.(species).mags, obj.(species).fish.(fname).mag];
-            
-            % update meanf
-            obj.(species).f = mean(obj.(species).mags);
-            
-            % update sigf
-            obj.(species).sigf = std(obj.(species).mags);
-            
-            % update z
-            obj.(species).z = obj.(species).p*log10(obj.(species).f);
-            
-            % update sigz
-            obj.(species).sigz = sqrt(abs(log10(obj.(species).f))^2*(obj.(species).sigp)^2 + abs(obj.(species).p/obj.(species).f/log(10))^2*(obj.(species).sigf)^2);
-        end
-        
-        function obj = remakeGlobalArraysFromLocal(obj,species)
-            obj.(species).probs = [];
-            obj.(species).mags = [];
-            
-            fishnames = fieldnames(obj.(species).fish);
-            nfish = numel(fishnames);
-            
-            for i=1:nfish
-                obj.(species).probs = [obj.(species).probs, obj.(species).fish.(fishnames{i}).prob];
-                obj.(species).mags = [obj.(species).mags, obj.(species).fish.(fishnames{i}).mag'];
+              
+                
+                % total time for this fish
+                ttot = max(f.t);
+                obj.(species{i}).fish.(fname).totaltime = ttot;
+                
+                % prob per hour of collapse for this fish
+                obj.(species{i}).fish.(fname).prob = numel(obj.(species{i}).fish.(fname).mag)/ttot;
+                
+                % assemble global arrays and calculate params
+                obj = obj.remakeGlobalArraysFromLocal(species{i});
+                obj = obj.updateModelParams(species{i});
+                
+               
             end
         end
         
-        function obj = updateModelParams(obj,species)
+        function obj = remakeGlobalArraysFromLocal(obj,varargin)
             
-             % update average
-            obj.(species).p = mean(obj.(species).probs);
+            if nargin == 1
+                species = {'vibrio','aero'};
+                nspecies = 2;
+            elseif nargin == 2
+                species = {varargin{1}};
+                if strcmp(species,'both') == 1
+                    species = {'vibrio','aero'};
+                end
+                nspecies = numel(species);
+            else
+                disp('remakeGlobalArraysFromLocal takes at most a species argument')
+            end
             
-            % update sigp
-            obj.(species).sigp = std(obj.(species).probs);
+            for j = 1:nspecies
+                obj.(species{j}).probs = [];
+                obj.(species{j}).mags = [];
+                
+                fishnames = fieldnames(obj.(species{j}).fish);
+                nfish = numel(fishnames);
+                
+                for k=1:nfish
+                    obj.(species{j}).probs = [obj.(species{j}).probs, obj.(species{j}).fish.(fishnames{k}).prob];
+                    obj.(species{j}).mags = [obj.(species{j}).mags, obj.(species{j}).fish.(fishnames{k}).mag'];
+                end
+                
+            end
+        end
+        
+        function obj = updateModelParams(obj,varargin)
             
-            % update meanf
-            obj.(species).f = mean(obj.(species).mags);
+            if nargin == 1
+                species = {'vibrio','aero'};
+            elseif nargin == 2
+                species = {varargin{1}};
+            end
             
-            % update sigf
-            obj.(species).sigf = std(obj.(species).mags);
+            nspecies = numel(species);
             
-            % update z
-            obj.(species).z = obj.(species).p*log10(obj.(species).f);
-            
-            % update sigz
-            obj.(species).sigz = sqrt(abs(log10(obj.(species).f))^2*(obj.(species).sigp)^2 + abs(obj.(species).p/obj.(species).f/log(10))^2*(obj.(species).sigf)^2);
-
+            for n=1:nspecies
+                % update average
+                obj.(species{n}).p = mean(obj.(species{n}).probs);
+                
+                % update sigp
+                obj.(species{n}).sigp = std(obj.(species{n}).probs);
+                
+                % update meanf
+                obj.(species{n}).f = mean(obj.(species{n}).mags);
+                
+                % update sigf
+                obj.(species{n}).sigf = std(obj.(species{n}).mags);
+                
+                % update z
+                obj.(species{n}).z = obj.(species{n}).p*log10(obj.(species{n}).f);
+                
+                % update sigz
+                obj.(species{n}).sigz = sqrt(abs(log10(obj.(species{n}).f))^2*(obj.(species{n}).sigp)^2 + abs(obj.(species{n}).p/obj.(species{n}).f/log(10))^2*(obj.(species{n}).sigf)^2);
+            end
         end 
             
-        % is this necessary?
         function obj = removeFieldAndUpdate(obj,species,structure,field2remove)
-            obj.(species).(structure) = rmfield(obj.(species).(structure),field2remove);
             
-            obj = obj.remakeGlobalArraysFromLocal(species);
-            obj = obj.updateModelParams(species);
+            if strcmp(species,'both')==1
+                species = {'vibrio','aero'};
+            elseif strcmp(species,'aero') == 1 || strcmp(species,'vibrio') == 1
+                species = {species};
+            else
+                disp('invalid species in removeFieldAndUpdate')
+            end
+                    
+            nspecies = numel(species);
+            for l = 1:nspecies
+                obj.(species{l}).(structure) = rmfield(obj.(species{l}).(structure),field2remove);
+                
+                obj = obj.remakeGlobalArraysFromLocal(species{l});
+                obj = obj.updateModelParams(species{l});
+            end
         end
+        
+        function obj = update1dDists(obj,f,fname,varargin)
+            % keep track of 1d distributions of bacteria in gut.
+            % Potentially interesting to look for signatures of collapse
+            % and as a property to track during response to perturbations.
             
+            if nargin == 3
+                species = {'vibrio','aero'};
+                nc = [1,2];
+                
+            elseif nargin == 4
+                species = varargin{1};
+                switch species
+                    case 'both'
+                        nc = [1,2];
+                        species = {'vibrio','aero'};
+                    case 'vibrio'
+                        nc = 1;
+                    case 'aero'
+                        nc = 2;
+                    case 'aeromono'
+                        nc = 1;
+                end
+            else
+                disp('wrong number of inputs in update1dDists')
+            end
+            
+            
+            nspecies = numel(nc);
+            nscans = f.totalNumScans;
+            nslicesmax = zeros(1,nspecies);
+            
+            for m = 1:nspecies
+                nslicesmax(m) = 0;
+                
+                % maybe not the best way to do this, but will loop through
+                % scans to find the length of the largest gut partition and use
+                % that to preallocate the array of 1d distributions.
+                for ns = 1:nscans
+                    ny = numel(f.scan(ns,nc(m)).lineDist);
+                    if ny > nslicesmax(m)
+                        nslicesmax(m) = ny;
+                    end
+                end
+                
+                % preallocate
+                obj.(species{m}).fish.(fname).lineDist = zeros(nscans,nslicesmax(m));
+                
+                % loop through and assign each distribution to a row in a
+                % matrix
+                for ns = 1:nscans
+                    thisnslices = numel(f.scan(ns,nc(m)).lineDist);
+                    for slicenum = 1:thisnslices
+                        obj.(species{m}).fish.(fname).lineDist(ns,1:thisnslices) = f.scan(ns,nc(m)).lineDist';
+                    end
+                end
+            
+            end
+            
+        end
             
             
         
