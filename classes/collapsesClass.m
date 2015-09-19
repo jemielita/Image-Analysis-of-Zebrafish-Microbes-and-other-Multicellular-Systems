@@ -136,23 +136,46 @@ classdef collapsesClass
                 obj.(species{o}).fish.(fname).scan = [];
             end
             
-            % sometimes pop can contains exact zeros, not trusting those
+            % OLD APPROACH:  sometimes pop can contains exact zeros, not trusting those
             % for now
-            startzeroindex = zeros(1,nspecies);
+            
+            %startzeroindex = zeros(1,nspecies);
+            zerosindex =[]; 
             
             % big loop over species to update both aero and vibrio with one
             % call.  Why not?
             for i = 1:nspecies
                 
-                if ~isempty(find(pop(:,i)==0,1))
-                    startzeroindex(i) = find(pop(:,i)==0,1);
+                thispop = pop(:,i);
+%                 if ~isempty(find(thispop==0,1))
+%                     startzeroindex(i) = find(thispop==0,1);
+%                 end
+%                 
+%                 if startzeroindex(i) > 0
+%                     
+%                     thispop = pop(1:startzeroindex(i)-1,i);
+%                     disp(strcat('Truncating ',fname,' time series due to zeros'));
+%                 end
+               
+                if ~isempty(find(thispop==0,1))
+                     zerosindex = [zerosindex; find(thispop==0)];
                 end
                 
-                if ~isempty(startzeroindex)
-                    
-                    thispop = pop(1:startzeroindex(i)-1,i);
-                    disp(strcat('Truncating ',fname,' time series due to zeros'));
-                    
+                
+                % NEW APPROACH:  IF POP CONTAINS A ZERO, REPLACE THAT POINT
+                % BY THE AVERAGE OF ADJACENT POINTS
+                if ~isempty(zerosindex)
+                    for thiszero = 1:numel(zerosindex)
+                        
+                        % check if the zero occurs at the endpoint
+                        if zerosindex(thiszero) ~= numel(thispop)
+                            thispop(zerosindex(thiszero)) = .5*(thispop(zerosindex(thiszero)-1) + thispop(zerosindex(thiszero)+1));
+                            
+                        % if it does, discard it
+                        else
+                            thispop = thispop(1:end-1);
+                        end
+                    end
                 end
                 
                % store pop
@@ -262,6 +285,10 @@ classdef collapsesClass
             % keep track of 1d distributions of bacteria in gut.
             % Potentially interesting to look for signatures of collapse
             % and as a property to track during response to perturbations.
+            % The distributions are stored in a matrix, time going down,
+            % posterior to the right.  To do this, the matrix must be
+            % preallocated for the maximum size of the distribution amongst
+            % all the scans.  
             
             if nargin == 3
                 species = {'vibrio','aero'};
@@ -291,15 +318,17 @@ classdef collapsesClass
             nspecies = numel(nc);
             nscans = f.totalNumScans;
             nslicesmax = zeros(1,nspecies);
+            regCut = f.totPopRegCutoff;
+            
             
             for m = 1:nspecies
                 nslicesmax(m) = 0;
                 
-                % maybe not the best way to do this, but will loop through
-                % scans to find the length of the largest gut partition and use
-                % that to preallocate the array of 1d distributions.
+                %Get last slice num by looking at
+                %f.scan.gutRegionsInd. This has the benefit of not
+                %including vent region bugs.
                 for ns = 1:nscans
-                    ny = numel(f.scan(ns,nc(m)).lineDist);
+                    ny = f.scan(ns,nc(m)).gutRegionsInd(regCut);
                     if ny > nslicesmax(m)
                         nslicesmax(m) = ny;
                     end
@@ -311,9 +340,10 @@ classdef collapsesClass
                 % loop through and assign each distribution to a row in a
                 % matrix
                 for ns = 1:nscans
-                    thisnslices = numel(f.scan(ns,nc(m)).lineDist);
+                    stopslice = f.scan(ns,nc(m)).gutRegionsInd(regCut);
+                    thisnslices = numel(f.scan(ns,nc(m)).lineDist(1:stopslice));
                     for slicenum = 1:thisnslices
-                        obj.(species{m}).fish.(fname).lineDist(ns,1:thisnslices) = f.scan(ns,nc(m)).lineDist';
+                        obj.(species{m}).fish.(fname).lineDist(ns,1:thisnslices) = f.scan(ns,nc(m)).lineDist(1:stopslice)';
                     end
                 end
             
