@@ -246,7 +246,10 @@ classdef collapsesClass
                 obj.(species{n}).p = mean(obj.(species{n}).probs);
                 
                 % update sigp
-                obj.(species{n}).sigp = std(obj.(species{n}).probs);
+                %obj.(species{n}).sigp = std(obj.(species{n}).probs);
+                % should assume poisson distribution and say sigp =
+                % sqrt(p)/sqrt(n)
+                obj.(species{n}).sigp = sqrt(obj.(species{n}).p/numel(obj.(species{n}).mags));
                 
                 % update meanf
                 obj.(species{n}).f = mean(obj.(species{n}).mags);
@@ -350,8 +353,149 @@ classdef collapsesClass
             end
             
         end
+        
+        function obj = calcGrowthRatesPostCollapse(obj,nspost,varargin)
+            if nargin == 2
+                species = {'vibrio','aero'};
+                nc = [1,2];
+                
+            elseif nargin == 3
+                species = varargin{1};
+                switch species
+                    case 'both'
+                        nc = [1,2];
+                        species = {'vibrio','aero'};
+                    case 'vibrio'
+                        nc = 1;
+                        species = {species};
+                    case 'aero'
+                        nc = 2;
+                        species = {species};
+                    case 'aeromono'
+                        nc = 1;
+                        species = {species};
+                end
+            else
+                disp('wrong number of inputs in update1dDists')
+            end
             
+            %nspost = nspost+3;
             
+            for nspecies = 1:numel(species)
+                fnames = fieldnames(obj.(species{nspecies}).fish);
+                for nfish = 1:numel(fnames)
+                    
+                    thispop = obj.(species{nspecies}).fish.(fnames{nfish}).pop;
+                    
+                    thisscans = obj.(species{nspecies}).fish.(fnames{nfish}).scan;
+                    
+                    ncollapses = numel(thisscans);
+                    
+                    obj.(species{nspecies}).fish.(fnames{nfish}).rpostcol = zeros(ncollapses,1);
+                    obj.(species{nspecies}).fish.(fnames{nfish}).sigrpostcol = zeros(ncollapses,1);
+                    
+                    for nscan = 1:numel(thisscans)
+                        dx = diff(thispop);
+                        m = 0;
+                        while dx(thisscans(nscan)+m) < 0
+                            m = m+1;
+                        end
+                        
+                        startscan = thisscans(nscan)+m;
+                        
+                        if startscan + nspost >= numel(thispop)
+                            
+                            thispostcollapsepop = thispop(startscan:end);
+                            
+                            scanvec = startscan:numel(thispop);
+                            
+                            tvec = scanvec.*obj.(species{nspecies}).fish.(fnames{nfish}).totaltime./numel(thispop);
+                            
+                            [b,sigb,a,siga] = fitline(tvec,log(thispostcollapsepop));
+                            
+                            if a > 0
+                                obj.(species{nspecies}).fish.(fnames{nfish}).rpostcol(nscan) = a;
+                                obj.(species{nspecies}).fish.(fnames{nfish}).sigrpostcol(nscan) = siga;
+                            end
+                           
+                            %fittime = linspace(tvec(1),tvec(end),100);
+                            efit = exp(b+a*fittime);
+                            figure; semilogy(linspace(0,obj.(species{nspecies}).fish.(fnames{nfish}).totaltime,numel(obj.(species{nspecies}).fish.(fnames{nfish}).pop)),...
+                                obj.(species{nspecies}).fish.(fnames{nfish}).pop)
+                            hold on
+                            plot(fittime,efit,'g')
+                            
+                        else
+                            thispostcollapsepop = thispop(startscan:(startscan+nspost));
+                            
+                            scanvec = startscan:(startscan+nspost);
+                            
+                            tvec = scanvec.*obj.(species{nspecies}).fish.(fnames{nfish}).totaltime./numel(thispop);
+                            
+                            [b,~,a,siga] = fitline(tvec,log(thispostcollapsepop));
+                            
+                            if a > 0
+                                obj.(species{nspecies}).fish.(fnames{nfish}).rpostcol(nscan) = a;
+                                obj.(species{nspecies}).fish.(fnames{nfish}).sigrpostcol(nscan) = siga;
+                            end
+                            
+                            fittime = linspace(tvec(1),tvec(end),100);
+                            %linefit = a*fittime + b;
+                            efit = exp(b+a*fittime);
+                            figure; semilogy(linspace(0,obj.(species{nspecies}).fish.(fnames{nfish}).totaltime,numel(obj.(species{nspecies}).fish.(fnames{nfish}).pop)),...
+                                obj.(species{nspecies}).fish.(fnames{nfish}).pop)
+                            hold on
+                            semilogy(fittime,efit,'g')
+                            
+                            
+                        end
+                    end
+                end
+            end
+        end
+        
+        function obj = spatialCorrelation(obj,varargin)
+            if nargin == 1
+                species = {'vibrio','aero'};
+                nc = [1,2];
+                
+            elseif nargin == 2
+                species = varargin{1};
+                switch species
+                    case 'both'
+                        nc = [1,2];
+                        species = {'vibrio','aero'};
+                    case 'vibrio'
+                        nc = 1;
+                        species = {species};
+                    case 'aero'
+                        nc = 2;
+                        species = {species};
+                    case 'aeromono'
+                        nc = 1;
+                        species = {species};
+                end
+            else
+                disp('wrong number of inputs in spatialCorrelations')
+            end
+            
+            for nsp = 1:numel(species)
+                fnames = fieldnames(obj.(species{nsp}).fish);
+                
+                for i = 1:numel(fnames)
+                    distmat = obj.(species{nsp}).fish.(fnames{i}).lineDist;
+                    
+                    % normalize
+                    for nscans = 1:size(distmat,1)
+                        distmat(nscans,:) = distmat(nscans,:)./max(distmat(nscans,:));
+                    end
+                    
+                    diffmat = diff(distmat,1);
+                    obj.(species{nsp}).fish.(fnames{i}).spatialcorrs = 1-sqrt(mean(diffmat.^2,2));
+                end
+                
+            end
+        end
         
         function save(obj)
             cl = obj;
