@@ -6,7 +6,7 @@ function [gutMesh, mSlopes, x, y, u_filt, v_filt] = initMesh(imPath,subDir)
 
 
 % Load data and image from directory
-matData=dir(strcat(imPath,filesep,subDir,filesep,'PIV*.mat'));
+matData=dir(strcat(imPath,filesep,subDir,filesep,'PIVData_04*.mat'));
 maskVars=dir(strcat(imPath,filesep,'maskVars*.mat'));
 matFile=strcat(imPath,filesep,subDir,filesep,matData(1).name);
 maskFile=strcat(imPath,filesep,maskVars(1).name);

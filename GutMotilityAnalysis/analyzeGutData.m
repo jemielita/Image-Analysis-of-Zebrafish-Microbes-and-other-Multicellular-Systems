@@ -255,7 +255,7 @@ SStotal = (size(xCorrMaxima,1)-1) * var(xCorrMaxima);
 waveFitRSquared = 1 - SSresid/SStotal;
 
 %% Find median wave amplitude
-velVectMaxes=max(surfL,[],1);
+velVectMaxes=max(abs(surfL),[],1);
 wavePeriodFrames=wavePeriod*fps;
 [sortedMaxima,sortedMaximaIndices]=sort(velVectMaxes,'descend'); % Sort velocities based on magnitude, also save the corresponding indices
 roughHowManyWaves=floor(size(sortedMaxima,2)/wavePeriodFrames)-1; % Roughly how many maxima should I expect?
