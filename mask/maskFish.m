@@ -281,7 +281,7 @@ classdef maskFish
           end
           
           recalcProj = false;
-          im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
+          im = selectProjection(param, 'mip', 'false', scanNum, param.color{colorNum}, '',recalcProj); %made 'false' by BHS 9/14/15
           param.dataSaveDirectory
           switch direction
               case 'gt'

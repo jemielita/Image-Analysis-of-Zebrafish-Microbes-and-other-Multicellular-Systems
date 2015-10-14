@@ -25,7 +25,7 @@ dlgAns=inputdlg({'What image format would you like to save as: *.tif or *.png?',
     'What smallest template size should be used (for first pass)?',...
     'What framerate are you using (frames/sec)?:',...
     'What scale will the final result be at (um/pix)?:'...
-    'What (linear) factor would you like to reduce your image size by?:'}, 'Title',1,{'*.png','32','5','0.65','2'});
+    'What (linear) factor would you like to reduce your image size by?:'}, 'Title',1,{'*.png','32','5','0.325','2'});
 
 settings=dlgAns(1);
 settings{2}=str2double(dlgAns(2));
@@ -137,12 +137,12 @@ if (PIVChoice==1)
 end
 
 %% Analysis
-if (analysisChoice==1)
+%if (analysisChoice==1)
     for i=1:nFD
         for j=1:nSFD
             
             imPath=strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j});
-            
+                
             if( interpChoice==1)
                 
                 % Initialize the gut mesh
@@ -164,8 +164,12 @@ if (analysisChoice==1)
             % Full path
             imPath=strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j}, filesep, subSubFishDirect);
             
+            if(analysisChoice==1) % ******
+                
             % Analyze data
             analyzeGutData(gutMesh, gutMeshVels, gutMeshVelsPCoords, fps, scale, imPath)
+            
+            end % *****
             
             if( videoChoice==1)
                 
@@ -176,6 +180,6 @@ if (analysisChoice==1)
             
         end
     end
-end
+%end
 
 end

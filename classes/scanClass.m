@@ -35,6 +35,7 @@ classdef scanClass
         lineDist = [];
         
         removedRegion = [];%Regions to manually remove from these scans (this will likely be regions by the vent).
+        globalCenterMass;
         
         
     end
@@ -225,15 +226,15 @@ classdef scanClass
                         obj.totInten = 0;
                         return;
                     end
-                    obj.totVol = [obj.clumps.allData.volume];
-                    obj.totInten = [obj.clumps.allData.totalInten];
+                    totVolAll = [obj.clumps.allData.volume];
+                    totIntenAll = [obj.clumps.allData.totalInten];
                     
                     %Only consider spots before the gut region cutoff
                     
                     gutInd = [obj.clumps.allData.sliceNum];
                     gutInd = gutInd<obj.gutRegionsInd(regCutoff);
-                    obj.totVol = obj.totVol(gutInd);
-                    obj.totInten = obj.totInten(gutInd);
+                    obj.totVol = totVolAll(gutInd);
+                    obj.totInten = totIntenAll(gutInd);
                     
                     %Getting clumps above and below our single bacteria
                     %intensity cutoff
@@ -447,6 +448,28 @@ classdef scanClass
         function obj = updateSliceNum(obj,param)
             obj.gutRegionsInd = param.gutRegionsInd(obj.scanNum,:);
         end
+        
+        
+        function obj = calcGlobalCenterOfMass(obj,regCutoff)
+            % Calculate center of mass of all found objects.  "Global"
+            % refers to the whole gut, as opposed to the center of mass of
+            % a clump.  -BHS 8/28/15
+            
+            if isempty(obj.lineDist)
+                fprintf(2,'Need to calcSliceInten before calcGlobalCenterOfMass\n')
+                return
+            end
+            
+            stopslice = obj.gutRegionsInd(regCutoff);
+            lineDistNotVent = obj.lineDist(1:stopslice);
+            slicenumbers = 1:numel(lineDistNotVent);
+            slicenumbers = slicenumbers';
+            Itot = sum(lineDistNotVent);
+            
+            % If Itot == 0 will get NaNs
+            obj.globalCenterMass = sum(slicenumbers.*lineDistNotVent)./Itot;  
+            
+        end    
         
     end
     
