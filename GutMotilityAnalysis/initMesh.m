@@ -1,12 +1,13 @@
 % Inputs: impath: String similar to 'C:/User/.../folder'
 %         filetype: String of the form '*.png'
+% To do: rename variables such that gut positions are x,y, original velocities are v_x,v_y, and new velocities are v_u,v_v
 
 function [gutMesh, mSlopes, x, y, u_filt, v_filt] = initMesh(imPath,subDir)
 
 
 
 % Load data and image from directory
-matData=dir(strcat(imPath,filesep,subDir,filesep,'PIVData_04*.mat'));
+matData=dir(strcat(imPath,filesep,subDir,filesep,'PIVData_*.mat'));
 maskVars=dir(strcat(imPath,filesep,'maskVars*.mat'));
 matFile=strcat(imPath,filesep,subDir,filesep,matData(1).name);
 maskFile=strcat(imPath,filesep,maskVars(1).name);

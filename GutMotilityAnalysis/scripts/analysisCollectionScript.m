@@ -36,13 +36,14 @@ for i=1:nFD
         % load 'GutParameters25-Aug-2015.mat'; % 8.19.15
         % load 'GutParameters26-Aug-2015.mat'; % 8.20.15
         % load 'GutParameters27-Aug-2015.mat'; % 8.21.15
-        load 'GutParameters04-Oct-2015.mat'; % 9.18.15
+        % load 'GutParameters04-Oct-2015.mat'; % 9.18.15
+        load 'GutParameters27-Jan-2016.mat'; % Conv vs GF
         
         curFish=fishDirect(i).name;
         curFish(1:4)=[];
         fishNum=str2double(curFish);
         
-        paramsAmpWidFreqPeriodSpeedSsresidbynR2FN=[paramsAmpWidFreqPeriodSpeedSsresidbynR2FN;averageMaxVelocities,waveAverageWidth,waveFrequency,wavePeriod,waveSpeedSlope,SSresid/analyzedDeltaMarkers(2),waveFitRSquared,fishNum];
+        paramsAmpWidFreqPeriodSpeedSsresidbynR2FN=[paramsAmpWidFreqPeriodSpeedSsresidbynR2FN;fftPowerPeak,waveAverageWidth,waveFrequency,waveSpeedSlope,sigB,waveFitRSquared,fishNum];
         
         cd ../../..
         
@@ -52,15 +53,16 @@ for i=1:nFD
     
 end
 
-% paramsOdd=paramsAmpWidFreqPeriodSpeedSsresidbynR2FN(mod(paramsAmpWidFreqPeriodSpeedSsresidbynR2FN(:,8),2)==1,:);
-% paramsEven=paramsAmpWidFreqPeriodSpeedSsresidbynR2FN(mod(paramsAmpWidFreqPeriodSpeedSsresidbynR2FN(:,8),2)==0,:);
-retBool=logical([0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0]);
-wTUBool=logical([1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,0,0,0]);
-wTFBool=logical([0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,0,0]);
-fishPosInTime=1:length(retBool);
-paramsRet=paramsAmpWidFreqPeriodSpeedSsresidbynR2FN(retBool,:);
-paramsWTU=paramsAmpWidFreqPeriodSpeedSsresidbynR2FN(wTUBool,:);
-paramsWTF=paramsAmpWidFreqPeriodSpeedSsresidbynR2FN(wTFBool,:);
+%% Merp
+paramsOdd=paramsAmpWidFreqPeriodSpeedSsresidbynR2FN(mod(paramsAmpWidFreqPeriodSpeedSsresidbynR2FN(:,8),2)==1,:);
+paramsEven=paramsAmpWidFreqPeriodSpeedSsresidbynR2FN(mod(paramsAmpWidFreqPeriodSpeedSsresidbynR2FN(:,8),2)==0,:);
+% retBool=logical([0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0]);
+% wTUBool=logical([1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,0,0,0]);
+% wTFBool=logical([0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0,0,0,0]);
+% fishPosInTime=1:length(retBool);
+% paramsRet=paramsAmpWidFreqPeriodSpeedSsresidbynR2FN(retBool,:);
+% paramsWTU=paramsAmpWidFreqPeriodSpeedSsresidbynR2FN(wTUBool,:);
+% paramsWTF=paramsAmpWidFreqPeriodSpeedSsresidbynR2FN(wTFBool,:);
 
 % WT odd on 8.19.15; WT even on 8.20.15; WT odd on 8.21.15... see lab notebook
 % meanAmpEven=mean(paramsEven(:,1));

@@ -10,7 +10,7 @@
 %        User defined contrast for video
 %        Inverse mask for registration
 
-function gutMotilityAnalysis
+function gutMotility
 
 %% Prompt user for main directory, which processes to run, initialize variables
 mainDirectory=uigetdir(pwd,'Main directory containing fish to analyze'); %directory containing the images you want to analyze
@@ -42,8 +42,17 @@ cd(mainDirectory);
 fishDirect=dir;
 % fishDirect(1:2)=[]; % Remove . and .., assumes ONLY directories here
 fishDirect(strncmp({fishDirect.name}, '.', 1)) = []; % Removes . and .. and hidden files
+fishDirect([fishDirect.isdir]==0) = []; % removes non-directories from list
+
+% Allow user to select which fish to analyze
+nameList = { fishDirect.name };
+setFull = 1:size( nameList, 2 );
+[ setKeep, ~ ] = listdlg( 'PromptString', 'Select Fish to Analyze', 'ListString', nameList );
+setRemove = setdiff( setFull, setKeep ); % setdiff( A, B ) returns the data in A that is not in B
+fishDirect( setRemove ) = [];
 nFD=size(fishDirect,1);
 subFishDirect={};
+useFishBools = cell(1,nFD);
 
 %% Loop through fish directories to obtain masks
 for i=1:nFD
@@ -75,7 +84,15 @@ for i=1:nFD
         end
         
         %initMask
-        maskChoice=menu(strcat('Would you like to create a mask for files in directory:',imPath,'?'),'Yes','No (already done)');
+        if(i==1&&j==1)
+            createMasks=menu(strcat('Would you like to create masks right now?: '),'Yes','No (already done)');
+        end
+        
+        if(createMasks==1)
+            maskChoice=menu(strcat('Would you like to create a mask for files in directory:',imPath,'?'),'Yes','No (already done)');
+        else
+            maskChoice=0;
+        end
         
         if(maskChoice==1)
             initMask(imPath,filetype,resReduce);
@@ -103,7 +120,7 @@ for i=1:nFD
         
         for j=1:nSFD
             
-            curDire=strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j}, filesep);
+            curDire=strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j});
             subSubFishDirect=tiffStackDeconstruction(curDire,subDir,resReduce);
             
         end
@@ -137,49 +154,70 @@ if (PIVChoice==1)
 end
 
 %% Analysis
-%if (analysisChoice==1)
-    for i=1:nFD
-        for j=1:nSFD
+
+% Progress bar
+progtitle = sprintf('Analyzing fish n');
+progbar = waitbar(0, progtitle);  % will display progress
+
+for i=1:nFD
+    
+    % Progress bar update
+    waitbar(i/nFD, progbar, ...
+        strcat(progtitle, sprintf('umber %d of %d', i, nFD)));
+    
+    curFishBools = [];
+    
+    for j=1:nSFD
+        
+        imPath=strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j});
+        
+        if( interpChoice==1 )
             
-            imPath=strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j});
-                
-            if( interpChoice==1)
-                
-                % Initialize the gut mesh
-                [gutMesh, mSlopes, x, y, u_filt, v_filt] = initMesh(imPath,subSubFishDirect);
-                
-                % Interpolate velocities from original grid onto gutMesh
-                gutMeshVels=interpolateVelocities(gutMesh, x, y, u_filt, v_filt);
-                
-                % Get local coordinates (longitudinal, transverse)
-                [gutMeshVelsPCoords, thetas] = mapToLocalCoords(gutMeshVels, mSlopes);
-                
-                % Save data!
-                save(strcat(imPath,filesep,'analyzedGutData',date),'gutMesh','mSlopes','gutMeshVels','gutMeshVelsPCoords','thetas');
-            else
-                aGDName=dir(strcat(imPath,filesep,'analyzedGutData*.mat'));
-                load(strcat(imPath,filesep,aGDName(1).name));
-            end
+            % Initialize the gut mesh
+            [gutMesh, mSlopes, x, y, u_filt, v_filt] = initMesh(imPath,subSubFishDirect);
             
-            % Full path
-            imPath=strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j}, filesep, subSubFishDirect);
+            % Interpolate velocities from original grid onto gutMesh
+            gutMeshVels=interpolateVelocities(gutMesh, x, y, u_filt, v_filt);
             
-            if(analysisChoice==1) % ******
-                
+            % Get local coordinates (longitudinal, transverse)
+            [gutMeshVelsPCoords, thetas] = mapToLocalCoords(gutMeshVels, mSlopes);
+            
+            % Save data!
+            save(strcat(imPath,filesep,'analyzedGutData',date),'gutMesh','mSlopes','gutMeshVels','gutMeshVelsPCoords','thetas');
+        elseif(analysisChoice==1)
+            aGDName=dir(strcat(imPath,filesep,'analyzedGutData*.mat'));
+            load(strcat(imPath,filesep,aGDName(1).name));
+        end
+        
+        % Full path
+        imPath=strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j}, filesep, subSubFishDirect);
+        
+        if(analysisChoice==1)
+            
             % Analyze data
-            analyzeGutData(gutMesh, gutMeshVels, gutMeshVelsPCoords, fps, scale, imPath)
-            
-            end % *****
-            
-            if( videoChoice==1)
-                
-                % Display a video of the motion
-                displayGutVideo(gutMesh, gutMeshVels, gutMeshVelsPCoords, thetas, imPath, filetype)
-                
-            end
+            useFishBool = analyzeGutData(gutMesh, gutMeshVelsPCoords, fps, scale, imPath);
+            curFishBools = [curFishBools, useFishBool]; %#ok
             
         end
+        
+        if( videoChoice==1)
+            
+            % Display a video of the motion
+            displayGutVideo(gutMesh, gutMeshVels, gutMeshVelsPCoords, thetas, imPath, filetype)
+            
+        end
+        
     end
-%end
+    
+    useFishBools{i} = curFishBools;
+    
+end
+
+% Save data if analyzed! Won't be accurate if you break up your analysis (this currently sucks if files are individually analyzed)
+if(analysisChoice==1)
+    save(strcat(mainDirectory,filesep,'fishBools',date),'useFishBools'); % Be careful with this: the order is 1, 10, 11,... 2, 20, 21,... etc, and will skip over any fish folders missing from the directory
+end
+
+close(progbar);
 
 end

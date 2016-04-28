@@ -1,3 +1,5 @@
+% To do: rename variables such that gut positions are x,y, original velocities are v_x,v_y, and new velocities are v_u,v_v
+
 function gutMeshVels=interpolateVelocities(gutMesh, x, y, u_filt, v_filt)
 
 nT=size(u_filt,1)-1; % For nT frames, there should have only been nT-1 elements, instead they made the nTth element [] for some reason...

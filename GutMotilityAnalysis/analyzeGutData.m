@@ -5,12 +5,14 @@
 %        -Get median pulse height from a median of a histogram of local
 %        maxima from a soothed velocity vector field
 
-function analyzeGutData(gutMesh, gutMeshVels, gutMeshVelsPCoords, fps, scale, imPath)
+function fishDataAccurate = analyzeGutData(gutMesh, gutMeshVelsPCoords, fps, scale, imPath)
 
 cd(imPath);
 % cd .. % Uncomment when running gutMotility(Single) program(s), comment when manually running this program
 dataDir='Data';
 mkdir(dataDir);
+retryBool = true;
+translateMarkerNumToMicron=scale*round(mean(diff(squeeze(gutMesh(1,:,1,1))))); % Units of Micron/Marker
 
 %% Initialize variables
 % nV=size(gutMeshVels,1);
@@ -34,7 +36,7 @@ figure;
 %truesize;
 %h=gca;
 erx=[erx(1), erx(end)];
-whyr=[markerNumStart,markerNumEnd];
+whyr=[(markerNumStart-1)*translateMarkerNumToMicron,(markerNumEnd-1)*translateMarkerNumToMicron];
 imshow(surfL',[], 'InitialMagnification', 'fit','XData', whyr, 'YData', 1/fps*erx);
 set(gca,'YDir','normal')
 colormap('Jet');
@@ -43,7 +45,7 @@ h=gcf;
 set(h, 'Position', get(0,'Screensize')); % Maximize figure.
 title('Anterior-Posterior velocities down the gut','FontSize',20,'FontWeight','bold');
 ylabel('Time (s)','FontSize',20);
-xlabel('Marker number','FontSize',20);
+xlabel('x (\mum)','FontSize',20);
 %axes('FontSize',15);
 set(findall(h,'type','axes'),'fontsize',15,'fontWeight','bold');
 % Save image
@@ -81,7 +83,8 @@ surfL=squeeze(-mean(gutMeshVelsPCoords(:,markerNumStart:markerNumEnd,1,erx),1));
 
 % Surface
 arr=xcorr(surfL(1,:),'unbiased');
-arr=arr(end/2:end);
+endRByTwo=floor(length(arr)/2);
+arr=arr(endRByTwo+1:end);
 arr=zeros(size(arr,2),size(surfL,1));
 erx=1:tauSubdiv:size(surfL,1);
 
@@ -91,8 +94,9 @@ for i=1:tauSubdiv:size(surfL,1)
     r=xcorr(surfL(i,:),'unbiased');
     x=0:size(r,2)/2;
     dt=x/fps;
+    endRByTwo=floor(length(r)/2);
     %plot(dt,r(end/2:end),'Color',[sin(3.1415/(2*colorSize)*(i-1)),0,cos(3.1415/(2*colorSize)*(i-1))]);
-    arr(:,i)=r(end/2:end);
+    arr(:,i)=r(endRByTwo+1:end);
 end
 surf(erx,dt,arr,'LineStyle','none');
 colormap('Jet');
@@ -100,16 +104,16 @@ figure;
 %plot(dt,zeros(1,size(dt,2)),'k-');
 %hold off;
 erx=[dt(1), dt(end)];
-whyr=[markerNumStart,markerNumEnd];
+whyr=[(markerNumStart-1)*translateMarkerNumToMicron,(markerNumEnd-1)*translateMarkerNumToMicron];
 imshow(arr,[], 'InitialMagnification', 'fit','XData', whyr, 'YData', erx);
 set(gca,'YDir','normal')
 colormap('Jet');
 axis square;
 h=gcf;
 set(h, 'Position', get(0,'Screensize')); % Maximize figure.
-title('Autocorrelations of anterior-aosterior velocities over time','FontSize',20,'FontWeight','bold');
+title('Autocorrelations of anterior-posterior velocities over time','FontSize',20,'FontWeight','bold');
 ylabel('\tau (s)','FontSize',20);
-xlabel('X','FontSize',20);
+xlabel('x (\mum)','FontSize',20);
 zlabel('Correlation','FontSize',20);
 set(findall(h,'type','axes'),'fontsize',15,'fontWeight','bold');
 % Save image
@@ -121,18 +125,19 @@ dName='QSTMACorrs';
 print( gcf, '-dpng', dName );
 cd(imPath);
 
-%% Global Tau Correlations of wave propagations
+%% Cross Correlations of wave propagations
 erx=int16(size(gutMeshVelsPCoords,4)/fractionOfTimeStart:(size(gutMeshVelsPCoords,4)/(fractionOfTimeStart)+size(gutMeshVelsPCoords,4)/totalTimeFraction-1));
 surfL=squeeze(-mean(gutMeshVelsPCoords(:,markerNumStart:markerNumEnd,1,erx),1));
 nCorrs=size(surfL,1)-1;
 dummyR=xcorr(surfL(1,:),surfL(2,:),'unbiased'); % dummy because I'm lazy
-fullXCorr=zeros(size(dummyR(1:end/2),2),nCorrs);
+endRByTwo=floor(length(dummyR)/2);
+fullXCorr=zeros(size(dummyR(1:endRByTwo),2),nCorrs);
 figure
 %hold all;
 for i=1:nCorrs
     for j=(i+1):size(surfL,1)
         r=xcorr(surfL(i,:),surfL(j,:),'unbiased');
-        fullXCorr(:,j-i)=fullXCorr(:,j-i)+r(1:end/2)'/(nCorrs-j+i+1); % The normalization on r is an easy way to average each difference in marker distances 
+        fullXCorr(:,j-i)=fullXCorr(:,j-i)+r(1:size(fullXCorr,1))'/(nCorrs-j+i+1); % The normalization on r is an easy way to average each difference in marker distances 
         %plot(dt,r(end/2:end),'Color',[sin(3.1415/(2*(size(surfL,1)-2))*dc),0,cos(3.1415/(2*(size(surfL,1)-2))*dc)]);
         
     end
@@ -145,18 +150,20 @@ surf(1:nCorrs,dt,trueXCorr,'LineStyle','none');
 colormap('Jet');
 figure;
 erx=[dt(1), dt(end)];
-whyr=[1,nCorrs];
+whyr=[translateMarkerNumToMicron,(nCorrs-1)*translateMarkerNumToMicron];
 imshow(trueXCorr,[], 'InitialMagnification', 'fit','XData', whyr, 'YData', erx);
 set(gca,'YDir','normal')
-colormap('Jet');
+% colormap('Jet');
 axis square;
 h=gcf;
 set(h, 'Position', get(0,'Screensize')); % Maximize figure.
 title('Global cross correlations between anterior-posterior velocities over time','FontSize',20,'FontWeight','bold');
 ylabel('\tau (s)','FontSize',20);
-xlabel('\Delta x','FontSize',20);
+xlabel('\Delta x (\mum)','FontSize',20);
 zlabel('Correlation','FontSize',20);
 set(findall(h,'type','axes'),'fontsize',15,'fontWeight','bold');
+imcontrast( h );
+gutMotileBool = menu('Is the gut reliably motile? You will have another chance to say no later if you choose yes now: ','Yes','No');
 % Save image
 cd(dataDir);
 % formatOut = 'mm_dd_yy';
@@ -185,111 +192,56 @@ for i=1:size(autoCorrDecays,2)
 end
 
 waveAverageWidth=2*mean(decayTimes)/fps; %#ok % Outputs will be saved. The factor of 2 for the whole wave. In units of seconds!
+goodData=0;
 
-%% Find peristaltic frequency, wave speed from cross-correlation
+%% Process data if gut appears to be motile
+if(gutMotileBool==1)
+    while(retryBool)
+        % Find peristaltic frequency, wave speed from cross-correlation
+        [waveFrequency, waveSpeedSlope, BByFPS, sigB, waveFitRSquared, xCorrMaxima, analyzedDeltaMarkers] = gutFreqWaveSpeedFinder( gutMesh, trueXCorr, fps, scale ); %#ok % Outputs will be saved
+        
+        % Find wave amplitude from FFT peaks
+        [fftPowerPeak, fftPowerPeakSTD, fftPowerPeakMin, fftPowerPeakMax, fftPeakFreq] = gutFFTPeakFinder( gutMeshVelsPCoords, fps, waveFrequency/60); %#ok % Outputs will be saved % waveFrequency/60 to change from min^-1 to s^-1
+        fitInfo = sprintf('\nWave Period (s) = %.2f \n Slope (s/marker) = %.2f \n Wave Fit R-Squared = %.2f%% \n Wave Speed Variation = %.2f \n FFT Peak Power = %.2f',...
+            60/waveFrequency,BByFPS,100*waveFitRSquared,sigB, fftPowerPeak);
+        retryPrompt = menu(strcat('Does everything look good?',fitInfo),'Yes','No');
+        if(retryPrompt==1)
+            retryBool = false;
+            goodData = 1;
+        else
+            goodData = menu(strcat('Would you like to retry or replace with mostly NaNs (freq and amplitude will be found another way)?',fitInfo),'Retry','Replace w/ NaNs');
+            if(goodData~=1)
+                retryBool = false;
+            end
+        end
+    end
+end
+if(gutMotileBool~=1||goodData~=1)
+    
+    fishDataAccurate = false;
+    waveFrequency = NaN; %#ok %Outputs saved, warning suppressed on all variables in else
+    waveSpeedSlope = NaN; %#ok
+    sigB = NaN; %#ok
+    waveFitRSquared = NaN; %#ok
+    xCorrMaxima = NaN; %#ok
+    analyzedDeltaMarkers = NaN; %#ok
+    % Prompt user for variables
+    freqMeanSearch=inputdlg({'What frequency (min^-1) should fft search around for gut amplitudes (as of 11-20-15, fish often have well defined peristalsis freqs from about 2.75 min^-1 at 5dpf to 2.0 min^-1 at 7dpf, though consult the xCorr plot for further hints)?'}, 'Title',1,{'2.1'});
+    freqMeanSearch=str2double(freqMeanSearch);
+    % Find wave amplitude from FFT peaks
+    [fftPowerPeak, fftPowerPeakSTD, fftPowerPeakMin, fftPowerPeakMax, fftPeakFreq] = gutFFTPeakFinder( gutMeshVelsPCoords, fps, freqMeanSearch/60); %#ok
+    
+else
+    
+    fishDataAccurate = true;
+    
+end
 
-[waveFrequency, wavePeriod, waveSpeedSlope, SSresid, waveFitRSquared, xCorrMaxima] = gutFreqWaveSpeedFinder( gutMesh, trueXCorr, fps ); %#ok % Outputs will be saved
-
-% onlyShowFirstNSeconds=1:90*fps;
-% imH = imshow(trueXCorr(onlyShowFirstNSeconds,:),[], 'InitialMagnification','fit'); % Do not show this graph in seconds, must use frames!
-% set(gca,'YDir','normal')
-% axis square;
-% colormap('Jet');
-% % axis square;
-% % title('Global cross correlations between anterior-posterior velocities over time','FontSize',20,'FontWeight','bold');
-% % ylabel('\tau (s)','FontSize',20);
-% % xlabel('\Delta x','FontSize',20);
-% % zlabel('Correlation','FontSize',20);
-% % set(findall(imH,'type','axes'),'fontsize',15,'fontWeight','bold');
-% 
-% %imcontrast( imH ) ;
-% roughFitEstimate = impoly( 'Closed', false );
-% rFEPoly = getPosition( roughFitEstimate );
-% deltaTimeUser=(rFEPoly(2,2)-rFEPoly(1,2));
-% deltaMarkerUser=rFEPoly(2,1)-rFEPoly(1,1);
-% translateMarkerNumToMicron=scale*round(mean(diff(squeeze(gutMesh(1,:,1,1)))));
-% slopeUser=deltaTimeUser/deltaMarkerUser; % Note: x is in units of marker numbers, not pixels or microns
-% interceptUser=rFEPoly(1,2)-slopeUser*rFEPoly(1,1);
-% % waveSpeed=translateMarkerNumToMicron*deltaMarker/deltaTime; % CHANGE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-% 
-% % Ask for which ranges of x and t the user wants to search rather than
-% % using initialized variables, smoothing size
-% xTDlgAns=inputdlg({'What range of time should be searched around (s)? +-', ...
-%     'What range of x should we use? First x is at marker number ', ...
-%     'What range of x should we use? Last x is at marker number '}, 'Title',1,{'15','1','39'});
-% 
-% timeAroundToSearchForMax=str2double(xTDlgAns(1));
-% markerNumStartFreq=str2double(xTDlgAns(2));
-% markerNumEndFreq=str2double(xTDlgAns(3));
-% 
-% % Perform zero-phase digital filter to data
-% dMarker=(markerNumEndFreq-markerNumStartFreq);
-% %dTime=2*floor(fps*timeAroundToSearchForMax); % Always even
-% dTimeMin=round(min(slopeUser*(markerNumStartFreq:markerNumEndFreq)+interceptUser-timeAroundToSearchForMax));
-% dTimeMax=round(max(slopeUser*(markerNumStartFreq:markerNumEndFreq)+interceptUser+timeAroundToSearchForMax));
-% dTime=dTimeMax-dTimeMin;
-% reducedSmoothedVelocityMap=zeros(dMarker,dTime+1);
-% typeOfFilt=designfilt('lowpassfir', 'PassbandFrequency', .15, ...
-%         'StopbandFrequency', .65, 'PassbandRipple', 1, ...
-%         'StopbandAttenuation', 60);
-%     
-% for i=markerNumStartFreq:markerNumEndFreq
-%     %tAroundToSearch=round(fps*(slopeUser*i+interceptUser));
-%     subsetTrueXCorr=squeeze(trueXCorr(dTimeMin:dTimeMax,i));
-%     reducedSmoothedVelocityMap(i,:)=filtfilt(typeOfFilt,subsetTrueXCorr);
-% end
-% 
-% % Find maxima of all x's
-% [~, xCorrMaxima]=max(reducedSmoothedVelocityMap,[],2); % Name is misleading, should be xCorrMaximaTimes I think?
-% 
-% % Fit to line, get slope/intercept for wave speed/frequency, variance about linear fit
-% linearCoefs=polyfit(1:size(xCorrMaxima,1),xCorrMaxima',1);
-% waveFrequency=fps*60/(linearCoefs(2)+dTimeMin-1); % Units of per minutes, -1 for indexing at 1
-% wavePeriod=(linearCoefs(2)+dTimeMin-1)/fps; % Units of seconds
-% waveSpeedSlope=fps*translateMarkerNumToMicron/linearCoefs(1); % Units of um/sec (fps*(micron/marker)/(frames/marker))
-% 
-% % Find R^2
-% yfit=polyval(linearCoefs,1:size(xCorrMaxima,1));
-% yresid=xCorrMaxima'-yfit;
-% SSresid = sum(yresid.^2); % Awful units!
-% SStotal = (size(xCorrMaxima,1)-1) * var(xCorrMaxima);
-% waveFitRSquared = 1 - SSresid/SStotal;
-
-%% Find wave amplitude from FFT peaks
-
-% % Old way
-% velVectMaxes=max(abs(surfL),[],1);
-% wavePeriodFrames=wavePeriod*fps;
-% [sortedMaxima,sortedMaximaIndices]=sort(velVectMaxes,'descend'); % Sort velocities based on magnitude, also save the corresponding indices
-% roughHowManyWaves=floor(size(sortedMaxima,2)/wavePeriodFrames)-1; % Roughly how many maxima should I expect?
-% localMaxesIndices=zeros(1,roughHowManyWaves);
-% localMaxIndex=1;
-% for i=1:size(sortedMaxima,2)
-%     inQ=sortedMaximaIndices(i); % Descend down list of maximum velocities indices
-%     thoseOutOfRangeMaybe=(abs(inQ-localMaxesIndices)>=wavePeriodFrames/2); % Compare with previously obtained list of maxima indices. Is the new index too close or is it out of range and thus acceptable?
-%     thoseNotEqualToThemselves=thoseOutOfRangeMaybe(abs(inQ-localMaxesIndices)~=inQ); % Be careful though: Any equal to themselves must be discarded (since it came from the zeros in our array)
-%     if isempty(thoseNotEqualToThemselves) % If empty, our list started off as empty! Populate it!
-%         localMaxesIndices(localMaxIndex)=sortedMaximaIndices(i);
-%         localMaxIndex=localMaxIndex+1;
-%     elseif min(thoseNotEqualToThemselves)==1 % If the list is cleared for all values (thus none can be 0, otherwise logical 0), this new value is a local maxima!
-%         localMaxesIndices(localMaxIndex)=sortedMaximaIndices(i);
-%         localMaxIndex=localMaxIndex+1;
-%     end
-%     if localMaxIndex>roughHowManyWaves % We only obtain the first (roughHowManyWaves) local maxima
-%         break;
-%     end
-% end
-% 
-% plot(velVectMaxes,'k-');hold on;plot(localMaxesIndices,velVectMaxes(localMaxesIndices),'ro');hold off;
-% averageMaxVelocities=mean(velVectMaxes(localMaxesIndices));
-
-freqMean=fps/(linearCoefs(2)+dTimeMin-1);
-[fftPowerPeak, fftPowerPeakSTD, fftPowerPeakMin, fftPowerPeakMax] =gutFFTPeakFinder( gutMeshVelsPCoords, fps, freqMean); %#ok % Outputs will be saved
+close all;
 
 %%
 % Save various parameters
-analyzedDeltaMarkers=[markerNumStartFreq, markerNumEndFreq]; %#ok % Output will be saved
-save(strcat(imPath,filesep,dataDir,filesep,'GutParameters',date),'fftPowerPeak','fftPowerPeakSTD', 'fftPowerPeakMin', 'fftPowerPeakMax', 'waveAverageWidth', 'waveFrequency', 'wavePeriod', 'waveSpeedSlope', 'waveFitRSquared', 'SSresid', 'analyzedDeltaMarkers', 'xCorrMaxima');
+save(strcat(imPath,filesep,dataDir,filesep,'GutParameters',date),'fftPowerPeak','fftPowerPeakSTD', 'fftPowerPeakMin', 'fftPowerPeakMax', 'fftPeakFreq', 'waveAverageWidth', 'waveFrequency', 'waveSpeedSlope', 'waveFitRSquared', 'sigB', 'analyzedDeltaMarkers', 'xCorrMaxima');
 save(strcat(imPath,filesep,dataDir,filesep,'allParameters',date));
 
 % Let user look at pictures if wanted, or close all

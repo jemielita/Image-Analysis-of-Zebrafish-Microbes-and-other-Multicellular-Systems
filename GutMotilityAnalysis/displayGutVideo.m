@@ -5,6 +5,7 @@ matData=dir(strcat(imPath,filesep,'*.mat')); % Assumes filesep at end of imPath
 load(strcat(imPath,filesep,matData(1).name));
 ims=dir(strcat(imPath,filesep,filetype));
 nT=size(ims,1)-1; % differencing frames obviously leads to n-1 frames
+curDirp=pwd;
 %cd(imPath);
 
 % Initialize variables
@@ -44,9 +45,9 @@ for i=1:nT
     qvpy(1:end/2,:)=qvp(1:end/2,:)*cos(thetas(1));
     qvpy((end/2+1):end,:)=qvp((end/2+1):end,:)*cos(thetas(2));
     
-    imshow(im, []);
+    imshow(im(:,1:end/2), [5500, 24000]);
     hold on;
-    quiver(qx,qy,qu,qv,0,'r');
+    quiver(qx,qy,qu,qv,0,'Color','r','LineWidth',2);
     %quiver(qx,qy,qupx,qupy,0,'b');
     %quiver(qx,qy,qvpx,qvpy,0,'b');
     hold off;
@@ -59,5 +60,6 @@ end
 
 % Close video writing code
 close(writerObj);
+%cd(curDirp);
 
 end
