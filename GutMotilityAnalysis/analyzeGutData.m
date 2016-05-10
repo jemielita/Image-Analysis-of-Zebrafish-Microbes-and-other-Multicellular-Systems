@@ -2,8 +2,6 @@
 % To do: -Change parameters to velocity magnitude rather than longitudinal
 % component (or both)
 %        -Vorticity calculations
-%        -Get median pulse height from a median of a histogram of local
-%        maxima from a soothed velocity vector field
 
 function fishDataAccurate = analyzeGutData(gutMesh, gutMeshVelsPCoords, fps, scale, imPath)
 

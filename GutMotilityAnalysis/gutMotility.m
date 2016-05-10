@@ -9,6 +9,7 @@
 % To do: User choice of which processes to run should be one box, not three
 %        User defined contrast for video
 %        Inverse mask for registration
+%        Put all data into one data file, not three directories
 
 function gutMotility
 
