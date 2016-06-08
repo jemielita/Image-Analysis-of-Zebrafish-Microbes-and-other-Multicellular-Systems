@@ -1,4 +1,4 @@
-% To do: commentize (some logic to make things easier on user are opaque)
+?% To do: commentize (some logic to make things easier on user are opaque)
 
 function reorderedParams = gutMotilityAnalysisCollector( varargin )
 

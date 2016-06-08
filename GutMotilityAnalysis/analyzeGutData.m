@@ -40,7 +40,7 @@ set(gca,'YDir','normal')
 colormap('Jet');
 axis square;
 h=gcf;
-set(h, 'Position', get(0,'Screensize')); % Maximize figure.
+%set(h, 'Position', get(0,'Screensize')); % Maximize figure.
 title('Anterior-Posterior velocities down the gut','FontSize',20,'FontWeight','bold');
 ylabel('Time (s)','FontSize',20);
 xlabel('x (\mum)','FontSize',20);
@@ -108,7 +108,7 @@ set(gca,'YDir','normal')
 colormap('Jet');
 axis square;
 h=gcf;
-set(h, 'Position', get(0,'Screensize')); % Maximize figure.
+%set(h, 'Position', get(0,'Screensize')); % Maximize figure.
 title('Autocorrelations of anterior-posterior velocities over time','FontSize',20,'FontWeight','bold');
 ylabel('\tau (s)','FontSize',20);
 xlabel('x (\mum)','FontSize',20);
@@ -154,7 +154,7 @@ set(gca,'YDir','normal')
 % colormap('Jet');
 axis square;
 h=gcf;
-set(h, 'Position', get(0,'Screensize')); % Maximize figure.
+%set(h, 'Position', get(0,'Screensize')); % Maximize figure.
 title('Global cross correlations between anterior-posterior velocities over time','FontSize',20,'FontWeight','bold');
 ylabel('\tau (s)','FontSize',20);
 xlabel('\Delta x (\mum)','FontSize',20);
