@@ -1,4 +1,5 @@
 % To do: commentize (some logic to make things easier on user are opaque)
+%        PARAMS CURRENTLY NOT REORDERED
 
 function reorderedParams = gutMotilityAnalysisCollector( varargin )
 
@@ -75,13 +76,14 @@ function reorderedParams = gutMotilityAnalysisCollector( varargin )
         
     end
     
-    % The resulting params are out of order and potentially missing members. We will order them, then fill missing members with NaNs
-    reorderedParams = nan( maxFishNum, size(params,2) );
-    [oldIndices, reorderedIndices] = sort(params(:,9));
-    haveFishBools = true(1,maxFishNum);
-    dontHaveFishNums = setdiff(1:maxFishNum,oldIndices);
-    haveFishBools(dontHaveFishNums) = false;
-    reorderedParams( haveFishBools, : ) = params( reorderedIndices, : ); % NOPE, orderedFishNums, params not right size
-    reorderedParams( dontHaveFishNums, 9 ) = dontHaveFishNums;
+%     % The resulting params are out of order and potentially missing members. We will order them, then fill missing members with NaNs
+%     reorderedParams = nan( maxFishNum, size(params,2) );
+%     [oldIndices, reorderedIndices] = sort(params(:,9));
+%     haveFishBools = true(1,maxFishNum);
+%     dontHaveFishNums = setdiff(1:maxFishNum,oldIndices);
+%     haveFishBools(dontHaveFishNums) = false;
+%     reorderedParams( haveFishBools, : ) = params( reorderedIndices, : ); % NOPE, orderedFishNums, params not right size
+%     reorderedParams( dontHaveFishNums, 9 ) = dontHaveFishNums;
+    reorderedParams = params;
 
 end
