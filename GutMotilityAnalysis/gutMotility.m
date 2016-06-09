@@ -38,6 +38,9 @@ resReduce=str2double(dlgAns(5));
 % Initialize variables
 subDir='DeconstructedImages';
 
+% Make sure user can see axes in imshow
+iptsetpref('ImshowAxesVisible','on');
+
 % Go into directory (for ease of writing code)
 cd(mainDirectory);
 fishDirect=dir;
