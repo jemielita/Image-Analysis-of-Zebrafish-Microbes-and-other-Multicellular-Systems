@@ -226,5 +226,7 @@ close(progbar);
 
 fishParams = gutMotilityAnalysisCollector;
 saveDirectory=uigetdir(pwd,'Directory into which you wish to put your results?'); %directory containing the images you want to analyze
+save(strcat(saveDirectory,filesep,'fishParams',date),'fishParams');
+
 
 end

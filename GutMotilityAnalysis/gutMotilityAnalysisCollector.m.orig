@@ -1,0 +1,93 @@
+<<<<<<< HEAD
+% To do: commentize (some logic to make things easier on user are opaque)
+%        PARAMS CURRENTLY NOT REORDERED
+=======
+?% To do: commentize (some logic to make things easier on user are opaque)
+>>>>>>> 577c842a41f11d5fae6df0f027bb671ded2f151e
+
+function reorderedParams = gutMotilityAnalysisCollector( varargin )
+
+    if( nargin < 1 )
+        mainDirectory = uigetdir( pwd, 'Main directory containing fish to analyze' );
+    else
+        mainDirectory = varargin{ 1 };
+    end
+    
+    subDir = 'DeconstructedImages';
+    subSubDir = 'Data';
+    fishDirect=dir( mainDirectory );
+    fishDirect(strncmp({fishDirect.name}, '.', 1)) = []; % Removes . and .. and hidden files
+    nFD=size(fishDirect,1);
+    subFishDirect={};
+    params=[];
+    multipleFilesBool = false;
+    useSameFilesQBool = true;
+    useSameDataName = 0;
+    staticFileName = [];
+    maxFishNum = 0;
+    
+    %% Loop through fish directories
+    for i=1:nFD
+        
+        % Find appropriate directory
+        subDire=dir(strcat(mainDirectory,filesep,fishDirect(i).name));
+        % subDire(1:2)=[]; % Better below
+        subDire(strncmp({subDire.name}, '.', 1)) = []; % Removes . and ..
+        subDire([subDire.isdir]==0) = []; % removes non-directories from list
+        subFishDirect(i).name={subDire.name};
+        nSFD=size(subFishDirect(i).name,2);
+        
+        curFish=fishDirect(i).name;
+        curFish(1:4)=[];
+        fishNum=str2double(curFish);
+        if( fishNum > maxFishNum )
+            maxFishNum = fishNum;
+        end
+        
+        for j=1:nSFD
+            
+            filePath = strcat(mainDirectory,filesep,fishDirect(i).name,filesep,subDire(j).name,filesep,subDir,filesep,'Data');
+            aGDName=dir(strcat(filePath,filesep,'GutParam*.mat'));
+            if( size( aGDName, 1 ) > 1 && useSameDataName~=1 )
+                nameList = { aGDName.name };
+                setFull = 1:size( nameList, 2 );
+                [ setKeep, ~ ] = listdlg( 'PromptString', 'Select data to use', 'ListString', nameList );
+                setRemove = setdiff( setFull, setKeep ); % setdiff( A, B ) returns the data in A that is not in B
+                aGDName( setRemove ) = [];
+                multipleFilesBool = true; % First time this is set, it will prompt a question for using the same name
+                curFileName = aGDName(1).name;
+            elseif( size( aGDName, 1 ) > 1 && useSameDataName==1 )
+                curFileName = staticFileName;
+            else
+                curFileName = aGDName(1).name;
+            end
+            load(strcat(filePath,filesep,curFileName)); % FIND WAY OF LOADING MOST RECENT
+            if( isnan(analyzedDeltaMarkers) )
+                coarseCorrelationLength = NaN;
+            else
+                coarseCorrelationLength = analyzedDeltaMarkers(2);
+            end
+            params=[params;waveAverageWidth,waveFrequency,waveSpeedSlope,sigB,waveFitRSquared,fftPowerPeak,fftPeakFreq,coarseCorrelationLength,fishNum,j];
+        end
+        
+        if( multipleFilesBool && useSameFilesQBool )
+            useSameDataName=menu(strcat('Would you like to use the same name for all data files?: '),'Yes','No (already done)');
+            if( useSameDataName == 1 )
+                staticFileName = aGDName(1).name;
+            end
+            useSameFilesQBool = false; % After this is asked, it will not be asked again
+        end
+        
+    end
+    
+%     % The resulting params are out of order and potentially missing members. We will order them, then fill missing members with NaNs
+%     reorderedParams = nan( maxFishNum, size(params,2) );
+%     [oldIndices, reorderedIndices] = sort(params(:,9));
+%     haveFishBools = true(1,maxFishNum);
+%     dontHaveFishNums = setdiff(1:maxFishNum,oldIndices);
+%     haveFishBools(dontHaveFishNums) = false;
+%     reorderedParams( haveFishBools, : ) = params( reorderedIndices, : ); % NOPE, orderedFishNums, params not right size
+%     reorderedParams( dontHaveFishNums, 9 ) = dontHaveFishNums;
+    reorderedParams = params;
+
+end
