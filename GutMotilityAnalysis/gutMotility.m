@@ -10,11 +10,16 @@
 %        User defined contrast for video
 %        Inverse mask for registration
 %        Put all data into one data file, not three directories
+%
+% WARNING: Kludge added recently to save somewhere besides the data drive
+% (fine). However, if you want to reload these, you're screwed and have to
+% do it all again
 
 function gutMotility
 
 %% Prompt user for main directory, which processes to run, initialize variables
 mainDirectory=uigetdir(pwd,'Main directory containing fish to analyze'); %directory containing the images you want to analyze
+mainSaveDirectory=uigetdir(pwd,'Main directory containing fish to analyze'); % KLUDGE ADDITION
 deconChoice = menu('Would you like to deconstruct sets of multipage tiffs?','Yes','No (already done)');
 PIVChoice = menu('Would you like to run the PIV tracking?','Yes','No (already done)');
 analysisChoice = menu('Would you like to analyze the data?','Yes','No (already done)');
@@ -77,12 +82,14 @@ for i=1:nFD
             tempDirs(strncmp({tempDirs.name}, '.', 1)) = []; % Removes . and .. and hidden files
             subSubFishDirect=tempDirs.name;
             imPath=strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j}, filesep, subSubFishDirect);
+            savePath=strcat(mainSaveDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j}, filesep, subSubFishDirect);
             filetype=settings{1};
             resReduce=-1;
             
         else % Just use first element of multipage tiff
             
             imPath=strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j});
+            savePath=strcat(mainSaveDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j});
             filetype='*.tif';
             
         end
@@ -99,7 +106,8 @@ for i=1:nFD
         end
         
         if(maskChoice==1)
-            initMask(imPath,filetype,resReduce);
+            mkdir(savePath);
+            initMask(imPath,savePath,filetype,resReduce);
         end
         
     end
@@ -174,11 +182,12 @@ for i=1:nFD
     for j=1:nSFD
         
         imPath=strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j});
+        savePath = strcat(mainSaveDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j}); % KLUDGE ADDITION
         
         if( interpChoice==1 )
             
             % Initialize the gut mesh
-            [gutMesh, mSlopes, x, y, u_filt, v_filt] = initMesh(imPath,subSubFishDirect);
+            [gutMesh, mSlopes, x, y, u_filt, v_filt] = initMesh(imPath,savePath,subSubFishDirect); % KLUDGE ADDITION (changed path)
             
             % Interpolate velocities from original grid onto gutMesh
             gutMeshVels=interpolateVelocities(gutMesh, x, y, u_filt, v_filt);
@@ -187,19 +196,21 @@ for i=1:nFD
             [gutMeshVelsPCoords, thetas] = mapToLocalCoords(gutMeshVels, mSlopes);
             
             % Save data!
-            save(strcat(imPath,filesep,'analyzedGutData',date),'gutMesh','mSlopes','gutMeshVels','gutMeshVelsPCoords','thetas');
+            mkdir(strcat(mainSaveDirectory, filesep, fishDirect(i).name)); % KLUDGE ADDITION
+            save(strcat(savePath,filesep,'analyzedGutData',date),'gutMesh','mSlopes','gutMeshVels','gutMeshVelsPCoords','thetas'); % KLUDGE ADDITION (changed from imPath to saveInterpPath)
         elseif(analysisChoice==1)
-            aGDName=dir(strcat(imPath,filesep,'analyzedGutData*.mat'));
+            aGDName=dir(strcat(savePath,filesep,'analyzedGutData*.mat')); % KLUDGE ADDITION (changed from imPath to saveInterpPath)
             load(strcat(imPath,filesep,aGDName(1).name));
         end
         
         % Full path
         imPath=strcat(mainDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j}, filesep, subSubFishDirect);
+        saveAnalysisPath = strcat(mainSaveDirectory, filesep, fishDirect(i).name, filesep, subFishDirect(i).name{j}, filesep, subSubFishDirect); % KLUDGE ADDITION
         
         if(analysisChoice==1)
             
             % Analyze data
-            useFishBool = analyzeGutData(gutMesh, gutMeshVelsPCoords, fps, scale, imPath);
+            useFishBool = analyzeGutData(gutMesh, gutMeshVelsPCoords, fps, scale, imPath, saveAnalysisPath);
             curFishBools = [curFishBools, useFishBool]; %#ok
             
         end
@@ -219,7 +230,7 @@ end
 
 % Save data if analyzed! Won't be accurate if you break up your analysis (this currently sucks if files are individually analyzed)
 if(analysisChoice==1)
-    save(strcat(mainDirectory,filesep,'fishBools',date),'useFishBools'); % Be careful with this: the order is 1, 10, 11,... 2, 20, 21,... etc, and will skip over any fish folders missing from the directory
+    save(strcat(mainSaveDirectory,filesep,'fishBools',date),'useFishBools'); % Be careful with this: the order is 1, 10, 11,... 2, 20, 21,... etc, and will skip over any fish folders missing from the directory % KLUDGE ADDITION (changed path)
 end
 
 close(progbar);

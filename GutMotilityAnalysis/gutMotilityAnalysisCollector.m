@@ -13,6 +13,7 @@ function reorderedParams = gutMotilityAnalysisCollector( varargin )
     subSubDir = 'Data';
     fishDirect=dir( mainDirectory );
     fishDirect(strncmp({fishDirect.name}, '.', 1)) = []; % Removes . and .. and hidden files
+    fishDirect(~[fishDirect.isdir]) = []; % Removes . and .. and hidden files
     nFD=size(fishDirect,1);
     subFishDirect={};
     params=[];
@@ -40,6 +41,7 @@ function reorderedParams = gutMotilityAnalysisCollector( varargin )
             maxFishNum = fishNum;
         end
         
+        %for j=1:nSFD
         for j=1:nSFD
             
             filePath = strcat(mainDirectory,filesep,fishDirect(i).name,filesep,subDire(j).name,filesep,subDir,filesep,'Data');
@@ -55,6 +57,8 @@ function reorderedParams = gutMotilityAnalysisCollector( varargin )
             elseif( size( aGDName, 1 ) > 1 && useSameDataName==1 )
                 curFileName = staticFileName;
             else
+                merp = sprintf('%i, %i',i,j);
+                disp(merp);
                 curFileName = aGDName(1).name;
             end
             load(strcat(filePath,filesep,curFileName)); % FIND WAY OF LOADING MOST RECENT

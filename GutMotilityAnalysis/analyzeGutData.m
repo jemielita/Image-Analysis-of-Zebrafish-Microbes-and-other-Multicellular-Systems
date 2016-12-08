@@ -3,11 +3,11 @@
 % component (or both)
 %        -Vorticity calculations
 
-function fishDataAccurate = analyzeGutData(gutMesh, gutMeshVelsPCoords, fps, scale, imPath)
+function fishDataAccurate = analyzeGutData(gutMesh, gutMeshVelsPCoords, fps, scale, imPath, savePath)
 
 cd(imPath);
 % cd .. % Uncomment when running gutMotility(Single) program(s), comment when manually running this program
-dataDir='Data';
+dataDir=strcat(savePath,filesep,'Data');
 mkdir(dataDir);
 retryBool = true;
 translateMarkerNumToMicron=scale*round(mean(diff(squeeze(gutMesh(1,:,1,1))))); % Units of Micron/Marker
@@ -239,8 +239,9 @@ close all;
 
 %%
 % Save various parameters
-save(strcat(imPath,filesep,dataDir,filesep,'GutParameters',date),'fftPowerPeak','fftPowerPeakSTD', 'fftPowerPeakMin', 'fftPowerPeakMax', 'fftPeakFreq', 'waveAverageWidth', 'waveFrequency', 'waveSpeedSlope', 'waveFitRSquared', 'sigB', 'analyzedDeltaMarkers', 'xCorrMaxima');
-save(strcat(imPath,filesep,dataDir,filesep,'allParameters',date));
+mkdir(strcat(dataDir));
+save(strcat(dataDir,filesep,'GutParameters',date),'fftPowerPeak','fftPowerPeakSTD', 'fftPowerPeakMin', 'fftPowerPeakMax', 'fftPeakFreq', 'waveAverageWidth', 'waveFrequency', 'waveSpeedSlope', 'waveFitRSquared', 'sigB', 'analyzedDeltaMarkers', 'xCorrMaxima');
+save(strcat(dataDir,filesep,'allParameters',date));
 
 % Let user look at pictures if wanted, or close all
 % close all;

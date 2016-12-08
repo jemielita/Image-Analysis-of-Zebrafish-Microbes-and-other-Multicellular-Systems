@@ -1,4 +1,4 @@
-function initMask(imPath,filetype,resReduce)
+function initMask(imPath,savePath,filetype,resReduce)
 
 %% Read first image
 ims=dir(strcat(imPath,filesep,filetype));
@@ -47,7 +47,7 @@ while ( continueBool ~= 1 )
 end
 
 close all;
-immPath=imPath;
+immPath=savePath;
 if( resReduce==-1)
     immPath=strcat(immPath,filesep,'..');
 end

@@ -1,28 +1,22 @@
-% Inputs: impath: String similar to 'C:/User/.../folder'
-%         filetype: String of the form '*.png'
-% To do: rename variables such that gut positions are x,y, original velocities are v_x,v_y, and new velocities are v_u,v_v
+% Function which...
+%
+% To do: Failing on line 110 "Assignment has more non-singleton rhs dimensions than non-singleton subscripts"
 
-function [gutMesh, mSlopes, x, y, u_filt, v_filt] = initMesh(imPath,savePath,subDir)
+function [gutMesh, mSlopes, gutMeshVels, gutMeshVelsPCoords, thetas] = interpolatePIVVectorsInMask(curDir, expDir, imageType, resReduce, rawPIVOutputName, maskFileOutputName)
 
-
-
-% Load data and image from directory
-matData=dir(strcat(imPath,filesep,subDir,filesep,'PIVData_*.mat'));
-maskVars=dir(strcat(savePath,filesep,'maskVars*.mat'));
-matFile=strcat(imPath,filesep,subDir,filesep,matData(1).name);
-maskFile=strcat(savePath,filesep,maskVars(1).name);
-load(matFile);
-load(maskFile);
-ex=x{1};
-why=y{1};
-continueBool=0;
+%% Initialize variables
 splineNFineness=10000;
 
+%% Initialize mesh variables
+% Load data
+load(strcat(curDir, filesep, rawPIVOutputName,'_Current.mat'));
+load(strcat(curDir, filesep, maskFileOutputName, '_Current.mat'));
+ex=x{1}; %#ok as it should be loaded, represents the x positions of the gutMesh
+why=y{1}; %#ok as it should be loaded, represents the x positions of the gutMesh
 
-% Dynamically allocate mesh points
-% Determine useful points, dynamically allocate NU, NV (points
-% along/away from middle axis)
-psIn=inpolygon(ex(:),why(:),gutOutlinePoly(:,1),gutOutlinePoly(:,2));
+% Define NU and NV, the number of points anterior/posterior along the gut
+% and the number of points dorsal/ventral to the gut
+psIn=inpolygon(ex(:),why(:),gutOutlinePoly(:,1),gutOutlinePoly(:,2)); %#ok as it should be loaded
 logicPsIn = reshape(psIn,size(ex));
 NVDist=sum(logicPsIn,1); % Assumes gut is roughly horizontal
 NV=2*ceil(mean(NVDist)/2);
@@ -31,14 +25,19 @@ NUDist(NUDist>0)=1;
 NU=sum(NUDist); % "Raw" NU, but I want it nicer
 NUrem=idivide(uint8(NU),10);
 NU=double((NUrem+1)*10); % Just because I want an even, divisible by 10, NV
+
+% Initialize the gutMesh variables (the variables containing spatial info)
 finalExesTop=zeros(1,NU+1);
 finalExesBottom=zeros(1,NU+1);
 gutMesh=zeros(NV,NU,2);
 mSlopes=zeros(NU,2,2); % of the form (position down gut, dx or dy, top or bottom)
 
-% Interpolation won't work without removing duplicates
+% Interpolation won't work without removing duplicates (gutMiddlePolyTop
+% and gutMiddlePolyBottom should be the same; historical reason for two
+% variables comes from two middle regions being defined)
 gutMiddlePolyUnTop=unique(gutMiddlePolyTop,'rows');
 gutMiddlePolyUnBottom=unique(gutMiddlePolyBottom,'rows');
+
 % Interpolate data, but only for each column
 dUTop=ceil(size(gutMiddlePolyUnTop,1)/(NU+1));
 dUBottom=ceil(size(gutMiddlePolyUnBottom,1)/(NU+1));
@@ -67,23 +66,20 @@ secSNumBottom=uint32(floor(partialSSumBottom/dSBottom)); % Evenly number exes by
 for i=1:NU+1
     tempsNTop=find(secSNumTop==i-1);
     tempsNBottom=find(secSNumBottom==i-1);
-    i
     finalExesTop(i)=exesTop(tempsNTop(1)); % Vector of the y's in exes for which the y's in secSNum are first unique
     finalExesBottom(i)=exesBottom(tempsNBottom(1));
 end
 
-%     % display fitted function
-%     close all;
-%     imH = imshow( im, [] );
-%     imcontrast( imH ) ;
-%     hold on;
-    fullPolyX=[gutOutlinePoly(:,1); gutOutlinePoly(1,1)];
-    fullPolyY=[gutOutlinePoly(:,2); gutOutlinePoly(1,2)];
-%     plot(fullPolyX,fullPolyY,'r-');
-    finalWhysTop=ppval(csTop,finalExesTop);
-    finalWhysBottom=ppval(csBottom,finalExesBottom);
-%     plot(finalExesTop,finalWhysTop,'gx-');
-%     plot(finalExesBottom,finalWhysBottom,'gx-');
+fullPolyX=[gutOutlinePoly(:,1); gutOutlinePoly(1,1)];
+fullPolyY=[gutOutlinePoly(:,2); gutOutlinePoly(1,2)];
+finalWhysTop=ppval(csTop,finalExesTop);
+finalWhysBottom=ppval(csBottom,finalExesBottom);
+
+% Load a representational image
+baseFilenames = dir(strcat(expDir, filesep, imageType));
+info = imfinfo([expDir filesep baseFilenames(1).name]);
+y1=1;
+y2 = info(1).Height/resReduce;
 
 %% Generate mesh based on orthogonal vectors
 for i=1:NU
@@ -95,8 +91,6 @@ for i=1:NU
     midPointBottom=[(finalExesBottom(i+1)+finalExesBottom(i))/2,(finalWhysBottom(i+1)+finalWhysBottom(i))/2 ];
     bTop=-curOrthMTop*midPointTop(1)+midPointTop(2);
     bBottom=-curOrthMBottom*midPointBottom(1)+midPointBottom(2);
-    y1=1;
-    y2=size(im,1);
     x1Top=(y1-bTop)/curOrthMTop;
     x1Bottom=(y1-bBottom)/curOrthMBottom;
     x2Top=(y2-bTop)/curOrthMTop;
@@ -109,14 +103,10 @@ for i=1:NU
     % points, so bottom/top may refer to which gut midline or it may refer
     % to which intersection is in question. Further obfuscated by images
     % being upside down...
-    topYITop=max(whyIntTop);
     topYIBottom=max(whyIntBottom);
-    topCorXITop=exIntTop(whyIntTop==topYITop);
     topCorXIBottom=exIntBottom(whyIntBottom==topYIBottom);
     bottomYITop=min(whyIntTop);
-    bottomYIBottom=min(whyIntBottom);
     bottomCorXITop=exIntTop(whyIntTop==bottomYITop);
-    bottomCorXIBottom=exIntBottom(whyIntBottom==bottomYIBottom);
     dYIBottom=topYIBottom-midPointBottom(2);
     dXIBottom=topCorXIBottom-midPointBottom(1);
     dYITop=bottomYITop-midPointTop(2);
@@ -125,14 +115,6 @@ for i=1:NU
     mSlopes(i,1,2)=-dXIBottom; % minus for inconsistency
     mSlopes(i,2,1)=dYITop;
     mSlopes(i,2,2)=-dYIBottom; % minus for inconsistency
-    
-%     % display intersections
-%     plot(midPointTop(1),midPointTop(2),'bx');
-%     plot(midPointBottom(1),midPointBottom(2),'bx');
-%     plot(bottomCorXITop,bottomYITop,'rx');
-%     plot(bottomCorXIBottom,bottomYIBottom,'rx');
-%     plot(topCorXITop,topYITop,'rx');
-%     plot(topCorXIBottom,topYIBottom,'rx');
     
     % Designate mesh locations (divide in to upper and lower for ease of indexing
     for j=1:NV/2
@@ -149,24 +131,63 @@ for i=1:NU
     
 end
 
-% % Visualize
-% for i=1:NV
-%     for j=1:NU
-%         plot(gutMesh(i,j,1),gutMesh(i,j,2),'gx');
-%         hold on;
-%     end
-% end
-% hold off;
-% pause; % Wait till user likes what they see...
-
-% close all;
-
 % In the event there was no postprocessing?
 if(~exist('u_filt','var'))
     u_filt=u;
 end
 if(~exist('v_filt','var'))
     v_filt=v;
+end
+
+
+%% Interpolate velocities
+nT=size(u_filt,1)-1; % For nT frames, there should have only been nT-1 elements, instead they made the nTth element [] for some reason...
+gutMeshVels=zeros(size(gutMesh,1),size(gutMesh,2),size(gutMesh,3),nT); % Ordered U=1, V=2
+
+% Progress bar
+progtitle = sprintf('Interpolatio');
+progbar = waitbar(0, progtitle);  % will display progress
+prevPercent = uint8(0);
+
+for i=1:nT 
+    
+    if(uint8(i/nT*100)>prevPercent)
+        prevPercent = uint8(i/nT*100);
+        % Progress bar update
+        waitbar(double(prevPercent)/100, progbar, ...
+            strcat(progtitle, sprintf('n %d%% done', prevPercent)));
+    end
+    
+    Xq=gutMesh(:,:,1);
+    Yq=gutMesh(:,:,2);
+    ex=x{i};
+    why=y{i};
+    V=v_filt{i};
+    U=u_filt{i};
+    SIU=scatteredInterpolant(ex(:),why(:),U(:));
+    SIV=scatteredInterpolant(ex(:),why(:),V(:));
+    mU=SIU(Xq(:),Yq(:));
+    mV=SIV(Xq(:),Yq(:));
+    gutMeshVels(:,:,1,i)=reshape(mU,size(Xq));
+    gutMeshVels(:,:,2,i)=reshape(mV,size(Xq));
+    
+end
+
+close(progbar);
+
+%% Map to local coordinates
+gutMeshVelsPCoords=gutMeshVels;
+thetaStarTop=atan2(squeeze(mSlopes(:,2,1)),squeeze(mSlopes(:,1,1)));
+thetaStarBottom=atan2(squeeze(mSlopes(:,2,2)),squeeze(mSlopes(:,1,2)));
+thetaTop=thetaStarTop-pi/2;
+thetaBottom=thetaStarBottom-pi/2;
+thetas=[thetaTop, thetaBottom];
+
+for i=1:size(thetaTop,1)
+    gutMeshVelsPCoords(1:end/2,i,1,:)=gutMeshVels(1:end/2,i,1,:)*cos(thetaTop(i))+gutMeshVels(1:end/2,i,2,:)*sin(thetaTop(i));
+    gutMeshVelsPCoords((end/2+1):end,i,1,:)=gutMeshVels((end/2+1):end,i,1,:)*cos(thetaBottom(i))+gutMeshVels((end/2+1):end,i,2,:)*sin(thetaBottom(i));
+    gutMeshVelsPCoords(1:end/2,i,2,:)=-gutMeshVels(1:end/2,i,1,:)*sin(thetaTop(i))+gutMeshVels(1:end/2,i,2,:)*cos(thetaTop(i));
+    gutMeshVelsPCoords((end/2+1):end,i,2,:)=-gutMeshVels((end/2+1):end,i,1,:)*sin(thetaBottom(i))+gutMeshVels((end/2+1):end,i,2,:)*cos(thetaBottom(i));
 end
 
 end

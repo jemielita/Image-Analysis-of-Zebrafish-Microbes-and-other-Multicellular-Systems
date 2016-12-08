@@ -1,6 +1,7 @@
-function [waveFrequency, waveSpeedSlope, BByFPS, sigB, waveFitRSquared, xCorrMaxima, analyzedDeltaMarkers] = gutFreqWaveSpeedFinder( gutMesh, trueXCorr, fps, scale )
+function [waveFrequency, waveSpeedSlope, BByFPS, sigB, waveFitRSquared, xCorrMaxima, analyzedDeltaMarkers, g] = gutFreqWaveSpeedFinder( gutMesh, trueXCorr, fps, scale )
 
 % Find peristaltic frequency, wave speed from cross-correlation
+g = figure;
 NSeconds=90;
 onlyShowFirstNSeconds=1:NSeconds*fps;
 imshow(trueXCorr(onlyShowFirstNSeconds,:),[], 'InitialMagnification','fit', 'YData', [0, NSeconds]);

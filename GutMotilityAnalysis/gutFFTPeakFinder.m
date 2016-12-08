@@ -8,7 +8,7 @@ gutMeshVals=squeeze(mean(gutMeshVelsPCoords(:,:,1,:),1)); % Average longitudinal
 NFFT = 2^nextpow2(size(gutMeshVals,2));
 fftGMV=zeros(size(gutMeshVals,1),NFFT);
 for i=1:size(gutMeshVals,1)
-    fftGMVCur=fft(gutMeshVals(i,:),NFFT);
+    fftGMVCur=fft(gutMeshVals(i,:) - mean(gutMeshVals(i,:)),NFFT);
     fftGMV(i,:)=fftGMVCur;
 end
 fftRootPowerGMV=abs(fftGMV);
