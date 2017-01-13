@@ -5,27 +5,39 @@
 %
 % To do: Normalize each FFT at each threshold
 
-function motilityFFTAmpAsFuncOfThresh(mainAnalysisDirectory)
+function [totalThreshValues, countedMotPerTime] = motilityFFTAmpAsFuncOfThresh(mainAnalysisDirectory)
 
 % Initialize variables
 interpolationOutputName = 'processedPIVOutput';
 %motilityParametersOutputName = 'motilityParameters';
 fps = 5; % units of frames per second
-scale = 0.1625;
+%scale = 0.1625;
 threshRes = 100; % How many times to threshold the image, equally spaced from 0 to maximum
-sigma = 0.01; % How smooth the thresholding becomes
+sigma = 0.1; % How smooth the thresholding becomes
 largestPeriodToSeeInFFT = 1800; % Units of seconds, eventually 1/s
 minPeriodToSeeInFFT = 10;
+percentImageShown = 0.6;
+smoothHowMuch = 19;
 %plusMinusAroundMeanFFTFreqPM = 0.25; % Units of per minute
 
 % Obtain directory structures
 [mainAnalysisDirectoryContents, mainAnalysisSubDirectoryContentsCell, nMainAnalysisSubDirectories] = obtainDirectoryStructure(mainAnalysisDirectory);
+
+% ObtainCurrentDirectory for array sizes
+curAnDir = strcat(mainAnalysisDirectory, filesep, mainAnalysisDirectoryContents(1).name, filesep, mainAnalysisSubDirectoryContentsCell{1, 1}(1).name);
+
+% Load files
+gutFile = load(strcat(curAnDir, filesep, interpolationOutputName, '_Current.mat'));
+gutMesh = gutFile.gutMesh;
 
 % Determine N files for waitbar
 nFiles = 0;
 for i=1:nMainAnalysisSubDirectories
     nFiles = nFiles + size(mainAnalysisSubDirectoryContentsCell{i},1);
 end
+
+totalThreshValues = zeros(nFiles, threshRes*percentImageShown);
+countedMotPerTime = zeros(nFiles, size(gutMesh, 2), threshRes);
 
 % Progress bar
 progtitle = sprintf('Preparing to load data...');
@@ -50,8 +62,8 @@ for i=1:nMainAnalysisSubDirectories
         
         % Load files
         gutFile = load(strcat(curAnDir, filesep, interpolationOutputName, '_Current.mat'));
-        gutMesh = gutFile.gutMesh;
-        translateMarkerNumToMicron=scale*round(mean(diff(squeeze(gutMesh(1,:,1,1))))); %Units of Micron/Marker
+%        gutMesh = gutFile.gutMesh;
+%        translateMarkerNumToMicron=scale*round(mean(diff(squeeze(gutMesh(1,:,1,1))))); %Units of Micron/Marker
         gutMeshVelsPCoords = gutFile.gutMeshVelsPCoords;
 %        paramsFile = load(strcat(curAnDir, filesep, motilityParametersOutputName, '_Current.mat'));
 %        waveFrequency = paramsFile.waveFrequency;
@@ -70,7 +82,6 @@ for i=1:nMainAnalysisSubDirectories
         progtitle2 = sprintf('Preparing to perform FFTs...');
         progbar2 = waitbar(0, progtitle2);  % will display progress
         
-        figure;hold on;
         for k=1:threshRes
             
             % Progress bar update
@@ -93,34 +104,52 @@ for i=1:nMainAnalysisSubDirectories
             singleFFTRPGMV=mean(fftRootPowerGMV);
             meanFFTAsFuncOfThresh(k, :) = (singleFFTRPGMV - min(singleFFTRPGMV(:)))/(max(singleFFTRPGMV(:)) - min(singleFFTRPGMV(:)));
             
-            if(mod(k, 5) == 1 && k < 52)
+%             %hold on;
+%             if(mod(k, 5) == 1 && k < 52)
 %                 figure;imshow(gutMeshValsThreshed',[], 'InitialMagnification', 'fit','XData', [0, size(gutMesh,2)*translateMarkerNumToMicron], 'YData', 1/fps*1:size(gutMeshVelsPCoords,4));
 %                 set(gca,'YDir','normal')
 %                 colormap('Jet');
 %                 axis square;
-                N = hist(gutMeshValsThreshed(:),muValues);
-                plot(muValues(2:end),N(2:end),'o-'); hold on;
+%                 %N = hist(gutMeshValsThreshed(:),muValues);
+%                 %plot(muValues(2:end),N(2:end),'o-');
+%             end
+
+            % Count the events higher than the mean
+            for l=1:size(gutMeshValsThreshed,1)
+                curLargerThanMeanBools = (smooth(gutMeshValsThreshed(l,:), smoothHowMuch) > mean(gutMeshValsThreshed(l,:)));
+                diffOfBools = diff(curLargerThanMeanBools);
+                diffOfBools(diffOfBools == -1) = 0; % Remove any 1's to 0's, meaning, count only new events
+                totalEvents = sum(diffOfBools);
+                if(curLargerThanMeanBools(1) == 1)
+                    totalEvents = totalEvents + 1;
+                end
+                totalTime = (size(gutMeshValsThreshed, 2) + 1)/(fps*60); % Units of minutes
+                countedMotPerTime(curIndex, l, k) = totalEvents/totalTime; % Units of events per minute
             end
             
         end
-        hold off;
+        %hold off;
         
         % Create a subset of the FFT
         f = fps/2*linspace(0,1,NFFT/2+1); % Units of per second
-        subsetFFTBeginningF = floor(2*(NFFT/2+1)/(fps*largestPeriodToSeeInFFT));
+        subsetFFTBeginningF = floor(2*(NFFT/2+1)/(fps*largestPeriodToSeeInFFT)) + (floor(2*(NFFT/2+1)/(fps*largestPeriodToSeeInFFT))==0); % The second term is because I'm lazy. Just make it 1 if my floor makes it 0
         subsetFFTEndingF = floor(2*(NFFT/2+1)/(fps*minPeriodToSeeInFFT));
         subsetF = [f(subsetFFTBeginningF), f(subsetFFTEndingF)];
+%        subsetF = [f(1), f(end)];
 %        plusMinusAroundMeanFFTFreq = round(2*(NFFT/2 + 1)*plusMinusAroundMeanFFTFreqPM/(60*fps)); % Translates the search from plus or minus per minutes to plus or minus index numbers
 %        translateMarkerNumToMicron=scale*round(mean(diff(squeeze(gutMesh(1,:,1,1))))); % Should be units of microns/marker
-        subsetFullFFT = meanFFTAsFuncOfThresh(:,subsetFFTBeginningF:subsetFFTEndingF);
+       subsetFullFFT = meanFFTAsFuncOfThresh(:,subsetFFTBeginningF:subsetFFTEndingF);
+%         subsetFullFFT = meanFFTAsFuncOfThresh(:,1:length(f));
         
-        percentImageShown = 0.6;
-        figure;imshow(subsetFullFFT(1:percentImageShown*end,:)',[], 'InitialMagnification', 'fit','XData', [1, percentImageShown*size(subsetFullFFT,1)], 'YData', subsetF*60);
-        set(gca,'YDir','normal')
-        colormap('Jet');
-        axis square;
+        fftToShow = subsetFullFFT(1:percentImageShown*end,:);
+%         figure;imshow(fftToShow',[], 'InitialMagnification', 'fit','XData', [1, percentImageShown*size(subsetFullFFT,1)], 'YData', subsetF*60);
+%         set(gca,'YDir','normal')
+%         colormap('Jet');
+%         axis square;
+        [~, maxFreqOfMaxFFT] = max(fftToShow(:, 3:end), [], 2);
+        totalThreshValues(curIndex,:) = f(maxFreqOfMaxFFT)';%/max(maxFFTToShow(:));
         
-        pause;
+%         pause;
         close all;
         close(progbar2);
         
@@ -129,6 +158,7 @@ for i=1:nMainAnalysisSubDirectories
 end
 
 close(progbar);
+countedMotPerTime = countedMotPerTime(:,:,1:threshRes*percentImageShown);
 
 end
 

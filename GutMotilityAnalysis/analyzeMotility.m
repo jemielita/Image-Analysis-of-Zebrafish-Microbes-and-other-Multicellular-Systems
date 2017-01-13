@@ -12,10 +12,20 @@
 %   frequency, etc.
 % The program assumes *.tif image files.
 %
+% Inputs:- mainExperimentDirectory (Optional): Directory containing the raw
+%            image data. Input 0 if you don't want to use it. Prompts for
+%            directory if one isn't given. Push cancel if you don't want to
+%            use it.
+%        - mainAnalysisDirectory (Optional):   Directory that will/does 
+%            contain the analyzed data. Prompts for directory if one isn't 
+%            given.
+%
 % Immediate to do: Create PIVVideoParams
-%                  Make function which will retrofit old data analysis
+%                  (X) Make function which will retrofit old data analysis
 %                  Make remaining buttons work
 %                  More user defined parameters for plots, PIV video, etc.
+%                  Allow user to open this even without the exp dir
+%                  Scroll bar for GUI!
 %
 % To do: Don't assume *.tif? If so, make button function
 %        Super minor: change folder width if they get too squished together?
@@ -39,6 +49,7 @@ else
     mainExperimentDirectory = varargin{1};
     mainAnalysisDirectory = varargin{2};
 end
+usingExperimentDirectory = strcmp(num2str(mainExperimentDirectory),'0');
 imageFileType = '*.tif'; % Currently redundant (but still necessary), see analysisVariables{1}
 currentAnalysesPerformedFileName = 'currentAnalysesPerformed.mat';
 rawPIVOutputName = 'rawPIVOutputName'; % WARNING: Don't change this variable name
