@@ -62,7 +62,7 @@ nAnalysisCheckboxTypes = 6;
 % Initialize GUI variables
 startGUI = [1, 1]; % X and Y location of the GUI corner (current units, default is pixels)
 screensize = get(groot, 'Screensize'); % Obtain current computer display dimensions
-widthGUI = screensize(3) - startGUI(1) - 100; % Define GUI width
+widthGUI = screensize(3) - startGUI(1) - 1; % Define GUI width
 heightGUI = screensize(4) - startGUI(2) - 146; % Define GUI height (146 is an empirical number representing my system tray's height)
 GUISize = [startGUI(1), startGUI(2), widthGUI, heightGUI]; % Combine parameters for GUI location and dimensions
 panelBufferSpacing = 10; % How much spacing is between each panel of logic in the GUI
@@ -455,7 +455,7 @@ function generateProcessingControlPanelListing
         
         % Create the current subfolder label
         
-        curSubFolderX = panelBufferSpacing + (curCol - 1)*widthSubGUI/shownCols;
+        curSubFolderX = panelBufferSpacing + (curCol - 1)*(widthSubGUI + unshownWidth)/neededCols;
         curSubFolderY = heightSubGUI - 2*textIconHeight - 2*panelBufferSpacing - textBufferSpacing - checkboxHeight - (curRow - 1)*(panelBufferSpacing + 2*textIconHeight + textBufferSpacing);
         
         uicontrol('Parent',subProcPanel,...
@@ -476,8 +476,8 @@ function generateProcessingControlPanelListing
             curLinearizedAnalysisIndex = curLinearizedAnalysisIndex + 1;
             curRow = mod(loopIndex-1,nRows) + 1;
             curCol = ceil(loopIndex/nRows);
-            curDividingPointStart = (curCol - 1)*widthSubGUI/shownCols;
-            curDividingPointEnd = curCol*widthSubGUI/shownCols;
+            curDividingPointStart = (curCol - 1)*(widthSubGUI + unshownWidth)/neededCols;
+            curDividingPointEnd = curCol*(widthSubGUI + unshownWidth)/neededCols;
             curXStart = panelBufferSpacing + subFolderWidth + curDividingPointStart;
             curXEnd = curDividingPointEnd - panelBufferSpacing;
             curY = heightSubGUI - 2*textIconHeight - 2*panelBufferSpacing - textBufferSpacing - checkboxHeight - (curRow - 1)*(panelBufferSpacing + 2*textIconHeight + textBufferSpacing);
@@ -586,7 +586,7 @@ function generateProcessingControlPanelListing
         
         % Create label for subfolder
         textSizeModified = -4;
-        curLabelPosition = [widthSubGUI/shownCols - panelBufferSpacing - (nAnalysisCheckboxTypes - i + 1)*checkBoxSpacing - 4, heightSubGUI - textIconHeight - panelBufferSpacing, 0, checkboxHeight];
+        curLabelPosition = [(widthSubGUI + unshownWidth)/neededCols - panelBufferSpacing - (nAnalysisCheckboxTypes - i + 1)*checkBoxSpacing - 4, heightSubGUI - textIconHeight - panelBufferSpacing, 0, checkboxHeight];
         
         switch i
             
