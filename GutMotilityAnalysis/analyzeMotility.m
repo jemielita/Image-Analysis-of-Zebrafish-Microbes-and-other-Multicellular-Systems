@@ -62,14 +62,15 @@ nAnalysisCheckboxTypes = 6;
 % Initialize GUI variables
 startGUI = [1, 1]; % X and Y location of the GUI corner (current units, default is pixels)
 screensize = get(groot, 'Screensize'); % Obtain current computer display dimensions
-widthGUI = screensize(3) - startGUI(1) - 1; % Define GUI width
+widthGUI = screensize(3) - startGUI(1) - 100; % Define GUI width
 heightGUI = screensize(4) - startGUI(2) - 146; % Define GUI height (146 is an empirical number representing my system tray's height)
 GUISize = [startGUI(1), startGUI(2), widthGUI, heightGUI]; % Combine parameters for GUI location and dimensions
-panelBufferSpacing = 15; % How much spacing is between each panel of logic in the GUI
+panelBufferSpacing = 10; % How much spacing is between each panel of logic in the GUI
 panelLineWidth = 1;
 panelBevelOffset = 2*panelLineWidth + 1;
 panelTitleTextSize = 20;
 panelTitleHeights = 28;
+optionalScrollBarWidth = 100;
 experimentVariablesPanelWidthFraction = 0.22; % This variable will multiply 'widthGUI' to determine how wide the variables section of the GUI is.
 analysisPanelPosition = [panelBufferSpacing/widthGUI, panelBufferSpacing/heightGUI, experimentVariablesPanelWidthFraction - panelBufferSpacing/widthGUI, 1/2 - 2*panelBufferSpacing/heightGUI + panelTitleHeights/heightGUI];
 analysisTitlePosition = [analysisPanelPosition(1)*widthGUI + panelBevelOffset, analysisPanelPosition(2)*heightGUI + analysisPanelPosition(4)*heightGUI - panelTitleHeights - panelBevelOffset + 2, analysisPanelPosition(3)*widthGUI - 2*panelBevelOffset + 2, panelTitleHeights];
@@ -77,6 +78,9 @@ variablesPanelPosition = [analysisPanelPosition(1), analysisPanelPosition(2) + a
 variablesTitlePosition = [variablesPanelPosition(1)*widthGUI + panelBevelOffset, variablesPanelPosition(2)*heightGUI + variablesPanelPosition(4)*heightGUI - panelTitleHeights - panelBevelOffset + 2, variablesPanelPosition(3)*widthGUI - 2*panelBevelOffset + 2, panelTitleHeights];
 processingPanelPosition = [analysisPanelPosition(1) + experimentVariablesPanelWidthFraction, analysisPanelPosition(2), (1 - experimentVariablesPanelWidthFraction) - 2*panelBufferSpacing/widthGUI, 1 - 2*panelBufferSpacing/heightGUI];
 processingTitlePosition = [processingPanelPosition(1)*widthGUI + panelBevelOffset, processingPanelPosition(2)*heightGUI + processingPanelPosition(4)*heightGUI - panelTitleHeights - panelBevelOffset + 2, processingPanelPosition(3)*widthGUI - 2*panelBevelOffset + 2, panelTitleHeights];
+optionalScrollBarPosition = [widthGUI - 2*panelBufferSpacing - optionalScrollBarWidth, processingTitlePosition(2) + 2*panelTitleHeights/3, optionalScrollBarWidth, 1];
+widthSubGUI = processingPanelPosition(3)*widthGUI;
+heightSubGUI = processingPanelPosition(4)*heightGUI - processingTitlePosition(4);
 
 % Initialize GUI Colors variables
 GUIBoxColor = [0.9, 0.925, 0.95];
@@ -129,7 +133,7 @@ set(a, 'XTick', [], 'YTick', []); % Turn off tick marks
 rectangle('Position', [0, 0, widthGUI, heightGUI], 'Curvature', 0, 'FaceColor', GUIBoxColor, 'Parent', a);
 uipanel('Position', variablesPanelPosition, 'Parent', f, 'BackgroundColor', panelColor, 'BorderWidth', panelLineWidth);
 uipanel('Position', analysisPanelPosition, 'Parent', f, 'BackgroundColor', panelColor, 'BorderWidth', panelLineWidth);
-uipanel('Position', processingPanelPosition, 'Parent', f, 'BackgroundColor', panelColor, 'BorderWidth', panelLineWidth);
+procPanelParent = uipanel('Position', processingPanelPosition, 'Parent', f, 'BackgroundColor', panelColor, 'BorderWidth', panelLineWidth);
 
 % Create Labels
 experimentVariablesTitle  = uicontrol('Parent',f,...
@@ -377,17 +381,16 @@ end
 function generateProcessingControlPanelListing
     
     % Initialize GUI variables
-    loopIndex = 0;
+    loopIndex = 1;
     curLinearizedAnalysisIndex = 0;
     textSize = 15;
     textIconHeight = 18;
     textBufferSpacing = 5; % How much spacing is between each line of text
-    checkBoxSpacing = 30;
+    checkBoxSpacing = 25;
     checkBoxWidth = 20;
     checkboxHeight = 20;
-    subSubFolderIndent = 20;
-    maxSubFolderWidth = 65;
-    maxSubSubFolderWidth = maxSubFolderWidth - subSubFolderIndent;
+    subFolderWidth = 40;
+    subSubFolderWidth = 80 - subFolderWidth - textBufferSpacing;
     nSubSubDirectories = 0;
     subDirTitleColor = [1, 0.6, 0.1];
     subDirTitleTextColor = [1, 1, 1];
@@ -397,16 +400,45 @@ function generateProcessingControlPanelListing
     analyzedCheckboxColor = [0.8, 1, 0.8];
     playVideoButtonWidth = 55;
     openAnalysisButtonWidth = 80;
-    playPIVVideoButtonWidth = 80;
+    playPIVVideoButtonWidth = 55;
     playPIVSoundButtonWidth = 60;
     loadVarsButtonWidth = 90;
+    %g = uipanel('Parent',procPanel);
     
     % Initialize directory structure variables
     for i=1:nSubDirectories
         nSubSubDirectories = nSubSubDirectories + size(mainExperimentSubDirectoryContentsCell{1, i}, 1);
     end
-    nCols = ceil(((textIconHeight + textBufferSpacing)*(nSubDirectories + nSubSubDirectories) + textBufferSpacing)/(heightGUI - 2*textIconHeight - 3*textBufferSpacing)); % Minus 2 is for the header and the titles
-    nRows = ceil((nSubDirectories + 2*nSubSubDirectories)/nCols);
+    colWidth = 3*panelBufferSpacing + 4*textBufferSpacing + subFolderWidth + subSubFolderWidth + playVideoButtonWidth + openAnalysisButtonWidth + playPIVVideoButtonWidth + nAnalysisCheckboxTypes*checkBoxSpacing;
+    maxRows = floor((heightSubGUI - textBufferSpacing - panelBufferSpacing - checkboxHeight - textIconHeight)/(panelBufferSpacing + textBufferSpacing + 2*textIconHeight));
+    maxCols = floor(widthSubGUI/colWidth);
+    neededCols = ceil(nSubSubDirectories/maxRows);
+    
+    if(neededCols > maxCols)
+        buttonOverflow = true;
+        nRows = maxRows;
+        nCols = neededCols;
+        shownCols = maxCols;
+        unshownWidth = colWidth*(neededCols - shownCols);
+    elseif(nSubSubDirectories/maxRows <= 1)
+        buttonOverflow = false;
+        nRows = nSubSubDirectories;
+        nCols = 1;
+        shownCols = 1;
+        unshownWidth = 0;
+    else
+        buttonOverflow = false;
+        nRows = maxRows;
+        nCols = neededCols;
+        shownCols = neededCols;
+        unshownWidth = 0;
+    end
+    
+    subProcPanelPosition = [0, 0, widthSubGUI + unshownWidth, processingPanelPosition(4)];
+    subProcPanel = uipanel('Position', subProcPanelPosition, 'Parent', procPanelParent, 'BackgroundColor', panelColor, 'BorderWidth', panelLineWidth);
+    
+%    nCols = ceil(((textIconHeight + textBufferSpacing)*(nSubDirectories + 2*nSubSubDirectories) + textBufferSpacing)/(heightSubGUI - 2*textIconHeight - 3*textBufferSpacing)); % Minus 2 is for the header and the titles
+%    nRows = ceil((nSubDirectories + 2*nSubSubDirectories)/nCols);
     checkBoxHandleArray = gobjects(nSubSubDirectories, nAnalysisCheckboxTypes);
     buttonHandleArray = gobjects(nSubSubDirectories, 6);
     
@@ -418,16 +450,19 @@ function generateProcessingControlPanelListing
         curSubSubSize = size(mainExperimentSubDirectoryContentsCell{1,i},1);
         
         % Determine where to put the current subfolder label
-        loopIndex = loopIndex + 1;
         curRow = mod(loopIndex-1,nRows) + 1;
         curCol = ceil(loopIndex/nRows);
         
         % Create the current subfolder label
-        uicontrol('Parent',f,...
+        
+        curSubFolderX = panelBufferSpacing + (curCol - 1)*widthSubGUI/shownCols;
+        curSubFolderY = heightSubGUI - 2*textIconHeight - 2*panelBufferSpacing - textBufferSpacing - checkboxHeight - (curRow - 1)*(panelBufferSpacing + 2*textIconHeight + textBufferSpacing);
+        
+        uicontrol('Parent',subProcPanel,...
             'Style','text',...
             'String',mainExperimentDirectoryContents(i).name,...
             'backgroundcolor',subDirTitleColor,...
-            'Position',[2*panelBufferSpacing + widthGUI*experimentVariablesPanelWidthFraction + 2 + (curCol - 1)*(widthGUI - 3*panelBufferSpacing - widthGUI*experimentVariablesPanelWidthFraction)/nCols, heightGUI - (2*panelBufferSpacing + 2*panelTitleHeights + curRow*(textIconHeight + textBufferSpacing)), maxSubFolderWidth, textIconHeight],... % The plus and minus 1 are because of the etched panel
+            'Position',[curSubFolderX, curSubFolderY, subFolderWidth, textIconHeight],... % The plus and minus 1 are because of the etched panel
             'FontName','Gill Sans',...
             'ForegroundColor',subDirTitleTextColor,...
             'FontSize',textSize);
@@ -438,19 +473,18 @@ function generateProcessingControlPanelListing
         % Loop through the current folders subdirectories
         for j=1:curSubSubSize
             
-            loopIndex = loopIndex + 1;
             curLinearizedAnalysisIndex = curLinearizedAnalysisIndex + 1;
             curRow = mod(loopIndex-1,nRows) + 1;
             curCol = ceil(loopIndex/nRows);
-            curDividingPointStart = (curCol - 1)*(widthGUI - 3*panelBufferSpacing - widthGUI*experimentVariablesPanelWidthFraction)/nCols;
-            curDividingPointEnd = curCol*(widthGUI - 3*panelBufferSpacing - widthGUI*experimentVariablesPanelWidthFraction)/nCols;
-            curXStart = 2*panelBufferSpacing + widthGUI*experimentVariablesPanelWidthFraction + 2 + curDividingPointStart + subSubFolderIndent;
-            curXEnd = 2*panelBufferSpacing + widthGUI*experimentVariablesPanelWidthFraction + 2 + curDividingPointEnd;
-            curY = heightGUI - (2*panelBufferSpacing + 2*panelTitleHeights + curRow*(textIconHeight + textBufferSpacing));
-            curPosition = [curXStart, curY, maxSubSubFolderWidth, textIconHeight];
+            curDividingPointStart = (curCol - 1)*widthSubGUI/shownCols;
+            curDividingPointEnd = curCol*widthSubGUI/shownCols;
+            curXStart = panelBufferSpacing + subFolderWidth + curDividingPointStart;
+            curXEnd = curDividingPointEnd - panelBufferSpacing;
+            curY = heightSubGUI - 2*textIconHeight - 2*panelBufferSpacing - textBufferSpacing - checkboxHeight - (curRow - 1)*(panelBufferSpacing + 2*textIconHeight + textBufferSpacing);
+            curPosition = [curXStart, curY, subSubFolderWidth, textIconHeight];
             
             % Create the current subfolder label
-            uicontrol('Parent',f,...
+            uicontrol('Parent',subProcPanel,...
                 'Style','text',...
                 'String',mainExperimentSubDirectoryContentsCell{i}(j).name,...
                 'backgroundcolor',subSubDirTitleColor,...
@@ -460,18 +494,18 @@ function generateProcessingControlPanelListing
                 'FontSize',textSize);
             
             % Create play video button
-            buttonHandleArray(loopIndex, 1) = uicontrol('Parent',f,...
+            buttonHandleArray(loopIndex, 1) = uicontrol('Parent',subProcPanel,...
                 'Style','pushbutton',...
                 'String','Play Video',...
-                'Position',[curPosition(1) + maxSubSubFolderWidth + textBufferSpacing, curPosition(2), playVideoButtonWidth, textIconHeight],...
+                'Position',[curPosition(1) + subSubFolderWidth + textBufferSpacing, curPosition(2), playVideoButtonWidth, textIconHeight],...
                 'Callback',{@playVideoButton_Callback});
             set(buttonHandleArray(loopIndex, 1), 'Enable', 'off');
             
             % Create open images button
-            buttonHandleArray(loopIndex, 2) = uicontrol('Parent',f,...
+            buttonHandleArray(loopIndex, 2) = uicontrol('Parent',subProcPanel,...
                 'Style','pushbutton',...
                 'String','Analysis Images',...
-                'Position',[curPosition(1) + maxSubSubFolderWidth + playVideoButtonWidth + 2*textBufferSpacing, curPosition(2), openAnalysisButtonWidth, textIconHeight],...
+                'Position',[curPosition(1) + subSubFolderWidth + playVideoButtonWidth + 2*textBufferSpacing, curPosition(2), openAnalysisButtonWidth, textIconHeight],...
                 'Callback',{@openAnalysisImagesButton_Callback, i, j});
             if( currentAnalysisPerformed(i).bools(j, 4) )
                 set(buttonHandleArray(loopIndex, 2), 'Enable', 'on');
@@ -480,10 +514,10 @@ function generateProcessingControlPanelListing
             end
             
             % Create open piv video button
-            buttonHandleArray(loopIndex, 3) = uicontrol('Parent',f,...
+            buttonHandleArray(loopIndex, 3) = uicontrol('Parent',subProcPanel,...
                 'Style','pushbutton',...
                 'String','Play PIV Video',...
-                'Position',[curPosition(1) + maxSubSubFolderWidth + playVideoButtonWidth + openAnalysisButtonWidth + 3*textBufferSpacing, curPosition(2), playPIVVideoButtonWidth, textIconHeight],...
+                'Position',[curPosition(1) + subSubFolderWidth + playVideoButtonWidth + openAnalysisButtonWidth + 3*textBufferSpacing, curPosition(2), playPIVVideoButtonWidth, textIconHeight],...
                 'Callback',{@playPIVVideoButton_Callback});
             if( currentAnalysisPerformed(i).bools(j, 5) )
                 set(buttonHandleArray(loopIndex, 3), 'Enable', 'on');
@@ -492,10 +526,10 @@ function generateProcessingControlPanelListing
             end
             
             % Create play sound button
-            buttonHandleArray(loopIndex, 4) = uicontrol('Parent',f,...
+            buttonHandleArray(loopIndex, 4) = uicontrol('Parent',subProcPanel,...
                 'Style','togglebutton',...
                 'String','Play Sound',...
-                'Position',[curPosition(1) + maxSubSubFolderWidth + textBufferSpacing, curPosition(2) - (textIconHeight + textBufferSpacing), playPIVSoundButtonWidth, textIconHeight],...
+                'Position',[curPosition(1) + subSubFolderWidth + textBufferSpacing, curPosition(2) - (textIconHeight + textBufferSpacing), playPIVSoundButtonWidth, textIconHeight],...
                 'Callback',{@playPIVSoundButton_Callback, i, j});
             if( currentAnalysisPerformed(i).bools(j, 4) )
                 set(buttonHandleArray(loopIndex, 4), 'Enable', 'on');
@@ -504,10 +538,10 @@ function generateProcessingControlPanelListing
             end
             
             % Create load into workspace button
-            buttonHandleArray(loopIndex, 5) = uicontrol('Parent',f,...
+            buttonHandleArray(loopIndex, 5) = uicontrol('Parent',subProcPanel,...
                 'Style','pushbutton',...
                 'String','Vars->Workspace',...
-                'Position',[curPosition(1) + maxSubSubFolderWidth + 2*textBufferSpacing + playPIVSoundButtonWidth, curPosition(2) - (textIconHeight + textBufferSpacing), loadVarsButtonWidth, textIconHeight],...
+                'Position',[curPosition(1) + subSubFolderWidth + 2*textBufferSpacing + playPIVSoundButtonWidth, curPosition(2) - (textIconHeight + textBufferSpacing), loadVarsButtonWidth, textIconHeight],...
                 'Callback',{@loadVarsButton_Callback, i, j});
             if( currentAnalysisPerformed(i).bools(j, 4) )
                 set(buttonHandleArray(loopIndex, 5), 'Enable', 'on');
@@ -525,7 +559,7 @@ function generateProcessingControlPanelListing
                     currentColor = ~currentlyDone*analyzedCheckboxColor + currentlyDone*notAnalyzedCheckboxColor; % Remember to flip the color of the 'Use' section
                 end
                 % Create the current subfolder label
-                checkBoxHandleArray(curLinearizedAnalysisIndex, k) = uicontrol('Parent', f,...
+                checkBoxHandleArray(curLinearizedAnalysisIndex, k) = uicontrol('Parent', subProcPanel,...
                     'Style', 'checkbox',...
                     'BackgroundColor', currentColor,...
                     'Position', [curXEnd - (nAnalysisCheckboxTypes - k + 1)*checkBoxSpacing - 4, curY, checkBoxWidth, checkboxHeight],...
@@ -552,13 +586,14 @@ function generateProcessingControlPanelListing
         
         % Create label for subfolder
         textSizeModified = -4;
-        curLabelPosition = [2*panelBufferSpacing + widthGUI*experimentVariablesPanelWidthFraction + (widthGUI - 3*panelBufferSpacing - widthGUI*experimentVariablesPanelWidthFraction)/nCols - (nAnalysisCheckboxTypes - i + 1)*checkBoxSpacing - 2, heightGUI - panelBufferSpacing - panelTitleHeights - textBufferSpacing - textIconHeight, 0, textIconHeight];
+        curLabelPosition = [widthSubGUI/shownCols - panelBufferSpacing - (nAnalysisCheckboxTypes - i + 1)*checkBoxSpacing - 4, heightSubGUI - textIconHeight - panelBufferSpacing, 0, checkboxHeight];
+        
         switch i
             
             case 1
                 % Create the current subfolder label
                 curLabelWidth = [-15, 0, 25, 0];
-                uicontrol('Parent',f,...
+                uicontrol('Parent',subProcPanel,...
                     'Style','text',...
                     'String','PIV',...
                     'backgroundcolor',panelColor,...
@@ -570,7 +605,7 @@ function generateProcessingControlPanelListing
                 
                 % Create the current subfolder label
                 curLabelWidth = [-22, 0, 45, 0];
-                uicontrol('Parent',f,...
+                uicontrol('Parent',subProcPanel,...
                     'Style','text',...
                     'String','Outline',...
                     'backgroundcolor',panelColor,...
@@ -581,7 +616,7 @@ function generateProcessingControlPanelListing
             case 3
                 % Create the current subfolder label
                 curLabelWidth = [-12, 0, 35, 0];
-                uicontrol('Parent',f,...
+                uicontrol('Parent',subProcPanel,...
                     'Style','text',...
                     'String','Interp',...
                     'backgroundcolor',panelColor,...
@@ -592,7 +627,7 @@ function generateProcessingControlPanelListing
             case 4
                 % Create the current subfolder label
                 curLabelWidth = [-8, 0, 40, 0];
-                uicontrol('Parent',f,...
+                uicontrol('Parent',subProcPanel,...
                     'Style','text',...
                     'String','Analyze',...
                     'backgroundcolor',panelColor,...
@@ -603,7 +638,7 @@ function generateProcessingControlPanelListing
             case 5
                 % Create the current subfolder label
                 curLabelWidth = [0, 0, 32, 0];
-                uicontrol('Parent',f,...
+                uicontrol('Parent',subProcPanel,...
                     'Style','text',...
                     'String','Video',...
                     'backgroundcolor',panelColor,...
@@ -614,7 +649,7 @@ function generateProcessingControlPanelListing
             case 6
                 % Create the current subfolder label
                 curLabelWidth = [0, 0, 25, 0];
-                uicontrol('Parent',f,...
+                uicontrol('Parent',subProcPanel,...
                     'Style','text',...
                     'String','Use',...
                     'backgroundcolor',panelColor,...
@@ -625,7 +660,7 @@ function generateProcessingControlPanelListing
             otherwise
                 % Create the current subfolder label
                 curLabelWidth = [-15, 0, 45, 0];
-                uicontrol('Parent',f,...
+                uicontrol('Parent',subProcPanel,...
                     'Style','text',...
                     'String','Unknown',...
                     'backgroundcolor',panelColor,...
@@ -638,7 +673,7 @@ function generateProcessingControlPanelListing
         % Create the current subfolder label (only checked if all entries
         % down the rows are checked)
         curCheckboxPosition = [curLabelPosition(1), curLabelPosition(2) - textBufferSpacing - textIconHeight, checkBoxWidth, checkboxHeight];
-        selectAllHandle = uicontrol('Parent', f,...
+        selectAllHandle = uicontrol('Parent', subProcPanel,...
             'Style', 'checkbox',...
             'Position', curCheckboxPosition,...
             'backgroundcolor',panelColor,...
@@ -649,6 +684,16 @@ function generateProcessingControlPanelListing
             set(selectAllHandle, 'Enable', 'off');
         end
         
+    end
+    
+    if(buttonOverflow)
+        
+        panelSlider = uicontrol('Parent', f,...
+            'Style', 'slider',...
+            'Position', optionalScrollBarPosition,...
+            'backgroundcolor',panelColor,...
+            'Value',0,...
+            'Callback', {@panelSlider_Callback});
     end
         
     % Callback functions
@@ -789,6 +834,13 @@ function generateProcessingControlPanelListing
         assignin('base', 'curDir', curDir);
         evalin('base', 'load(strcat(curDir, filesep, ''motilityParameters_Current.mat''))');
         evalin('base', 'load(strcat(curDir, filesep, ''processedPIVOutput_Current.mat''))');
+        
+    end
+    
+    function panelSlider_Callback(hObject, ~)
+        
+        curSliderPosition = get(hObject, 'Value');
+        set(subProcPanel, 'Position', subProcPanelPosition + [-unshownWidth*curSliderPosition/widthSubGUI, 0, 0, 0]);
         
     end
         

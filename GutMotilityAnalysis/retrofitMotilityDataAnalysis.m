@@ -92,7 +92,7 @@ for i=1:nSubDirectories
         % If there are any, copy them
         if(~isempty(curDirFiles))
             
-            % Save into rawPIVOutput_Current.mat, rawPIVOutput_<date>.mat
+            % Save into maskVars_Current.mat, maskVars_<date>.mat
             for k=1:size(curDirFiles, 1)
                 allTheJunk = load(strcat(curExpDir, filesep, curDirFiles(k).name));
                 gutOutline = allTheJunk.gutOutline; %#ok since I'm saving below
