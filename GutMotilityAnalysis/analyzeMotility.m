@@ -49,7 +49,11 @@ else
     mainExperimentDirectory = varargin{1};
     mainAnalysisDirectory = varargin{2};
 end
-usingExperimentDirectory = strcmp(num2str(mainExperimentDirectory),'0');
+usingExperimentDirectory = ~strcmp(num2str(mainExperimentDirectory),'0');
+if(~usingExperimentDirectory)
+    disp('Warning: No experiment directory chosen. Some functions may not be available and may crash the program if used.');
+    mainExperimentDirectory = mainAnalysisDirectory;
+end
 imageFileType = '*.tif'; % Currently redundant (but still necessary), see analysisVariables{1}
 currentAnalysesPerformedFileName = 'currentAnalysesPerformed.mat';
 rawPIVOutputName = 'rawPIVOutputName'; % WARNING: Don't change this variable name
@@ -91,14 +95,20 @@ panelTitleTextColor = [1, 1, 1];
 %% Determine experiment directory structures and which analyses, if any, are already done
 
 % Graceful exit if user cancelled one or more directory requests
-if(strcmp(num2str(mainExperimentDirectory),'0') || strcmp(num2str(mainAnalysisDirectory),'0'))
-    disp('User did not select a directory: Program aborted.');
+if(strcmp(num2str(mainAnalysisDirectory),'0'))
+    disp('User did not select an analysis directory: Program aborted.');
     return;
 end
 
 % Obtain all directory contents, total number of directories
-[mainExperimentDirectoryContents, mainExperimentSubDirectoryContentsCell, mainExperimentDirectoryStructuresCorrect] = obtainDirectoryStructure(mainExperimentDirectory);
 [mainAnalysisDirectoryContents, mainAnalysisSubDirectoryContentsCell, ~] = obtainDirectoryStructure(mainAnalysisDirectory);
+if(usingExperimentDirectory)
+    [mainExperimentDirectoryContents, mainExperimentSubDirectoryContentsCell, mainExperimentDirectoryStructuresCorrect] = obtainDirectoryStructure(mainExperimentDirectory);
+else
+    mainExperimentDirectoryContents = mainAnalysisDirectoryContents;
+    mainExperimentSubDirectoryContentsCell = mainAnalysisSubDirectoryContentsCell;
+    mainExperimentDirectoryStructuresCorrect = true;
+end
 nSubDirectories = size(mainExperimentDirectoryContents, 1);
 
 % Verify that image directory structure is correct, abort if not
@@ -113,10 +123,18 @@ end
 determineIfAnalysisFoldersExistsElseCreateThem;
 
 % Remove any subdirectories without tiffs from our list
-verifyTiffsInMainDirectoryStructure;
+if(usingExperimentDirectory)
+    verifyTiffsInMainDirectoryStructure;
+end
 
 % Open or create the main currentAnalysesPerformed.mat file
 [currentAnalysisPerformed, analysisVariables] = openOrCreateCurrentAnalysesPerformedFile;
+
+% if(currentAnalysisPerformed.subDirectories == -1) % Should probably fix
+%     disp('User did not select an analysis file and didnt want to make one: Program aborted.');
+%     return;
+% end
+
 analysisToPerform = currentAnalysisPerformed;
 
 %% Create GUI
@@ -341,6 +359,9 @@ function [currentAnalysisPerformed, analysisVariables] = openOrCreateCurrentAnal
     
     % Obtain file structure
     analysisFile = dir(strcat(mainAnalysisDirectory, filesep, currentAnalysesPerformedFileName));
+    if(isempty(analysisFile))
+        createFile = questdlg('Could not locate the analysis file: Create one?');
+    end
     
     % If the structure is non-empty, load the file, otherwise make it
     if(~isempty(analysisFile))
@@ -349,7 +370,7 @@ function [currentAnalysisPerformed, analysisVariables] = openOrCreateCurrentAnal
         currentAnalysisPerformed = currentAnalysisFile.currentAnalysisPerformed;
         analysisVariables = currentAnalysisFile.analysisVariables;
         
-    else
+    elseif(strcmp(createFile,'Yes'))
         
         % Determine how the file should be organized: structure with
         % booleans for each subfolder representing which analysis is done
@@ -369,6 +390,10 @@ function [currentAnalysisPerformed, analysisVariables] = openOrCreateCurrentAnal
         % Save this file for future reference, update after any analysis
         analysisVariables = {'*.tif','32','5','0.1625','1'};
         save(strcat(mainAnalysisDirectory, filesep, currentAnalysesPerformedFileName),'currentAnalysisPerformed','analysisVariables'); % WARNING: If currentAnalysisPerformed name is changed, you'll have to manually change this string  IN MANY LOCATIONS!!!
+        
+    else
+        
+        currentAnalysisPerformed.subDirectories = -1;
         
     end
     
@@ -417,20 +442,14 @@ function generateProcessingControlPanelListing
     if(neededCols > maxCols)
         buttonOverflow = true;
         nRows = maxRows;
-        nCols = neededCols;
-        shownCols = maxCols;
-        unshownWidth = colWidth*(neededCols - shownCols);
+        unshownWidth = colWidth*(neededCols - maxCols);
     elseif(nSubSubDirectories/maxRows <= 1)
         buttonOverflow = false;
         nRows = nSubSubDirectories;
-        nCols = 1;
-        shownCols = 1;
         unshownWidth = 0;
     else
         buttonOverflow = false;
         nRows = maxRows;
-        nCols = neededCols;
-        shownCols = neededCols;
         unshownWidth = 0;
     end
     
@@ -693,7 +712,7 @@ function generateProcessingControlPanelListing
             'Position', optionalScrollBarPosition,...
             'backgroundcolor',panelColor,...
             'Value',0,...
-            'Callback', {@panelSlider_Callback});
+            'Callback', {@panelSlider_Callback}); %#ok
     end
         
     % Callback functions
@@ -1003,6 +1022,7 @@ function generateAnalysisPanelListing
     buttonHeight = 30;
     textBufferSpacing = 4;
     closeButtonPosition = [widthGUI*experimentVariablesPanelWidthFraction - panelBevelOffset - textBufferSpacing- buttonWidth, panelBufferSpacing + panelBevelOffset, buttonWidth, buttonHeight];
+    collectMotilityAnalysisPosition = closeButtonPosition + [buttonWidth + textBufferSpacing, 0, 0, 0];
     analyzeButtonPosition = [panelBufferSpacing + panelBevelOffset + textBufferSpacing, panelBufferSpacing + panelBevelOffset, buttonWidth, buttonHeight];
     
     % Close button
@@ -1011,6 +1031,12 @@ function generateAnalysisPanelListing
         'String','Close Program',...
         'Position',closeButtonPosition,...
         'Callback',{@closeButton_Callback});
+    
+    uicontrol('Parent',f,...
+        'Style','pushbutton',...
+        'String','Collect Analysis',...
+        'Position',collectMotilityAnalysisPosition,...
+        'Callback',{@collectMotilityAnalysis_Callback});
     
     % Analyze selection button
     uicontrol('Parent',f,...
@@ -1021,6 +1047,10 @@ function generateAnalysisPanelListing
     
     function closeButton_Callback(~, ~)
         close all;
+    end
+    
+    function collectMotilityAnalysis_Callback(~,~)
+        
     end
     
     function analyzeButton_Callback(~, ~)

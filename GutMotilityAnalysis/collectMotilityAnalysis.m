@@ -9,6 +9,9 @@ if( nargin < 1 )
 end
 
 [mainAnalysisDirectoryContents, mainAnalysisSubDirectoryContentsCell, nSubDirectories] = obtainDirectoryStructure(mainAnalysisDirectory);
+currentAnalysisPerformedFile = load(strcat(mainAnalysisDirectory,filesep,'currentAnalysesPerformed.mat'));
+currentAnalysisPerformed = currentAnalysisPerformedFile.currentAnalysisPerformed;
+disp('Warning: The function is not tested for accuracy since it was written on the fly. Consider writing your own');
 index = 0;
 
 %% Loop through all checked directories to generate PIV video
@@ -26,27 +29,35 @@ for i=1:nSubDirectories
     % Loop through all checked subdirectories to perform PIV
     for j=1:nSFD
         
-        index = index + 1;
-        
-        % ObtainCurrentDirectory
-        curAnDir = strcat(mainAnalysisDirectory, filesep, mainAnalysisDirectoryContents(i).name, filesep, mainAnalysisSubDirectoryContentsCell{1, i}(j).name);
-        paramsFile = load(strcat(curAnDir, filesep, 'motilityParameters_Current.mat'));
-        fishParams(index).Folder = curFolder;
-        fishParams(index).SubFolder = mainAnalysisSubDirectoryContentsCell{1, i}(j).name;
-        fishParams(index).FFTPowerPeak = paramsFile.fftPowerPeak;
-        fishParams(index).FFTPeakFreq = paramsFile.fftPeakFreq;
-        fishParams(index).FFTRPowerPeakSTD = paramsFile.fftRPowerPeakSTD;
-        fishParams(index).FFTRPowerPeakMin = paramsFile.fftRPowerPeakMin;
-        fishParams(index).FFTRPowerPeakMax = paramsFile.fftRPowerPeakMax;
-        fishParams(index).WaveFrequency = paramsFile.waveFrequency;
-        fishParams(index).WaveSpeedSlope = paramsFile.waveSpeedSlope;
-        fishParams(index).BByFPS = paramsFile.BByFPS;
-        fishParams(index).SigB = paramsFile.sigB;
-        fishParams(index).WaveFitRSquared = paramsFile.waveFitRSquared;
-%        fishParams(index).XCorrMaxima = paramsFile.xCorrMaxima;
-        fishParams(index).AnalyzedDeltaMarkersOne = paramsFile.analyzedDeltaMarkers(1);
-        fishParams(index).AnalyzedDeltaMarkersTwo = paramsFile.analyzedDeltaMarkers(2);
-        fishParams(index).WaveAverageWidth = paramsFile.waveAverageWidth;
+        if(currentAnalysisPerformed(i).bools(6))
+            
+            index = index + 1;
+            currentAnalysisPerformed(i).directory
+            % ObtainCurrentDirectory
+            curAnDir = strcat(mainAnalysisDirectory, filesep, mainAnalysisDirectoryContents(i).name, filesep, mainAnalysisSubDirectoryContentsCell{1, i}(j).name);
+            paramsFile = load(strcat(curAnDir, filesep, 'motilityParameters_Current.mat'));
+            fishParams(index).Folder = curFolder;
+            fishParams(index).SubFolder = mainAnalysisSubDirectoryContentsCell{1, i}(j).name;
+            fishParams(index).FFTPowerPeak = paramsFile.fftPowerPeak;
+            fishParams(index).FFTPeakFreq = paramsFile.fftPeakFreq;
+            fishParams(index).FFTRPowerPeakSTD = paramsFile.fftRPowerPeakSTD;
+            fishParams(index).FFTRPowerPeakMin = paramsFile.fftRPowerPeakMin;
+            fishParams(index).FFTRPowerPeakMax = paramsFile.fftRPowerPeakMax;
+            fishParams(index).WaveFrequency = paramsFile.waveFrequency;
+            fishParams(index).WaveSpeedSlope = paramsFile.waveSpeedSlope;
+            fishParams(index).BByFPS = paramsFile.BByFPS;
+            fishParams(index).SigB = paramsFile.sigB;
+            fishParams(index).WaveFitRSquared = paramsFile.waveFitRSquared;
+            %        fishParams(index).XCorrMaxima = paramsFile.xCorrMaxima;
+            fishParams(index).AnalyzedDeltaMarkersOne = paramsFile.analyzedDeltaMarkers(1);
+            if(~isnan(paramsFile.analyzedDeltaMarkers(1)))
+                fishParams(index).AnalyzedDeltaMarkersTwo = paramsFile.analyzedDeltaMarkers(2);
+            else
+                fishParams(index).AnalyzedDeltaMarkersTwo = NaN;
+            end
+            fishParams(index).WaveAverageWidth = paramsFile.waveAverageWidth;
+            
+        end
 
     end
     
