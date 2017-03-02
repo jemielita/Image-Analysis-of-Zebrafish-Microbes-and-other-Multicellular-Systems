@@ -1070,7 +1070,7 @@ function generateAnalysisPanelListing
         performMotilityDataAnalysis(mainExperimentDirectoryContents, mainExperimentSubDirectoryContentsCell, mainAnalysisDirectory, analysisToPerform, analysisVariables, currentAnalysesPerformedFileName, motilityParametersOutputName, interpolationOutputName, GUISize)
         
         % Make PIV movie
-        createAllChosenPIVMovies(mainExperimentDirectory, mainExperimentDirectoryContents, mainExperimentSubDirectoryContentsCell, mainAnalysisDirectory, analysisToPerform, analysisVariables, currentAnalysesPerformedFileName, PIVOutputName, PIVVideoParams);
+%        createAllChosenPIVMovies(mainExperimentDirectory, mainExperimentDirectoryContents, mainExperimentSubDirectoryContentsCell, mainAnalysisDirectory, analysisToPerform, analysisVariables, currentAnalysesPerformedFileName, PIVOutputName, PIVVideoParams);
         
         % Reopen this program
         analyzeMotility(mainExperimentDirectory, mainAnalysisDirectory);
