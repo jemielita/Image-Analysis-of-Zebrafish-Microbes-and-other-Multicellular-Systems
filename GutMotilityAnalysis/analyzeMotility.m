@@ -1051,6 +1051,9 @@ function generateAnalysisPanelListing
     
     function collectMotilityAnalysis_Callback(~,~)
         
+        fishParams = collectMotilityAnalysis(mainAnalysisDirectory);
+        assignin('base', 'fishParams', fishParams);
+        
     end
     
     function analyzeButton_Callback(~, ~)
