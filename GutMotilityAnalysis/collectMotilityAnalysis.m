@@ -29,7 +29,7 @@ for i=1:nSubDirectories
     % Loop through all checked subdirectories to perform PIV
     for j=1:nSFD
         
-        if(currentAnalysisPerformed(i).bools(6))
+        if(currentAnalysisPerformed(i).bools(j,6))
             
             index = index + 1;
             currentAnalysisPerformed(i).directory
