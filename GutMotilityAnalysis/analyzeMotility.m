@@ -61,6 +61,7 @@ maskFileOutputName = 'maskVars'; % WARNING: Don't change this variable name
 interpolationOutputName = 'processedPIVOutput'; % WARNING: Don't change this variable name
 motilityParametersOutputName = 'motilityParameters'; % WARNING: Don't change this variable name
 PIVOutputName = 'PIVAnimation'; % WARNING: Don't change this variable name
+fourierBoundsDefaults = {'4', '1'};
 nAnalysisCheckboxTypes = 6;
 
 % Initialize GUI variables
@@ -85,6 +86,15 @@ processingTitlePosition = [processingPanelPosition(1)*widthGUI + panelBevelOffse
 optionalScrollBarPosition = [widthGUI - 2*panelBufferSpacing - optionalScrollBarWidth, processingTitlePosition(2) + 2*panelTitleHeights/3, optionalScrollBarWidth, 1];
 widthSubGUI = processingPanelPosition(3)*widthGUI;
 heightSubGUI = processingPanelPosition(4)*heightGUI - processingTitlePosition(4);
+
+% Initialize GUI icon size/color variables
+textIconHeight = 18;
+textBufferSpacing = 4;
+inputIconHeight = 5;
+answerFieldDropDownWidth = 80;
+answerFieldEditWidth = 50;
+textSize = 13;
+textFGColor = [0, 0, 0];
 
 % Initialize GUI Colors variables
 GUIBoxColor = [0.9, 0.925, 0.95];
@@ -369,6 +379,10 @@ function [currentAnalysisPerformed, analysisVariables] = openOrCreateCurrentAnal
         currentAnalysisFile = load(strcat(mainAnalysisDirectory, filesep, currentAnalysesPerformedFileName)); % WARNING: Do not change this variable name without changing the save string below
         currentAnalysisPerformed = currentAnalysisFile.currentAnalysisPerformed;
         analysisVariables = currentAnalysisFile.analysisVariables;
+        if(size(analysisVariables,2) == 5) % Using old variables; update
+            analysisVariables{6} = fourierBoundsDefaults{1};
+            analysisVariables{7} = fourierBoundsDefaults{2};
+        end
         
     elseif(strcmp(createFile,'Yes'))
         
@@ -388,7 +402,7 @@ function [currentAnalysisPerformed, analysisVariables] = openOrCreateCurrentAnal
         end
         
         % Save this file for future reference, update after any analysis
-        analysisVariables = {'*.tif','32','5','0.1625','1'};
+        analysisVariables = {'*.tif','32','5','0.325','2', fourierBoundsDefaults{1}, fourierBoundsDefaults{2}};
         save(strcat(mainAnalysisDirectory, filesep, currentAnalysesPerformedFileName),'currentAnalysisPerformed','analysisVariables'); % WARNING: If currentAnalysisPerformed name is changed, you'll have to manually change this string  IN MANY LOCATIONS!!!
         
     else
@@ -868,11 +882,6 @@ end
 function generateVariablesPanelListing
     
     % Initialize Variables
-    textBufferSpacing = 4;
-    textIconHeight = 18;
-    inputIconHeight = 5;
-    answerFieldDropDownWidth = 80;
-    answerFieldEditWidth = 50;
     filetypeTextPosition = [panelBufferSpacing + panelBevelOffset + textBufferSpacing, heightGUI - panelBufferSpacing - panelBevelOffset - panelTitleHeights - textBufferSpacing - textIconHeight, widthGUI*experimentVariablesPanelWidthFraction - 3*textBufferSpacing - 2*panelBevelOffset - panelBufferSpacing - answerFieldDropDownWidth, textIconHeight];
     filetypeInputPosition = filetypeTextPosition + [filetypeTextPosition(3) + textBufferSpacing, 0, answerFieldDropDownWidth - filetypeTextPosition(3), 0];
     templateSizeTextPosition = filetypeTextPosition + [0, - textBufferSpacing - 2*textIconHeight, 0, textIconHeight];
@@ -883,8 +892,6 @@ function generateVariablesPanelListing
     scaleInputPosition = scaleTextPosition + [scaleTextPosition(3) + textBufferSpacing + (filetypeInputPosition(3) - answerFieldEditWidth)/2, 0, answerFieldEditWidth - scaleTextPosition(3), inputIconHeight - textIconHeight];
     resReductionTextPosition = scaleTextPosition + [0, - textBufferSpacing - 3*textIconHeight, 0, textIconHeight];
     resReductionInputPosition = resReductionTextPosition + [resReductionTextPosition(3) + textBufferSpacing + (filetypeInputPosition(3) - answerFieldEditWidth)/2, 0, answerFieldEditWidth - resReductionTextPosition(3), inputIconHeight - textIconHeight];
-    textSize = 13;
-    textFGColor = [0, 0, 0];
     
     % Filetype text
     uicontrol('Parent',f,...
@@ -1020,10 +1027,56 @@ function generateAnalysisPanelListing
     % Initialize Variables
     buttonWidth = 100;
     buttonHeight = 30;
-    textBufferSpacing = 4;
+    %textBufferSpacing = 4;
+    fourierUpperBoundTextPosition = [analysisTitlePosition(1) + textBufferSpacing, analysisTitlePosition(2) - analysisTitlePosition(4) - panelBufferSpacing, widthGUI*experimentVariablesPanelWidthFraction - 3*textBufferSpacing - 2*panelBevelOffset - panelBufferSpacing - answerFieldEditWidth, 2*textIconHeight];
+    fourierUpperBoundInputPosition = fourierUpperBoundTextPosition + [fourierUpperBoundTextPosition(3) + textBufferSpacing, 0, answerFieldEditWidth - fourierUpperBoundTextPosition(3), - textIconHeight];
+    fourierLowerBoundTextPosition = fourierUpperBoundTextPosition + [0, - 2*textIconHeight - panelBufferSpacing, 0, 0];
+    fourierLowerBoundInputPosition = fourierLowerBoundTextPosition + [fourierLowerBoundTextPosition(3) + textBufferSpacing, 0, answerFieldEditWidth - fourierLowerBoundTextPosition(3), - textIconHeight];
     closeButtonPosition = [widthGUI*experimentVariablesPanelWidthFraction - panelBevelOffset - textBufferSpacing- buttonWidth, panelBufferSpacing + panelBevelOffset, buttonWidth, buttonHeight];
-    collectMotilityAnalysisPosition = closeButtonPosition + [buttonWidth + textBufferSpacing, 0, 0, 0];
+    collectMotilityAnalysisPosition = closeButtonPosition + [0, buttonHeight + textBufferSpacing, 0, 0];
     analyzeButtonPosition = [panelBufferSpacing + panelBevelOffset + textBufferSpacing, panelBufferSpacing + panelBevelOffset, buttonWidth, buttonHeight];
+    
+    % Fourier upper bound text
+    uicontrol('Parent',f,...
+        'Style','text',...
+        'String','Frequency upper bound on FFT (units min^-1)?',...
+        'BackgroundColor',panelColor,...
+        'ForegroundColor',textFGColor,...
+        'Position',fourierUpperBoundTextPosition,...
+        'HorizontalAlignment','left',...
+        'FontName','Gill Sans',...
+        'FontSize',textSize);
+    
+    % Fourier upper bound number
+    uicontrol('Parent',f,...
+        'Style','edit',...
+        'String',analysisVariables{6},...
+        'ForegroundColor',textFGColor,...
+        'Position',fourierUpperBoundInputPosition,...
+        'Callback', {@fourierUpperBoundInput_Callback},...
+        'FontName','Gill Sans',...
+        'FontSize',textSize);
+    
+    % Fourier lower bound text
+    uicontrol('Parent',f,...
+        'Style','text',...
+        'String','Frequency lower bound on FFT (units min^-1)?',...
+        'BackgroundColor',panelColor,...
+        'ForegroundColor',textFGColor,...
+        'Position',fourierLowerBoundTextPosition,...
+        'HorizontalAlignment','left',...
+        'FontName','Gill Sans',...
+        'FontSize',textSize);
+
+    % Fourier lower bound number
+    uicontrol('Parent',f,...
+        'Style','edit',...
+        'String',analysisVariables{7},...
+        'ForegroundColor',textFGColor,...
+        'Position',fourierLowerBoundInputPosition,...
+        'Callback', {@fourierLowerBoundInput_Callback},...
+        'FontName','Gill Sans',...
+        'FontSize',textSize);
     
     % Close button
     uicontrol('Parent',f,...
@@ -1032,6 +1085,7 @@ function generateAnalysisPanelListing
         'Position',closeButtonPosition,...
         'Callback',{@closeButton_Callback});
     
+    % Collect motility button
     uicontrol('Parent',f,...
         'Style','pushbutton',...
         'String','Collect Analysis',...
@@ -1045,10 +1099,26 @@ function generateAnalysisPanelListing
         'Position',analyzeButtonPosition,...
         'Callback',{@analyzeButton_Callback});
     
+    % Fourier upper bound callback
+    function fourierUpperBoundInput_Callback(hObject, ~)
+        
+        analysisVariables{6} = get(hObject,'String');
+        
+    end
+    
+    % Fourier lower bound callback
+    function fourierLowerBoundInput_Callback(hObject, ~)
+        
+        analysisVariables{7} = get(hObject,'String');
+        
+    end
+    
+    % Close button callback
     function closeButton_Callback(~, ~)
         close all;
     end
     
+    % Collect motility analysis button callback
     function collectMotilityAnalysis_Callback(~,~)
         
         fishParams = collectMotilityAnalysis(mainAnalysisDirectory);
@@ -1056,6 +1126,7 @@ function generateAnalysisPanelListing
         
     end
     
+    % Analyze motility button callback
     function analyzeButton_Callback(~, ~)
         % Close the program (it will open again with updated information)
         close all;
