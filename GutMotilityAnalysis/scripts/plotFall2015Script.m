@@ -1,15 +1,26 @@
 % Script which plots various results from fall2015Data
 
-% Transform wavespeed to inverse wavespeed
-for i =1:9
-    fall2015Data(i).FishParameters(4,:) = 1./fall2015Data(i).FishParameters(4,:);
-end
+% % Transform wavespeed to inverse wavespeed
+% for i =1:9
+%     fall2015Data(i).FishParameters(4,:) = 1./fall2015Data(i).FishParameters(4,:);
+% end
+% 
+% %% Transform amplitude to the correct units
+% fps = 5;
+% micronsPerPixel = 0.325;
+% for i =1:9
+%     fall2015Data(i).FishParameters(2,:) = fall2015Data(i).FishParameters(2,:)/fps*micronsPerPixel;
+% end
 
 %% Initialize variables
 colorWheelBorder = [ [0, 0, 0.4]; [0, 0.3, 0]; [0.4, 0, 0] ];
-colorWheelFill = [ [0.6, 0.4, 0.9]; [0.4, 0.95, 0.6]; [0.9, 0.6, 0.4] ];
+%colorWheelFill = [ [0.6, 0.4, 0.9]; [0.4, 0.95, 0.6]; [0.9, 0.6, 0.4] ]; % Old colors
+colorWheelFill = [[0.2 0.3 0.8]; [0.2 0.9 0.2]; [0.9 0.3 0.1]];
+%colorWheelBorder = colorWheelFill;
 days0Months1 = true; % 0 plots all fish, all types, and all days, 1 plots boxplots of fish types per experiment
-whichPlot = [ false, false, true, true, false ]; % Plot which parameters?: Amp, freq, inverse wave speed, sigB (variation), pulse
+whichPlot = [ true, true, false, false, false ]; % Plot which parameters?: Amp, freq, inverse wave speed, sigB (variation), pulse
+ampYMin = 0;
+ampYMax = 52;
 
 %% Plot all results per day
 if( ~days0Months1 )
@@ -104,15 +115,15 @@ if( days0Months1 )
             if(whichPlot(j-1))
                 
                 % Make current figure
-%                 h = figure;
-%                 errorbar( nanmean( squeeze( wTUs( j, :, : ) ), 1 ), nanstd( squeeze( wTUs( j, :, : ) ), 1 )/3.3, 'Color', colorWheelBorder( 1, : ) ); hold on;
-%                 errorbar( nanmean( squeeze( wTFs( j, :, : ) ), 1 ), nanstd( squeeze( wTFs( j, :, : ) ), 1 )/3.3, 'Color', colorWheelBorder( 2, : ) );
-%                 errorbar( nanmean( squeeze( rets( j, :, : ) ), 1 ), nanstd( squeeze( rets( j, :, : ) ), 1 )/3.3, 'Color', colorWheelBorder( 3, : ) ); hold off;
+                % h = figure;
+                % errorbar( nanmean( squeeze( wTUs( j, :, : ) ), 1 ), nanstd( squeeze( wTUs( j, :, : ) ), 1 )/3.3, 'Color', colorWheelBorder( 1, : ) ); hold on;
+                % errorbar( nanmean( squeeze( wTFs( j, :, : ) ), 1 ), nanstd( squeeze( wTFs( j, :, : ) ), 1 )/3.3, 'Color', colorWheelBorder( 2, : ) );
+                % errorbar( nanmean( squeeze( rets( j, :, : ) ), 1 ), nanstd( squeeze( rets( j, :, : ) ), 1 )/3.3, 'Color', colorWheelBorder( 3, : ) ); hold off;
                 h = figure;
                 set(gca, 'FontName', 'Arial')
                 switch i
                     case 1
-                        groupee = { '5U', '5R', '6U', '6R', '7U', '7R' };
+                        groupee = { 'WT', 'Ret', 'WT', 'Ret', 'WT', 'Ret' };
                         fishOrderedByDay = [wTUs( j, :, 1 ); rets( j, :, 1 );...
                                             wTUs( j, :, 2 ); rets( j, :, 2 );...
                                             wTUs( j, :, 3 ); rets( j, :, 3 )];
@@ -120,7 +131,7 @@ if( days0Months1 )
                         colorWheelF = colorWheelFill( [ 1, 3 ], : );
                         scatterBox( fishOrderedByDay', {groupee, colorWheelO, colorWheelF});
                     case 2
-                        groupee = { '5U', '5R', '6U', '6R', '7U', '7R' };
+                        groupee = { 'WT', 'Ret', 'WT', 'Ret', 'WT', 'Ret' };
                         fishOrderedByDay = [wTUs( j, :, 1 ); rets( j, :, 1 );...
                                             wTUs( j, :, 2 ); rets( j, :, 2 );...
                                             wTUs( j, :, 3 ); rets( j, :, 3 )];
@@ -128,34 +139,41 @@ if( days0Months1 )
                         colorWheelF = colorWheelFill( [ 1, 3 ], : );
                         scatterBox( fishOrderedByDay', {groupee, colorWheelO, colorWheelF});
                         axis auto;
-                        % Determine the title, y axis (the indices in the title are opaque, I know)
-                        theTitle = fall2015Data( 2*(i-1)^2 + 1 ).Title;
-                        theTitle = theTitle(1:10);
-                        switch j
-                            case 2 % Amplitude
-                                title( strcat( {'Amplitude '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
-                                ylabel( 'Wave Amplitude (px/frame)', 'FontSize', 20 );
-                            case 3 % Frequency
-                                title( strcat( {'Frequency '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
-                                ylabel( 'Wave Frequency (min^-1)', 'FontSize', 20 );
-                            case 4 % Wave Speed
-                                title( strcat( {'Inverse Wave Speed '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
-                                ylabel( 'Inverse Wave Speed (s/\mum)', 'FontSize', 20 );
-                            case 5 % Wave Speed Variability
-                                title( strcat( {'Wave Speed Variance '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
-                                ylabel( 'Wave Variance (um/s)', 'FontSize', 20 );
-                            case 6 % Wave Duration
-                                title( strcat( {'Wave Duration '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
-                                ylabel( 'Wave Duration (s)', 'FontSize', 20 );
-                            otherwise % New plot?
+                        if(j==2)
+                            ylim([ampYMin, ampYMax]);
+                        elseif(j==3)
+                            ylim([freqYMin, freqYMax]);
                         end
+%                         % Determine the title, y axis (the indices in the title are opaque, I know)
+%                         theTitle = fall2015Data( 2*(i-1)^2 + 1 ).Title;
+%                         theTitle = theTitle(1:10);
+%                         switch j
+%                             case 2 % Amplitude
+%                                 title( strcat( {'Amplitude '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
+%                                 ylabel( 'Wave Amplitude (px/frame)', 'FontSize', 20 );
+%                             case 3 % Frequency
+%                                 title( strcat( {'Frequency '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
+%                                 ylabel( 'Wave Frequency (min^-1)', 'FontSize', 20 );
+%                             case 4 % Wave Speed
+%                                 title( strcat( {'Inverse Wave Speed '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
+%                                 ylabel( 'Inverse Wave Speed (s/\mum)', 'FontSize', 20 );
+%                             case 5 % Wave Speed Variability
+%                                 title( strcat( {'Wave Speed Variance '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
+%                                 ylabel( 'Wave Variance (um/s)', 'FontSize', 20 );
+%                             case 6 % Wave Duration
+%                                 title( strcat( {'Wave Duration '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
+%                                 ylabel( 'Wave Duration (s)', 'FontSize', 20 );
+%                             otherwise % New plot?
+%                         end
                         
                         % Make larger text
-                        set(findall(h,'type','axes'),'fontsize',20);
+                        set(findall(h,'type','axes'),'fontsize',20, 'FontName', 'Arial',...
+                            'TickDir', 'out','box','off');
+                        xlim([0, 9]);
                         
                         h = figure;
                         set(gca, 'FontName', 'Arial')
-                        groupee = { '5U', '5F', '6U', '6F', '7U', '7F' };
+                        groupee = { 'Unfed', 'Fed', 'Unfed', 'Fed', 'Unfed', 'Fed' };
                         fishOrderedByDay = [wTUs( j, :, 1 ); wTFs( j, :, 1 );...
                             wTUs( j, :, 2 ); wTFs( j, :, 2 );...
                             wTUs( j, :, 3 ); wTFs( j, :, 3 )];
@@ -164,7 +182,7 @@ if( days0Months1 )
                         scatterBox( fishOrderedByDay', {groupee, colorWheelO, colorWheelF});
                         
                     case 3
-                        groupee = { '5U', '5F', '6U', '6F', '7U', '7F' };
+                        groupee = { 'Unfed', 'Fed', 'Unfed', 'Fed', 'Unfed', 'Fed' };
                         fishOrderedByDay = [wTUs( j, :, 1 ); wTFs( j, :, 1 );...
                             wTUs( j, :, 2 ); wTFs( j, :, 2 );...
                             wTUs( j, :, 3 ); wTFs( j, :, 3 )];
@@ -183,30 +201,37 @@ if( days0Months1 )
                 % Label x axis
                 % xlabel( 'D.P.F.','FontSize', 20 );
                 
-                % Determine the title, y axis (the indices in the title are opaque, I know)
-                theTitle = fall2015Data( 1 + 3*i - ( 2 - i )^2 ).Title;
-                theTitle = theTitle(1:10);
-                switch j
-                    case 2 % Amplitude
-                        title( strcat( {'Amplitude '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
-                        ylabel( 'Wave Amplitude (px/frame)', 'FontSize', 20 );
-                    case 3 % Frequency
-                        title( strcat( {'Frequency '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
-                        ylabel( 'Wave Frequency (min^-1)', 'FontSize', 20 );
-                    case 4 % Wave Speed
-                        title( strcat( {'Inverse Wave Speed '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
-                        ylabel( 'Inverse Wave Speed (s/\mum)', 'FontSize', 20 );
-                    case 5 % Wave Speed Variability
-                        title( strcat( {'Wave Speed Variance '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
-                        ylabel( 'Wave Variance (um/s)', 'FontSize', 20 );
-                    case 6 % Wave Duration
-                        title( strcat( {'Wave Duration '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
-                        ylabel( 'Wave Duration (s)', 'FontSize', 20 );
-                    otherwise % New plot?
-                end
+%                 % Determine the title, y axis (the indices in the title are opaque, I know)
+%                 theTitle = fall2015Data( 1 + 3*i - ( 2 - i )^2 ).Title;
+%                 theTitle = theTitle(1:10);
+%                 switch j
+%                     case 2 % Amplitude
+%                         title( strcat( {'Amplitude '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
+%                         ylabel( 'Wave Amplitude (px/frame)', 'FontSize', 20 );
+%                     case 3 % Frequency
+%                         title( strcat( {'Frequency '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
+%                         ylabel( 'Wave Frequency (min^-1)', 'FontSize', 20 );
+%                     case 4 % Wave Speed
+%                         title( strcat( {'Inverse Wave Speed '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
+%                         ylabel( 'Inverse Wave Speed (s/\mum)', 'FontSize', 20 );
+%                     case 5 % Wave Speed Variability
+%                         title( strcat( {'Wave Speed Variance '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
+%                         ylabel( 'Wave Variance (um/s)', 'FontSize', 20 );
+%                     case 6 % Wave Duration
+%                         title( strcat( {'Wave Duration '}, theTitle ), 'FontSize', 17, 'interpreter','none' );
+%                         ylabel( 'Wave Duration (s)', 'FontSize', 20 );
+%                     otherwise % New plot?
+%                 end
                 
                 % Make larger text
-                set(findall(h,'type','axes'),'fontsize',20);
+                if(j==2)
+                    ylim([ampYMin, ampYMax]);
+                elseif(j==3)
+                    ylim([freqYMin, freqYMax]);
+                end
+                set(findall(h,'type','axes'),'fontsize',20, 'FontName', 'Arial',...
+                    'TickDir', 'out','box','off');
+                xlim([0, 9]);
                 
             end
             

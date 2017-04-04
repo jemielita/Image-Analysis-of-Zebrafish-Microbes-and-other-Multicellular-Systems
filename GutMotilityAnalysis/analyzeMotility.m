@@ -378,7 +378,12 @@ function [currentAnalysisPerformed, analysisVariables] = openOrCreateCurrentAnal
         
         currentAnalysisFile = load(strcat(mainAnalysisDirectory, filesep, currentAnalysesPerformedFileName)); % WARNING: Do not change this variable name without changing the save string below
         currentAnalysisPerformed = currentAnalysisFile.currentAnalysisPerformed;
-        analysisVariables = currentAnalysisFile.analysisVariables;
+        analysisFieldNames = fieldnames(currentAnalysisFile);
+        if(length(analysisFieldNames) == 1)
+            analysisVariables = {'*.tif','32','5','0.325','2', fourierBoundsDefaults{1}, fourierBoundsDefaults{2}};
+        else
+            analysisVariables = currentAnalysisFile.analysisVariables;
+        end
         if(size(analysisVariables,2) == 5) % Using old variables; update
             analysisVariables{6} = fourierBoundsDefaults{1};
             analysisVariables{7} = fourierBoundsDefaults{2};
@@ -746,7 +751,7 @@ function generateProcessingControlPanelListing
             % Update the file
             currentAnalysisPerformed(ii).bools(jj, kk) = analysisToPerform(ii).bools(jj, kk);
             % Save this file for future reference, update after any analysis
-            save(strcat(mainAnalysisDirectory, filesep, currentAnalysesPerformedFileName),'currentAnalysisPerformed'); % WARNING: If currentAnalysisPerformed name is changed, you'll have to manually change this string IN MANY LOCATIONS!!!
+            save(strcat(mainAnalysisDirectory, filesep, currentAnalysesPerformedFileName),'currentAnalysisPerformed','analysisVariables'); % WARNING: If currentAnalysisPerformed name is changed, you'll have to manually change this string IN MANY LOCATIONS!!!
             
         end
         
