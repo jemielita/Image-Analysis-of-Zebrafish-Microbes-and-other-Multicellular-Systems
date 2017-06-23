@@ -1,7 +1,7 @@
 % Script which plots the fall2015Data in a combined fashion. Assumes the
 % fall2015Data is loaded into the workspace
 
-% Initialize variables
+%% Initialize variables
 colorWheelBorder = [ [0, 0, 0.4]; [0, 0.3, 0]; [0.4, 0, 0] ];
 colorWheelFill = [[0.2 0.3 0.8]; [0.2 0.9 0.2]; [0.9 0.3 0.1]];
 ampYMin = 0;
@@ -263,3 +263,23 @@ for i=2:6
     set(findall(h,'type','axes'),'fontsize',20, 'FontName', 'Arial',...
         'TickDir', 'out','box','off');
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%% Alternate plotting

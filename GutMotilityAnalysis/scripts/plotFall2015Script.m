@@ -21,6 +21,8 @@ days0Months1 = true; % 0 plots all fish, all types, and all days, 1 plots boxplo
 whichPlot = [ true, true, false, false, false ]; % Plot which parameters?: Amp, freq, inverse wave speed, sigB (variation), pulse
 ampYMin = 0;
 ampYMax = 52;
+freqYMin = 0;
+freqYMax = 0;
 
 %% Plot all results per day
 if( ~days0Months1 )

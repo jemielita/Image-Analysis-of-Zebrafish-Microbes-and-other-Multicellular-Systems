@@ -131,6 +131,7 @@ end
         figure;imshow(spectrograph(minFreqToConsiderIndex:maxFreqToConsiderIndex, :),[0, 60], 'InitialMagnification', 'fit', 'YData', [f(minFreqToConsiderIndex)*60, f(maxFreqToConsiderIndex)*60], 'XData', [yData(1), yData(end)]);
         set(gca,'YDir','normal');
         colormap('hot');
+        colorbar;
         axis square;
         h=gcf;
 %         title('Spectrogram','FontSize',20);
