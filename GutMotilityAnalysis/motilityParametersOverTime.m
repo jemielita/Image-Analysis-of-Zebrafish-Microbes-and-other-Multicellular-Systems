@@ -82,15 +82,16 @@ end
             endIndex = (ii - 1)*deltaTBetweenWindowSlides*fps + windowSize*60*fps;
             curGutMesh = gutMeshVals(:, startIndex:endIndex);
             fftGMV=zeros(size(curGutMesh,1),NFFT);
+            L = length(curGutMesh);
             
             % Loop to do fft on each position down the gut
             for jj=1:size(curGutMesh,1)
-                fftGMVCur=fft(curGutMesh(jj,:) - mean(curGutMesh(jj,:)),NFFT);
+                fftGMVCur=fft((curGutMesh(jj,:) - mean(curGutMesh(jj,:)))/L,NFFT);
                 fftGMV(jj,:)=fftGMVCur; % Division by fps is the same as multiplication by deltaT between frames, giving the right units, despite what engineers tell you
             end
             
             % Project data from FFT surface to a power spectrum curve
-            fftRootPowerGMV=abs(fftGMV)*micronsPerPixel/fps;
+            fftRootPowerGMV=abs(fftGMV)*2*micronsPerPixel;
             singleFFTRPGMV=mean(fftRootPowerGMV);
             singleFFTRPGMV = singleFFTRPGMV(1:NFFT/2+1);
             [amplitude, ampIndex] = max(singleFFTRPGMV(minFreqToConsiderIndex:maxFreqToConsiderIndex));
@@ -128,7 +129,7 @@ end
         % figure;surf(spectrograph);
         yData = (0:1/fps:(nFrames - 1)/fps)/60;
         % figure;imshow(spectrograph,[], 'InitialMagnification', 'fit','XData', [f(1), f(lazyIndex)], 'YData', [yData(1), yData(end)]);
-        figure;imshow(spectrograph(minFreqToConsiderIndex:maxFreqToConsiderIndex, :),[0, 60], 'InitialMagnification', 'fit', 'YData', [f(minFreqToConsiderIndex)*60, f(maxFreqToConsiderIndex)*60], 'XData', [yData(1), yData(end)]);
+        figure;imshow(2*micronsPerPixel*spectrograph(minFreqToConsiderIndex:maxFreqToConsiderIndex, :)/1500,[0, 2*micronsPerPixel*60/1500], 'InitialMagnification', 'fit', 'YData', [f(minFreqToConsiderIndex)*60, f(maxFreqToConsiderIndex)*60], 'XData', [yData(1), yData(end)]);
         set(gca,'YDir','normal');
         colormap('hot');
         colorbar;

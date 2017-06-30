@@ -150,7 +150,7 @@ fishOrderedByDay = micronsPerPixel/fps*[dayFourWT(i,:); dayFourRet(i,:);...
 
 %% Plot
 % Initialize boxplot variables
-mainFigureDirectory = '/Users/Ampere/Documents/Research/Papers/Gut Motility Analysis/Figures/';
+mainFigureDirectory = '/Users/altaen/Documents/Research/Papers/Gut Motility Analysis/Figures/';
 feedingDir = 'Figure3Feeding/';
 retDir = 'Figure4Ret/';
 numPerGroup = 2;
@@ -166,7 +166,7 @@ boxColorWheel = [ 0, 0, 0 ];
 
 % Initialize bounds
 ampYMin = 0;
-ampYMax = 55;
+ampYMax = 2*micronsPerPixel*900/1500;
 freqYMin = 1.2;
 freqYMax = 3.3;
 
