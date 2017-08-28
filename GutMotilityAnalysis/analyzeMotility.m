@@ -20,21 +20,30 @@
 %            contain the analyzed data. Prompts for directory if one isn't 
 %            given.
 %
-% Immediate to do: Create PIVVideoParams
-%                  (X) Make function which will retrofit old data analysis
-%                  Make remaining buttons work
+% Immediate to do: Create PIVVideoParams/Make remaining buttons work
 %                  More user defined parameters for plots, PIV video, etc.
-%                  Allow user to open this even without the exp dir
-%                  Scroll bar for GUI!
 %
 % To do: Don't assume *.tif? If so, make button function
 %        Super minor: change folder width if they get too squished together?
 %        Save the parameters used for analysis in each fish subfolder
-%        Output a .csv in addition to the current fishparams<date>.mat
 %        load manually currated experiment data (e.g. times), plot data
 %        Adjust the video/image buttons to autoscale
 %        Make variable fields not accept letters
 %        Change comments in analysis functions to match their function...
+%        Variable lockdown dependent on which analysis is done (e.g.,
+%           spatial scale lockdown only after analysis is run)
+%        Import button for importing other completed analysis (e.g., PIV
+%           data; remember to lockdown template size)
+%
+% Commit Tasks: Now asks for original um/px scale
+%               Locks down variables if any analysis is completed
+%               fishParams now named motilityParams
+%               Collect Analysis button moved
+%               Video and PIV video creation now works
+%               Various video parameters can also be set
+%               Fixed an error where small videos failed to run
+%               Fixed issue on some computers where axis values were not
+%                   showing
 
 %% Main Function
 function analyzeMotility( varargin )
@@ -60,8 +69,9 @@ rawPIVOutputName = 'rawPIVOutputName'; % WARNING: Don't change this variable nam
 maskFileOutputName = 'maskVars'; % WARNING: Don't change this variable name
 interpolationOutputName = 'processedPIVOutput'; % WARNING: Don't change this variable name
 motilityParametersOutputName = 'motilityParameters'; % WARNING: Don't change this variable name
-PIVOutputName = 'PIVAnimation'; % WARNING: Don't change this variable name
+PIVOutputName = 'PIVAnimation.avi'; % WARNING: Don't change this variable name
 fourierBoundsDefaults = {'4', '1'};
+PIVVideoParams = [0, 1, 100; 0, 1, 100];
 nAnalysisCheckboxTypes = 6;
 
 % Initialize GUI variables
@@ -76,7 +86,7 @@ panelBevelOffset = 2*panelLineWidth + 1;
 panelTitleTextSize = 20;
 panelTitleHeights = 28;
 optionalScrollBarWidth = 100;
-experimentVariablesPanelWidthFraction = 0.22; % This variable will multiply 'widthGUI' to determine how wide the variables section of the GUI is.
+experimentVariablesPanelWidthFraction = 0.26; % This variable will multiply 'widthGUI' to determine how wide the variables section of the GUI is; 0.22 seems to be good
 analysisPanelPosition = [panelBufferSpacing/widthGUI, panelBufferSpacing/heightGUI, experimentVariablesPanelWidthFraction - panelBufferSpacing/widthGUI, 1/2 - 2*panelBufferSpacing/heightGUI + panelTitleHeights/heightGUI];
 analysisTitlePosition = [analysisPanelPosition(1)*widthGUI + panelBevelOffset, analysisPanelPosition(2)*heightGUI + analysisPanelPosition(4)*heightGUI - panelTitleHeights - panelBevelOffset + 2, analysisPanelPosition(3)*widthGUI - 2*panelBevelOffset + 2, panelTitleHeights];
 variablesPanelPosition = [analysisPanelPosition(1), analysisPanelPosition(2) + analysisPanelPosition(4) + panelBufferSpacing/heightGUI, analysisPanelPosition(3), 1 - analysisPanelPosition(4) - 3*panelBufferSpacing/heightGUI];
@@ -92,7 +102,7 @@ textIconHeight = 18;
 textBufferSpacing = 4;
 inputIconHeight = 5;
 answerFieldDropDownWidth = 80;
-answerFieldEditWidth = 50;
+answerFieldEditWidth = 70;
 textSize = 13;
 textFGColor = [0, 0, 0];
 
@@ -266,8 +276,7 @@ function verifyTiffsInMainDirectoryStructure
                 directoriesToRemove = [directoriesToRemove, j]; %#ok since the number of directories should be "small"
                 
                 % Warn user
-                directoryRemovalMessage = sprintf('Folder "%s->%s" contains no %s''s and will be ignored.\n', mainExperimentDirectoryContents(i).name, mainExperimentSubDirectoryContentsCell{i}(j).name, imageFileType);
-                disp(directoryRemovalMessage);
+                fprintf('Folder "%s->%s" contains no %s''s and will be ignored.\n', mainExperimentDirectoryContents(i).name, mainExperimentSubDirectoryContentsCell{i}(j).name, imageFileType);
                 
             end
             
@@ -380,7 +389,7 @@ function [currentAnalysisPerformed, analysisVariables] = openOrCreateCurrentAnal
         currentAnalysisPerformed = currentAnalysisFile.currentAnalysisPerformed;
         analysisFieldNames = fieldnames(currentAnalysisFile);
         if(length(analysisFieldNames) == 1)
-            analysisVariables = {'*.tif','32','5','0.325','2', fourierBoundsDefaults{1}, fourierBoundsDefaults{2}};
+            analysisVariables = {'*.tif','32','5','0.1625','1', fourierBoundsDefaults{1}, fourierBoundsDefaults{2}};
         else
             analysisVariables = currentAnalysisFile.analysisVariables;
         end
@@ -407,7 +416,7 @@ function [currentAnalysisPerformed, analysisVariables] = openOrCreateCurrentAnal
         end
         
         % Save this file for future reference, update after any analysis
-        analysisVariables = {'*.tif','32','5','0.325','2', fourierBoundsDefaults{1}, fourierBoundsDefaults{2}};
+        analysisVariables = {'*.tif','32','5','0.1625','1', fourierBoundsDefaults{1}, fourierBoundsDefaults{2}};
         save(strcat(mainAnalysisDirectory, filesep, currentAnalysesPerformedFileName),'currentAnalysisPerformed','analysisVariables'); % WARNING: If currentAnalysisPerformed name is changed, you'll have to manually change this string  IN MANY LOCATIONS!!!
         
     else
@@ -536,8 +545,12 @@ function generateProcessingControlPanelListing
                 'Style','pushbutton',...
                 'String','Play Video',...
                 'Position',[curPosition(1) + subSubFolderWidth + textBufferSpacing, curPosition(2), playVideoButtonWidth, textIconHeight],...
-                'Callback',{@playVideoButton_Callback});
-            set(buttonHandleArray(loopIndex, 1), 'Enable', 'off');
+                'Callback',{@playVideoButton_Callback, i, j});
+%             if( currentAnalysisPerformed(i).bools(j, 4) )
+%                 set(buttonHandleArray(loopIndex, 1), 'Enable', 'on');
+%             else
+%                 set(buttonHandleArray(loopIndex, 1), 'Enable', 'off');
+%             end
             
             % Create open images button
             buttonHandleArray(loopIndex, 2) = uicontrol('Parent',subProcPanel,...
@@ -556,8 +569,8 @@ function generateProcessingControlPanelListing
                 'Style','pushbutton',...
                 'String','Play PIV Video',...
                 'Position',[curPosition(1) + subSubFolderWidth + playVideoButtonWidth + openAnalysisButtonWidth + 3*textBufferSpacing, curPosition(2), playPIVVideoButtonWidth, textIconHeight],...
-                'Callback',{@playPIVVideoButton_Callback});
-            if( currentAnalysisPerformed(i).bools(j, 5) )
+                'Callback',{@playPIVVideoButton_Callback, i, j});
+            if( currentAnalysisPerformed(i).bools(j, 4) )
                 set(buttonHandleArray(loopIndex, 3), 'Enable', 'on');
             else
                 set(buttonHandleArray(loopIndex, 3), 'Enable', 'off');
@@ -801,8 +814,26 @@ function generateProcessingControlPanelListing
         
     end
 
-    function playVideoButton_Callback(~, ~)
-        msgbox('Currently Not Working');
+    function playVideoButton_Callback(~, ~, ii, jj)
+
+        % Define the current folder, set variables
+        curExpDir = strcat(mainExperimentDirectory, filesep, mainExperimentDirectoryContents(ii).name, filesep, mainExperimentSubDirectoryContentsCell{1, ii}(jj).name);
+        
+        % Obtain current size of combined movies
+        dirContents = dir(strcat(curExpDir,filesep,'*.tif'));
+        totalFileSize = sum([dirContents.bytes]);
+        timeReducedFileSize = totalFileSize*(PIVVideoParams(1,3) - PIVVideoParams(1,1))/(PIVVideoParams(1,2)*100);
+        curFileSize = timeReducedFileSize*(PIVVideoParams(2,3) - PIVVideoParams(2,1))/(PIVVideoParams(2,2)*100);
+        curFileSize = curFileSize/(1e9);
+        
+        % Warn user that file may be too large
+        questAns = questdlg(sprintf('This function will load all parts of the movie specified. This may result in loading large volumes of data into RAM and possible crashing. With current options, this will load roughly %.3g GB into RAM. Continue?\n\n Note: Settings can be changed in the lower left panel under various video settings.',curFileSize),'File Size Warning','Yes','No','Yes');
+        
+        if(strcmp(questAns,'Yes'))
+            % Create Video
+            createNonPIVMovie(curExpDir, PIVVideoParams);
+        end
+        
     end
 
     function openAnalysisImagesButton_Callback(~, ~, ii, jj)
@@ -815,8 +846,40 @@ function generateProcessingControlPanelListing
         
     end
 
-    function playPIVVideoButton_Callback(~, ~)
-        msgbox('Currently Not Working');
+    function playPIVVideoButton_Callback(~, ~, ii, jj)
+        
+        % Define the current folder, set variables
+        curExpDir = strcat(mainExperimentDirectory, filesep, mainExperimentDirectoryContents(ii).name, filesep, mainExperimentSubDirectoryContentsCell{1, ii}(jj).name);
+        curAnDir = strcat(mainAnalysisDirectory, filesep, mainExperimentDirectoryContents(ii).name, filesep, mainExperimentSubDirectoryContentsCell{1, ii}(jj).name);
+        questAns = 'N/A';
+        
+        % If the file has not been created yet, create it
+        if(~currentAnalysisPerformed(ii).bools(jj, 5))
+            questAns = questdlg('Video has not been made yet: create now?','No video exists','Yes','No','Yes');
+        end
+        
+        % If the file exists (N/A), load it, otherwise create it or don't
+        if(strcmp(questAns,'N/A'))
+            implay(strcat(curAnDir,filesep,PIVOutputName))
+        elseif(strcmp(questAns,'Yes'))
+            
+            % Close GUI and everything else
+            close all;
+            
+            % Create Video
+            createPIVMovie(curAnDir, curExpDir, analysisVariables, PIVVideoParams, PIVOutputName);
+            
+            % Update currentAnalysisPerformed
+            currentAnalysisPerformed(ii).bools(jj,5) = true;
+            
+            % Save currentAnalysisPerformed.mat
+            save(strcat(mainAnalysisDirectory, filesep, currentAnalysesPerformedFileName),'currentAnalysisPerformed','analysisVariables'); % WARNING: If currentAnalysisPerformed name is changed, you'll have to manually change this string IN MANY LOCATIONS!!!
+            
+            % Reopen this program
+            analyzeMotility(mainExperimentDirectory, mainAnalysisDirectory);
+            
+        end
+        
     end
     
     function playPIVSoundButton_Callback(hObject, ~, ii, jj)
@@ -895,8 +958,20 @@ function generateVariablesPanelListing
     framerateInputPosition = framerateTextPosition + [framerateTextPosition(3) + textBufferSpacing + (filetypeInputPosition(3) - answerFieldEditWidth)/2, 0, answerFieldEditWidth - framerateTextPosition(3), inputIconHeight - textIconHeight];
     scaleTextPosition = framerateTextPosition + [0, - textBufferSpacing - 2*textIconHeight, 0, 0];
     scaleInputPosition = scaleTextPosition + [scaleTextPosition(3) + textBufferSpacing + (filetypeInputPosition(3) - answerFieldEditWidth)/2, 0, answerFieldEditWidth - scaleTextPosition(3), inputIconHeight - textIconHeight];
-    resReductionTextPosition = scaleTextPosition + [0, - textBufferSpacing - 3*textIconHeight, 0, textIconHeight];
+    resReductionTextPosition = scaleTextPosition + [0, - textBufferSpacing - 2*textIconHeight, 0, 0];
     resReductionInputPosition = resReductionTextPosition + [resReductionTextPosition(3) + textBufferSpacing + (filetypeInputPosition(3) - answerFieldEditWidth)/2, 0, answerFieldEditWidth - resReductionTextPosition(3), inputIconHeight - textIconHeight];
+    noVariableChangesPosition = resReductionTextPosition + [0, - textBufferSpacing - 3*textIconHeight, -resReductionTextPosition(3) + widthGUI*experimentVariablesPanelWidthFraction - 3*textBufferSpacing - 2*panelBevelOffset, textIconHeight];
+    
+    % Determine if user has modified anything and, if so, don't let them
+    % modify the variables anymmore (analysis assumes original variables)
+    shouldEnable = 'on';
+    for i=1:size(currentAnalysisPerformed,2)
+        for j=1:size(currentAnalysisPerformed(i).bools,1)
+            if(sum(currentAnalysisPerformed(i).bools(j,1:4))>0)
+                shouldEnable = 'off';
+            end
+        end
+    end
     
     % Filetype text
     uicontrol('Parent',f,...
@@ -935,6 +1010,7 @@ function generateVariablesPanelListing
         'ForegroundColor',textFGColor,...
         'Position',templateSizeInputPosition,...
         'Callback', {@templateSize_Callback},...
+        'Enable', shouldEnable,...
         'FontName','Gill Sans',...
         'FontSize',textSize);
     
@@ -954,13 +1030,14 @@ function generateVariablesPanelListing
         'ForegroundColor',textFGColor,...
         'Position',framerateInputPosition,...
         'Callback', {@framerate_Callback},...
+        'Enable', shouldEnable,...
         'FontName','Gill Sans',...
         'FontSize',textSize);
     
     % Scale text
     uicontrol('Parent',f,...
         'Style','text',...
-        'String','What is the spatial scale of the images (um/pix)?',...
+        'String','What is the original spatial scale of the images (um/pix)?',...
         'BackgroundColor',panelColor,...
         'ForegroundColor',textFGColor,...
         'Position',scaleTextPosition,...
@@ -973,6 +1050,7 @@ function generateVariablesPanelListing
         'ForegroundColor',textFGColor,...
         'Position',scaleInputPosition,...
         'Callback', {@scale_Callback},...
+        'Enable', shouldEnable,...
         'FontName','Gill Sans',...
         'FontSize',textSize);
     
@@ -992,8 +1070,23 @@ function generateVariablesPanelListing
         'ForegroundColor',textFGColor,...
         'Position',resReductionInputPosition,...
         'Callback', {@resReduction_Callback},...
+        'Enable', shouldEnable,...
         'FontName','Gill Sans',...
         'FontSize',textSize);
+    
+    % If user has run analysis, inform them they can no longer change
+    % variables
+    if(strcmp(shouldEnable,'off'))
+        uicontrol('Parent',f,...
+            'Style','text',...
+            'String','Some Analysis is complete: Variables may no longer be changed',...
+            'BackgroundColor',panelColor,...
+            'ForegroundColor',[1,0,0],...
+            'Position',noVariableChangesPosition,...
+            'HorizontalAlignment','left',...
+            'FontName','Gill Sans',...
+            'FontSize',textSize);
+    end
     
     function filetype_Callback(~, ~)
         
@@ -1037,9 +1130,13 @@ function generateAnalysisPanelListing
     fourierUpperBoundInputPosition = fourierUpperBoundTextPosition + [fourierUpperBoundTextPosition(3) + textBufferSpacing, 0, answerFieldEditWidth - fourierUpperBoundTextPosition(3), - textIconHeight];
     fourierLowerBoundTextPosition = fourierUpperBoundTextPosition + [0, - 2*textIconHeight - panelBufferSpacing, 0, 0];
     fourierLowerBoundInputPosition = fourierLowerBoundTextPosition + [fourierLowerBoundTextPosition(3) + textBufferSpacing, 0, answerFieldEditWidth - fourierLowerBoundTextPosition(3), - textIconHeight];
+    VideoTimeTextPosition = fourierLowerBoundTextPosition + [0, - 2*textIconHeight - panelBufferSpacing, -fourierLowerBoundTextPosition(3)/4, 0];
+    VideoTimeFirstInputPosition = VideoTimeTextPosition + [VideoTimeTextPosition(3) + textBufferSpacing, 0, answerFieldEditWidth/3 - VideoTimeTextPosition(3) + fourierLowerBoundTextPosition(3)/12, - textIconHeight];
+    VideoXTextPosition = VideoTimeTextPosition + [0, - 2*textIconHeight - panelBufferSpacing, 0, 0];
+    VideoXFirstInputPosition = VideoTimeFirstInputPosition + [0, - 2*textIconHeight - panelBufferSpacing, 0, 0];
     closeButtonPosition = [widthGUI*experimentVariablesPanelWidthFraction - panelBevelOffset - textBufferSpacing- buttonWidth, panelBufferSpacing + panelBevelOffset, buttonWidth, buttonHeight];
-    collectMotilityAnalysisPosition = closeButtonPosition + [0, buttonHeight + textBufferSpacing, 0, 0];
     analyzeButtonPosition = [panelBufferSpacing + panelBevelOffset + textBufferSpacing, panelBufferSpacing + panelBevelOffset, buttonWidth, buttonHeight];
+    collectMotilityAnalysisPosition = [(analyzeButtonPosition(1) + closeButtonPosition(1))/2, (analyzeButtonPosition(2) + closeButtonPosition(2))/2, buttonWidth, buttonHeight];
     
     % Fourier upper bound text
     uicontrol('Parent',f,...
@@ -1083,6 +1180,80 @@ function generateAnalysisPanelListing
         'FontName','Gill Sans',...
         'FontSize',textSize);
     
+    % Video StartT DeltaT EndT times percentages text
+    uicontrol('Parent',f,...
+        'Style','text',...
+        'String',sprintf('Video Times:\nStart%% DeltaFrames End%%'),...
+        'BackgroundColor',panelColor,...
+        'ForegroundColor',textFGColor,...
+        'Position',VideoTimeTextPosition,...
+        'HorizontalAlignment','left',...
+        'FontName','Gill Sans',...
+        'FontSize',textSize);
+    
+    % Video StartT DeltaT EndT times percentages numbers
+    uicontrol('Parent',f,...
+        'Style','edit',...
+        'String',num2str(PIVVideoParams(1,1)),...
+        'ForegroundColor',textFGColor,...
+        'Position',VideoTimeFirstInputPosition,...
+        'Callback', {@VideoParamsInput_Callback,1,1},...
+        'FontName','Gill Sans',...
+        'FontSize',textSize);
+    uicontrol('Parent',f,...
+        'Style','edit',...
+        'String',num2str(PIVVideoParams(1,2)),...
+        'ForegroundColor',textFGColor,...
+        'Position',VideoTimeFirstInputPosition + [answerFieldEditWidth/3 + fourierLowerBoundTextPosition(3)/12, 0, 0, 0],...
+        'Callback', {@VideoParamsInput_Callback,1,2},...
+        'FontName','Gill Sans',...
+        'FontSize',textSize);
+    uicontrol('Parent',f,...
+        'Style','edit',...
+        'String',num2str(PIVVideoParams(1,3)),...
+        'ForegroundColor',textFGColor,...
+        'Position',VideoTimeFirstInputPosition + [2*(answerFieldEditWidth/3 + fourierLowerBoundTextPosition(3)/12), 0, 0, 0],...
+        'Callback', {@VideoParamsInput_Callback,1,3},...
+        'FontName','Gill Sans',...
+        'FontSize',textSize);
+    
+    % Video StartX DeltaX EndX X percentages text
+    uicontrol('Parent',f,...
+        'Style','text',...
+        'String',sprintf('Video X Positions:\nStart%% ResReduction End%%'),...
+        'BackgroundColor',panelColor,...
+        'ForegroundColor',textFGColor,...
+        'Position',VideoXTextPosition,...
+        'HorizontalAlignment','left',...
+        'FontName','Gill Sans',...
+        'FontSize',textSize);
+    
+    % Video StartX DeltaX EndX X percentages numbers
+    uicontrol('Parent',f,...
+        'Style','edit',...
+        'String',num2str(PIVVideoParams(2,1)),...
+        'ForegroundColor',textFGColor,...
+        'Position',VideoXFirstInputPosition,...
+        'Callback', {@VideoParamsInput_Callback,2,1},...
+        'FontName','Gill Sans',...
+        'FontSize',textSize);
+    uicontrol('Parent',f,...
+        'Style','edit',...
+        'String',num2str(PIVVideoParams(2,2)),...
+        'ForegroundColor',textFGColor,...
+        'Position',VideoXFirstInputPosition + [answerFieldEditWidth/3 + fourierLowerBoundTextPosition(3)/12, 0, 0, 0],...
+        'Callback', {@VideoParamsInput_Callback,2,2},...
+        'FontName','Gill Sans',...
+        'FontSize',textSize);
+    uicontrol('Parent',f,...
+        'Style','edit',...
+        'String',num2str(PIVVideoParams(2,3)),...
+        'ForegroundColor',textFGColor,...
+        'Position',VideoXFirstInputPosition + [2*(answerFieldEditWidth/3 + fourierLowerBoundTextPosition(3)/12), 0, 0, 0],...
+        'Callback', {@VideoParamsInput_Callback,2,3},...
+        'FontName','Gill Sans',...
+        'FontSize',textSize);
+    
     % Close button
     uicontrol('Parent',f,...
         'Style','pushbutton',...
@@ -1118,6 +1289,11 @@ function generateAnalysisPanelListing
         
     end
     
+    % Functions for changing the PIVVideoParams
+    function VideoParamsInput_Callback(hObject, ~, ii, jj)
+        PIVVideoParams(ii,jj) = str2double(get(hObject,'String'));
+    end
+    
     % Close button callback
     function closeButton_Callback(~, ~)
         close all;
@@ -1126,8 +1302,8 @@ function generateAnalysisPanelListing
     % Collect motility analysis button callback
     function collectMotilityAnalysis_Callback(~,~)
         
-        fishParams = collectMotilityAnalysis(mainAnalysisDirectory);
-        assignin('base', 'fishParams', fishParams);
+        motilityParams = collectMotilityAnalysis(mainAnalysisDirectory);
+        assignin('base', 'motilityParams', motilityParams);
         
     end
     

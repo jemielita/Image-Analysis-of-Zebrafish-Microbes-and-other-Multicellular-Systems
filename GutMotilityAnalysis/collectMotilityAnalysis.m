@@ -11,7 +11,7 @@ end
 [mainAnalysisDirectoryContents, mainAnalysisSubDirectoryContentsCell, nSubDirectories] = obtainDirectoryStructure(mainAnalysisDirectory);
 currentAnalysisPerformedFile = load(strcat(mainAnalysisDirectory,filesep,'currentAnalysesPerformed.mat'));
 currentAnalysisPerformed = currentAnalysisPerformedFile.currentAnalysisPerformed;
-disp('Warning: The function is not tested for accuracy since it was written on the fly. Consider writing your own');
+% disp('Warning: The function is not tested for accuracy since it was written on the fly. Consider writing your own');
 index = 0;
 
 %% Loop through all checked directories to generate PIV video

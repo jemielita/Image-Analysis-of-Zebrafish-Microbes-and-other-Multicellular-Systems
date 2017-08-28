@@ -88,6 +88,7 @@ p{7,1}= 'Wiener';                p{7,2}=0;          % 1 = enable Wiener2 adaptiv
 p{8,1}= 'Wiener size';           p{8,2}=3;          % Wiener2 window size
 
 %% PIV analysis loop
+amount = size(filenames,2);
 x=cell(amount,1);
 y=x;
 u=x;

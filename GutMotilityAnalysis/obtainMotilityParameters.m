@@ -8,7 +8,7 @@ function [fftPowerPeak, fftPeakFreq, fftRPowerPeakSTD, fftRPowerPeakMin, fftRPow
 loadedInterpFile = load(strcat(curDir, filesep, interpolationOutputName,'_Current.mat'));
 
 % Initialize variables
-scale = str2double(analysisVariables{4});
+scale = str2double(analysisVariables{4})*str2double(analysisVariables{5});
 fps = str2double(analysisVariables{3});
 retryBool = true;
 maxFreqToSeeInFFT = str2double(analysisVariables{6});
@@ -52,6 +52,7 @@ imshow(surfaceValues',[], 'InitialMagnification', 'fit','XData', [abscissaValues
 set(gca,'YDir','normal')
 colormap('Jet');
 axis fill;
+axis on;
 h=gcf;
 title('QSTMap','FontSize',20,'FontWeight','bold');
 ylabel('Time (s)','FontSize',20);
@@ -81,6 +82,7 @@ imshow(trueXCorr,[], 'InitialMagnification', 'fit','XData', abscissaValues, 'YDa
 set(gca,'YDir','normal')
 colormap('Jet');
 axis fill;
+axis on;
 h=gcf;
 title('XCorr','FontSize',20,'FontWeight','bold');
 ylabel('\tau (s)','FontSize',20);
@@ -155,6 +157,7 @@ imshow(subsetFullFFT',[], 'InitialMagnification', 'fit','XData', [1, size(subset
 set(gca,'YDir','normal')
 colormap('Jet');
 axis square;
+axis on;
 h=gcf;
 title('FFT','FontSize',20,'FontWeight','bold');
 ylabel('Frequency (min^{-1})','FontSize',20);

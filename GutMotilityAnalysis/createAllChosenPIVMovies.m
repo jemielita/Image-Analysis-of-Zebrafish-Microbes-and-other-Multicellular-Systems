@@ -11,12 +11,6 @@ function createAllChosenPIVMovies(mainExperimentDirectory, mainExperimentDirecto
 nDirectories = size(analysisToPerform, 2);
 currentAnalysisFile = load(strcat(mainAnalysisDirectory, filesep, currentAnalysesPerformedFileName)); % WARNING: Do not change this variable name without changing the save string below
 currentAnalysisPerformed = currentAnalysisFile.currentAnalysisPerformed; % WARNING: Don't change this variable name
-StartTime = PIVVideoParams(1,1);
-DeltaTime = PIVVideoParams(1,2);
-EndTime = PIVVideoParams(1,3);
-StartX = PIVVideoParams(2,1);
-DeltaX = PIVVideoParams(2,2);
-EndX = PIVVideoParams(2,3);
 
 % Progress bar
 progtitle = sprintf('Preparing for video...');

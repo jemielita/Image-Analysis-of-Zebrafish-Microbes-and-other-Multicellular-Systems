@@ -7,6 +7,7 @@ onlyShowFirstNSeconds=1:NSeconds*fps;
 imshow(trueXCorr(onlyShowFirstNSeconds,:),[], 'InitialMagnification','fit', 'YData', [0, NSeconds]);
 set(gca,'YDir','normal')
 axis square;
+axis on;
 colormap('Jet');
 
 % Obtain rough line around maxima
