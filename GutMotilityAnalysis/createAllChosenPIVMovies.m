@@ -5,7 +5,7 @@
 %
 % To do:
 
-function createAllChosenPIVMovies(mainExperimentDirectory, mainExperimentDirectoryContents, mainExperimentSubDirectoryContentsCell, mainAnalysisDirectory, analysisToPerform, analysisVariables, currentAnalysesPerformedFileName, PIVOutputName, PIVVideoParams)
+function createAllChosenPIVMovies(mainExperimentDirectory, mainExperimentDirectoryContents, mainExperimentSubDirectoryContentsCell, mainAnalysisDirectory, analysisToPerform, analysisVariables, currentAnalysesPerformedFileName, PIVOutputName, PIVVideoParams, interpolationOutputName)
 
 %% Initialize variables
 nDirectories = size(analysisToPerform, 2);
@@ -37,7 +37,7 @@ for i=1:nDirectories
             curExpDir = strcat(mainExperimentDirectory, filesep, mainExperimentDirectoryContents(i).name, filesep, mainExperimentSubDirectoryContentsCell{1, i}(j).name);
             
             % Perform the PIV video generation on the current fish
-            createPIVMovie(curAnDir, curExpDir, analysisVariables, PIVVideoParams, PIVOutputName);
+            createPIVMovie(curAnDir, curExpDir, analysisVariables, PIVVideoParams, PIVOutputName, interpolationOutputName);
             
             % Update currentAnalysisPerformed
             currentAnalysisPerformed(i).bools(j,5) = true;

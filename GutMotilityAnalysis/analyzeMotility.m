@@ -860,14 +860,16 @@ function generateProcessingControlPanelListing
         
         % If the file exists (N/A), load it, otherwise create it or don't
         if(strcmp(questAns,'N/A'))
+            
             implay(strcat(curAnDir,filesep,PIVOutputName))
+            
         elseif(strcmp(questAns,'Yes'))
             
             % Close GUI and everything else
             close all;
             
             % Create Video
-            createPIVMovie(curAnDir, curExpDir, analysisVariables, PIVVideoParams, PIVOutputName);
+            createPIVMovie(curAnDir, curExpDir, analysisVariables, PIVVideoParams, PIVOutputName, interpolationOutputName);
             
             % Update currentAnalysisPerformed
             currentAnalysisPerformed(ii).bools(jj,5) = true;
@@ -1325,7 +1327,7 @@ function generateAnalysisPanelListing
         performMotilityDataAnalysis(mainExperimentDirectoryContents, mainExperimentSubDirectoryContentsCell, mainAnalysisDirectory, analysisToPerform, analysisVariables, currentAnalysesPerformedFileName, motilityParametersOutputName, interpolationOutputName, GUISize)
         
         % Make PIV movie
-%        createAllChosenPIVMovies(mainExperimentDirectory, mainExperimentDirectoryContents, mainExperimentSubDirectoryContentsCell, mainAnalysisDirectory, analysisToPerform, analysisVariables, currentAnalysesPerformedFileName, PIVOutputName, PIVVideoParams);
+        createAllChosenPIVMovies(mainExperimentDirectory, mainExperimentDirectoryContents, mainExperimentSubDirectoryContentsCell, mainAnalysisDirectory, analysisToPerform, analysisVariables, currentAnalysesPerformedFileName, PIVOutputName, PIVVideoParams, interpolationOutputName);
         
         % Reopen this program
         analyzeMotility(mainExperimentDirectory, mainAnalysisDirectory);
