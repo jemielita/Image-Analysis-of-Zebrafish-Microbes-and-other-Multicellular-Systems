@@ -47,7 +47,7 @@ end
         
         % Initialize variables
         minFreqToConsider = 0.25; % Units of per minute
-        maxFreqToConsider = 6; % Units of per minute
+        maxFreqToConsider = 4.0; % Units of per minute
         gutMeshVelsPCoords = loadedAnalysisFile.gutMeshVelsPCoords;
         gutMeshVals=squeeze(mean(gutMeshVelsPCoords(:,:,1,:),1));
         gutMeshVals = gutMeshVals(:,1:end);
