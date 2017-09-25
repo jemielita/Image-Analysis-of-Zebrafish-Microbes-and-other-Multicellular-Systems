@@ -25,7 +25,7 @@ baseFilenames = sortrows(baseFilenames); %sort all image files
 amount = length(baseFilenames);
 count=1; % Linear index that travels through all multipages monotonically
 filenames = {};
-writerObj = VideoWriter(curAnDir,filesep,PIVOutputName,'Uncompressed AVI');
+writerObj = VideoWriter(strcat(curAnDir,filesep,PIVOutputName),'Uncompressed AVI');
 velMultiple=5;
 showOnlyHorizontalComponent = true;
 
