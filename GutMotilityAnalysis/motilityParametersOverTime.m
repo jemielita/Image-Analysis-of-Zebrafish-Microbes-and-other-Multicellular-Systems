@@ -1,4 +1,4 @@
-function motilityParametersOverTime(mainAnalysisDirectory, mainExperimentDirectoryContents, mainExperimentSubDirectoryContentsCell, analysisToPerform, analysisVariables)
+function [amplitudeVector, frequencyVector] = motilityParametersOverTime(mainAnalysisDirectory, mainExperimentDirectoryContents, mainExperimentSubDirectoryContentsCell, analysisToPerform, analysisVariables)
 
 %% Initialize variables
 nDirectories = size(analysisToPerform, 2);
@@ -129,7 +129,7 @@ end
         % figure;surf(spectrograph);
         yData = (0:1/fps:(nFrames - 1)/fps)/60;
         % figure;imshow(spectrograph,[], 'InitialMagnification', 'fit','XData', [f(1), f(lazyIndex)], 'YData', [yData(1), yData(end)]);
-        figure;imshow(2*micronsPerPixel*spectrograph(minFreqToConsiderIndex:maxFreqToConsiderIndex, :)/1500,[0, 2*micronsPerPixel*60/1500], 'InitialMagnification', 'fit', 'YData', [f(minFreqToConsiderIndex)*60, f(maxFreqToConsiderIndex)*60], 'XData', [yData(1), yData(end)]);
+        figure;imshow(spectrograph(minFreqToConsiderIndex:maxFreqToConsiderIndex, :),[0, 2*micronsPerPixel*60/1500], 'InitialMagnification', 'fit', 'YData', [f(minFreqToConsiderIndex)*60, f(maxFreqToConsiderIndex)*60], 'XData', [yData(1), yData(end)]);
         set(gca,'YDir','normal');
         colormap('hot');
         colorbar;
