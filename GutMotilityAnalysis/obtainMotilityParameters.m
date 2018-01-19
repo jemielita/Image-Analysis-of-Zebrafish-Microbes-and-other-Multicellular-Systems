@@ -59,6 +59,27 @@ ylabel('Time (s)','FontSize',20);
 xlabel('x (\mum)','FontSize',20);
 set(findall(h,'type','axes'),'fontsize',15,'fontWeight','bold');
 
+%% Transverse Motion as a surface
+
+% Define variables as a fraction of the longitudinal components of gutMeshVelsPCoords
+abscissaValues=(markerNumStart-1)*translateMarkerNumToMicron:(markerNumEnd-1)*translateMarkerNumToMicron;
+ordinateValues= int16((size(gutMeshVelsPCoords,4)/fractionOfTimeStart):(size(gutMeshVelsPCoords,4)/(fractionOfTimeStart)+size(gutMeshVelsPCoords,4)/totalTimeFraction-1));
+surfaceValuesT=squeeze(-mean(gutMeshVelsPCoords(:,markerNumStart:markerNumEnd,2,ordinateValues),1));
+
+% Display surface plot
+transH = figure;
+imshow(surfaceValuesT',[], 'InitialMagnification', 'fit','XData', [abscissaValues(1), abscissaValues(end)], 'YData', 1/fps*ordinateValues);
+set(gca,'YDir','normal')
+colormap('Jet');
+axis fill;
+axis on;
+h=gcf;
+title('QSTMapTransverse','FontSize',20,'FontWeight','bold');
+ylabel('Time (s)','FontSize',20);
+xlabel('x (\mum)','FontSize',20);
+set(findall(h,'type','axes'),'fontsize',15,'fontWeight','bold');
+saveas(transH, strcat(curDir, filesep, 'TransFig_',date), 'png');
+
 %% Cross Correlations of wave propagations
 ordinateValues=int16(size(gutMeshVelsPCoords,4)/fractionOfTimeStart:(size(gutMeshVelsPCoords,4)/(fractionOfTimeStart)+size(gutMeshVelsPCoords,4)/totalTimeFraction-1));
 surfaceValues=squeeze(-mean(gutMeshVelsPCoords(:,markerNumStart:markerNumEnd,1,ordinateValues),1));
