@@ -27,7 +27,7 @@ for i=1:nDirectories
     for j=1:nSubDirectories
         
         % If we want to analyze it, do so, else skip
-        if(analysisToPerform(i).bools(j,1))
+        if(analysisToPerform(i).bools(j,1) && analysisToPerform(i).bools(j,6))
             
             % ObtainCurrentDirectory
             curDir = strcat(mainExperimentDirectory, filesep, mainExperimentDirectoryContents(i).name, filesep, mainExperimentSubDirectoryContentsCell{1, i}(j).name);

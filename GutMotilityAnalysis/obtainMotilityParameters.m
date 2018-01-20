@@ -59,27 +59,6 @@ ylabel('Time (s)','FontSize',20);
 xlabel('x (\mum)','FontSize',20);
 set(findall(h,'type','axes'),'fontsize',15,'fontWeight','bold');
 
-%% Transverse Motion as a surface
-
-% Define variables as a fraction of the longitudinal components of gutMeshVelsPCoords
-abscissaValues=(markerNumStart-1)*translateMarkerNumToMicron:(markerNumEnd-1)*translateMarkerNumToMicron;
-ordinateValues= int16((size(gutMeshVelsPCoords,4)/fractionOfTimeStart):(size(gutMeshVelsPCoords,4)/(fractionOfTimeStart)+size(gutMeshVelsPCoords,4)/totalTimeFraction-1));
-surfaceValuesT=squeeze(-mean(gutMeshVelsPCoords(:,markerNumStart:markerNumEnd,2,ordinateValues),1));
-
-% Display surface plot
-transH = figure;
-imshow(surfaceValuesT',[], 'InitialMagnification', 'fit','XData', [abscissaValues(1), abscissaValues(end)], 'YData', 1/fps*ordinateValues);
-set(gca,'YDir','normal')
-colormap('Jet');
-axis fill;
-axis on;
-h=gcf;
-title('QSTMapTransverse','FontSize',20,'FontWeight','bold');
-ylabel('Time (s)','FontSize',20);
-xlabel('x (\mum)','FontSize',20);
-set(findall(h,'type','axes'),'fontsize',15,'fontWeight','bold');
-saveas(transH, strcat(curDir, filesep, 'TransFig_',date), 'png');
-
 %% Cross Correlations of wave propagations
 ordinateValues=int16(size(gutMeshVelsPCoords,4)/fractionOfTimeStart:(size(gutMeshVelsPCoords,4)/(fractionOfTimeStart)+size(gutMeshVelsPCoords,4)/totalTimeFraction-1));
 surfaceValues=squeeze(-mean(gutMeshVelsPCoords(:,markerNumStart:markerNumEnd,1,ordinateValues),1));
@@ -184,7 +163,39 @@ title('FFT','FontSize',20,'FontWeight','bold');
 ylabel('Frequency (min^{-1})','FontSize',20);
 xlabel('X (\mum)','FontSize',20);
 % zlabel('Correlation','FontSize',20);
-    
+
+%% Transverse Motion as a surface
+
+% Define variables as a fraction of the longitudinal components of gutMeshVelsPCoords
+abscissaValues=(markerNumStart-1)*translateMarkerNumToMicron:(markerNumEnd-1)*translateMarkerNumToMicron;
+ordinateValues= int16((size(gutMeshVelsPCoords,4)/fractionOfTimeStart):(size(gutMeshVelsPCoords,4)/(fractionOfTimeStart)+size(gutMeshVelsPCoords,4)/totalTimeFraction-1));
+surfaceValuesT=squeeze(-mean(gutMeshVelsPCoords(:,markerNumStart:markerNumEnd,2,ordinateValues),1));
+
+% Display surface plot
+transH = figure;
+imshow(surfaceValuesT',[], 'InitialMagnification', 'fit','XData', [abscissaValues(1), abscissaValues(end)], 'YData', 1/fps*ordinateValues);
+set(gca,'YDir','normal')
+colormap('Jet');
+axis fill;
+axis on;
+title('QSTMapTransverse','FontSize',20,'FontWeight','bold');
+ylabel('Time (s)','FontSize',20);
+xlabel('x (\mum)','FontSize',20);
+set(findall(transH,'type','axes'),'fontsize',15,'fontWeight','bold');
+saveas(transH, strcat(curDir, filesep, 'TransFig_',date), 'png');
+
+%% Funzies Transverse
+
+% surfaceValuesT=squeeze(-mean(gutMeshVelsPCoords(:,:,2,:),1));
+% figure; plot(surfaceValuesT(21,1:300));
+
+% f = figure;
+% hold on;
+% for i=1:40
+% f = plot(surfaceValuesT(i,1:300) - i,'Color', [(i-1)/40, 0, (40- i)/40]);
+% end
+% hold off;
+
 %% Find motility parameters
 while(retryBool)
     % Find peristaltic frequency, wave speed from cross-correlation
@@ -248,6 +259,7 @@ saveas(h, strcat(curDir, filesep, 'Figures_',date), 'png')
 saveas(h, strcat(curDir, filesep, 'Figures_Current'), 'fig');
 
 close(h);
+close(transH);
 close(g);
 
 end
