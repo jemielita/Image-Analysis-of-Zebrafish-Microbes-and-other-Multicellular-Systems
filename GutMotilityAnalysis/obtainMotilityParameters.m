@@ -1,8 +1,58 @@
-% Function which...
+% Function which takes the PIV vectors and processes them to obtain scalar
+% representations of motility features, such as amplitude, frequency, etc.
+% It does this by projecting the 4D gutMeshVelsPCoords down onto a 2D
+% surface (representing only the longitudinal component of the velocty and
+% averaging over the many rows), performs a cross-correlation to obtain
+% wave speed, frequency, and duration, then performs a fourier transform on
+% the surface to get a frequency spectrum to obtain the amplitude.
 %
-% To do:
+% Inputs:- curDir: The directory to obtain the processed PIV data from.
+%        - analysisVariables: A cell array of numbers and strings
+%            containing the user variables specified in the GUI (top left).
+%        - interpolationOutputName: String of the name of the file which 
+%            contains the interpolated motility velocity vectors.
+%        - GUISize: A 1x2 vector containing the width and height of the
+%            figure window which will contain the analyzed images.
+%
+% Outputs:- fftPowerPeak: A number representing what we now call Amplitude.
+%             In units of microns.
+%         - fftPeakFreq: A number representing what we now call Frequency.
+%             In units of per minutes. Obtained from the FFT.
+%         - fftRPowerPeakSTD: The standard deviation of the amplitudes when
+%             considered along the gut. In units of microns.
+%         - fftRPowerPeakMin: The minimum amplitude along the gut. In units
+%             of microns.
+%         - fftRPowerPeakMax: The maximum amplitude along the gut. In units
+%             of microns.
+%         - waveFrequency: A number representing what we now call Frequency.
+%             Obtained from the XCorr. This number should be similar to,
+%             though likely not identical to, fftPeakFreq. In units of per
+%             minutes.
+%         - waveSpeedSlope: A number representing the slope of the
+%             cross-correlation peaks, and thus the speed of a wave as it
+%             travels down the gut. In units of microns/second.
+%         - BByFPS: Inverse wave speed slope. In units of seconds per
+%             pixel.
+%         - sigB: Slope uncertainty for the line fit to the
+%             cross-correlation maxima.
+%         - waveFitRSquared: R-squared value for the line fit to the
+%             cross-correlation maxima.
+%         - xCorrMaxima: A vector containing the time at which the
+%             cross-correlation is maximum for each delta x.
+%         - analyzedDeltaMarkers: a 1x2 vector containing the start and
+%             finish of the delta x's to use when fitting a line to the
+%             cross-correlation maxima.
+%         - waveAverageWidth: A number representing what we now call
+%             Duration. In units of seconds.
 
 function [fftPowerPeak, fftPeakFreq, fftRPowerPeakSTD, fftRPowerPeakMin, fftRPowerPeakMax, waveFrequency, waveSpeedSlope, BByFPS, sigB, waveFitRSquared, xCorrMaxima, analyzedDeltaMarkers, waveAverageWidth] = obtainMotilityParameters(curDir, analysisVariables, interpolationOutputName, GUISize)
+
+%% Option to change the color scales of the QSTMaps and cross-correlation plots
+iWantToUseMyOwnScale = false; % If this is true, use the options below to specify what values to scale your plots to.
+QSTMapMin = 0; % Modify these 4 variables to be whatever you want
+QSTMapMax = 0; % See above
+xCorrMin = 0; % See above
+xCorrMax = 0; % See above
 
 %% Load data, initialize variables
 loadedInterpFile = load(strcat(curDir, filesep, interpolationOutputName,'_Current.mat'));
@@ -26,10 +76,21 @@ markerNumEnd=size(gutMesh,2); % Use size(gutMesh,2) if all
 pulseWidthLargestDecayTime=50; % Units of frames... I feel that's easier
 widthGUI = GUISize(3);
 heightGUI = GUISize(4);
+convertAmplitudeToUmUnits = 2*scale/size(gutMeshVelsPCoords, 4);
+if(iWantToUseMyOwnScale)
+    QSTMapScale = [QSTMapMin, QSTMapMax];
+else
+    QSTMapScale = [];
+end
+if(iWantToUseMyOwnScale)
+    xCorrScale = [xCorrMin, xCorrMax];
+else
+    xCorrScale = [];
+end
 
 %% Initialize main figure
-f = figure('Visible', 'off', 'Position', GUISize, 'Resize', 'off'); % Create figure
-set(f, 'name', 'Motility Analysis GUI', 'numbertitle', 'off'); % Rename figure
+h = figure('Visible', 'off', 'Position', GUISize, 'Resize', 'off'); % Create figure
+set(h, 'name', 'Motility Analysis GUI', 'numbertitle', 'off'); % Rename figure
 a = axes; % Define figure axes
 set(a, 'Position', [0, 0, 1, 1]); % Stretch the axes over the whole figure
 set(a, 'Xlim', [0, widthGUI], 'YLim', [0, heightGUI]); % Switch off autoscaling
@@ -37,7 +98,7 @@ set(a, 'XTick', [], 'YTick', []); % Turn off tick marks
 
 % Display figure
 hold on;
-f.Visible = 'on';
+h.Visible = 'on';
 
 %% Longitudinal Motion as a surface
 
@@ -47,14 +108,34 @@ ordinateValues= int16((size(gutMeshVelsPCoords,4)/fractionOfTimeStart):(size(gut
 surfaceValues=squeeze(-mean(gutMeshVelsPCoords(:,markerNumStart:markerNumEnd,1,ordinateValues),1));
 
 % Display surface plot
-subplot(2, 3, [1,4]);
-imshow(surfaceValues',[], 'InitialMagnification', 'fit','XData', [abscissaValues(1), abscissaValues(end)], 'YData', 1/fps*ordinateValues);
+subplot(2, 3, 1);
+imshow(surfaceValues',QSTMapScale, 'InitialMagnification', 'fit','XData', [abscissaValues(1), abscissaValues(end)], 'YData', 1/fps*ordinateValues);
 set(gca,'YDir','normal')
 colormap('Jet');
 axis fill;
 axis on;
 h=gcf;
-title('QSTMap','FontSize',20,'FontWeight','bold');
+title('QSTMapLongitudinal','FontSize',20,'FontWeight','bold');
+ylabel('Time (s)','FontSize',20);
+xlabel('x (\mum)','FontSize',20);
+set(findall(h,'type','axes'),'fontsize',15,'fontWeight','bold');
+
+%% Transverse Motion as a surface
+
+% Define variables as a fraction of the longitudinal components of gutMeshVelsPCoords
+abscissaValues=(markerNumStart-1)*translateMarkerNumToMicron:(markerNumEnd-1)*translateMarkerNumToMicron;
+ordinateValues= int16((size(gutMeshVelsPCoords,4)/fractionOfTimeStart):(size(gutMeshVelsPCoords,4)/(fractionOfTimeStart)+size(gutMeshVelsPCoords,4)/totalTimeFraction-1));
+surfaceValuesT=2*squeeze(mean(gutMeshVelsPCoords(end/2:end,markerNumStart:markerNumEnd,2,ordinateValues),1) - mean(gutMeshVelsPCoords(1:end/2,markerNumStart:markerNumEnd,2,ordinateValues),1));
+
+% Display surface plot
+subplot(2, 3, 4);
+imshow(surfaceValuesT',QSTMapScale, 'InitialMagnification', 'fit','XData', [abscissaValues(1), abscissaValues(end)], 'YData', 1/fps*ordinateValues);
+set(gca,'YDir','normal')
+colormap('Jet');
+axis fill;
+axis on;
+h=gcf;
+title('QSTMapTransverse','FontSize',20,'FontWeight','bold');
 ylabel('Time (s)','FontSize',20);
 xlabel('x (\mum)','FontSize',20);
 set(findall(h,'type','axes'),'fontsize',15,'fontWeight','bold');
@@ -78,7 +159,7 @@ trueXCorr=flipud(fullXCorr);% The flip is due to how cross correlation interpret
 subplot(2, 3, [2, 5]);
 abscissaValues=[translateMarkerNumToMicron,(nCorrs-1)*translateMarkerNumToMicron];
 ordinateValues=[0, (size(r,2)/2-1)/fps];
-imshow(trueXCorr,[], 'InitialMagnification', 'fit','XData', abscissaValues, 'YData', ordinateValues);
+imshow(trueXCorr,xCorrScale, 'InitialMagnification', 'fit','XData', abscissaValues, 'YData', ordinateValues);
 set(gca,'YDir','normal')
 colormap('Jet');
 axis fill;
@@ -173,7 +254,7 @@ surfaceValuesT=squeeze(-mean(gutMeshVelsPCoords(:,markerNumStart:markerNumEnd,2,
 
 % Display surface plot
 transH = figure;
-imshow(surfaceValuesT',[], 'InitialMagnification', 'fit','XData', [abscissaValues(1), abscissaValues(end)], 'YData', 1/fps*ordinateValues);
+imshow(surfaceValuesT',QSTMapScale, 'InitialMagnification', 'fit','XData', [abscissaValues(1), abscissaValues(end)], 'YData', 1/fps*ordinateValues);
 set(gca,'YDir','normal')
 colormap('Jet');
 axis fill;
@@ -214,7 +295,7 @@ while(retryBool)
     fftRPowerPeakMax=max(fftRootPowerGMV(:,actualMaxPosition));
     
     fitInfo = sprintf('\nWave Period (s) = %.2f \nWave Period (FFT)(s) = %.2f \nSlope (s/marker) = %.2f \n Wave Fit R-Squared = %.2f%% \n Wave Speed Variation = %.2f \n FFT Peak Power = %.2f',...
-        60/waveFrequency, 1/fftPeakFreq, BByFPS, 100*waveFitRSquared, sigB, fftPowerPeak);
+        60/waveFrequency, 1/fftPeakFreq, BByFPS, 100*waveFitRSquared, sigB, convertAmplitudeToUmUnits*fftPowerPeak);
     retryPrompt = menu(strcat('Does everything look good (figures will be saved after this)?',fitInfo),'Yes','No');
     if(retryPrompt==1)
         retryBool = false;
@@ -251,6 +332,13 @@ if(goodData~=1)
     fftRPowerPeakMax=max(fftRootPowerGMV(:,actualMaxPosition));
     
 end
+
+% Convert units
+fftPowerPeak = fftPowerPeak*convertAmplitudeToUmUnits;
+fftPeakFreq = 60*fftPeakFreq;
+fftRPowerPeakSTD = fftRPowerPeakSTD*convertAmplitudeToUmUnits;
+fftRPowerPeakMin = fftRPowerPeakMin*convertAmplitudeToUmUnits;
+fftRPowerPeakMax = fftRPowerPeakMax*convertAmplitudeToUmUnits;
 
 % Save the figure as both a png (with date) and as a .fig (only most recent
 % since the file sizes may be large)

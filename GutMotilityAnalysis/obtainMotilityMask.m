@@ -1,6 +1,28 @@
-% Function which...
+% Function which shows a histogram equalized version of the first image in
+% a subdirectory and allows the user to draw a mask over it by selecting
+% vertices and drawing a polygon. Double clicking closes the polygon, with
+% the inside being the part which is analyzed. Then the user draws a center
+% line. Double clicking ends the centerline drawing.
 %
-% To do:
+% Inputs:- imPath: A string representing the path to the saved images in
+%            question.
+%        - filetype: A string (with wildcard) representation of the
+%            filetype of the images.
+%
+% Outputs:- gutOutline: A handle to the polygon object. This output is
+%             no longer used.
+%         - gutOutlinePoly: A 2xN representation of all the vertices (in image
+%             pixel coordinates) used to represent the mask. The last entry
+%             and the first entry are assumed to be connected.
+%         - gutMiddleTop: A handle to the polygon object for the center
+%             line. This output is no longer used.
+%         - gutMiddleBottom: Same as gutMiddleTop. Used to contain the
+%             location of the bottom edge of the luman.
+%         - gutMiddlePolyTop: A 2xM representation of all the vertices (in
+%             image pixel coordinates) used to represent the center line.
+%             The last entry is not connected to the first entry.
+%         - gutMiddlePolyBottom: Same as gutMiddlePolyTop.
+
 
 function [gutOutline, gutOutlinePoly, gutMiddleTop, gutMiddleBottom, gutMiddlePolyTop, gutMiddlePolyBottom] = obtainMotilityMask(imPath,filetype,resReduce)
 

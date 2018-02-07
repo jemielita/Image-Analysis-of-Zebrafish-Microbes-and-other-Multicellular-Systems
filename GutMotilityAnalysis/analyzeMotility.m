@@ -20,30 +20,14 @@
 %            contain the analyzed data. Prompts for directory if one isn't 
 %            given.
 %
-% Immediate to do: Create PIVVideoParams/Make remaining buttons work
-%                  More user defined parameters for plots, PIV video, etc.
-%
-% To do: Don't assume *.tif? If so, make button function
-%        Super minor: change folder width if they get too squished together?
-%        Save the parameters used for analysis in each fish subfolder
+% To do: Save the parameters used for analysis in each fish subfolder
 %        load manually currated experiment data (e.g. times), plot data
 %        Adjust the video/image buttons to autoscale
 %        Make variable fields not accept letters
-%        Change comments in analysis functions to match their function...
 %        Variable lockdown dependent on which analysis is done (e.g.,
 %           spatial scale lockdown only after analysis is run)
 %        Import button for importing other completed analysis (e.g., PIV
 %           data; remember to lockdown template size)
-%
-% Commit Tasks: Now asks for original um/px scale
-%               Locks down variables if any analysis is completed
-%               fishParams now named motilityParams
-%               Collect Analysis button moved
-%               Video and PIV video creation now works
-%               Various video parameters can also be set
-%               Fixed an error where small videos failed to run
-%               Fixed issue on some computers where axis values were not
-%                   showing
 
 %% Main Function
 function analyzeMotility( varargin )
@@ -58,7 +42,7 @@ else
     mainExperimentDirectory = varargin{1};
     mainAnalysisDirectory = varargin{2};
 end
-usingExperimentDirectory = ~strcmp(num2str(mainExperimentDirectory),'0');
+usingExperimentDirectory = ~strcmp(num2str(mainExperimentDirectory),'0') && ~strcmp(mainExperimentDirectory, mainAnalysisDirectory);
 if(~usingExperimentDirectory)
     disp('Warning: No experiment directory chosen. Some functions may not be available and may crash the program if used.');
     mainExperimentDirectory = mainAnalysisDirectory;

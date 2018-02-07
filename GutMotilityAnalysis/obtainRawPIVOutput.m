@@ -1,6 +1,6 @@
-% Function which is based on PIVlab_commandline, from PIVLab
-%
-% To do: waitbar
+% Function which is based on PIVlab_commandline, from PIVLab, modified to
+% work with the analyzeMotility.m program. Many comments from the original
+% program have been left unchanged.
 %
 % Variables: -imageDirectory: String of the directory containing images
 %            -settings: Cell array, of a cell array containing

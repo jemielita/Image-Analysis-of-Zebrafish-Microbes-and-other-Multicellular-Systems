@@ -1,3 +1,37 @@
+% Function which shows an image of the cross correlation, prompts the user
+% for a line showing the program roughly where first set of correlation
+% maxima are, and then processes that subset of the data to extract wave
+% speed, frequency, variation, etc.
+%
+% Inputs:- gutMesh: A NxM array of vertex locations for a grid morphed to 
+%             fit inside of the mask. The slopes for each column of 
+%             vertices is given by thetas.
+%        - trueXCorr: The cross-correlation surface generated elsewhere,
+%             with flips taken into account.
+%        - fps: Frames per second of the movie being analyzed. In units
+%             of...
+%        - scale: The reduced scale of the images
+%          (resolution*resolutionReduction), in units of microns/pixel.
+%
+% Outputs:- waveFrequency: A number representing what we now call Frequency.
+%             Obtained from the XCorr. In units of per minutes.
+%         - waveSpeedSlope: A number representing the slope of the
+%             cross-correlation peaks, and thus the speed of a wave as it
+%             travels down the gut. In units of microns/second.
+%         - BByFPS: Inverse wave speed slope. In units of seconds per
+%             pixel.
+%         - sigB: Slope uncertainty for the line fit to the
+%             cross-correlation maxima.
+%         - waveFitRSquared: R-squared value for the line fit to the
+%             cross-correlation maxima.
+%         - xCorrMaxima: A vector containing the time at which the
+%             cross-correlation is maximum for each delta x.
+%         - analyzedDeltaMarkers: a 1x2 vector containing the start and
+%             finish of the delta x's to use when fitting a line to the
+%             cross-correlation maxima.
+%         - g: A handle to the figure that is generated. Useful for
+%             shutting down by command later.
+
 function [waveFrequency, waveSpeedSlope, BByFPS, sigB, waveFitRSquared, xCorrMaxima, analyzedDeltaMarkers, g] = gutFreqWaveSpeedFinder( gutMesh, trueXCorr, fps, scale )
 
 % Find peristaltic frequency, wave speed from cross-correlation

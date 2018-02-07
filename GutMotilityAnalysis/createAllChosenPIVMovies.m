@@ -1,9 +1,33 @@
-% Function which...
+% Function which generates a movie containing the original image data
+% superimposed with the velocity vectors. This video can optionally only be
+% a subset of the full data.
 %
-% Variables: VideoParams(N,M) N is time (start, delta, end), M is
-% x-position (start, delta, end)
-%
-% To do:
+% Inputs:- mainExperimentDirectory: Directory containing the raw
+%            image data. Input 0 if you don't want to use it. Prompts for
+%            directory if one isn't given. Push cancel if you don't want to
+%            use it.
+%        - mainExperimentDirectoryContents: A list of all main folder names
+%            and other metadata.
+%        - mainExperimentSubDirectoryContentsCell: A cell array in which
+%            each element, representative of one main folder (see above),
+%            contains a list of all subdirectories' names and other
+%            metadata in that main folder.
+%        - mainAnalysisDirectory: Directory that will/does contain the 
+%            analyzed data. Prompts for directory if one isn't given.
+%        - analysisToPerform: A structure holding which analysis should be
+%            performed as a bool array.
+%        - analysisVariables: A cell array of numbers and strings
+%            containing the user variables specified in the GUI (top left).
+%        - currentAnalysesPerformedFileName: String of the name of the file
+%            which will contain a memory of which analysis has been
+%            performed.
+%        - PIVOutputName: A string for naming the generated video. Should not
+%            contain the directory.
+%        - PIVVideoParams: A 2x3 array. A 1 in the first entry refers to
+%            time to use parameters (start, delta, end) and a 2 refers to
+%            the positions to use (start, delta, end).
+%        - interpolationOutputName: String of the name of the file which 
+%            contains the interpolated motility velocity vectors.
 
 function createAllChosenPIVMovies(mainExperimentDirectory, mainExperimentDirectoryContents, mainExperimentSubDirectoryContentsCell, mainAnalysisDirectory, analysisToPerform, analysisVariables, currentAnalysesPerformedFileName, PIVOutputName, PIVVideoParams, interpolationOutputName)
 

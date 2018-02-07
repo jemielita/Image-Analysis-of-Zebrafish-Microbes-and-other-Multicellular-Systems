@@ -1,6 +1,41 @@
-% Function which...
+% Function which takes the raw PIV vectors (previously obtained) and
+% interpolates them into a NxM grid morphed into the mask (previously
+% obtained). It also projects these velocities along a new, non-euclidean
+% coordinate system for longitudinal and transverse projections.
 %
-% To do: Failing on line 110 "Assignment has more non-singleton rhs dimensions than non-singleton subscripts"
+% Inputs:- curDir: The directory to obtain the raw PIV and mask data from.
+%        - expDir: The directory containing the image data.
+%        - imageType: A string of the filetype to load (including wildcard)
+%        - resReduce: A integer representing what factor to reduce the
+%            resolution by (e.g. 2).
+%        - rawPIVOutputName: String of the name of the file which contains
+%            the raw PIV vector information to load.
+%        - maskFileOutputName: String of the name of the file which 
+%            contains the mask vertices to load.
+%
+% Outputs:- gutMesh: A NxM array of vertex locations for a grid morphed to 
+%             fit inside of the mask. The slopes for each column of 
+%             vertices is given by thetas.
+%         - mSlopes: A Mx2x2 vector of differences for each column. Each dx
+%             and dy is calculated as the perpendicular to the center line. 
+%             The first input is which column, the second is either dx or
+%             dy, and the third input is top or bottom (which are now the
+%             same thing).
+%         - gutMeshVels: A NxMx2xT array of doubles representing
+%             velocities. The first and second input correspond to which
+%             vertex (see gutMesh), the third input corresponds to which
+%             component of the velocity (x or y) and the last input
+%             corresponds to which frame.
+%         - gutMeshVelsPCoords: A NxMx2xT array of doubles representing
+%             velocities. These velocities are in a new primed coordinate 
+%             system, longitudinal or transverse. Note that the space, as a
+%             result, is non-euclidean. The first and second input 
+%             correspond to which vertex (see gutMesh), the third input 
+%             corresponds to which component of the velocity (longitudinal 
+%             or transverse) and the last input corresponds to which frame.
+%         - thetas: A 2xM array of slopes corresponding to the M columns.
+%             Each slope is calculated as the perpedicular to the 
+%             centerline.
 
 function [gutMesh, mSlopes, gutMeshVels, gutMeshVelsPCoords, thetas] = interpolatePIVVectorsInMask(curDir, expDir, imageType, resReduce, rawPIVOutputName, maskFileOutputName)
 
