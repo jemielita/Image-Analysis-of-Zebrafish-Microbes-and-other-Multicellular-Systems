@@ -31,4 +31,4 @@ currentlyPerformedAnalysisFile = load(strcat(mainAnalysisDirectory, filesep, 'cu
 analysisVariables = currentlyPerformedAnalysisFile.analysisVariables;
 analysisToPerform = currentlyPerformedAnalysisFile.currentAnalysisPerformed;
 
-[amplitudeVector, frequencyVector] = motilityParametersOverTime(mainAnalysisDirectory, mainDirectoryContents, mainSubDirectoryContentsCell, analysisToPerform, analysisVariables);
+[amplitudeVector, frequencyVector, durationVector] = motilityParametersOverTime(mainAnalysisDirectory, mainDirectoryContents, mainSubDirectoryContentsCell, analysisToPerform, analysisVariables);

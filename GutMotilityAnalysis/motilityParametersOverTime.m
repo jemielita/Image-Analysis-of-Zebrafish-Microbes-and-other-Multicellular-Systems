@@ -99,14 +99,14 @@ end
             
             % Obtain the duration
             tauSubdiv=1;
-            ordinateValues=1:size(gutMeshVelsPCoords,4);
-            surfaceValues=squeeze(-mean(gutMeshVelsPCoords(:,1:end,1,ordinateValues),1));
-            arr=xcorr(surfaceValues(1,:),'unbiased');
+%             ordinateValues=1:size(gutMeshVelsPCoords,4);
+%             surfaceValues=squeeze(-mean(gutMeshVelsPCoords(:,1:end,1,ordinateValues),1));
+            arr=xcorr(curGutMesh(1, :),'unbiased');
             endRByTwo=floor(length(arr)/2);
             arr=arr(endRByTwo+1:end);
-            arr=zeros(size(arr,2),size(surfaceValues,1));
-            for iii=1:tauSubdiv:size(surfaceValues,1)
-                r=xcorr(surfaceValues(iii,:),'unbiased');
+            arr=zeros(size(arr,2),size(curGutMesh,1));
+            for iii=1:tauSubdiv:size(curGutMesh,1)
+                r=xcorr(curGutMesh(iii,:),'unbiased');
                 endRByTwo=floor(length(r)/2);
                 arr(:,iii)=r(endRByTwo+1:end);
             end
@@ -160,9 +160,9 @@ end
         % Plot Duration
         figure;plot(x, durationVector, 'Linewidth', figureLineWidths, 'Color', [0.5, 0.5, 0.5]);
         h=gcf;
-        title('Frequency','FontSize',20,'FontWeight','bold');
+        title('Duration','FontSize',20,'FontWeight','bold');
         xlabel('Time (min)','FontSize',20);
-        ylabel('Frequency (minutes^{-1})','FontSize',20);
+        ylabel('Duration (s)','FontSize',20);
         set(findall(h,'type','axes'),'fontsize',15,'fontWeight','bold', 'FontName', 'Times New Roman', 'TickDir', 'out','box','off','Linewidth',figureLineWidths);
         
         % Show the spectrograph

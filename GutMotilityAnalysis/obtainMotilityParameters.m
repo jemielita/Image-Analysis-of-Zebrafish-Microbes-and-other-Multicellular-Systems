@@ -49,10 +49,10 @@ function [fftPowerPeak, fftPeakFreq, fftRPowerPeakSTD, fftRPowerPeakMin, fftRPow
 
 %% Option to change the color scales of the QSTMaps and cross-correlation plots
 iWantToUseMyOwnScale = false; % If this is true, use the options below to specify what values to scale your plots to.
-QSTMapMin = 0; % Modify these 4 variables to be whatever you want
-QSTMapMax = 0; % See above
-xCorrMin = 0; % See above
-xCorrMax = 0; % See above
+QSTMapMin = -2; % Modify these 4 variables to be whatever you want
+QSTMapMax = 2; % See above
+xCorrMin = -.1; % See above
+xCorrMax = .1; % See above
 
 %% Load data, initialize variables
 loadedInterpFile = load(strcat(curDir, filesep, interpolationOutputName,'_Current.mat'));
@@ -118,6 +118,7 @@ h=gcf;
 title('QSTMapLongitudinal','FontSize',20,'FontWeight','bold');
 ylabel('Time (s)','FontSize',20);
 xlabel('x (\mum)','FontSize',20);
+colorbar;
 set(findall(h,'type','axes'),'fontsize',15,'fontWeight','bold');
 
 %% Transverse Motion as a surface
@@ -138,6 +139,7 @@ h=gcf;
 title('QSTMapTransverse','FontSize',20,'FontWeight','bold');
 ylabel('Time (s)','FontSize',20);
 xlabel('x (\mum)','FontSize',20);
+colorbar;
 set(findall(h,'type','axes'),'fontsize',15,'fontWeight','bold');
 
 %% Cross Correlations of wave propagations
@@ -156,7 +158,7 @@ end
 trueXCorr=flipud(fullXCorr);% The flip is due to how cross correlation interpretations are symmetric about the tau=0 and matlab's representation of that at a non zeros in vectors (and then sets of dx turning it into a surface)
 
 % Display surface plot
-subplot(2, 3, [2, 5]);
+subplot(2, 3, 2);
 abscissaValues=[translateMarkerNumToMicron,(nCorrs-1)*translateMarkerNumToMicron];
 ordinateValues=[0, (size(r,2)/2-1)/fps];
 imshow(trueXCorr,xCorrScale, 'InitialMagnification', 'fit','XData', abscissaValues, 'YData', ordinateValues);
@@ -169,6 +171,7 @@ title('XCorr','FontSize',20,'FontWeight','bold');
 ylabel('\tau (s)','FontSize',20);
 xlabel('\Delta x (\mum)','FontSize',20);
 %zlabel('Correlation','FontSize',20);
+colorbar;
 set(findall(h,'type','axes'),'fontsize',15,'fontWeight','bold');
 
 %% Find wave pulse width from autocorrelation decay
