@@ -442,8 +442,8 @@ function generateProcessingControlPanelListing
     checkBoxSpacing = 25;
     checkBoxWidth = 20;
     checkboxHeight = 20;
-    subFolderWidth = 40;
-    subSubFolderWidth = 80 - subFolderWidth - textBufferSpacing;
+    subFolderWidth = 80;
+    subSubFolderWidth = 160 - subFolderWidth - textBufferSpacing;
     nSubSubDirectories = 0;
     subDirTitleColor = [1, 0.6, 0.1];
     subDirTitleTextColor = [1, 1, 1];
