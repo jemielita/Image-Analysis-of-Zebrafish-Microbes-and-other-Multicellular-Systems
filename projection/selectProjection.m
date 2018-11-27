@@ -97,8 +97,8 @@ im = calculateProjection(type);
             imTot(xOutI:xOutF, yOutI:yOutF) = mipR;
             
 
-            
-            imTot(xOutI:xOutF, yOutI:yOutF) = mipR + imTot(xOutI:xOutF, yOutI:yOutF);
+            % don't know why this line was here, commented 7/27/18 BHS
+            %imTot(xOutI:xOutF, yOutI:yOutF) = mipR + imTot(xOutI:xOutF, yOutI:yOutF);
 %                        imTot(xOutI:xOutF, yOutI:yOutF) = mipR ;
         end
         

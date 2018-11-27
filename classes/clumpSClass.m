@@ -343,6 +343,8 @@ classdef clumpSClass
                 cen = reshape(cen, 3, length(cen)/3);
                 indX = find(cen(1,:)>c.cropRect(1) & cen(1,:)<(c.cropRect(1)+c.cropRect(3)));
                 indY = find(cen(2,:)>c.cropRect(2) & cen(2,:)<(c.cropRect(2)+c.cropRect(4)));
+                
+                z_fudge_factor = 10;
                 indZ = find(cen(3,:)>c.zRange(1) & cen(3,:)<=c.zRange(2));
                 
                 ind = intersect(indX, indY);

@@ -1,135 +1,75 @@
 % assembleClusterDistributions.m
 %
-% workflow: first run with a threshhold, look at results, manually remove
-% more spots if neccesary, update fishAnalysis, run again without thresh.
-function assembleClusterDistributions(maindir,lthresh,ids)
-
-volume_conversion = .1625.*.1625;
-spot_thresh_frac = .25;
+function assembleClusterDistributions(maindir,ids)
 
 load([maindir filesep 'pall.mat']);
 
-try
-    load([maindir filesep 'thresh_all.mat']);
-catch
-    disp(['thresh_all doesnt exist'])
-    return
-%     thresh_all = {};
-%     for m = 1:numel(pall)
-%         thresh_all{m} = 5000;
-%     end
-end
 
+if ~exist('ids','var') || isempty(ids)
+    ids = 1:numel(pall);
+end
+    
+    
+volume_conversion = .1625.*.1625;
 
 
 for n = 1:numel(ids)
     
     try
     
-        volumes = [];
-        intens = [];
+        
         
         
         f = load([pall{ids(n)}.dataSaveDirectory filesep 'fishAnalysis.mat']); f = f.f;
         
         if isempty(f)
-            f = fishClass(pall{ids(n)});
-            
-            if ~isempty(thresh_all);
-                f.lManuallySetClumpIntenThresh = 1;
-                f.colorInten = thresh_all{ids(n)};
-            end
-            
-            f = f.getClumps; f.cut = [1e8 ]; f = f.combClumpIndiv; f = f.getClumpData; f = f.getTotPop; f = f.calc1dProj; f = f.getGlobalCentersOfMass; f.save;
+           
+            disp(['update fishAnalysis file with segmentation results'])
+            return
             
         end
         
+        volumes = cell(f.totalNumScans,f.totalNumColor);
+        intens = cell(f.totalNumScans,f.totalNumColor);
+        numbers = cell(f.totalNumScans,f.totalNumColor);
         
+       
         
-        
-        
-%         %% cull spots
-%         
-%         if lcull
-%             spots = load([pall{ids(n)}.dataSaveDirectory filesep 'singleBacCount' filesep 'spotClassifier.mat']); spots = spots.spots;
-%             
-%             %spots = load([pall{n}.dataSaveDirectory filesep 'singleBacCount' filesep 'backup' filesep 'spotClassifier.mat']); spots = spots.spots;
-%             
-%             backupdir = [pall{ids(n)}.dataSaveDirectory filesep 'singleBacCount' filesep 'backup'];
-%             
-%             if exist(backupdir,'dir')
-%                 clockinfo = clock;
-%                 backupdir_name = ['backup' num2str(clockinfo)];
-%             else
-%                 backupdir_name = 'backup';
-%             end
-%             
-%             spots.backup([],backupdir_name);
-%                 
-%             spots.cull('objmean',spot_cull_frac.*thresh_all{ids(n)});
-%                      
-%             f.calcClumpSpotOverlap;
-%             
-%             spots.classifySpots;
-%             
-%             f = f.getClumps; f.cut = [1e8 ]; f = f.combClumpIndiv; f = f.getClumpData; f = f.getTotPop; f = f.calc1dProj; f = f.getGlobalCentersOfMass; f.save;
-%         
-%         
-%         end
-            
-        %% thresh
-        % rather than delete spots from rProp, just add them to
-        % removeBugInd.  Easier for interfacing with manually removed
-        % spots.
-        
-        if lthresh
-            spots = load([pall{ids(n)}.dataSaveDirectory filesep 'singleBacCount' filesep 'spotClassifier.mat']); spots = spots.spots;
-                        
-            backupdir = [pall{ids(n)}.dataSaveDirectory filesep 'singleBacCount' filesep 'backup'];
-            
-            if exist(backupdir,'dir')
-                clockinfo = clock;
-                backupdir_name = ['backup' num2str(clockinfo)];
-            else
-                backupdir_name = 'backup';
-            end
-            
-            spots.backup([],backupdir_name);
-            
-            load([pall{ids(n)}.dataSaveDirectory filesep 'singleBacCount' filesep 'bacCount1.mat'])
-
-            spots.removeBugInd{1} = [spots.removeBugInd{1} find([rProp{1}.objMean] < spot_thresh_frac.*thresh_all{ids(n)})];
-        
-            spots.saveInstance;
-            
-            f = f.getClumps; f.cut = [1e8 ]; f = f.combClumpIndiv; f = f.getClumpData; f = f.getTotPop; f = f.calc1dProj; f = f.getGlobalCentersOfMass; f.save;
-
-        end
-        
-        %% assemble cluster properties
-        
-        % clump vols
-        volumes = [volumes [f.scan(1).clumps.allData([f.scan(1).clumps.allData.IND]>0).volume]];
-        
-        % all intens
-        intens = [intens, [f.scan(1).clumps.allData.totalInten]];   
-        
-        % spot vols
-        load([pall{ids(n)}.dataSaveDirectory filesep 'singleBacCount' filesep 'bacCount1.mat'])
-        
-        spots = load([pall{ids(n)}.dataSaveDirectory filesep 'singleBacCount' filesep 'spotClassifier.mat']); spots = spots.spots;
-
-        spot_vols = [rProp{1}.volume];
-        spot_vols(spots.removeBugInd{1}) = [];
-        
-        volumes = [volumes spot_vols];
-        
-        volumes = volumes.*volume_conversion;
+        for c = 1:f.totalNumColor
+            for s = 1:f.totalNumScans
                 
-        
-        numbers = intens./f.singleBacInten;
-        numbers(numbers<1) = 1;
-    
+                %% assemble cluster properties
+                these_volumes = [];
+                these_intens = [];
+                 
+                % clump vols
+                these_volumes = [these_volumes [f.scan(s,c).clumps.allData([f.scan(s,c).clumps.allData.IND]>0).volume]];
+                
+                % all intens
+                these_intens = [these_intens, [f.scan(s,c).clumps.allData([f.scan(s,c).clumps.allData.gutRegion] < f.totPopRegCutoff).totalInten]];
+                
+%                 % spot vols
+%                 load([pall{ids(n)}.dataSaveDirectory filesep 'singleBacCount' filesep 'bacCount' num2str(s) '.mat'])
+%                 
+%                 spots = load([pall{ids(n)}.dataSaveDirectory filesep 'singleBacCount' filesep 'spotClassifier.mat']); spots = spots.spots;
+%                 
+%                 spot_vols = [rProp{c}.volume];
+%                 spot_vols(spots.removeBugInd{s,c}) = [];
+%                 
+%                 these_volumes = [these_volumes spot_vols];
+%                 
+%                 these_volumes = these_volumes.*volume_conversion;
+                
+                
+                these_numbers = these_intens./f.singleBacInten(c);
+                these_numbers(these_numbers<1) = 1;
+                
+                numbers{s,c} = these_numbers;
+                intens{s,c} = these_intens;
+%                 volumes{s,c} = these_volumes;
+                
+            end
+        end
 
         save([pall{ids(n)}.dataSaveDirectory filesep 'clumps.mat'],'volumes','intens','numbers');
     

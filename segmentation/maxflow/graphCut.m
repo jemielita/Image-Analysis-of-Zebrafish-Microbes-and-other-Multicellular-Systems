@@ -79,7 +79,7 @@ if(nargin==3)
     [sourceHist, sinkHist] = regionIntensityEstimation(im, isSource, isSink);
 
     %Weights for segmentation
-    lambda = 0.001;
+    lambda = 0.01;
     bkgNoise = 0.01;
     
 end
@@ -92,8 +92,8 @@ if(nargin==4)
     sourceHist{2} = intenEst{2,2};
     
     %Weights for segmentation
-    lambda = 0.1;
-    bkgNoise = 0.1;
+    lambda = .1;   
+    bkgNoise = .1;     
 end
 
 if(nargin==6)

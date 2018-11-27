@@ -67,13 +67,20 @@ for nZ=1:size(im,3)
     
     switch inPlace
         case false
-            imSeg(yMin:yMax, xMin:xMax,nZ) = cv.spotDetectorFast_v2(imIn,4);
+            %imSeg(yMin:yMax, xMin:xMax,nZ) = cv.spotDetectorFast_v2(imIn,4);
+            % Switched to slower matlab version 5/3/17 BHS
+            %imSeg(yMin:yMax, xMin:xMax,nZ) = spotDetector(imIn,4);
+            % switched to difference of gaussian filtering 3/20/18 BHS
+            imSeg(yMin:yMax, xMin:xMax,nZ) = dog(imIn);
+
             %Clean up small regions
             bw(yMin:yMax, xMin:xMax,nZ) = bwareaopen(imSeg(yMin:yMax, xMin:xMax,nZ)>maxThresh, 10);
             bw(yMin:yMax, xMin:xMax,nZ) = imclearborder( bw(yMin:yMax, xMin:xMax,nZ)==1);
         case true
             
-            im(yMin:yMax, xMin:xMax,nZ) = cv.spotDetectorFast_v2(imIn,4);
+            %im(yMin:yMax, xMin:xMax,nZ) = cv.spotDetectorFast_v2(imIn,4);
+            % Switched to slower matlab version 5/3/17 BHS
+            imSeg(yMin:yMax, xMin:xMax,nZ) = spotDetector(imIn,4);
     end
     %Using a median filter on each frame to remove salt and pepper noise
     %thisFrame(yMin:yMax, xMin:xMax) = medfilt2(thisFrame(yMin:yMax, xMin:xMax), [5 5]);

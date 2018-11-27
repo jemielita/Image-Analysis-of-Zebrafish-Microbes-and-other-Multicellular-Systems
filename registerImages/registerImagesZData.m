@@ -150,7 +150,20 @@ for regNum=1:totalNumRegions
         try
             isFile = fileattrib(fileName);
             if(isFile==0)
-                overlapReg(find(posArray==arr(zIndex)),regNum) = -1;
+                
+                % also check for png, in the rare case of reanalyzing an
+                % already analyzed data set from scratch.  BHS 7/1/18
+                fileName = [param.directoryName filesep 'Scans' filesep 'scan_1',...
+                    filesep, 'region_',num2str(regNum), filesep, param.color{1} filesep,...
+                    'pco', num2str(zIndex-1), '.png'];
+                
+                isFile = fileattrib(fileName);
+                
+                if(isFile==0)
+               
+                    overlapReg(find(posArray==arr(zIndex)),regNum) = -1;
+                    
+                end
             end
         catch 
             %If it's not a file then set this location to be -1

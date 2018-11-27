@@ -52,6 +52,30 @@ classdef fishClass
         fitParam = [];
         
         globalCenterMass = [];
+        
+        
+        
+        % allow user to choose spot detection algorithm:
+        %   -'dog' = Difference of Gaussians
+        %   -'wavelet' = Matlab-based wavelet filtering
+        %   -'wavelet-mex' = C++ implementation of wavelet filtering using
+        %                    mex
+        spot_detection_method = 'dog';
+        
+        % allow user to choose clump detection algorithm:
+        %   -'intensity' = seed graphCut algorithm with an intensity mask
+        %   -'gradient' = seed graphCut algorithm with a gradient mask
+        clump_detection_method = 'intensity';
+        
+        % allow user to manually set clump segmentation intensity threshold with a
+        % global variable in fishClass.  See maskFish.  BHS added 12/12/17
+        lManuallySetClumpIntenThresh = 0;
+        colorInten = 0;
+        
+        % allow user to manually set clump segmentation Gradient threshold with a
+        % global variable in fishClass.  See maskFish.  BHS added 12/12/17
+        lManuallySetClumpGradThresh = 0;
+        clumpGradThresh = 0;
     end
     
     methods
@@ -177,6 +201,32 @@ classdef fishClass
             % obj = calcMasks(obj)
             for s = 1:obj.totalNumScans
                 for c = 1:obj.totalNumColor
+                    
+                    obj.scan(s,c).clump_detection_method = obj.clump_detection_method;
+
+                    % allow user to choose clump segmentation method
+                    switch obj.clump_detection_method
+                        case 'intensity'
+                            
+                            % allow user to manually set clump segmentation
+                            % intensity threshold with a global variable in fishClass
+                            % BHS added 12/12/17
+                            if obj.lManuallySetClumpIntenThresh
+                                obj.scan(s,c).lManuallySetClumpIntenThresh = true;
+                                obj.scan(s,c).colorInten = obj.colorInten;
+                            end
+                    
+                        case 'gradient'
+                            % allow user to manually set clump segmentation
+                            % gradient threshold with a global variable in fishClass
+                            % BHS added 3/21/18
+                            if obj.lManuallySetClumpGradThresh
+                                obj.scan(s,c).lManuallySetClumpGradThresh = true;
+                                obj.scan(s,c).clumpGradThresh = obj.clumpGradThresh;
+                            end
+                            
+                    end
+
                     obj.scan(s,c).calcMask();
                 end
                 
@@ -1159,7 +1209,7 @@ classdef fishClass
            end
            s.saveInstance;
 
-           %Segmentation masks
+           %Segmentation masks               
            obj = calcMasks(obj);
            obj = obj.filterMasks;
            
@@ -1180,6 +1230,43 @@ classdef fishClass
             obj.t(nsNew+1:end) = [];
             
             % are there other fields that need to get updated??
+            
+        end
+        
+        function obj = updateSaveDir(obj,newdir,fishnum)
+            % replace all instances of save directory in fishClass with
+            % newdir.  doesn't touch original param file.
+            %
+            % newdir contains fish directories which contain gutOutline and
+            % scans.
+            %
+            % fishnum is the fish number in the experiment (integer).
+            
+            gutOutlineDir = [newdir filesep 'fish' num2str(fishnum) filesep 'gutOutline'];
+            % update param file stored in fishAnalysis file (not standalone
+            % param)
+            obj.saveLoc = gutOutlineDir;
+            obj.param.directoryName = [newdir filesep 'fish' num2str(fishnum)];
+            obj.param.dataSaveDirectory = gutOutlineDir;
+            obj.param.expData.saveLocation = newdir;
+            
+            %updateScanClass
+            for s = 1:numel(obj.totalNumScans)
+                obj.scan(s).saveLoc = gutOutlineDir;
+                
+                %update ClumpsClass
+                obj.scan(s).clumps.saveLoc = gutOutlineDir;
+                
+                % loop through clumps
+                
+                for c = 1:numel(obj.scan(s).clumps.allData)
+                    obj.scan(s).clumps.allData(c).saveLoc = gutOutlineDir;
+                end
+                    
+            end
+            
+            
+            
             
         end
     end

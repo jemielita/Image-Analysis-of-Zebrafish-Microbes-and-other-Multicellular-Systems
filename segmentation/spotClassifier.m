@@ -104,25 +104,25 @@ classdef spotClassifier
            
            %obj.tList(:,[1,3]) = log(obj.tList(:,[1,3]));
            boxCon = [obj.boxVal(1)*ones(numKeptSpots,1); obj.boxVal(2)*ones(size(tList,1)-numKeptSpots,1)];
-           displayData = true;
+           displayData = false;
           
            if(displayData==true)
                svmStruct = svmtrain(tList(:,[1,6]), Ynom, 'showplot', true, 'Kernel_Function', 'quadratic', 'boxconstraint', boxCon, ...
                    'autoscale', true);
            end
            
-           svmStruct = svmtrain(tList(:,1:11), Ynom, 'showplot', true, 'Kernel_Function', 'polynomial','boxconstraint', boxCon,'autoscale', true);
+           svmStruct = svmtrain(tList(:,1:11), Ynom, 'showplot', true, 'Kernel_Function', 'rbf','boxconstraint', boxCon,'autoscale', true);
            
            % Calculate the confusion matrix
            
-           group = svmclassify(svmStruct,tList(:,1:11));
+%            group = svmclassify(svmStruct,tList(:,1:11));
            
-           N = length(group);
-           
-           bad = ~strcmp(group, Ynom);
-           ldaResubErr  = sum(bad)/N;
-           
-           [ldaResubCM,grpOrder] = confusionmat(Ynom,group)
+%            N = length(group);
+%            
+%            bad = ~strcmp(group, Ynom);
+%            ldaResubErr  = sum(bad)/N;
+%            
+%            [ldaResubCM,grpOrder] = confusionmat(Ynom,group)
            
            obj.svmStruct = svmStruct;
           

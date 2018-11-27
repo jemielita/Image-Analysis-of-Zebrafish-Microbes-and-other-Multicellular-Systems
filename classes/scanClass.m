@@ -37,6 +37,17 @@ classdef scanClass
         removedRegion = [];%Regions to manually remove from these scans (this will likely be regions by the vent).
         globalCenterMass;
         
+        clump_detection_method = 'intensity';
+        
+        % allow user to manually set clump segmentation threshold with a
+        % global variable in fishClass.  See maskFish.  BHS added 12/12/17
+        lManuallySetClumpIntenThresh = 0;
+        colorInten = 0;
+        
+        % allow user to manually set clump segmentation threshold with a
+        % global variable in fishClass.  See maskFish.  BHS added 12/12/17
+        lManuallySetClumpGradThresh = 0;
+        clumpGradThresh = 0;
         
     end
     
@@ -152,16 +163,65 @@ classdef scanClass
             if(exist([obj.saveLoc filesep 'masks' filesep 'mask.mat'])==2)
                 inputVar = load([obj.saveLoc filesep 'masks' filesep 'mask.mat']);
                 mask = inputVar.mask;
+                
+                mask.clump_detection_method = obj.clump_detection_method;
+                
+                switch obj.clump_detection_method
+                    case 'intensity'
+                        % allow user to RErun clump segmentation with new
+                        % Intensity thresholds
+                        if obj.lManuallySetClumpIntenThresh
+                            mask.colorInten = [obj.colorInten];
+                            mask.colorIntenMarker = [obj.colorInten];
+                            mask.lManuallySetClumpIntenThresh = obj.lManuallySetClumpIntenThresh;
+                        end
+                
+                    case 'gradient'
+                        % allow user to RErun clump segmentation with new
+                        % Gradient thresholds
+                        if obj.lManuallySetClumpGradThresh
+                            mask.clumpGradThresh = [obj.clumpGradThresh,obj.clumpGradThresh];
+                            mask.lManuallySetClumpGradThresh = obj.lManuallySetClumpGradThresh;
+                        end
+                
+                end
+                
+                mask.saveInstance;
+
             else
                 mask = maskFish;
                 mask.saveDir = [obj.saveLoc filesep 'masks'];
+                               
+                mask.clump_detection_method = obj.clump_detection_method;
+
+                switch obj.clump_detection_method
+                    case 'intensity'
+                        % allow user to run clump segmentation with manually set
+                        % Intensity thresholds
+                        if obj.lManuallySetClumpIntenThresh
+                            mask.colorInten = [obj.colorInten];
+                            mask.colorIntenMarker = [obj.colorInten];
+                            mask.lManuallySetClumpIntenThresh = obj.lManuallySetClumpIntenThresh;
+                        end
+                        
+                    case 'gradient'
+                        % allow user to run clump segmentation with manually set
+                        % Gradient thresholds
+                        if obj.lManuallySetClumpGradThresh
+                            mask.clumpGradThresh = [obj.clumpGradThresh obj.clumpGradThresh];
+                            mask.lManuallySetClumpGradThresh = obj.lManuallySetClumpGradThresh;
+                        end
+                        
+                end
+                
                 mask.saveInstance;
+
             end
             %maskFish.getBkgEstMask(param, obj.scanNum, obj.colorNum);
             
             
             segMask = mask.getGraphCutMask(param, obj.scanNum, obj.colorNum);
-        
+
             %Save a binary mask-...this should eventually be removed
             saveLoc = [obj.saveLoc filesep 'bkgEst' filesep 'fin_' num2str(obj.scanNum) '_' obj.colorStr '.mat'];
             
@@ -460,14 +520,18 @@ classdef scanClass
                 return
             end
             
-            stopslice = obj.gutRegionsInd(regCutoff);
+            stopslice = obj.gutRegionsInd(regCutoff); %BHS testing 6/12/18
             lineDistNotVent = obj.lineDist(1:stopslice);
             slicenumbers = 1:numel(lineDistNotVent);
             slicenumbers = slicenumbers';
             Itot = sum(lineDistNotVent);
             
             % If Itot == 0 will get NaNs
-            obj.globalCenterMass = sum(slicenumbers.*lineDistNotVent)./Itot;  
+            if isempty(slicenumbers)
+                obj.globalCenterMass = NaN;
+            else
+                obj.globalCenterMass = sum(slicenumbers.*lineDistNotVent)./Itot;
+            end
             
         end    
         

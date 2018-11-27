@@ -346,7 +346,10 @@ classdef spotFishClass
            %values of each of the spots.
            %Note: Only error checking that is done is to check that input
            %'val' is scalar and >0.
-           if(length(val)~=2 || val(1)<0 || val(2) <0)
+           
+           % Generalized error checking to arbitrary number of colors.  BHS
+           % 5/23/18
+           if(length(val)~=numel(obj.colorStr) || sum(val<=0) > 0 )
                fprintf(2, 'Val must be scalar greater than zero!');
                return;
            end
@@ -481,7 +484,7 @@ classdef spotFishClass
 
                   rProp{nc} = obj.classifyThisSpot(rProp{nc},ns,nc);
                   %Save the result
-                  %save([fSaveDir filesep obj.saveName num2str(ns) '.mat'], 'rProp');
+                  save([fSaveDir filesep obj.saveName num2str(ns) '.mat'], 'rProp');
                   
                   ind(ns,nc) = length(rProp{nc});
                   fprintf(1, '.');
