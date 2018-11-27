@@ -1,4 +1,4 @@
-function [amplitudeVector, frequencyVector] = motilityParametersOverTime(mainAnalysisDirectory, mainExperimentDirectoryContents, mainExperimentSubDirectoryContentsCell, analysisToPerform, analysisVariables)
+function [amplitudeVector, frequencyVector, durationVector] = motilityParametersOverTime(mainAnalysisDirectory, mainExperimentDirectoryContents, mainExperimentSubDirectoryContentsCell, analysisToPerform, analysisVariables)
 
 %% Initialize variables
 nDirectories = size(analysisToPerform, 2);
@@ -31,7 +31,7 @@ for i=1:nDirectories
             
             % ObtainCurrentDirectory
             curDir = strcat(mainAnalysisDirectory, filesep, mainExperimentDirectoryContents(i).name, filesep, mainExperimentSubDirectoryContentsCell{1, i}(j).name);
-            [amplitudeVector, frequencyVector, spectrograph, f] = obtainIndividualMotilityOverTime(curDir, analysisVariables, i);
+            [amplitudeVector, frequencyVector, durationVector, spectrograph, f] = obtainIndividualMotilityOverTime(curDir, analysisVariables, i);
             
         end
         
@@ -40,7 +40,7 @@ for i=1:nDirectories
 end
 
     % Obtain the longitudinal data for a given folder
-    function [amplitudeVector, frequencyVector, spectrograph, f] = obtainIndividualMotilityOverTime(analysisDirectory, analysisVariables, curFolderIndex)
+    function [amplitudeVector, frequencyVector, durationVector, spectrograph, f] = obtainIndividualMotilityOverTime(analysisDirectory, analysisVariables, curFolderIndex)
         
         % Load data
         loadedAnalysisFile = load(strcat(analysisDirectory, filesep, 'processedPIVOutput_Current.mat'));
@@ -59,6 +59,7 @@ end
         totalNWindowSlides = floor((nFrames/fps - windowSize*60)/deltaTBetweenWindowSlides) + 1; % Subtraction is because we can't slide the window up until the last delta t... we can only slide it up to the size of the window, + 1 for initial frame
         amplitudeVector = zeros(1,totalNWindowSlides);
         frequencyVector = zeros(1,totalNWindowSlides);
+        durationVector = zeros(1,totalNWindowSlides);
         NFFT = 2^nextpow2(windowSize*60*fps);
         spectrograph = zeros(floor(NFFT/2 + 1), totalNWindowSlides);
         f = fps/2*linspace(0,1,NFFT/2+1); % Units of per second
@@ -84,21 +85,52 @@ end
             fftGMV=zeros(size(curGutMesh,1),NFFT);
             L = length(curGutMesh);
             
-            % Loop to do fft on each position down the gut
+            % Loop to do FFT on each position down the gut
             for jj=1:size(curGutMesh,1)
                 fftGMVCur=fft((curGutMesh(jj,:) - mean(curGutMesh(jj,:)))/L,NFFT);
                 fftGMV(jj,:)=fftGMVCur; % Division by fps is the same as multiplication by deltaT between frames, giving the right units, despite what engineers tell you
             end
             
-            % Project data from FFT surface to a power spectrum curve
+            % Obtain amplitude and frequency
             fftRootPowerGMV=abs(fftGMV)*2*micronsPerPixel;
             singleFFTRPGMV=mean(fftRootPowerGMV);
             singleFFTRPGMV = singleFFTRPGMV(1:NFFT/2+1);
             [amplitude, ampIndex] = max(singleFFTRPGMV(minFreqToConsiderIndex:maxFreqToConsiderIndex));
             
+            % Obtain the duration
+            tauSubdiv=1;
+%             ordinateValues=1:size(gutMeshVelsPCoords,4);
+%             surfaceValues=squeeze(-mean(gutMeshVelsPCoords(:,1:end,1,ordinateValues),1));
+            arr=xcorr(curGutMesh(1, :),'unbiased');
+            endRByTwo=floor(length(arr)/2);
+            arr=arr(endRByTwo+1:end);
+            arr=zeros(size(arr,2),size(curGutMesh,1));
+            for iii=1:tauSubdiv:size(curGutMesh,1)
+                r=xcorr(curGutMesh(iii,:),'unbiased');
+                endRByTwo=floor(length(r)/2);
+                arr(:,iii)=r(endRByTwo+1:end);
+            end
+            typeOfFilt=designfilt('lowpassfir', 'PassbandFrequency', .15, ...
+                'StopbandFrequency', .65, 'PassbandRipple', 1, ...
+                'StopbandAttenuation', 60);
+            autoCorrDecays=arr(1:50,:); % Units of frames, 50 chosen arbitrarily
+            autoCorrDecaysTwo=autoCorrDecays;
+            decayTimes=zeros(1,size(autoCorrDecaysTwo,2));
+            for iii=1:size(autoCorrDecays,2)
+                autoCorrDecaysTwo(:,iii)=filtfilt(typeOfFilt,autoCorrDecays(:,iii));
+                eFoldingTimes=find(autoCorrDecaysTwo(:,iii)<=autoCorrDecaysTwo(1,iii)/exp(1));
+                if(~isempty(eFoldingTimes))
+                    decayTimes(iii)=eFoldingTimes(1);
+                else
+                    decayTimes(iii)=NaN;
+                end
+            end
+            duration=2*mean(decayTimes)/fps; % The factor of 2 for the whole wave. In units of seconds!
+            
             % Assign variables
             amplitudeVector(1, ii) = amplitude;
             frequencyVector(1, ii) = f(ampIndex);
+            durationVector(1, ii) = duration;
             spectrograph(:, ii) = singleFFTRPGMV;
             
         end
@@ -124,6 +156,14 @@ end
         ylabel('Frequency (minutes^{-1})','FontSize',20);
         set(findall(h,'type','axes'),'fontsize',15,'fontWeight','bold', 'FontName', 'Times New Roman', 'TickDir', 'out','box','off','Linewidth',figureLineWidths);
         %assignin('base', strcat('Frequency',num2str(curFolderIndex)), frequencyVector);
+        
+        % Plot Duration
+        figure;plot(x, durationVector, 'Linewidth', figureLineWidths, 'Color', [0.5, 0.5, 0.5]);
+        h=gcf;
+        title('Duration','FontSize',20,'FontWeight','bold');
+        xlabel('Time (min)','FontSize',20);
+        ylabel('Duration (s)','FontSize',20);
+        set(findall(h,'type','axes'),'fontsize',15,'fontWeight','bold', 'FontName', 'Times New Roman', 'TickDir', 'out','box','off','Linewidth',figureLineWidths);
         
         % Show the spectrograph
         % figure;surf(spectrograph);

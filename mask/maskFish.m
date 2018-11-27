@@ -14,10 +14,25 @@ classdef maskFish
         bkgOffset = 1.8; %Scalar offset from the estimated background in each wedge of the gut.
         saveDir = '';
         
-        minClusterSize = 10000;
+        minClusterSize = 1000;  %changed from 10000 3/21/18 BHS
         
-        colorInten = [1500 1500]; %Intensity cutoff for each color channel (assuming 2) to produce the intensity cutoff mask.
-        colorIntenMarker = [2000 2000];%Intensity cutoff for defining markers.
+        %colorInten = [1500 1500]; %Intensity cutoff for each color channel (assuming 2) to produce the intensity cutoff mask.
+        %colorIntenMarker = [2000 2000];%Intensity cutoff for defining markers.
+        
+        colorInten = [700 700]; %Intensity cutoff for each color channel (assuming 2) to produce the intensity cutoff mask.
+        colorIntenMarker = [700 700];%Intensity cutoff for defining markers.
+        
+        % allow user to choose clump detection algorithm:
+        %   -'intensity' = seed graphCut algorithm with an intensity mask
+        %   -'gradient' = seed graphCut algorithm with a gradient mask
+        clump_detection_method = 'gradient';
+        
+        lManuallySetClumpIntenThresh = 0;
+        
+        lManuallySetClumpGradThresh = 0;
+        
+        clumpGradThresh = [100,100];
+        
     end
     
    methods(Static)
@@ -281,7 +296,7 @@ classdef maskFish
           end
           
           recalcProj = false;
-          im = selectProjection(param, 'mip', 'false', scanNum, param.color{colorNum}, '',recalcProj); %made 'false' by BHS 9/14/15
+          im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj); 
           param.dataSaveDirectory
           switch direction
               case 'gt'
@@ -302,15 +317,50 @@ classdef maskFish
            % algorithm.
            
           % segMask = maskFish.getBkgEstMask(param, scanNum, colorNum);
-           segMask  = obj.getIntenMask(param, scanNum, colorNum,'lt');
+          
+          % use either intensity or gradient mask 3/20/18 BHS 
+          switch obj.clump_detection_method
+              
+              case 'intensity'
+                  
+                  segMask  = obj.getIntenMask(param, scanNum, colorNum,'lt');
+          
+              case 'gradient'
+                  
+                  segMask = obj.getGradientMask(param,scanNum,colorNum);
+           
+          end
+           
            spotMask = obj.getSpotMask(param, scanNum, colorNum);
           
            recalcProj = false;
            im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj);
-           obj.colorInten(colorNum)  = obj.getIntensityCutoff(im, spotMask);
            
-           obj.colorInten = obj.colorIntenMarker;
-           intenMask = obj.getIntenMask(param, scanNum, colorNum);
+           
+           
+           % commented out 3/21/18 BHS
+           %obj.colorInten = obj.colorIntenMarker;
+           
+           % use either intensity or gradient mask 3/20/18 BHS.  Note: variable name 'intenMask' 
+           % isn't very appropriate when using gradient mask, but we're
+           % sticking with it.
+          switch obj.clump_detection_method
+              
+              case 'intensity'
+                  
+                  if ~obj.lManuallySetClumpIntenThresh
+                      obj.colorInten(colorNum)  = obj.getIntensityCutoff(im, spotMask);
+                  end
+                  
+                  intenMask  = obj.getIntenMask(param, scanNum, colorNum);
+                  
+                  
+          
+              case 'gradient'
+                  
+                  intenMask = obj.getGradientMask(param,scanNum,colorNum);
+           
+          end
            
            intenMask = obj.removeSmallObj(intenMask, spotMask);
            
@@ -429,6 +479,21 @@ classdef maskFish
            fprintf(1,'\n');
            
            m = maskTot>0;         
+       end
+       
+       function m = getGradientMask(obj,param, scanNum, colorNum)
+          
+          
+          recalcProj = false;
+          im = selectProjection(param, 'mip', 'true', scanNum, param.color{colorNum}, '',recalcProj); 
+          param.dataSaveDirectory
+          
+          m = getGradMask(im,obj.clumpGradThresh(colorNum));
+          
+          gm = maskFish.getGutFillMask(param, scanNum);
+          
+          m(~gm) = 0;
+          
        end
        
        function inten = getIntensityCutoff(obj,im, spotMask)
